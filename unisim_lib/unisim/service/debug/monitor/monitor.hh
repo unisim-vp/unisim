@@ -82,44 +82,43 @@ protected:
 };
 
 template <typename ADDRESS>
-class HardwareWatchpoint
-	: public unisim::util::debug::Watchpoint<ADDRESS>
+class SourceCodeBreakpoint : unisim::service::interfaces::DebugEventListener<ADDRESS>
 {
 public:
-	HardwareWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, int handle, void (*callback)(int));
-	virtual ~HardwareWatchpoint();
-	void Report() const;
-private:
-	int handle;
-	void (*callback)(int);
-};
-
-template <typename ADDRESS>
-class SourceCodeBreakpoint : public unisim::util::debug::SourceCodeBreakpoint<ADDRESS>
-{
-public:
-	SourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location, int handle, void (*callback)(int));
-	void Report() const;
+	SourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location, typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *debug_event_trigger_if, int handle, void (*callback)(int));
+	virtual ~SourceCodeBreakpoint();
 	int GetHandle() const;
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
+	bool Set();
+	bool Unset();
 private:
+	bool Update(bool set);
+	
+	typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *debug_event_trigger_if;
+	unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint;
+	bool source_code_breakpoint_set;
 	int handle;
 	void (*callback)(int);
 };
 
 template <typename ADDRESS>
-class DataObjectWatchpoint
+class DataObjectWatchpoint : unisim::service::interfaces::DebugEventListener<ADDRESS>
 {
 public:
 	DataObjectWatchpoint(const char *data_location, typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *debug_event_trigger_if, typename unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if, int handle, void (*callback)(int));
 	virtual ~DataObjectWatchpoint();
-	bool Exists() const;
 	int GetHandle() const;
-	void Report() const;
-	void Invalidate();
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
+	bool Set();
+	bool Unset();
 private:
+	bool Update(bool set);
+	
 	int handle;
+	void (*callback)(int);
 	typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *debug_event_trigger_if;
-	HardwareWatchpoint<ADDRESS> *hw_watchpoint;
+	unisim::util::debug::Watchpoint<ADDRESS> *watchpoint;
+	bool watchpoint_set;
 };
 
 template <typename ADDRESS>
