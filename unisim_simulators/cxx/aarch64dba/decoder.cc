@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2023,
+ *  Copyright (c) 2009-2024,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -34,6 +34,7 @@
 
 #include "decoder.hh"
 
+#include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <unisim/util/floating_point/floating_point.hh>
@@ -46,14 +47,17 @@
 
 namespace aarch64 {
 
-struct Processor
+struct ProcTypes
 {
   //   =====================================================================
   //   =                             Data Types                            =
   //   =====================================================================
 
+  template <typename T> using SmartValue = unisim::util::symbolic::SmartValue<T>;
+
   typedef unisim::util::symbolic::SmartValue<double>   F64;
   typedef unisim::util::symbolic::SmartValue<float>    F32;
+  typedef unisim::util::symbolic::SmartValue<_Float16> F16;
   typedef unisim::util::symbolic::SmartValue<bool>     BOOL;
   typedef unisim::util::symbolic::SmartValue<uint8_t>  U8;
   typedef unisim::util::symbolic::SmartValue<uint16_t> U16;
@@ -63,6 +67,17 @@ struct Processor
   typedef unisim::util::symbolic::SmartValue<int16_t>  S16;
   typedef unisim::util::symbolic::SmartValue<int32_t>  S32;
   typedef unisim::util::symbolic::SmartValue<int64_t>  S64;
+
+  template <typename T>
+  using  VectorTypeInfo = unisim::util::symbolic::vector::VUConfig::TypeInfo<T>;
+  using  VectorByte = unisim::util::symbolic::vector::VUConfig::Byte;
+  struct VectorByteShadow { char _[sizeof(U8)]; };
+};
+
+struct Processor
+  : ProcTypes
+  , unisim::component::cxx::processor::arm::regs64::CPU<Processor, ProcTypes>
+{
 
   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
@@ -86,8 +101,8 @@ struct Processor
   };
 
   Processor(StatusRegister const& ref_psr, U64 const& insn_addr)
-    : path(0)
-    , gpr()
+    : unisim::component::cxx::processor::arm::regs64::CPU<Processor, ProcTypes>()
+    , path(0)
     , flags()
     , current_instruction_address(insn_addr)
     , next_instruction_address(insn_addr + U64(4))
@@ -96,7 +111,7 @@ struct Processor
     , unpredictable( false )
   {
     for (GPR reg; reg.next();)
-      gpr[reg.idx()] = newRegRead(reg);
+      gpr[reg.idx()] = U64(newRegRead(reg));
     for (Flag flag; flag.next();)
       flags[flag.idx()] = newRegRead(flag);
   }
@@ -116,8 +131,8 @@ struct Processor
       }
 
     for (GPR reg; reg.next();)
-      if (gpr[reg.idx()] != ref.gpr[reg.idx()])
-        path->add_sink( Expr( newRegWrite( reg, gpr[reg.idx()] ) ) );
+      if (gpr[reg.idx()].expr != ref.gpr[reg.idx()].expr)
+        path->add_sink( Expr( newRegWrite( reg, gpr[reg.idx()].expr ) ) );
 
     for (Flag flag; flag.next();)
       if (flags[flag.idx()] != ref.flags[flag.idx()])
@@ -157,17 +172,6 @@ struct Processor
 
   enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none };
   void report(AccessReport, unsigned, bool) const {}
-
-  //   =====================================================================
-  //   =             General Purpose Registers access methods              =
-  //   =====================================================================
-
-  U64  GetGSR(unsigned id) const { return U64(gpr[id]); }
-  U64  GetGZR(unsigned id) const { return id == 31 ? U64(0) : U64(gpr[id]); }
-  template <typename T>
-  void SetGSR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val) { gpr[id] = U64(val).expr; }
-  template <typename T>
-  void SetGZR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val) { if (id == 31) return; gpr[id] = U64(val).expr; }
 
   //   =====================================================================
   //   =                  Arithmetic Flags access methods                  =
@@ -344,7 +348,6 @@ struct Processor
   };
 
   ActionNode*      path;
-  Expr             gpr[GPR::end];
   Expr             flags[Flag::end];
   U64              current_instruction_address;
   U64              next_instruction_address;

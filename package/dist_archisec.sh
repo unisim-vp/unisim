@@ -29,6 +29,7 @@ import unisim/component/cxx/processor/arm/isa/thumb || exit
 # ARMv8
 
 import unisim/component/cxx/processor/arm/isa/arm64 || exit
+import unisim/component/cxx/processor/arm/regs64 || exit
 
 # x86
 
