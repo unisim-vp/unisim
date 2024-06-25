@@ -2775,7 +2775,7 @@ template <class ARCH> struct DC<ARCH,VPERM2I128> { Operation<ARCH>* get( InputCo
 
   if (auto _ = match( ic, vex( "\x66\x0f\x3a\x46" ) & RM() & Imm<8>() ))
     {
-      if (ic.vreg() == 0 || ic.w() == 1) return 0;
+      if (ic.w() == 1) return 0;
       if (ic.vlen() == 256) return new Vperm2i128<ARCH,YMM>( _.opbase(), _.rmop(), _.vreg(), _.greg(), _.i(uint8_t()) );
     }
 
