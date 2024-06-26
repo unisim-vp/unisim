@@ -57,7 +57,7 @@ struct ProcTypes
 
   typedef unisim::util::symbolic::SmartValue<double>   F64;
   typedef unisim::util::symbolic::SmartValue<float>    F32;
-  typedef unisim::util::symbolic::SmartValue<_Float16> F16;
+  typedef unisim::util::symbolic::SmartValue<int16_t>  F16;
   typedef unisim::util::symbolic::SmartValue<bool>     BOOL;
   typedef unisim::util::symbolic::SmartValue<uint8_t>  U8;
   typedef unisim::util::symbolic::SmartValue<uint16_t> U16;
