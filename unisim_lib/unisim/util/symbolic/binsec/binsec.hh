@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017-2023,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -502,9 +502,15 @@ namespace binsec {
   struct UndefinedValueBase : public ASExprNode
   {
     UndefinedValueBase() {}
+    virtual unsigned SubCount() const override { return 1; };
+    virtual Expr const& GetSub(unsigned idx) const override { if (idx) return ExprNode::GetSub(idx); return sub; }
     virtual void Repr( std::ostream& sink ) const override;
-    virtual int cmp( ExprNode const& rhs ) const override { return 0; }
+    virtual int cmp( ExprNode const& rhs ) const override { return this > &rhs ? +1 : this < &rhs ? -1 : 0; }
     virtual int GenCode(Label&, Variables&, std::ostream& sink) const;
+
+    static bool attest( Expr const& expr ) { return dynamic_cast<UndefinedValueBase const*>(expr.node); }
+
+    static Expr sub;
   };
 
   template <typename T>
@@ -512,56 +518,12 @@ namespace binsec {
   {
     typedef UndefinedValue<T> this_type;
 
-    virtual unsigned SubCount() const override { return 0; };
     virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual ValueType GetType() const override { return CValueType(T()); }
-  };
-
-  template <typename T, unsigned SUBCOUNT>
-  struct UndefinedOperation : public UndefinedValueBase
-  {
-    typedef UndefinedOperation<T, SUBCOUNT> this_type;
-
-    virtual unsigned SubCount() const override { return SUBCOUNT; };
-    virtual Expr const& GetSub(unsigned idx) const override { if (idx < SUBCOUNT) { return subs[idx]; } return ExprNode::GetSub(idx); }
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ValueType GetType() const override { return CValueType(T()); }
-
-    Expr subs[SUBCOUNT];
   };
 
   template <typename VALUE_TYPE>
   Expr make_undefined_value( VALUE_TYPE ) { return Expr( new UndefinedValue<VALUE_TYPE>() ); }
-
-  /* 1 operand undefined operation */
-  template <typename VALUE_TYPE>
-  Expr make_undefined_operation( VALUE_TYPE, Expr const& op0 )
-  {
-    typedef UndefinedOperation<VALUE_TYPE,1> result_type;
-    result_type* result = new result_type;
-    result->subs[0] = op0;
-    return result;
-  }
-
-  /* 2 operands undefined operation */
-  template <typename VALUE_TYPE>
-  Expr make_undefined_operation( VALUE_TYPE, Expr const& op0, Expr const& op1 )
-  {
-    typedef UndefinedOperation<VALUE_TYPE,2> result_type;
-    result_type* result = new result_type;
-    result->subs[0] = op0; result->subs[1] = op1;
-    return result;
-  }
-
-  /* 3 operands undefined operation */
-  template <typename VALUE_TYPE>
-  Expr make_undefined_operation( VALUE_TYPE, Expr const& op0, Expr const& op1, Expr const& op2 )
-  {
-    typedef UndefinedOperation<VALUE_TYPE,3> result_type;
-    result_type* result = new result_type;
-    result->subs[0] = op0; result->subs[1] = op1; result->subs[2] = op2;
-    return result;
-  }
 
 } /* end of namespace binsec */
 } /* end of namespace symbolic */

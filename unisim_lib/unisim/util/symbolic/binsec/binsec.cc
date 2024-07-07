@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2023,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -705,7 +705,6 @@ namespace binsec {
       Context() : upper(0) {}
       Context( Context* _up ) : upper(_up)
       {
-        if (_up) next_tmp = _up->next_tmp;
         if (_up) vars = _up->vars;
       }
 
@@ -800,7 +799,7 @@ namespace binsec {
 
           for (auto const& sestat : action_tree->get_sestats())
             {
-              if (sestat.second >= 2 and not this->vars.count(sestat.first))
+              if ((sestat.second >= 2 or UndefinedValueBase::attest(sestat.first)) and not this->vars.count(sestat.first))
                 cse.Process(sestat.first);
             }
 
@@ -920,7 +919,6 @@ namespace binsec {
       typedef std::vector<RegWriteBase const*> Pendings;
       Pendings pendings;
       Variables vars;
-      std::map<unsigned,unsigned> next_tmp;
     };
 
     Label beglabel(*this), endlabel(*this);
@@ -928,6 +926,8 @@ namespace binsec {
     Context ctx;
     ctx.GenCode( action_tree, beglabel, endlabel );
   }
+
+  Expr UndefinedValueBase::sub = make_const(1);
 
   void
   UndefinedValueBase::Repr( std::ostream& sink ) const
