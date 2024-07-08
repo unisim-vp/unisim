@@ -501,16 +501,12 @@ namespace binsec {
 
   struct UndefinedValueBase : public ASExprNode
   {
-    UndefinedValueBase() {}
-    virtual unsigned SubCount() const override { return 1; };
-    virtual Expr const& GetSub(unsigned idx) const override { if (idx) return ExprNode::GetSub(idx); return sub; }
+    virtual unsigned SubCount() const override { return 0; };
     virtual void Repr( std::ostream& sink ) const override;
     virtual int cmp( ExprNode const& rhs ) const override { return this > &rhs ? +1 : this < &rhs ? -1 : 0; }
     virtual int GenCode(Label&, Variables&, std::ostream& sink) const;
 
     static bool attest( Expr const& expr ) { return dynamic_cast<UndefinedValueBase const*>(expr.node); }
-
-    static Expr sub;
   };
 
   template <typename T>

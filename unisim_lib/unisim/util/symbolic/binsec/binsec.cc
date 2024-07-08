@@ -675,7 +675,7 @@ namespace binsec {
       }
       void Process( Expr const& e )
       {
-        if (not e->SubCount())
+        if (not e->SubCount() and not UndefinedValueBase::attest(e))
           return;
         bool cont = true;
         for (Sec* sec = this; sec; sec = sec->up)
@@ -926,8 +926,6 @@ namespace binsec {
     Context ctx;
     ctx.GenCode( action_tree, beglabel, endlabel );
   }
-
-  Expr UndefinedValueBase::sub = make_const(1);
 
   void
   UndefinedValueBase::Repr( std::ostream& sink ) const
