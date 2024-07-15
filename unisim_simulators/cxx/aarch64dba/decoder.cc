@@ -36,6 +36,7 @@
 
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
 #include <unisim/util/symbolic/binsec/binsec.hh>
+#include <unisim/util/symbolic/vector/vector.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <unisim/util/floating_point/floating_point.hh>
 
@@ -371,13 +372,14 @@ struct Translator
   void
   translate( std::ostream& sink )
   {
-    sink << "(address . " << unisim::util::symbolic::binsec::dbx(8, addr) << ")\n";
-    sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(4, code) << ")\n";
+    typedef unisim::util::symbolic::binsec::dbx print_dbx;
+    sink << "(address . " << print_dbx(8, addr) << ")\n";
+    sink << "(opcode . " << print_dbx(4, code) << ")\n";
     sink << "(size . 4)\n";
 
     struct Instruction
     {
-      Instruction(uint32_t addr, uint32_t code)
+      Instruction(uint64_t addr, uint32_t code)
         : operation(0)
       {
         try
@@ -432,11 +434,7 @@ struct Translator
       }
 
     // Translate to DBA
-    unisim::util::symbolic::binsec::Program program;
-    program.Generate( coderoot );
-    typedef unisim::util::symbolic::binsec::Program::const_iterator Iterator;
-    for (Iterator itr = program.begin(), end = program.end(); itr != end; ++itr)
-      sink << "(" << unisim::util::symbolic::binsec::dbx(8, addr) << ',' << std::dec << itr->first << ") " << itr->second << std::endl;
+    coderoot->generate(sink, 8, addr);
   }
 
   Processor::StatusRegister status;

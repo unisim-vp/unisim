@@ -51,8 +51,7 @@ struct Processor
 {
   struct Unimplemented {};
   struct Undefined {};
-    
-    
+
   //   =====================================================================
   //   =                             Data Types                            =
   //   =====================================================================
@@ -67,13 +66,13 @@ struct Processor
   typedef unisim::util::symbolic::SmartValue<int16_t>  S16;
   typedef unisim::util::symbolic::SmartValue<int32_t>  S32;
   typedef unisim::util::symbolic::SmartValue<int64_t>  S64;
-  
+
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
-  
+
 //   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
   typedef unisim::util::symbolic::ValueType           ValueType;
-  
+
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
 
   template <typename RID>
@@ -81,7 +80,7 @@ struct Processor
 
   template <typename RID>
   static Expr newRegWrite( RID id, Expr const& value ) { return new unisim::util::symbolic::binsec::RegWrite<RID>( id, value ); }
-  
+
   struct RegID
     : public unisim::util::identifier::Identifier<RegID>
     , public unisim::util::symbolic::WithValueType<RegID>
@@ -152,11 +151,11 @@ struct Processor
   //   =====================================================================
   //   =                      Construction/Destruction                     =
   //   =====================================================================
-  
+
 private:
   Processor( Processor const& );
 public:
-  
+
   Processor()
     : path(0)
     , gprs()
@@ -184,7 +183,7 @@ public:
     return_address = insn_addr + 8;
     insn->execute( *this );
   }
-  
+
   bool close( Processor const& ref )
   {
     bool complete = path->close();
@@ -213,7 +212,7 @@ public:
     path = path->next( predicate );
     return predicate;
   }
-  
+
   template <typename T>
   bool Test( unisim::util::symbolic::SmartValue<T> const& cond )
   {
@@ -222,13 +221,13 @@ public:
 
     return concretize( BOOL(cond).expr );
   }
-  
+
   bool     IsBigEndian() const { return false; }
-  
+
   //   =====================================================================
   //   =             General Purpose Registers access methods              =
   //   =====================================================================
-    
+
   void     SetGPR(unsigned idx, U32 value) { if (idx) gprs[idx] = value; }
   U32      GetGPR(unsigned idx) { return gprs[idx]; }
   void     SetDivU(U32 rs, U32 rt) { lo = rs / rt; hi = rs % rt; }
@@ -238,7 +237,7 @@ public:
   U32      GetLO(unsigned ra) { if (ra) throw "nope"; return lo; }
 
   U32      GetHWR(unsigned idx) { throw Unimplemented(); return U32(); }
-  
+
   //   =====================================================================
   //   =                      Control Transfer methods                     =
   //   =====================================================================
@@ -246,9 +245,9 @@ public:
   U32  GetPC() { return insn_addrs[0]; }
   void Branch( U32 const& target, branch_type_t _branch_type ) { insn_addrs[2] = target; branch_type = _branch_type; }
   void CancelDelaySlot() { insn_addrs[1] = insn_addrs[2]; insn_addrs[2] += U32(4); }
-    
+
   void SysCall( unsigned imm ) { throw Unimplemented(); }
-  
+
   //   =====================================================================
   //   =                       Memory access methods                       =
   //   =====================================================================
@@ -259,12 +258,12 @@ public:
   S16 MemLoad( S16 const&, Expr const& addr ) { return S16( U16(Expr( new unisim::util::symbolic::binsec::Load(addr, 2, 1, false) ) ) ); }
   S8  MemLoad( S8  const&, Expr const& addr ) { return  S8(  U8(Expr( new unisim::util::symbolic::binsec::Load(addr, 1, 0, false) ) ) ); }
   template <class T> T MemRead( U32 const& addr ) { return MemLoad( T(), addr.expr ); }
-  
+
   void MemStore( Expr const& addr, U32 const& value ) { stores.insert( new unisim::util::symbolic::binsec::Store( addr, value.expr, 4, 2, false ) ); }
   void MemStore( Expr const& addr, U16 const& value ) { stores.insert( new unisim::util::symbolic::binsec::Store( addr, value.expr, 2, 1, false ) ); }
   void MemStore( Expr const& addr, U8  const& value ) { stores.insert( new unisim::util::symbolic::binsec::Store( addr, value.expr, 1, 0, false ) ); }
   template <typename U> void MemWrite( U32 const& addr, U value ) { return MemStore( addr.expr, value ); }
-    
+
   void AtomicBegin(U32 const&) { }
   BOOL AtomicUpdate(U32 const&) { return BOOL(true); }
 
@@ -276,7 +275,7 @@ public:
   uint32_t         return_address;
   std::set<Expr>   stores;
   //  bool             unpredictable;
-  
+
 };
 
 ;
@@ -292,18 +291,18 @@ struct MIPSISA : public unisim::component::cxx::processor::mips::isa::Decoder<Pr
 struct Translator
 {
   typedef unisim::util::symbolic::binsec::ActionNode ActionNode;
-  
+
   Translator( uint32_t _addr, uint32_t _code )
     : addr(_addr), code(_code), coderoot(new ActionNode)
   {}
   ~Translator() { delete coderoot; }
-  
+
   template <class ISA>
   void
   extract( std::ostream& sink, ISA& isa )
   {
     sink << "(address . " << unisim::util::symbolic::binsec::dbx(4, addr) << ")\n";
-  
+
     // Instruction decoding
     struct Instruction
     {
@@ -312,7 +311,7 @@ struct Translator
         : operation(0), bytecount(0)
       {
         operation = isa.NCDecode( addr, ISA::mkcode( code ) );
-        unsigned bitlength = operation->GetLength(); 
+        unsigned bitlength = operation->GetLength();
         if ((bitlength != 32) and ((bitlength != 16) or not ISA::is_thumb))
           { delete operation; operation = 0; }
         bytecount = bitlength/8;
@@ -320,28 +319,28 @@ struct Translator
       ~Instruction() { delete operation; }
       Operation* operator -> () { return operation; }
       Operation* get() const { return operation; }
-      
+
       Operation* operation;
       unsigned   bytecount;
     };
-    
+
     Instruction instruction( isa, addr, code );
-    
+
     {
       uint32_t encoding = instruction->GetEncoding();
       sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(4, encoding) << ")\n(size . 4)\n";
     }
-    
+
     Processor::U32      insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
     // Processor::U32      insn_addr = Expr(new InstructionAddress()); //< symbolic instruction address
     Processor reference;
-    
+
     // Disassemble
     sink << "(mnemonic . \"";
     try { instruction->disasm( sink ); }
     catch (...) { sink << "(bad)"; }
     sink << "\")\n";
-    
+
     // Get actions
     for (bool end = false; not end;)
       {
@@ -373,17 +372,13 @@ struct Translator
       }
 
     // Translate to DBA
-    unisim::util::symbolic::binsec::Program program;
-    program.Generate( coderoot );
-    typedef unisim::util::symbolic::binsec::Program::const_iterator Iterator;
-    for (Iterator itr = program.begin(), end = program.end(); itr != end; ++itr)
-      sink << "(" << unisim::util::symbolic::binsec::dbx(4, addr) << ',' << std::dec << itr->first << ") " << itr->second << std::endl;
+    coderoot->generate(sink, 4, addr);
   }
 
   uint32_t    addr, code;
   ActionNode* coderoot;
 };
-  
+
 uint32_t getu32( uint32_t& res, char const* arg )
 {
   char *end;
@@ -418,9 +413,9 @@ main( int argc, char** argv )
     }
 
   Translator actset( addr, code );
-  
+
   actset.translate( std::cout );
-  
+
   return 0;
 }
 
