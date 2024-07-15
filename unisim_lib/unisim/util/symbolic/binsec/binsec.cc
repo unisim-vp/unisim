@@ -238,7 +238,7 @@ namespace binsec {
       }
       void Process( Expr const& e )
       {
-        if (not e->SubCount() and not UndefinedValueBase::attest(e))
+        if (not e->SubCount())
           return;
         bool cont = true;
         for (Sec* sec = this; sec; sec = sec->up)
@@ -312,7 +312,7 @@ namespace binsec {
 
       int GenTempCode(Expr const& expr, Point& head)
       {
-        std::string tmp_src, tmp_dst;
+        std::string tmp_src;
         int retsize;
         {
           std::ostringstream buffer;
@@ -351,7 +351,7 @@ namespace binsec {
           for (auto const& sestat : action_tree->get_sestats())
             {
               // At least 2 references to be considered a common subexpression
-              if ((sestat.second >= 2 or UndefinedValueBase::attest(sestat.first)) and not this->vars.count(sestat.first))
+              if (sestat.second >= 2 and not this->vars.count(sestat.first))
                 cse.Process(sestat.first);
             }
 
@@ -1008,10 +1008,15 @@ namespace binsec {
   }
 
   int
-  UndefinedValueBase::GenCode(std::ostream& sink, Variables&, Point&) const
+  UndefinedValueBase::GenCode(std::ostream& sink, Variables& vars, Point& head) const
   {
-    sink << "\\undef";
-    return GetType().bitsize;
+    int retsize = GetType().bitsize;
+    std::ostringstream buffer;
+    std::string const& tmp = mktemp( vars, Expr(this), retsize );
+    buffer << tmp << " := \\undef";
+    head.append( new Statement( buffer.str() ) );
+    sink << tmp;
+    return retsize;
   }
 
   int

@@ -385,8 +385,6 @@ namespace binsec {
     virtual void Repr( std::ostream& sink ) const override;
     virtual int cmp( ExprNode const& rhs ) const override { return this > &rhs ? +1 : this < &rhs ? -1 : 0; }
     virtual int GenCode( std::ostream& sink, Variables& vars, Point& head ) const override;
-
-    static bool attest( Expr const& expr ) { return dynamic_cast<UndefinedValueBase const*>(expr.node); }
   };
 
   template <typename T>
