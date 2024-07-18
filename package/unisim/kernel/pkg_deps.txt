@@ -23,5 +23,6 @@ unisim/util/backtrace
 unisim/util/hypapp
 unisim/util/inlining
 unisim/util/likely
+unisim/util/locate
 unisim/util/nat_sort
 m4/real_path

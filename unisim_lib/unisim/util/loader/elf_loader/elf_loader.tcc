@@ -38,6 +38,7 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/debug/dwarf/dwarf.tcc>
+#include <unisim/util/locate/locate.hh>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -436,7 +437,8 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	blob->Catch();
 	
 	blob->SetEntryPoint(entry_point);
-	blob->SetFilename(filename.c_str());
+	std::string resolved_filename;
+	blob->SetFilename(unisim::util::locate::ResolvePath(filename, resolved_filename) ? resolved_filename.c_str() : filename.c_str());
 	blob->SetArchitecture(architecture_name);
 	blob->SetEndian(endianness);
 	blob->SetAddressSize(GetAddressSize(hdr));
@@ -702,18 +704,21 @@ const unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *ElfLoaderImpl<MEMO
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner) const
 {
 	if(symtab_handler)
 	{
-		symtab_handler->GetSymbols(lst, type);
+		symtab_handler->ScanSymbols(scanner);
 	}
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner, typename unisim::util::debug::SymbolBase::Type type) const
 {
-	return symtab_handler ? symtab_handler->FindSymbol(name, addr, type) : 0;
+	if(symtab_handler)
+	{
+		symtab_handler->ScanSymbols(scanner, type);
+	}
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -729,13 +734,13 @@ const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_AD
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	return symtab_handler ? symtab_handler->FindSymbolByName(name, type) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	return symtab_handler ? symtab_handler->FindSymbolByAddr(addr, type) : 0;
 }
@@ -1461,15 +1466,15 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const
+const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::Scope scope) const
 {
-	return dw_handler ? dw_handler->FindStatement(addr, opt) : 0;
+	return dw_handler ? dw_handler->FindStatement(addr, scope) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const
+const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::Scope scope) const
 {
-	return dw_handler ? dw_handler->FindStatements(stmts, addr, opt) : 0;
+	return dw_handler ? dw_handler->FindStatements(scanner, addr, scope) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -1479,9 +1484,9 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, El
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const
+const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location) const
 {
-	return dw_handler ? dw_handler->FindStatements(stmts, source_code_location) : 0;
+	return dw_handler ? dw_handler->FindStatements(scanner, source_code_location) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -1491,9 +1496,9 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Cla
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::EnumerateDataObjectNames(unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope) const
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ScanDataObjectNames(unsigned int prc_num, unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope) const
 {
-	if(dw_handler) dw_handler->EnumerateDataObjectNames(prc_num, name_set, scope);
+	if(dw_handler) dw_handler->ScanDataObjectNames(prc_num, scanner, scope);
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

@@ -55,47 +55,52 @@ template <typename CONFIG>
 struct ProcessorWrapper : ObjectWrapper<CONFIG>
 {
 	typedef ObjectWrapper<CONFIG> Super;
+	typedef unisim::util::nodejs::ObjectWrapper Base;
 	typedef ProcessorWrapper<CONFIG> This;
 	typedef typename CONFIG::ADDRESS ADDRESS;
 	typedef typename CONFIG::TIME_TYPE TIME_TYPE;
 	static const char *CLASS_NAME;
 	static const uint32_t CLASS_ID;
-	ProcessorWrapper(NodeJS<CONFIG>& nodejs, unisim::service::interfaces::DebugProcessor<ADDRESS, TIME_TYPE> *_processor, unsigned id, std::size_t size = 0);
+	static bool IsA(uint32_t class_id) { return class_id == CLASS_ID; }
+	static v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(NodeJS<CONFIG>& nodejs);
+	static void Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args);
+	static ProcessorWrapper<CONFIG> *Wrap(NodeJS<CONFIG>& nodejs, unisim::service::interfaces::DebugProcessor<ADDRESS, TIME_TYPE> *processor);
+	static char *CommandGenerator(char *text, int state);
+	ProcessorWrapper(NodeJS<CONFIG>& nodejs, unisim::service::interfaces::DebugProcessor<ADDRESS, TIME_TYPE> *_processor, std::size_t size = 0);
 	virtual ~ProcessorWrapper();
 	unisim::service::interfaces::DebugProcessor<ADDRESS, TIME_TYPE> *operator * () const { return processor; }
 	unisim::service::interfaces::DebugProcessor<ADDRESS, TIME_TYPE> *operator -> () const { return processor; }
 	unisim::service::interfaces::DebugProcessor<ADDRESS, TIME_TYPE> *GetProcessor() const;
-	//void XXXX(const v8::FunctionCallbackInfo<v8::Value>& args);
-	v8::Local<v8::Object> MakeObject();
-	v8::Global<v8::Object> const& Recv() const { return shadow_object; }
 	virtual void Finalize();
-	static void Cleanup();
-	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
-	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
-	unsigned GetId() const { return id; }
+	void GetId(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
 	void StepInstruction(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void NextInstruction(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void Step(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void Next(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void Finish(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void Return(const v8::FunctionCallbackInfo<v8::Value>& args);
-protected:
-	template <typename T> v8::Local<v8::Object> MakeObject(v8::Local<v8::ObjectTemplate> object_template);
-	static void FillObjectTemplate(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template);
+	void Disasm(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void ReadMemory(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void WriteMemory(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void GetStackFrameInfos(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void SelectStackFrame(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void GetTime(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void GetDataObjectNames(const v8::FunctionCallbackInfo<v8::Value>& args);
+	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
+	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
+	v8::Local<v8::Object> MakeObject();
+	static void Help(std::ostream& stream);
 private:
+	friend struct DebugEventWrapper<CONFIG>;
+	
 	unisim::service::interfaces::DebugProcessor<ADDRESS, TIME_TYPE> *processor;
 	unsigned id;
-	typedef std::vector<BreakpointWrapper<CONFIG> *> BreakpointWrappers;
-	BreakpointWrappers breakpoint_wrappers;
 	EventBridge<CONFIG> *fetch_insn_event_bridge;
 	EventBridge<CONFIG> *next_insn_event_bridge;
 	EventBridge<CONFIG> *trap_event_bridge;
 	EventBridge<CONFIG> *fetch_stmt_event_bridge;
 	EventBridge<CONFIG> *next_stmt_event_bridge;
 	EventBridge<CONFIG> *finish_event_bridge;
-	v8::Global<v8::Object> shadow_object;
-	static v8::Global<v8::ObjectTemplate> cached_object_template;
-	static v8::Local<v8::ObjectTemplate> MakeObjectTemplate(v8::Isolate *isolate);
 };
 
 } // end of namespace nodejs

@@ -1370,9 +1370,3 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	simulator->SetVariable("sci-web-terminal.title", "Serial Terminal over SCI");
 	simulator->SetVariable("spi-web-terminal.title", "Serial Terminal over SPI");
 }
-
-void Simulator::SigInt()
-{
-	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
-	unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-}

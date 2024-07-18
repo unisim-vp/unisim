@@ -54,6 +54,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/debug/nodejs/fwd.hh>
 #include <unisim/service/debug/nodejs/source_code_location.hh>
+#include <unisim/service/debug/nodejs/debug_event.hh>
 #include <unisim/service/debug/nodejs/breakpoint.hh>
 #include <unisim/service/debug/nodejs/watchpoint.hh>
 #include <unisim/service/debug/nodejs/data_object.hh>
@@ -62,6 +63,13 @@
 #include <unisim/service/debug/nodejs/stub.hh>
 #include <unisim/service/debug/nodejs/event_bridge.hh>
 #include <unisim/service/debug/nodejs/processor.hh>
+#include <unisim/service/debug/nodejs/register.hh>
+#include <unisim/service/debug/nodejs/executable_binary_file.hh>
+#include <unisim/service/debug/nodejs/stack_frame_info.hh>
+#include <unisim/service/debug/nodejs/debug_symbol.hh>
+#include <unisim/service/debug/nodejs/statement.hh>
+#include <unisim/service/debug/nodejs/subprogram.hh>
+#include <unisim/util/debug/type.hh>
 
 #include <string>
 
@@ -85,8 +93,9 @@ using unisim::kernel::logger::EndDebugError;
 
 bool ToMemoryAccessType(v8::Isolate *isolate, v8::Local<v8::Value> value, unisim::util::debug::MemoryAccessType& out);
 bool ToMemoryType(v8::Isolate *isolate, v8::Local<v8::Value> value, unisim::util::debug::MemoryType& out);
-std::string ToString(unisim::util::debug::MemoryAccessType mat);
-std::string ToString(unisim::util::debug::MemoryType mt);
+
+template <typename ADDRESS>
+bool ToScope(v8::Isolate *isolate, v8::Local<v8::Value> value, typename unisim::service::interfaces::StatementLookupBase::Scope& out);
 
 ////////////////////////////////// NodeJS<> ///////////////////////////////////
 
@@ -124,13 +133,10 @@ struct NodeJS
 	// unisim::service::interfaces::DebugYielding
 	virtual void DebugYield();
 	
-	// unisim::service::interfaces::DebugEventListener<ADDRESS>
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
-
 	// unisim::kernel::Object
 	virtual bool BeginSetup();
 	virtual bool EndSetup();
-	virtual void SigInt();
+	virtual bool SigInt();
 	virtual void Kill();
 	bool Killed() const;
 	
@@ -140,13 +146,19 @@ protected:
 	virtual v8::Local<v8::ObjectTemplate> CreateGlobalObjectTemplate();
 	virtual void BeforeExecution();
 
+	v8::Isolate *GetIsolate() const { return Super::GetIsolate(); }
+	v8::Local<v8::Context> GetContext() { return Super::GetContext(); }
+
 private:
 	friend struct SourceCodeLocationWrapper<CONFIG>;
+	friend struct DebugEventWrapper<CONFIG>;
 	friend struct BreakpointWrapper<CONFIG>;
 	friend struct SourceCodeBreakpointWrapper<CONFIG>;
 	friend struct SubProgramBreakpointWrapper<CONFIG>;
 	friend struct WatchpointWrapper<CONFIG>;
 	friend struct DataObjectWrapper<CONFIG>;
+	friend struct PointerWrapper<CONFIG>;
+	friend struct HookWrapper<CONFIG>;
 	friend struct AddressHookWrapper<CONFIG>;
 	friend struct SourceCodeHookWrapper<CONFIG>;
 	friend struct SubProgramHookWrapper<CONFIG>;
@@ -155,9 +167,37 @@ private:
 	friend struct SubProgramHook<CONFIG>;
 	friend struct StubWrapper<CONFIG>;
 	friend struct Stub<CONFIG>;
-	
 	friend struct EventBridge<CONFIG>;
 	friend struct ProcessorWrapper<CONFIG>;
+	friend struct RegisterWrapper<CONFIG>;
+	friend struct ExecutableBinaryFileWrapper<CONFIG>;
+	friend struct StackFrameInfoWrapper<CONFIG>;
+	friend struct DebugSymbolWrapper<CONFIG>;
+	friend struct SubProgramWrapper<CONFIG>;
+	friend struct StatementWrapper<CONFIG>;
+	friend struct TypeWrapper<CONFIG>;
+	friend struct NamedTypeWrapper<CONFIG>;
+	friend struct BaseTypeWrapper<CONFIG>;
+	friend struct IntegerTypeWrapper<CONFIG>;
+	friend struct CharTypeWrapper<CONFIG>;
+	friend struct FloatingPointTypeWrapper<CONFIG>;
+	friend struct BooleanTypeWrapper<CONFIG>;
+	friend struct MemberWrapper<CONFIG>;
+	friend struct CompositeTypeWrapper<CONFIG>;
+	friend struct StructureTypeWrapper<CONFIG>;
+	friend struct UnionTypeWrapper<CONFIG>;
+	friend struct ClassTypeWrapper<CONFIG>;
+	friend struct InterfaceTypeWrapper<CONFIG>;
+	friend struct ArrayTypeWrapper<CONFIG>;
+	friend struct PointerTypeWrapper<CONFIG>;
+	friend struct TypedefWrapper<CONFIG>;
+	friend struct FormalParameterWrapper<CONFIG>;
+	friend struct FunctionTypeWrapper<CONFIG>;
+	friend struct ConstTypeWrapper<CONFIG>;
+	friend struct EnumeratorWrapper<CONFIG>;
+	friend struct EnumTypeWrapper<CONFIG>;
+	friend struct UnspecifiedTypeWrapper<CONFIG>;
+	friend struct VolatileTypeWrapper<CONFIG>;
 	
 	unisim::kernel::logger::Logger logger;
 	bool shell;
@@ -180,9 +220,6 @@ private:
 	std::ostream *std_error_stream;
 	std::string prompt;
 	
-	typedef std::vector<ProcessorWrapper<CONFIG> *> ProcessorWrappers;
-	ProcessorWrappers processor_wrappers;
-	
 	bool trap;
 	bool cont;
 	
@@ -191,31 +228,40 @@ private:
 	
 	void Interrupt();
 	void Trap();
+	
+	// Readline stuff
+	static std::mutex rl_mutex;
+	typedef std::vector<std::string> Commands;
+
 	bool GetCommand(std::string& cmd);
 	bool GetLine(std::string& line);
 	static char **Completion(char *text, int start, int end);
-	static char *CommandGenerator(char *text, int state);
+	static char *CompletionGenerator(char *text, int state, Commands& commands);
+	static char *GlobalCompletionGenerator(char *text, int state);
+	static char *HelpCompletionGenerator(char *text, int state);
+	static char *ConstructorCompletionGenerator(char *text, int state);
+	static char *ProcessorCompletionGenerator(char *text, int state);
+	static char *RegisterCompletionGenerator(char *text, int state);
+	static void Help(std::ostream& stream, const std::string& section = std::string());
 	
+	bool LocateFile(const std::string& file_path, std::string& match_file_path, bool lazy_match = false);
+	std::string LocateFile(const std::string& filename, bool lazy_match = false);
+
 	void Cleanup();
-	
-	// Constructors
-	void SourceCodeLocationCtor(const v8::FunctionCallbackInfo<v8::Value>& args);
-	void BreakpointCtor(const v8::FunctionCallbackInfo<v8::Value>& args);
-	void SourceCodeBreakpointCtor(const v8::FunctionCallbackInfo<v8::Value>& args);
-	void SubProgramBreakpointCtor(const v8::FunctionCallbackInfo<v8::Value>& args);
-	void WatchpointCtor(const v8::FunctionCallbackInfo<v8::Value>& args);
-	void DataObjectCtor(const v8::FunctionCallbackInfo<v8::Value>& args);
-	void PointerCtor(const v8::FunctionCallbackInfo<v8::Value>& args);
-	void AddressHookCtor(const v8::FunctionCallbackInfo<v8::Value>& args);
-	void SourceCodeHookCtor(const v8::FunctionCallbackInfo<v8::Value>& args);
-	void SubProgramHookCtor(const v8::FunctionCallbackInfo<v8::Value>& args);
-	void StubCtor(const v8::FunctionCallbackInfo<v8::Value>& args);
-	void ProcessorCtor(const v8::FunctionCallbackInfo<v8::Value>& args);
 	
 	// Global functions
 	void ContinueExecution(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void Quit(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void LoadDebugInfo(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void GetExecutableBinaryFiles(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void GetSymbols(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void FindSymbol(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void GetStatements(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void FindStatement(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void FindStatements(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void FindSubProgram(const v8::FunctionCallbackInfo<v8::Value>& args);
 	
+	bool ArgToSourceCodeLocation(v8::Local<v8::Value> arg, const std::string& err_msg_context, const char *arg_name, unisim::util::debug::SourceCodeLocation& source_code_location);
 	
 	void Resolve(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void Reject(const v8::FunctionCallbackInfo<v8::Value>& args);
@@ -231,7 +277,7 @@ struct ObjectWrapper : unisim::util::nodejs::ObjectWrapper
 {
 	typedef unisim::util::nodejs::ObjectWrapper Super;
 	typedef typename CONFIG::ADDRESS ADDRESS;
-	ObjectWrapper(NodeJS<CONFIG>& nodejs, std::size_t size = 0);
+	ObjectWrapper(NodeJS<CONFIG>& nodejs, const void *ptr, std::size_t size = 0);
 protected:
 	NodeJS<CONFIG>& nodejs;
 };

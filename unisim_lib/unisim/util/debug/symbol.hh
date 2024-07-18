@@ -41,43 +41,52 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <class T>
-class Symbol
+struct SymbolBase
 {
-public:
 	enum Type
 	{
-		SYM_NOTYPE = 0,
-		SYM_OBJECT = 1,
-		SYM_FUNC = 2,
-		SYM_SECTION = 3,
-		SYM_FILE = 4,
-		SYM_COMMON = 5,
-		SYM_TLS = 6,
-		SYM_NUM = 7,
-		SYM_LOOS = 8,
-		SYM_HIOS = 9,
-		SYM_LOPROC = 10,
-		SYM_HIPROC = 11
+		SYM_NOTYPE  = 0, // unspecified type
+		SYM_OBJECT  = 1, // data object
+		SYM_FUNC    = 2, // function
+		SYM_SECTION = 3, // section
+		SYM_FILE    = 4, // source file
+		SYM_COMMON  = 5, // uninitialized common block
+		SYM_TLS     = 6, // TLS object
+		SYM_OS      = 7, // operating system specific
+		SYM_PROC    = 8  // processor specific
 	};
+	
+	static Type Types[9];
+	
+	SymbolBase(const char *_name, Type _type);
+	
+	const char *GetName() const { return name.c_str(); }
+	Type GetType() const { return type; }
+protected:
+	std::string name;
+	Type type;
+};
 
+template <class T>
+struct Symbol : SymbolBase
+{
 	Symbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type, T memory_atom_size);
 
-	const char *GetName() const { return name.c_str(); }
 	T GetAddress() const { return addr; }
 	T GetSize() const { return size; }
-	typename unisim::util::debug::Symbol<T>::Type GetType() const { return type; }
 	std::string GetFriendlyName(T addr) const;
 private:
-	std::string name;
 	T addr;
 	T size;
-	typename unisim::util::debug::Symbol<T>::Type type;
 	T memory_atom_size;
 };
 
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
+
+std::ostream& operator << (std::ostream& stream, unisim::util::debug::SymbolBase::Type sym_type);
+
+std::istream& operator >> (std::istream& stream, unisim::util::debug::SymbolBase::Type& sym_type);
 
 #endif

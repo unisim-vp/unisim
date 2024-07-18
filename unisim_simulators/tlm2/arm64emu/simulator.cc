@@ -351,11 +351,3 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   
   sim->SetVariable("http-server.http-port", 12360);
 }
-
-void Simulator::SigInt()
-{
-  if(!inline_debugger || !inline_debugger->IsStarted())
-  {
-    unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-  }
-}

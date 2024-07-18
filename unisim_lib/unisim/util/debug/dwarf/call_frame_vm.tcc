@@ -713,9 +713,6 @@ template <class MEMORY_ADDR>
 DWARF_CallFrameVM<MEMORY_ADDR>::DWARF_CallFrameVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
 	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
-	, debug_info_stream(_dw_handler->GetDebugInfoStream())
-	, debug_warning_stream(_dw_handler->GetDebugWarningStream())
-	, debug_error_stream(_dw_handler->GetDebugErrorStream())
 {
 }
 
@@ -746,7 +743,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::RememberState(DWARF_CFI<MEMORY_ADDR> *cfi, 
 	{
 		if(debug)
 		{
-			debug_error_stream << "no CFI row for PC 0x" << std::hex << loc << std::dec << std::endl;
+			dw_handler->GetDebugErrorStream() << "no CFI row for PC 0x" << std::hex << loc << std::dec << std::endl;
 		}
 		return false;
 	}
@@ -763,7 +760,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::RestoreState(DWARF_CFI<MEMORY_ADDR> *cfi, M
 	{
 		if(debug)
 		{
-			debug_error_stream << "implicit stack is empty" << std::endl;
+			dw_handler->GetDebugErrorStream() << "implicit stack is empty" << std::endl;
 		}
 		return false;
 	}
@@ -795,7 +792,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 	{
 		if(debug)
 		{
-			debug_error_stream << "call frame program has no CIE" << std::endl;
+			dw_handler->GetDebugErrorStream() << "call frame program has no CIE" << std::endl;
 		}
 		return false;
 	}
@@ -872,7 +869,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 						{
 							if(debug)
 							{
-								debug_error_stream << "DW_CFA_offset: missing LEB128 unsigned factored offset operand" << std::endl;
+								dw_handler->GetDebugErrorStream() << "DW_CFA_offset: missing LEB128 unsigned factored offset operand" << std::endl;
 							}
 							status = false;
 							break;
@@ -892,7 +889,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 							{
 								if(debug)
 								{
-									debug_error_stream << "DW_CFA_offset: can't get current CFI row" << std::endl;
+									dw_handler->GetDebugErrorStream() << "DW_CFA_offset: can't get current CFI row" << std::endl;
 								}
 								status = false;
 								break;
@@ -923,7 +920,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_restore: initial CFI row is missing" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_restore: initial CFI row is missing" << std::endl;
 									}
 									status = false;
 									break;
@@ -935,7 +932,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_restore: can't get current CFI row" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_restore: can't get current CFI row" << std::endl;
 									}
 									status = false;
 									break;
@@ -975,7 +972,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 											{
 												if(debug)
 												{
-													debug_error_stream << "DW_CFA_set_loc: missing 4-byte address operand" << std::endl;
+													dw_handler->GetDebugErrorStream() << "DW_CFA_set_loc: missing 4-byte address operand" << std::endl;
 												}
 												status = false;
 												break;
@@ -993,7 +990,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 											{
 												if(debug)
 												{
-													debug_error_stream << "DW_CFA_set_loc: missing 8-byte address operand" << std::endl;
+													dw_handler->GetDebugErrorStream() << "DW_CFA_set_loc: missing 8-byte address operand" << std::endl;
 												}
 												status = false;
 												break;
@@ -1008,7 +1005,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									default:
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_set_loc: unsupported address size" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_set_loc: unsupported address size" << std::endl;
 										}
 										status = false;
 										break;
@@ -1032,7 +1029,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_advance_loc1: missing 1-byte delta operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_advance_loc1: missing 1-byte delta operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1066,7 +1063,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_advance_loc2: missing 2-byte delta operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_advance_loc2: missing 2-byte delta operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1100,7 +1097,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_advance_loc4: missing 4-byte delta operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_advance_loc4: missing 4-byte delta operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1136,7 +1133,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_offset_extended: missing LEB128 register number operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_offset_extended: missing LEB128 register number operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1147,7 +1144,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_offset_extended: missing LEB128 factored offset operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_offset_extended: missing LEB128 factored offset operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1167,7 +1164,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_offset_extended: can't get current CFI row" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_offset_extended: can't get current CFI row" << std::endl;
 										}
 										status = false;
 										break;
@@ -1190,7 +1187,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_restore_extended: missing LEB128 register number operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_restore_extended: missing LEB128 register number operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1210,7 +1207,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 										{
 											if(debug)
 											{
-												debug_error_stream << "DW_CFA_restore_extended: initial CFI row is missing" << std::endl;
+												dw_handler->GetDebugErrorStream() << "DW_CFA_restore_extended: initial CFI row is missing" << std::endl;
 											}
 											status = false;
 											break;
@@ -1222,7 +1219,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 										{
 											if(debug)
 											{
-												debug_error_stream << "DW_CFA_restore_extended: can't get current CFI row" << std::endl;
+												dw_handler->GetDebugErrorStream() << "DW_CFA_restore_extended: can't get current CFI row" << std::endl;
 											}
 											status = false;
 											break;
@@ -1249,7 +1246,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_undefined: missing LEB128 register number operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_undefined: missing LEB128 register number operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1267,7 +1264,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_undefined: can't get current CFI row" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_undefined: can't get current CFI row" << std::endl;
 										}
 										status = false;
 										break;
@@ -1290,7 +1287,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_same_value: missing LEB128 register number operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_same_value: missing LEB128 register number operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1308,7 +1305,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_same_value: can't get current CFI row" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_same_value: can't get current CFI row" << std::endl;
 										}
 										status = false;
 										break;
@@ -1332,7 +1329,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_register: missing first LEB128 unsigned factored offset operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_register: missing first LEB128 unsigned factored offset operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1343,7 +1340,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_register: missing second LEB128 unsigned factored offset operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_register: missing second LEB128 unsigned factored offset operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1361,7 +1358,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_register: can't get current CFI row" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_register: can't get current CFI row" << std::endl;
 										}
 										status = false;
 										break;
@@ -1384,7 +1381,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_remember_state: operation failed" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_remember_state: operation failed" << std::endl;
 										}
 										status = false;
 										break;
@@ -1404,7 +1401,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_restore_state: operation failed" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_restore_state: operation failed" << std::endl;
 										}
 										status = false;
 										break;
@@ -1425,7 +1422,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_def_cfa: missing LEB128 register number operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_def_cfa: missing LEB128 register number operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1436,7 +1433,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_def_cfa: missing LEB128 non-factored offset operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_def_cfa: missing LEB128 non-factored offset operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1473,7 +1470,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_def_cfa_register: missing LEB128 register number operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_def_cfa_register: missing LEB128 register number operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1505,7 +1502,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_def_cfa_register: invalid operation because current CFA rule is not defined to use a register and offset" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_def_cfa_register: invalid operation because current CFA rule is not defined to use a register and offset" << std::endl;
 										}
 										status = false;
 										break;
@@ -1527,7 +1524,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_def_cfa_offset: missing LEB128 non-factored offset operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_def_cfa_offset: missing LEB128 non-factored offset operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1553,7 +1550,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_def_cfa_offset: invalid operation because current CFA rule is not defined to use a register and offset" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_def_cfa_offset: invalid operation because current CFA rule is not defined to use a register and offset" << std::endl;
 										}
 										status = false;
 										break;
@@ -1577,7 +1574,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_def_cfa_expression: missing or truncated DWARF expression (LEB128 block length)" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_def_cfa_expression: missing or truncated DWARF expression (LEB128 block length)" << std::endl;
 									}
 									status = false;
 									break;
@@ -1590,7 +1587,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_def_cfa_expression: missing or truncated DWARF expression" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_def_cfa_expression: missing or truncated DWARF expression" << std::endl;
 									}
 									status = false;
 									break;
@@ -1637,7 +1634,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_expression: missing LEB128 register number operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_expression: missing LEB128 register number operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1650,7 +1647,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_expression: missing or truncated DWARF expression (LEB128 block length)" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_expression: missing or truncated DWARF expression (LEB128 block length)" << std::endl;
 									}
 									status = false;
 									break;
@@ -1663,7 +1660,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_expression: missing or truncated DWARF expression" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_expression: missing or truncated DWARF expression" << std::endl;
 									}
 									status = false;
 									break;
@@ -1683,7 +1680,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_expression: can't get current CFI row" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_expression: can't get current CFI row" << std::endl;
 										}
 										status = false;
 										break;
@@ -1710,7 +1707,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_offset_extended_sf: missing LEB128 register number operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_offset_extended_sf: missing LEB128 register number operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1721,7 +1718,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_offset_extended_sf: missing LEB128 signed factored offset operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_offset_extended_sf: missing LEB128 signed factored offset operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1741,7 +1738,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_offset_extended_sf: can't get current CFI row" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_offset_extended_sf: can't get current CFI row" << std::endl;
 										}
 										status = false;
 										break;
@@ -1765,7 +1762,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_def_cfa_sf: missing LEB128 register number operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_def_cfa_sf: missing LEB128 register number operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1776,7 +1773,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_def_cfa_sf: missing LEB128 signed factored offset operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_def_cfa_sf: missing LEB128 signed factored offset operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1813,7 +1810,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_def_cfa_offset_sf: missing LEB128 signed factored offset operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_def_cfa_offset_sf: missing LEB128 signed factored offset operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1839,7 +1836,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_def_cfa_offset_sf: invalid operation because current CFA rule is not defined to use a register and offset" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_def_cfa_offset_sf: invalid operation because current CFA rule is not defined to use a register and offset" << std::endl;
 										}
 										status = false;
 										break;
@@ -1863,7 +1860,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_val_offset: missing LEB128 register number operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_val_offset: missing LEB128 register number operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1874,7 +1871,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_val_offset: missing LEB128 factored offset operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_val_offset: missing LEB128 factored offset operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1893,7 +1890,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_val_offset: can't get current CFI row" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_val_offset: can't get current CFI row" << std::endl;
 										}
 										status = false;
 										break;
@@ -1917,7 +1914,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_val_offset_sf: missing LEB128 register number operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_val_offset_sf: missing LEB128 register number operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1928,7 +1925,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_val_offset_sf: missing LEB128 signed factored offset operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_val_offset_sf: missing LEB128 signed factored offset operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1948,7 +1945,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_val_offset_sf: can't get current CFI row" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_val_offset_sf: can't get current CFI row" << std::endl;
 										}
 										status = false;
 										break;
@@ -1976,7 +1973,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_val_expression: missing LEB128 register number operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_val_expression: missing LEB128 register number operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -1989,7 +1986,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_val_expression: missing or truncated DWARF expression (LEB128 block length)" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_val_expression: missing or truncated DWARF expression (LEB128 block length)" << std::endl;
 									}
 									status = false;
 									break;
@@ -2002,7 +1999,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_val_expression: missing or truncated DWARF expression" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_val_expression: missing or truncated DWARF expression" << std::endl;
 									}
 									status = false;
 									break;
@@ -2022,7 +2019,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									{
 										if(debug)
 										{
-											debug_error_stream << "DW_CFA_val_expression: can't get current CFI row" << std::endl;
+											dw_handler->GetDebugErrorStream() << "DW_CFA_val_expression: can't get current CFI row" << std::endl;
 										}
 										status = false;
 										break;
@@ -2045,7 +2042,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(debug)
 									{
-										debug_error_stream << "DW_CFA_GNU_args_size: missing LEB128 argument size operand" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_CFA_GNU_args_size: missing LEB128 argument size operand" << std::endl;
 									}
 									status = false;
 									break;
@@ -2062,7 +2059,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 						default:
 							if(debug)
 							{
-								debug_error_stream << "invalid call frame instruction 0x" << std::hex << (unsigned int) opcode << std::dec << std::endl;
+								dw_handler->GetDebugErrorStream() << "invalid call frame instruction 0x" << std::hex << (unsigned int) opcode << std::dec << std::endl;
 							}
 							status = false;
 							break;
@@ -2071,7 +2068,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 				default:
 					if(debug)
 					{
-						debug_error_stream << "invalid call frame instruction 0x" << std::hex << (unsigned int) opcode << std::dec << std::endl;
+						dw_handler->GetDebugErrorStream() << "invalid call frame instruction 0x" << std::hex << (unsigned int) opcode << std::dec << std::endl;
 					}
 					status = false;
 					break;

@@ -47,6 +47,8 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.tcc>
+#include <unisim/service/debug/nodejs/nodejs.hh>
+#include <unisim/service/debug/nodejs/nodejs.tcc>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/util/simfloat/floating.hh>
@@ -60,11 +62,22 @@ Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
   , debug_hub("debug-hub", this)
   , enable_gdb_server()
   , enable_inline_debugger()
+#if HAVE_NODEJS
+	, enable_nodejs()
+#endif
   , param_enable_gdb_server("enable-gdb-server", this, enable_gdb_server, "enable the gdb-server debug sessions")
   , param_enable_inline_debugger("enable-inline-debugger", this, enable_inline_debugger, "enable the inline-debugger debug sessions")
+#if HAVE_NODEJS
+  , param_enable_nodejs("enable-nodejs", this, enable_nodejs, "enable debug sessions with Node.js JavaScript runtime environment")
+#endif
   , blob(0)
 {
-  if(!enable_inline_debugger && !enable_gdb_server && !sink.is_open()) return;
+  if(!enable_inline_debugger && !enable_gdb_server &&
+#if HAVE_NODEJS
+     !enable_nodejs &&
+#endif
+     !sink.is_open()
+  ) return;
 
   // DebHub <-> ARCH connections
   arch.debug_yielding_import                           >> *debug_hub.debug_yielding_export[0];
@@ -110,6 +123,23 @@ Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
     gdb_server->registers_import              >> *debug_hub.registers_export             [i];
   }
   
+#if HAVE_NODEJS
+  // NodeJS <-> DebugHub connections
+  if(enable_nodejs)
+  {
+    nodejs = std::make_unique<NodeJS>("nodejs", this);
+    unsigned i = front_end++;
+    *debug_hub.debug_yielding_import      [i] >> nodejs->debug_yielding_export;
+    nodejs->debug_yielding_request_import     >> *debug_hub.debug_yielding_request_export[i];
+    nodejs->debug_event_trigger_import        >> *debug_hub.debug_event_trigger_export[i];
+    nodejs->stmt_lookup_import                >> *debug_hub.stmt_lookup_export[i];
+    nodejs->symbol_table_lookup_import        >> *debug_hub.symbol_table_lookup_export[i];
+    nodejs->debug_info_loading_import         >> *debug_hub.debug_info_loading_export[i];
+    nodejs->subprogram_lookup_import          >> *debug_hub.subprogram_lookup_export[i];
+    nodejs->debug_processors_import           >> *debug_hub.debug_processors_export[i];
+  }
+#endif
+
   if(!sink.is_open()) return;
 
   // DebugHub <-> Loader connections

@@ -39,6 +39,7 @@
 #include <unisim/util/debug/simple_register_registry.hh>
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/dwarf/option.hh>
+#include <unisim/util/blob/blob.hh>
 #include <unisim/service/interfaces/data_object_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -100,11 +101,11 @@ public:
 	bool SelectStackFrame(unsigned int prc_num, unsigned int frame_num);
 	unsigned int GetSelectedFrame(unsigned int prc_num) const;
 	bool ComputeCFA(const DWARF_Frame<MEMORY_ADDR> *dw_frame, MEMORY_ADDR& cfa) const;
-	bool EnableBinary(const char *filename, bool enable);
+	bool EnableBinary(const unisim::util::blob::Blob<MEMORY_ADDR> *blob, bool enable);
 	unisim::util::debug::DataObjectRef<MEMORY_ADDR> FindDataObject(unsigned int prc_num, const char *data_object_name) const;
 	unisim::util::debug::DataObjectRef<MEMORY_ADDR> GetReturnValue(unsigned int prc_num) const;
 	unisim::util::debug::DataObjectRef<MEMORY_ADDR> GetSubProgramParameter(unsigned int prc_num, unsigned int index) const;
-	void EnumerateDataObjectNames(unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope) const;
+	void ScanDataObjectNames(unsigned int prc_num, unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope) const;
 	bool UnwindStack(unsigned int prc_num, unsigned int frame_num);
 	unisim::service::interfaces::Register *GetRegister(unsigned int prc_num, unsigned int dw_reg_num);
 	unisim::service::interfaces::Register *GetRegister(unsigned int prc_num, const char *name);

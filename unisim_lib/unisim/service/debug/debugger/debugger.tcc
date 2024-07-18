@@ -126,6 +126,7 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::Object *parent)
 	, enable_elf64_loaders()
 	, enable_coff_loaders()
 {
+	param_max_stack_frames.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	param_verbose.AddListener(this);
 	param_debug_dwarf.AddListener(this);
 	
@@ -340,6 +341,14 @@ Debugger<CONFIG>::~Debugger()
 		ClearEvents(front_end_num);
 	}
 	
+	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; ++front_end_num)
+	{
+		for(typename ExecutableBinaryFiles::iterator it = exec_bin_files[front_end_num].begin(); it != exec_bin_files[front_end_num].end(); ++it)
+		{
+			delete *it;
+		}
+	}
+	
 	for(prc_num = 0; prc_num < NUM_PROCESSORS; ++prc_num)
 	{
 		delete debug_yielding_export[prc_num];
@@ -469,10 +478,12 @@ bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *b
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 
 				elf32_loader->ParseSymbols();
+				unsigned int loader_num = elf32_loaders.size();
 				elf32_loaders.push_back(elf32_loader);
 				unsigned int front_end_num;
 				for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; ++front_end_num)
 				{
+					exec_bin_files[front_end_num].push_back(new ExecutableBinaryFile(*this, front_end_num, loader_num, blob));
 					enable_elf32_loaders[front_end_num].push_back(true);
 					if(parse_dwarf)
 					{
@@ -500,10 +511,12 @@ bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *b
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 
 				elf64_loader->ParseSymbols();
+				unsigned int loader_num = elf64_loaders.size();
 				elf64_loaders.push_back(elf64_loader);
 				unsigned int front_end_num;
 				for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; ++front_end_num)
 				{
+					exec_bin_files[front_end_num].push_back(new ExecutableBinaryFile(*this, front_end_num, loader_num, blob));
 					enable_elf64_loaders[front_end_num].push_back(true);
 					if(parse_dwarf)
 					{
@@ -517,10 +530,12 @@ bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *b
 				unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), blob);
 				
 				coff_loader->ParseSymbols();
+				unsigned int loader_num = coff_loaders.size();
 				coff_loaders.push_back(coff_loader);
 				unsigned int front_end_num;
 				for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; ++front_end_num)
 				{
+					exec_bin_files[front_end_num].push_back(new ExecutableBinaryFile(*this, front_end_num, loader_num, blob));
 					enable_coff_loaders[front_end_num].push_back(true);
 				}
 			}
@@ -1610,39 +1625,38 @@ void Debugger<CONFIG>::ScanRegisters(unsigned int front_end_num, unsigned int pr
 }
 
 // unisim::service::interfaces::SymbolTableLookup<ADDRESS> (tagged)
+
 template <typename CONFIG>
-void Debugger<CONFIG>::GetSymbols(unsigned int front_end_num, typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+void Debugger<CONFIG>::ScanSymbols(unsigned int front_end_num, unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner) const
 {
 	struct Visitor
 	{
-		typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst;
-		typename unisim::util::debug::Symbol<ADDRESS>::Type type;
-		Visitor(typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& _lst, typename unisim::util::debug::Symbol<ADDRESS>::Type _type) : lst(_lst), type(_type) {}
-		bool Visit(unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader) { elf32_loader->GetSymbols(lst, type); return false; }
-		bool Visit(unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader) { elf64_loader->GetSymbols(lst, type); return false; }
-		bool Visit(unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader) { coff_loader->GetSymbols(lst, type); return false; }
+		unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner;
+		Visitor(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& _scanner) : scanner(_scanner) {}
+		bool Visit(unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader) { elf32_loader->ScanSymbols(scanner); return false; }
+		bool Visit(unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader) { elf64_loader->ScanSymbols(scanner); return false; }
+		bool Visit(unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader) { coff_loader->ScanSymbols(scanner); return false; }
 	};
 	
-	Visitor visitor(lst, type);
+	Visitor visitor(scanner);
 	ScanEnabledLoaders(front_end_num, visitor);
 }
 
 template <typename CONFIG>
-const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindSymbol(unsigned int front_end_num, const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+void Debugger<CONFIG>::ScanSymbols(unsigned int front_end_num, unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	struct Visitor
 	{
-		const char *name;
-		ADDRESS addr;
-		typename unisim::util::debug::Symbol<ADDRESS>::Type type;
-		Visitor(const char *_name, ADDRESS _addr, typename unisim::util::debug::Symbol<ADDRESS>::Type _type) : name(_name), addr(_addr), type(_type) {}
-		const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader) { return elf32_loader->FindSymbol(name, addr, type); }
-		const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader) { return elf64_loader->FindSymbol(name, addr, type); }
-		const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Visit(unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader) { return coff_loader->FindSymbol(name, addr, type); }
+		unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner;
+		typename unisim::util::debug::SymbolBase::Type type;
+		Visitor(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& _scanner, typename unisim::util::debug::SymbolBase::Type _type) : scanner(_scanner), type(_type) {}
+		bool Visit(unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader) { elf32_loader->ScanSymbols(scanner, type); return false; }
+		bool Visit(unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader) { elf64_loader->ScanSymbols(scanner, type); return false; }
+		bool Visit(unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader) { coff_loader->ScanSymbols(scanner, type); return false; }
 	};
 	
-	Visitor visitor(name, addr, type);
-	return this->template ScanEnabledLoaders<Visitor, const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *>(front_end_num, visitor);
+	Visitor visitor(scanner, type);
+	ScanEnabledLoaders(front_end_num, visitor);
 }
 
 template <typename CONFIG>
@@ -1678,13 +1692,13 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 }
 
 template <typename CONFIG>
-const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindSymbolByName(unsigned int front_end_num, const char *name, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindSymbolByName(unsigned int front_end_num, const char *name, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	struct Visitor
 	{
 		const char *name;
-		typename unisim::util::debug::Symbol<ADDRESS>::Type type;
-		Visitor(const char *_name, typename unisim::util::debug::Symbol<ADDRESS>::Type _type) : name(_name), type(_type) {}
+		typename unisim::util::debug::SymbolBase::Type type;
+		Visitor(const char *_name, typename unisim::util::debug::SymbolBase::Type _type) : name(_name), type(_type) {}
 		const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader) { return elf32_loader->FindSymbolByName(name, type); }
 		const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader) { return elf64_loader->FindSymbolByName(name, type); }
 		const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Visit(unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader) { return coff_loader->FindSymbolByName(name, type); }
@@ -1695,13 +1709,13 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 }
 
 template <typename CONFIG>
-const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindSymbolByAddr(unsigned int front_end_num, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindSymbolByAddr(unsigned int front_end_num, ADDRESS addr, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	struct Visitor
 	{
 		ADDRESS addr;
-		typename unisim::util::debug::Symbol<ADDRESS>::Type type;
-		Visitor(ADDRESS _addr, typename unisim::util::debug::Symbol<ADDRESS>::Type _type) : addr(_addr), type(_type) {}
+		typename unisim::util::debug::SymbolBase::Type type;
+		Visitor(ADDRESS _addr, typename unisim::util::debug::SymbolBase::Type _type) : addr(_addr), type(_type) {}
 		const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader) { return elf32_loader->FindSymbolByAddr(addr, type); }
 		const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader) { return elf64_loader->FindSymbolByAddr(addr, type); }
 		const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Visit(unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader) { return coff_loader->FindSymbolByAddr(addr, type); }
@@ -1730,34 +1744,34 @@ void Debugger<CONFIG>::ScanStatements(unsigned int front_end_num, unisim::servic
 }
 
 template <typename CONFIG>
-const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatement(unsigned int front_end_num, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatement(unsigned int front_end_num, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const
 {
 	struct Visitor : StatementFilter
 	{
-		Visitor(ADDRESS _addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption _opt) : StatementFilter(_addr, _opt) {}
-		const typename unisim::util::debug::Statement<ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader) { return this->Filter(elf32_loader->FindStatement(this->addr, this->opt)); }
-		const typename unisim::util::debug::Statement<ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader) { return this->Filter(elf64_loader->FindStatement(this->addr, this->opt)); }
+		Visitor(ADDRESS _addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope _scope) : StatementFilter(_addr, _scope) {}
+		const typename unisim::util::debug::Statement<ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader) { return this->Filter(elf32_loader->FindStatement(this->addr, this->scope)); }
+		const typename unisim::util::debug::Statement<ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader) { return this->Filter(elf64_loader->FindStatement(this->addr, this->scope)); }
 		const typename unisim::util::debug::Statement<ADDRESS> *Visit(unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader) { return 0; }
 	};
 	
-	Visitor visitor(addr, opt);
+	Visitor visitor(addr, scope);
 	const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *stmt = this->template ScanAndFilterLoadersByFilename<Visitor, const typename unisim::util::debug::Statement<ADDRESS> *>(front_end_num, filename, visitor);
 	return stmt ? stmt : visitor.ret_stmt;
 }
 
 template <typename CONFIG>
-const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const
 {
 	struct Visitor : StatementFilter
 	{
-		std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts;
-		Visitor(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &_stmts, ADDRESS _addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption _opt) : StatementFilter(_addr, _opt), stmts(_stmts) {}
-		const typename unisim::util::debug::Statement<ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader) { return this->Filter(elf32_loader->FindStatements(stmts, this->addr, this->opt)); }
-		const typename unisim::util::debug::Statement<ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader) { return this->Filter(elf64_loader->FindStatements(stmts, this->addr, this->opt)); }
+		unisim::service::interfaces::StatementScanner<ADDRESS>& scanner;
+		Visitor(unisim::service::interfaces::StatementScanner<ADDRESS>& _scanner, ADDRESS _addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope _scope) : StatementFilter(_addr, _scope), scanner(_scanner) {}
+		const typename unisim::util::debug::Statement<ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader) { return this->Filter(elf32_loader->FindStatements(scanner, this->addr, this->scope)); }
+		const typename unisim::util::debug::Statement<ADDRESS> *Visit(unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader) { return this->Filter(elf64_loader->FindStatements(scanner, this->addr, this->scope)); }
 		const typename unisim::util::debug::Statement<ADDRESS> *Visit(unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader) { return 0; }
 	};
 	
-	Visitor visitor(stmts, addr, opt);
+	Visitor visitor(scanner, addr, scope);
 	const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *stmt = this->template ScanAndFilterLoadersByFilename<Visitor, const typename unisim::util::debug::Statement<ADDRESS> *>(front_end_num, filename, visitor);
 	return stmt ? stmt : visitor.ret_stmt;
 }
@@ -1779,20 +1793,20 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 }
 
 template <typename CONFIG>
-const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const
 {
 	struct Visitor
 	{
-		std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts;
+		unisim::service::interfaces::StatementScanner<ADDRESS>& scanner;
 		const unisim::util::debug::SourceCodeLocation& source_code_location;
 		const typename unisim::util::debug::Statement<ADDRESS> *ret;
-		Visitor(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &_stmts, const unisim::util::debug::SourceCodeLocation& _source_code_location) : stmts(_stmts), source_code_location(_source_code_location), ret(0) {}
-		bool Visit(unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader) { const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, source_code_location); if(!ret) { ret = stmt; } return false; }
-		bool Visit(unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader) { const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, source_code_location); if(!ret) { ret = stmt; } return false; }
+		Visitor(unisim::service::interfaces::StatementScanner<ADDRESS>& _scanner, const unisim::util::debug::SourceCodeLocation& _source_code_location) : scanner(_scanner), source_code_location(_source_code_location), ret(0) {}
+		bool Visit(unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader) { const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(scanner, source_code_location); if(!ret) { ret = stmt; } return false; }
+		bool Visit(unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader) { const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(scanner, source_code_location); if(!ret) { ret = stmt; } return false; }
 		bool Visit(unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader) { return false; }
 	};
 	
-	Visitor visitor(stmts, source_code_location);
+	Visitor visitor(scanner, source_code_location);
 	this->ScanAndFilterLoadersByFilename(front_end_num, filename, visitor);
 	return visitor.ret;
 }
@@ -1907,24 +1921,9 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 	
 	if(size >= 2)
 	{
-		if(((magic[0] == 0xc1) && (magic[1] == 0x00))
-		|| ((magic[0] == 0xc2) && (magic[1] == 0x00))
-		|| ((magic[0] == 0x92) && (magic[1] == 0x00))
-		|| ((magic[0] == 0x93) && (magic[1] == 0x00))
-		|| ((magic[0] == 0x95) && (magic[1] == 0x00))
-		|| ((magic[0] == 0x98) && (magic[1] == 0x00))
-		|| ((magic[0] == 0x99) && (magic[1] == 0x00))
-		|| ((magic[0] == 0x9d) && (magic[1] == 0x00))
-		|| ((magic[0] == 0x00) && (magic[1] == 0xc1))
-		|| ((magic[0] == 0x00) && (magic[1] == 0xc2))
-		|| ((magic[0] == 0x00) && (magic[1] == 0x92))
-		|| ((magic[0] == 0x00) && (magic[1] == 0x93))
-		|| ((magic[0] == 0x00) && (magic[1] == 0x95))
-		|| ((magic[0] == 0x00) && (magic[1] == 0x98))
-		|| ((magic[0] == 0x00) && (magic[1] == 0x99))
-		|| ((magic[0] == 0x00) && (magic[1] == 0x9d)))
+		if(unisim::util::loader::coff_loader::CoffLoader<ADDRESS>::Supports(unisim::util::endian::Host2LittleEndian(*(uint16_t *)(&magic[0]))))
 		{
-			// TI COFF file detected
+			// supported COFF file detected
 			unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
 			
 			coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_FILENAME, filename);
@@ -1936,11 +1935,14 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 				delete coff_loader;
 				return false;
 			}
+			unsigned int loader_num = coff_loaders.size();
 			coff_loaders.push_back(coff_loader);
+			const unisim::util::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
 			unsigned int i;
 			for(i = 0; i < MAX_FRONT_ENDS; ++i)
 			{
-				enable_coff_loaders[front_end_num].push_back((front_end_num == i));
+				exec_bin_files[i].push_back(new ExecutableBinaryFile(*this, i, loader_num, blob));
+				enable_coff_loaders[i].push_back((front_end_num == i));
 			}
 			return true;
 		}
@@ -1978,10 +1980,13 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 							delete elf32_loader;
 							return false;
 						}
+						unsigned int loader_num = elf32_loaders.size();
 						elf32_loaders.push_back(elf32_loader);
+						const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
 						unsigned int i;
 						for(i = 0; i < MAX_FRONT_ENDS; ++i)
 						{
+							exec_bin_files[i].push_back(new ExecutableBinaryFile(*this, i, loader_num, blob));
 							enable_elf32_loaders[i].push_back(front_end_num == i);
 						}
 						if(parse_dwarf)
@@ -2016,10 +2021,13 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 							delete elf64_loader;
 							return false;
 						}
+						unsigned int loader_num = elf64_loaders.size();
 						elf64_loaders.push_back(elf64_loader);
+						const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
 						unsigned int i;
 						for(i = 0; i < MAX_FRONT_ENDS; ++i)
 						{
+							exec_bin_files[i].push_back(new ExecutableBinaryFile(*this, i, loader_num, blob));
 							enable_elf64_loaders[i].push_back(front_end_num == i);
 						}
 						if(parse_dwarf)
@@ -2037,151 +2045,25 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 }
 
 template <typename CONFIG>
-bool Debugger<CONFIG>::EnableBinary(unsigned int front_end_num, const char *filename, bool enable)
+void Debugger<CONFIG>::ScanExecutableBinaryFiles(unsigned int front_end_num, unisim::service::interfaces::ExecutableBinaryFileScanner& scanner) const
 {
-	dw_mach_state[front_end_num].EnableBinary(filename, enable);
-	
-	bool found = false;
-	unsigned int i;
-	
-	unsigned int num_elf32_loaders = elf32_loaders.size();
-	for(i = 0; i < num_elf32_loaders; ++i)
+	if(!exec_bin_files[front_end_num].empty())
 	{
-		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+		// beware of reentrancy
+		typename ExecutableBinaryFiles::size_type i = 0, n = exec_bin_files[front_end_num].size();
+		unisim::service::interfaces::ExecutableBinaryFile *_exec_bin_files[n];
+		for(typename ExecutableBinaryFiles::const_iterator it = exec_bin_files[front_end_num].begin(); it != exec_bin_files[front_end_num].end(); ++i, ++it)
 		{
-			if(strcmp(blob->GetFilename(), filename) == 0)
-			{
-				enable_elf32_loaders[front_end_num][i] = enable;
-				found = true;
-			}
+			unisim::service::interfaces::ExecutableBinaryFile *exec_bin_file = *it;
+			_exec_bin_files[i] = exec_bin_file;
 		}
-	}
-
-	unsigned int num_elf64_loaders = elf64_loaders.size();
-	for(i = 0; i < num_elf64_loaders; ++i)
-	{
-		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+		for(i = 0; i < n; ++i)
 		{
-			if(strcmp(blob->GetFilename(), filename) == 0)
-			{
-				enable_elf64_loaders[front_end_num][i] = enable;
-				found = true;
-			}
-		}
-	}
-
-	unsigned int num_coff_loaders = coff_loaders.size();
-	for(i = 0; i < num_coff_loaders; ++i)
-	{
-		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
-		const unisim::util::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
-		{
-			if(strcmp(blob->GetFilename(), filename) == 0)
-			{
-				enable_coff_loaders[front_end_num][i] = enable;
-				found = true;
-			}
-		}
-	}
-	
-	return found;
-}
-
-template <typename CONFIG>
-void Debugger<CONFIG>::EnumerateBinaries(unsigned int front_end_num, std::list<std::string>& lst) const
-{
-	// Note: For now all front-ends see all binaries
-	unsigned int i;
-	
-	unsigned int num_elf32_loaders = elf32_loaders.size();
-	for(i = 0; i < num_elf32_loaders; ++i)
-	{
-		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
-		{
-			lst.push_back(std::string(blob->GetFilename()));
-		}
-	}
-
-	unsigned int num_elf64_loaders = elf64_loaders.size();
-	for(i = 0; i < num_elf64_loaders; ++i)
-	{
-		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
-		{
-			lst.push_back(std::string(blob->GetFilename()));
-		}
-	}
-
-	unsigned int num_coff_loaders = coff_loaders.size();
-	for(i = 0; i < num_coff_loaders; ++i)
-	{
-		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
-		const unisim::util::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
-		{
-			lst.push_back(std::string(blob->GetFilename()));
+			unisim::service::interfaces::ExecutableBinaryFile *exec_bin_file = _exec_bin_files[i];
+			scanner.Append(exec_bin_file);
 		}
 	}
 }
-
-template <typename CONFIG>
-bool Debugger<CONFIG>::IsBinaryEnabled(unsigned int front_end_num, const char *filename) const
-{
-	unsigned int i;
-	
-	unsigned int num_elf32_loaders = elf32_loaders.size();
-	for(i = 0; i < num_elf32_loaders; ++i)
-	{
-		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
-		{
-			if(strcmp(blob->GetFilename(), filename) == 0)
-			{
-				return enable_elf32_loaders[front_end_num][i];
-			}
-		}
-	}
-
-	unsigned int num_elf64_loaders = elf64_loaders.size();
-	for(i = 0; i < num_elf64_loaders; ++i)
-	{
-		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
-		{
-			if(strcmp(blob->GetFilename(), filename) == 0)
-			{
-				return enable_elf64_loaders[front_end_num][i];
-			}
-		}
-	}
-
-	unsigned int num_coff_loaders = coff_loaders.size();
-	for(i = 0; i < num_coff_loaders; ++i)
-	{
-		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
-		const unisim::util::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
-		{
-			if(strcmp(blob->GetFilename(), filename) == 0)
-			{
-				return enable_coff_loaders[front_end_num][i];
-			}
-		}
-	}
-	
-	return false;
-}
-
 
 // unisim::service::interfaces::DataObjectLookup<ADDRESS> (tagged)
 template <typename CONFIG>
@@ -2221,17 +2103,16 @@ unisim::util::debug::DataObjectRef<typename CONFIG::ADDRESS> Debugger<CONFIG>::G
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::EnumerateDataObjectNames(unsigned int front_end_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const
+void Debugger<CONFIG>::ScanDataObjectNames(unsigned int front_end_num, unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope) const
 {
-	dw_mach_state[front_end_num].EnumerateDataObjectNames(sel_cpu[front_end_num], name_set, scope);
+	dw_mach_state[front_end_num].ScanDataObjectNames(sel_cpu[front_end_num], scanner, scope);
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::EnumerateDataObjectNames(unsigned int front_end_num, unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const
+void Debugger<CONFIG>::ScanDataObjectNames(unsigned int front_end_num, unsigned int prc_num, unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope) const
 {
-	dw_mach_state[front_end_num].EnumerateDataObjectNames(prc_num, name_set, scope);
+	dw_mach_state[front_end_num].ScanDataObjectNames(prc_num, scanner, scope);
 }
-
 
 // unisim::service::interfaces::SubProgramLookup<ADDRESS> (tagged)
 template <typename CONFIG>

@@ -157,24 +157,36 @@ public:
 	const FloatingPointType& AsFloat() const;
 	const BooleanType& AsBoolean() const;
 	const CompositeType& AsComposite() const;
+	const StructureType& AsStructure() const;
+	const UnionType& AsUnion() const;
+	const ClassType& AsClass() const;
+	const InterfaceType& AsInterface() const;
 	const PointerType& AsPointer() const;
 	const Typedef& AsTypedef() const;
 	const FunctionType& AsFunction() const;
 	const ArrayType& AsArray() const;
 	const EnumType& AsEnum() const;
 	const UnspecifiedType& AsUnspecifiedType() const;
+	const VolatileType& AsVolatile() const;
+	const ConstType& AsConst() const;
 	
 	CharType& AsChar();
 	IntegerType& AsInteger();
 	FloatingPointType& AsFloat();
 	BooleanType& AsBoolean();
 	CompositeType& AsComposite();
+	StructureType& AsStructure();
+	UnionType& AsUnion();
+	ClassType& AsClass();
+	InterfaceType& AsInterface();
 	PointerType& AsPointer();
 	Typedef& AsTypedef();
 	FunctionType& AsFunction();
 	ArrayType& AsArray();
 	EnumType& AsEnum();
 	UnspecifiedType& AsUnspecifiedType();
+	VolatileType& AsVolatile();
+	ConstType& AsConst();
 	
 private:
 	TYPE_CLASS type_class;
@@ -386,6 +398,7 @@ public:
 	virtual ~FunctionType();
 	
 	void Add(const FormalParameter *formal_param);
+	const Type *GetReturnType() const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
 	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 	
@@ -414,6 +427,9 @@ public:
 	Enumerator(const char *name, uint64_t value);
 	virtual ~Enumerator();
 	const char *GetName() const;
+	bool IsSigned() const;
+	int64_t GetSignedValue() const;
+	uint64_t GetUnsignedValue() const;
 private:
 	std::string name;
 	bool sign;

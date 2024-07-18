@@ -72,7 +72,7 @@ public:
 	const std::string& GetCDecl(bool no_array_subscripts = false) const;
 	void Catch() const;
 	void Release() const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 private:
 	mutable unsigned int ref_count;
 	mutable std::string *c_decl[2];

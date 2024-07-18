@@ -383,11 +383,3 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable( "inline-debugger.num-loaders", 1 );
   sim->SetVariable( "inline-debugger.search-path", "" );
 }
-
-void Simulator::SigInt()
-{
-	if(!inline_debugger || !inline_debugger->IsStarted())
-	{
-		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-	}
-}

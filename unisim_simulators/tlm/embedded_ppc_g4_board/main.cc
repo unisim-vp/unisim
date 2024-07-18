@@ -97,7 +97,6 @@ public:
 	void Run();
 	virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
-	virtual void SigInt();
 protected:
 private:
 	//=========================================================================
@@ -976,14 +975,6 @@ void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asyn
 int Simulator::GetExitStatus() const
 {
 	return exit_status;
-}
-
-void Simulator::SigInt()
-{
-	if(!inline_debugger || !inline_debugger->IsStarted())
-	{
-		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-	}
 }
 
 int sc_main(int argc, char *argv[])

@@ -52,31 +52,39 @@ template <typename CONFIG>
 struct HookWrapper : ObjectWrapper<CONFIG>
 {
 	typedef ObjectWrapper<CONFIG> Super;
+	typedef unisim::util::nodejs::ObjectWrapper Base;
 	typedef HookWrapper<CONFIG> This;
 	typedef typename CONFIG::ADDRESS ADDRESS;
-
-	HookWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG>& processor_wrapper, unisim::util::debug::Hook<ADDRESS> *hook, std::size_t size = 0);
+	static const char *CLASS_NAME;
+	static const uint32_t CLASS_ID;
+	static bool IsA(uint32_t class_id)
+	{
+		return (class_id == CLASS_ID) ||
+		       AddressHookWrapper<CONFIG>::IsA(class_id) ||
+		       SourceCodeHookWrapper<CONFIG>::IsA(class_id) ||
+		       SubProgramHookWrapper<CONFIG>::IsA(class_id);
+	}
+	static v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(NodeJS<CONFIG>& nodejs);
+	static void Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args);
+	HookWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG> *processor_wrapper, unisim::util::debug::Hook<ADDRESS> *hook, std::size_t size = 0);
 	virtual ~HookWrapper();
 	unisim::util::debug::Hook<ADDRESS> *GetHook() const;
 	void Trigger();
+	void GetProcessor(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
 	void On(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void RemoveListener(const v8::FunctionCallbackInfo<v8::Value>& args);
-	virtual void Finalize();
-	static void Cleanup();
-protected:
-	template <typename T> v8::Local<v8::Object> MakeObject(v8::Local<v8::ObjectTemplate> object_template);
-	static void FillObjectTemplate(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template);
+	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
+	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
+	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
+	static void Help(std::ostream& stream);
 private:
-	ProcessorWrapper<CONFIG>& processor_wrapper;
+	ProcessorWrapper<CONFIG> *processor_wrapper;
 	unisim::util::debug::Hook<ADDRESS> *hook;
 	typedef std::list<v8::Global<v8::Function> > Functions;
 	Functions functions;
 	typedef std::vector<v8::Global<v8::Promise::Resolver> > Resolvers;
 	Resolvers resolvers;
 	bool hook_set;
-	v8::Global<v8::Object> shadow_object;
-	static v8::Global<v8::ObjectTemplate> cached_object_template;
-	static v8::Local<v8::ObjectTemplate> MakeObjectTemplate(v8::Isolate *isolate);
 	v8::Local<v8::Value> SetRemoveError();
 	template <v8::Maybe<bool> (v8::Promise::Resolver::*SETTLE_METHOD)(v8::Local<v8::Context>, v8::Local<v8::Value>)>
 	void Settle(v8::Local<v8::Value> value);
@@ -91,20 +99,22 @@ template <typename CONFIG>
 struct AddressHookWrapper : HookWrapper<CONFIG>
 {
 	typedef HookWrapper<CONFIG> Super;
+	typedef unisim::util::nodejs::ObjectWrapper Base;
 	typedef AddressHookWrapper<CONFIG> This;
 	typedef typename CONFIG::ADDRESS ADDRESS;
 	static const char *CLASS_NAME;
 	static const uint32_t CLASS_ID;
-	AddressHookWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG>& processor_wrapper, AddressHook<CONFIG> *hook, std::size_t size = 0);
-	v8::Local<v8::Object> MakeObject();
-	static void Cleanup();
-protected:
-	template <typename T> v8::Local<v8::Object> MakeObject(v8::Local<v8::ObjectTemplate> object_template);
-	static void FillObjectTemplate(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template);
+	static bool IsA(uint32_t class_id) { return class_id == CLASS_ID; }
+	static v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(NodeJS<CONFIG>& nodejs);
+	static void Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args);
+	AddressHookWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG> *processor_wrapper = 0, AddressHook<CONFIG> *hook = 0, std::size_t size = 0);
+	void GetAddress(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
+	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
+	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
+	static void Help(std::ostream& stream);
 private:
 	AddressHook<CONFIG> *address_hook;
-	static v8::Global<v8::ObjectTemplate> cached_object_template;
-	static v8::Local<v8::ObjectTemplate> MakeObjectTemplate(v8::Isolate *isolate);
 };
 
 /////////////////////////// SourceCodeHookWrapper<> ////////////////////////////
@@ -113,20 +123,23 @@ template <typename CONFIG>
 struct SourceCodeHookWrapper : HookWrapper<CONFIG>
 {
 	typedef HookWrapper<CONFIG> Super;
+	typedef unisim::util::nodejs::ObjectWrapper Base;
 	typedef SourceCodeHookWrapper<CONFIG> This;
 	typedef typename CONFIG::ADDRESS ADDRESS;
 	static const char *CLASS_NAME;
 	static const uint32_t CLASS_ID;
-	SourceCodeHookWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG>& processor_wrapper, SourceCodeHook<CONFIG> *hook, std::size_t size = 0);
-	v8::Local<v8::Object> MakeObject();
-	static void Cleanup();
-protected:
-	template <typename T> v8::Local<v8::Object> MakeObject(v8::Local<v8::ObjectTemplate> object_template);
-	static void FillObjectTemplate(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template);
+	static bool IsA(uint32_t class_id) { return class_id == CLASS_ID; }
+	static v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(NodeJS<CONFIG>& nodejs);
+	static void Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args);
+	SourceCodeHookWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG> *processor_wrapper = 0, SourceCodeHook<CONFIG> *hook = 0, std::size_t size = 0);
+	void GetFile(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void GetLoc(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
+	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
+	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
+	static void Help(std::ostream& stream);
 private:
 	SourceCodeHook<CONFIG> *source_code_hook;
-	static v8::Global<v8::ObjectTemplate> cached_object_template;
-	static v8::Local<v8::ObjectTemplate> MakeObjectTemplate(v8::Isolate *isolate);
 };
 
 /////////////////////////// SubProgramHookWrapper<> ////////////////////////////
@@ -135,20 +148,22 @@ template <typename CONFIG>
 struct SubProgramHookWrapper : HookWrapper<CONFIG>
 {
 	typedef HookWrapper<CONFIG> Super;
+	typedef unisim::util::nodejs::ObjectWrapper Base;
 	typedef SubProgramHookWrapper<CONFIG> This;
 	typedef typename CONFIG::ADDRESS ADDRESS;
 	static const char *CLASS_NAME;
 	static const uint32_t CLASS_ID;
-	SubProgramHookWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG>& processor_wrapper, SubProgramHook<CONFIG> *hook, std::size_t size = 0);
-	v8::Local<v8::Object> MakeObject();
-	static void Cleanup();
-protected:
-	template <typename T> v8::Local<v8::Object> MakeObject(v8::Local<v8::ObjectTemplate> object_template);
-	static void FillObjectTemplate(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template);
+	static bool IsA(uint32_t class_id) { return class_id == CLASS_ID; }
+	static v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(NodeJS<CONFIG>& nodejs);
+	static void Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args);
+	SubProgramHookWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG> *processor_wrapper = 0, SubProgramHook<CONFIG> *hook = 0, std::size_t size = 0);
+	void GetSubProgram(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
+	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
+	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
+	static void Help(std::ostream& stream);
 private:
 	SubProgramHook<CONFIG> *subprogram_hook;
-	static v8::Global<v8::ObjectTemplate> cached_object_template;
-	static v8::Local<v8::ObjectTemplate> MakeObjectTemplate(v8::Isolate *isolate);
 };
 
 //////////////////////////////// AddressHook<> /////////////////////////////////

@@ -183,9 +183,6 @@ private:
 	MEMORY_ADDR object_addr;
 	bool has_object_addr;
 	const bool& debug;
-	std::ostream& debug_info_stream;
-	std::ostream& debug_warning_stream;
-	std::ostream& debug_error_stream;
 
 	bool Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, MEMORY_ADDR *result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
 

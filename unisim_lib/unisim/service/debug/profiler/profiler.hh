@@ -403,6 +403,9 @@ private:
 	std::map<ADDRESS, std::string> addr_to_func;
 	std::map<std::string, SLoc> func_to_sloc;
 	std::map<SLoc, std::string> sloc_to_func;
+	
+	void ProcessFunctionSymbol(const unisim::util::debug::Symbol<ADDRESS> *func_symbol, unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, std::ostream& warn_log);
+	void ProcessStatement(const unisim::util::debug::Statement<ADDRESS> *stmt, const char *func_name);
 };
 
 ////////////////////////// AddressProfileBase<> ///////////////////////////////
@@ -643,7 +646,7 @@ public:
 	const std::pair<T, T>& GetValueRange() const { return value_range; }
 private:
 
-	bool FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *>& stmts, ADDRESS addr);
+	void ProcessStatement(const unisim::util::debug::Statement<ADDRESS> *stmt, const T& value);
 	
 	std::ostream& warn_log;
 	const AddressProfile<ADDRESS, T> *addr_profile;

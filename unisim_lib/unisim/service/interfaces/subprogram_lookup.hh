@@ -51,6 +51,8 @@ public:
 	//virtual void EnumerateSubProgramNames(std::set<std::string>& name_set) const = 0;
 	virtual const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const = 0;
 	virtual const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(ADDRESS pc, const char *filename = 0) const = 0;
+	const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(const std::string& subprogram_name, const std::string& filename, const std::string& compilation_unit_name = 0) const { return FindSubProgram(subprogram_name.c_str(), filename.length() ? filename.c_str() : 0, compilation_unit_name.length() ? compilation_unit_name.c_str() : 0); }
+	const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(ADDRESS pc, const std::string& filename = 0) const { return FindSubProgram(pc, filename.length() ? filename.c_str() : 0); };
 };
 
 } // end of namespace interfaces

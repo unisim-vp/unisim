@@ -102,34 +102,39 @@ struct DataObjectWrapper : ObjectWrapper<CONFIG>
 	typedef DataObjectWrapper<CONFIG> This;
 	static const char *CLASS_NAME;
 	static const uint32_t CLASS_ID;
-	DataObjectWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG>& processor_wrapper, unisim::util::debug::DataObjectRef<ADDRESS> data_object, std::size_t size = 0);
-	DataObjectWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG>& processor_wrapper, const std::string& expr, std::size_t size = 0);
+	static bool IsA(uint32_t class_id) { return class_id == CLASS_ID; }
+	static v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(NodeJS<CONFIG>& nodejs);
+	static void Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args);
+	DataObjectWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG> *processor_wrapper, unisim::util::debug::DataObjectRef<ADDRESS> data_object, std::size_t size = 0);
+	DataObjectWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG> *processor_wrapper = 0, const std::string& expr = std::string(), std::size_t size = 0);
 	void Set(v8::Local<v8::Value> value, const SetOptions& options = SetOptions());
 	v8::Local<v8::Value> Get(const GetOptions& options = GetOptions());
-	template <bool (unisim::util::debug::DataObjectRef<ADDRESS>::*METHOD)() const> bool IsSomething();
 	void SetCb(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void GetCb(const v8::FunctionCallbackInfo<v8::Value>& args);
-	template <bool (unisim::util::debug::DataObjectRef<ADDRESS>::*METHOD)() const> void IsSomethingCb(const v8::FunctionCallbackInfo<v8::Value>& args);
-	virtual void Finalize();
-	v8::Local<v8::Object> MakeObject();
-	ProcessorWrapper<CONFIG>& GetProcessorWrapper() const { return processor_wrapper; }
-	unisim::service::interfaces::DebugProcessor<ADDRESS, TIME_TYPE> *GetProcessor() const { return processor_wrapper.GetProcessor(); }
-	const std::string& GetExpression() const { return expr; }
+	void GetExpression(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	template <bool (unisim::util::debug::DataObjectRef<ADDRESS>::*METHOD)() const> void GetIsSomething(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void GetName(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void GetProcessor(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void GetBitSize(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void GetType(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void GetCVUnqualifiedType(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void GetEndian(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void GetExists(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void GetIsOptimizedOut(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void GetAddress(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	ProcessorWrapper<CONFIG> *GetProcessorWrapper() const { return processor_wrapper; }
+	unisim::service::interfaces::DebugProcessor<ADDRESS, TIME_TYPE> *GetProcessor() const { return processor_wrapper ? processor_wrapper->GetProcessor() : 0; }
+	const std::string& GetExpression() const { return expression; }
 	const unisim::util::debug::DataObjectRef<ADDRESS>& GetDataObject() const { return data_object; }
-	static void Cleanup();
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
-protected:
-	template <typename T> v8::Local<v8::Object> MakeObject(v8::Local<v8::ObjectTemplate> object_template);
-	static void FillObjectTemplate(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template);
+	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
+	static void Help(std::ostream& stream);
 private:
-	v8::Global<v8::Object> shadow_object;
-	ProcessorWrapper<CONFIG>& processor_wrapper;
-	std::string expr;
+	ProcessorWrapper<CONFIG> *processor_wrapper;
+	std::string expression;
 	unisim::util::debug::DataObjectRef<ADDRESS> data_object;
-	
-	static v8::Global<v8::ObjectTemplate> cached_object_template;
-	static v8::Local<v8::ObjectTemplate> MakeObjectTemplate(v8::Isolate *isolate);
+	void Update();
 };
 
 } // end of namespace nodejs

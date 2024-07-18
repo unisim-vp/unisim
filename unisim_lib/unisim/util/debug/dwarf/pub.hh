@@ -60,7 +60,7 @@ public:
 	const char *GetName() const;
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
 	unsigned int GetId() const;
-	void EnumerateDataObjectNames(std::set<std::string>& name_set) const;
+	void ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner) const;
 	std::ostream& to_XML(std::ostream& os) const;
 	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_Pub<MEMORY_ADDR>& dw_pub);
@@ -86,7 +86,7 @@ public:
 	DWARF_Format GetFormat() const;
 	DWARF_Version GetDWARFVersion() const;
 	const DWARF_Pub<MEMORY_ADDR> *FindPub(const char *name) const;
-	void EnumerateDataObjectNames(std::set<std::string>& name_set) const;
+	void ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner) const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size);
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
 	unsigned int GetId() const;

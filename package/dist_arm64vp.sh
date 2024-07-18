@@ -27,6 +27,7 @@ import unisim/service/os/linux_os || exit
 import unisim/service/trap_handler || exit
 import unisim/service/debug/gdb_server || exit
 import unisim/service/debug/inline_debugger || exit
+import unisim/service/debug/nodejs || exit
 import unisim/service/debug/debugger || exit
 import unisim/service/http_server || exit
 import unisim/service/web_terminal || exit
@@ -176,6 +177,7 @@ CLEANFILES=\
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
 	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.isa
 
+$(lines am)
 EOF
 )
 

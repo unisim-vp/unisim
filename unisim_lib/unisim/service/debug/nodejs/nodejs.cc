@@ -67,31 +67,6 @@ bool ToMemoryType(v8::Isolate *isolate, v8::Local<v8::Value> value, unisim::util
 	return true;
 }
 
-std::string ToString(unisim::util::debug::MemoryAccessType mat)
-{
-	switch(mat)
-	{
-		case unisim::util::debug::MAT_READ: return "read";
-		case unisim::util::debug::MAT_WRITE: return "write";
-		default: break;
-	}
-	struct Bad {};
-	throw Bad();
-	return std::string();
-}
-
-std::string ToString(unisim::util::debug::MemoryType mt)
-{
-	switch(mt)
-	{
-		case unisim::util::debug::MT_INSN: return "insn";
-		case unisim::util::debug::MT_DATA: return "data";
-	}
-	struct Bad {};
-	throw Bad();
-	return std::string();
-}
-
 } // end of namespace nodejs
 } // end of namespace debug
 } // end of namespace service

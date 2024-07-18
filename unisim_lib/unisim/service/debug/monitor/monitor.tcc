@@ -135,7 +135,7 @@ DataObjectWatchpoint<ADDRESS>::DataObjectWatchpoint(const char *data_location, t
 	, watchpoint(0)
 	, watchpoint_set(false)
 {
-	const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_if->FindSymbolByName(data_location, unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT);
+	const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_if->FindSymbolByName(data_location, unisim::util::debug::SymbolBase::SYM_OBJECT);
 	
 	if(symbol)
 	{

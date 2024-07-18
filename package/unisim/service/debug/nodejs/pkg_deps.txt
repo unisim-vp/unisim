@@ -5,6 +5,7 @@ std/unordered_set
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/variable
+unisim/service/debug/nodejs/doc
 unisim/service/interfaces/data_object_lookup
 unisim/service/interfaces/debug_event
 unisim/service/interfaces/debug_info_loading
@@ -29,5 +30,6 @@ unisim/util/debug
 unisim/util/ieee754
 unisim/util/json
 unisim/util/likely
+unisim/util/locate
 unisim/util/nodejs
 unisim/util/ostream

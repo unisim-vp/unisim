@@ -36,12 +36,14 @@
 #define __UNISIM_SERVICE_DEBUG_NODEJS_WATCHPOINT_TCC__
 
 #include <unisim/service/debug/nodejs/watchpoint.hh>
+#include <unisim/util/ostream/ostream.hh>
 
 namespace unisim {
 namespace service {
 namespace debug {
 namespace nodejs {
 
+using unisim::util::ostream::ToString;
 using unisim::util::nodejs::MakeInteger;
 
 //////////////////////////////// WatchpointWrapper<> /////////////////////////////////
@@ -53,15 +55,135 @@ template <typename CONFIG>
 const uint32_t WatchpointWrapper<CONFIG>::CLASS_ID = unisim::util::nodejs::ObjectWrapper::AllocateClassId();
 
 template <typename CONFIG>
-v8::Global<v8::ObjectTemplate> WatchpointWrapper<CONFIG>::cached_object_template;
+v8::Local<v8::FunctionTemplate> WatchpointWrapper<CONFIG>::CreateFunctionTemplate(NodeJS<CONFIG>& nodejs)
+{
+	v8::Isolate *isolate = nodejs.GetIsolate();
+	v8::EscapableHandleScope handle_scope(isolate);
+	
+	// Create function template for the constructor function
+	v8::Local<v8::FunctionTemplate> watchpoint_function_template = unisim::util::nodejs::CreateCtorFunctionTemplate<NodeJS<CONFIG>, &This::Ctor>(isolate, nodejs);
+	
+	// Get the object template
+	v8::Local<v8::ObjectTemplate> object_template = watchpoint_function_template->InstanceTemplate();
+	
+	// Set accessors
+	struct { const char *property_name; v8::AccessorNameGetterCallback accessor_getter_callback; v8::AccessorNameSetterCallback accessor_setter_callback; } accessors_config[] =
+	{
+		{ "memoryAccessType", unisim::util::nodejs::AccessorGetterCallback<This, &This::GetMemoryAccessType>, 0 },
+		{ "memoryType"      , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetMemoryType      >, 0 },
+		{ "address"         , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetAddress         >, 0 },
+		{ "size"            , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetSize            >, 0 },
+		{ "overlook"        , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetOverlook        >, 0 }
+	};
+	for(auto accessor_config : accessors_config)
+	{
+		object_template->SetAccessor(
+			v8::String::NewFromUtf8(isolate, accessor_config.property_name, v8::NewStringType::kInternalized).ToLocalChecked(),
+			accessor_config.accessor_getter_callback,
+			accessor_config.accessor_setter_callback
+		);
+	}
+	
+	// Inherit from "DebugEvent"
+	watchpoint_function_template->Inherit(nodejs.template GetCtorFunctionTemplate<DebugEventWrapper<CONFIG> >());
+	
+	return handle_scope.Escape(watchpoint_function_template);
+}
+
+// Watchpoint(processor: Processor, addr : Number, size: Number, [options: { [memoryType: string], [memoryAccessType: string], [overlook: boolean] }]) => Watchpoint
+template <typename CONFIG>
+void WatchpointWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::HandleScope handle_scope(args.GetIsolate());
+	ProcessorWrapper<CONFIG> *processor_wrapper = 0;
+	unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = 0;
+	
+	if(args.Length() != 0)
+	{
+		struct Synopsis { std::string str() const { return std::string(CLASS_NAME) + "(processor: Processor, addr : Number, size: Number, [options: { [memoryType: string], [memoryAccessType: string], [overlook: boolean] }])"; } };
+		v8::Local<v8::Value> arg0 = args[0];
+		if(!arg0->IsObject() || !(processor_wrapper = ProcessorWrapper<CONFIG>::GetInstance(arg0)))
+		{
+			nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a Processor for 'processor'"));
+			return;
+		}
+		v8::Local<v8::Value> arg1 = args[1]; // addr
+		ADDRESS addr = 0;
+		if((!arg1->IsNumber() && !arg1->IsBigInt()) || !ToInt(args.GetIsolate(), arg1, addr))
+		{
+			nodejs.Throw(nodejs.Error(Synopsis().str() + " expects a number for 'addr'"));
+			return;
+		}
+		v8::Local<v8::Value> arg2 = args[2]; // size
+		uint32_t size = 0;
+		if((!arg2->IsNumber() && !arg2->IsBigInt()) || !ToInt(args.GetIsolate(), arg2, size))
+		{
+			nodejs.Throw(nodejs.Error(Synopsis().str() + " expects a number for 'size'"));
+			return;
+		}
+		unisim::util::debug::MemoryAccessType memory_access_type = unisim::util::debug::MAT_WRITE;
+		unisim::util::debug::MemoryType memory_type = unisim::util::debug::MT_DATA;
+		bool overlook = true;
+		if(args.Length() >= 4)
+		{
+			v8::Local<v8::Value> arg3 = args[3]; // options
+			if(!arg3->IsObject())
+			{
+				nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects an object for 'options'"));
+				return;
+			}
+			v8::Local<v8::Object> obj_options = arg3.As<v8::Object>();
+			if(obj_options->HasOwnProperty(args.GetIsolate()->GetCurrentContext(), v8::String::NewFromUtf8Literal(args.GetIsolate(), "memoryAccessType")).ToChecked())
+			{
+				v8::Local<v8::Value> prop_options_mat;
+				if(!obj_options->Get(
+						args.GetIsolate()->GetCurrentContext(),
+						v8::String::NewFromUtf8Literal(args.GetIsolate(), "memoryAccessType")
+					).ToLocal(&prop_options_mat) || !prop_options_mat->IsString() || !ToMemoryAccessType(args.GetIsolate(), prop_options_mat, memory_access_type))
+				{
+					nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a string for property 'options.memoryAccessType'"));
+					return;
+				}
+			}
+			if(obj_options->HasOwnProperty(args.GetIsolate()->GetCurrentContext(), v8::String::NewFromUtf8Literal(args.GetIsolate(), "memoryType")).ToChecked())
+			{
+				v8::Local<v8::Value> prop_options_mt;
+				if(!obj_options->Get(
+						args.GetIsolate()->GetCurrentContext(),
+						v8::String::NewFromUtf8Literal(args.GetIsolate(), "memoryType")
+					).ToLocal(&prop_options_mt) || !prop_options_mt->IsString() || !ToMemoryType(args.GetIsolate(), prop_options_mt, memory_type))
+				{
+					nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a string for property 'options.memoryType'"));
+					return;
+				}
+			}
+			if(obj_options->HasOwnProperty(args.GetIsolate()->GetCurrentContext(), v8::String::NewFromUtf8Literal(args.GetIsolate(), "overlook")).ToChecked())
+			{
+				v8::Local<v8::Value> prop_options_overlook;
+				if(!obj_options->Get(
+					args.GetIsolate()->GetCurrentContext(),
+					v8::String::NewFromUtf8Literal(args.GetIsolate(), "overlook")
+				).ToLocal(&prop_options_overlook))
+				{
+					nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a boolean for property 'options.overlook'"));
+					return;
+				}
+				overlook = prop_options_overlook->ToBoolean(args.GetIsolate())->Value();
+			}
+		}
+		
+		watchpoint = processor_wrapper->GetProcessor()->CreateWatchpoint(memory_access_type, memory_type, addr, size, overlook);
+	}
+	
+	WatchpointWrapper<CONFIG> *watchpoint_wrapper = new WatchpointWrapper<CONFIG>(nodejs, processor_wrapper, watchpoint);
+	watchpoint_wrapper->template BindObject<This>(args.This());
+	args.GetReturnValue().Set(args.This());
+}
 
 template <typename CONFIG>
-WatchpointWrapper<CONFIG>::WatchpointWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG>& _processor_wrapper, unisim::util::debug::Watchpoint<ADDRESS> *_watchpoint, std::size_t size)
-	: Super(_nodejs, size ? size : sizeof(*this))
-	, processor_wrapper(_processor_wrapper)
+WatchpointWrapper<CONFIG>::WatchpointWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG> *_processor_wrapper, unisim::util::debug::Watchpoint<ADDRESS> *_watchpoint, std::size_t size)
+	: Super(_nodejs, _processor_wrapper, _watchpoint, size ? size : sizeof(*this))
 	, watchpoint(_watchpoint)
-	, event_bridge(_nodejs, _watchpoint, processor_wrapper.Recv())
-	, shadow_object()
 {
 }
 
@@ -71,142 +193,47 @@ WatchpointWrapper<CONFIG>::~WatchpointWrapper()
 }
 
 template <typename CONFIG>
-void WatchpointWrapper<CONFIG>::Cleanup()
-{
-	cached_object_template.Reset();
-}
-
-template <typename CONFIG>
-void WatchpointWrapper<CONFIG>::Finalize()
-{
-	shadow_object.Reset();
-	Super::Finalize();
-}
-
-template <typename CONFIG>
-void WatchpointWrapper<CONFIG>::FillObjectTemplate(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template)
-{
-	// add "XXXX" method
-	//object_template->Set(isolate, "xxxx", unisim::util::nodejs::CreateFunctionTemplate<WatchpointWrapper<CONFIG>, &WatchpointWrapper<CONFIG>::XXXX>(isolate));
-	// add "enable" method
-	object_template->Set(isolate, "enable", unisim::util::nodejs::CreateFunctionTemplate<WatchpointWrapper<CONFIG>, &WatchpointWrapper<CONFIG>::Enable>(isolate));
-	// add "disable" method
-	object_template->Set(isolate, "disable", unisim::util::nodejs::CreateFunctionTemplate<WatchpointWrapper<CONFIG>, &WatchpointWrapper<CONFIG>::Disable>(isolate));
-}
-
-template <typename CONFIG>
-v8::Local<v8::ObjectTemplate> WatchpointWrapper<CONFIG>::MakeObjectTemplate(v8::Isolate *isolate)
-{
-	v8::EscapableHandleScope handle_scope(isolate);
-	v8::Local<v8::ObjectTemplate> object_template;
-	
-	if(cached_object_template.IsEmpty())
-	{
-		// create object template
-		object_template = unisim::util::nodejs::CreateObjectTemplate(isolate);
-		// fill object template
-		FillObjectTemplate(isolate, object_template);
-		// cache object template
-		cached_object_template.Reset(isolate, object_template);
-	}
-	else
-	{
-		object_template = cached_object_template.Get(isolate);
-	}
-	
-	return handle_scope.Escape(object_template);
-}
-
-template <typename CONFIG>
-template <typename T>
-v8::Local<v8::Object> WatchpointWrapper<CONFIG>::MakeObject(v8::Local<v8::ObjectTemplate> object_template)
-{
-	v8::EscapableHandleScope handle_scope(this->GetIsolate());
-	// create object
-	v8::Local<v8::Object> object = Super::template MakeObject<T>(object_template);
-	// add "yyyy" read-only property
-	//object->DefineOwnProperty(
-	//	this->GetIsolate()->GetCurrentContext(),
-	//	v8::String::NewFromUtf8Literal(this->GetIsolate(), "yyyy", v8::NewStringType::kInternalized),
-	//	v8::String::NewFromUtf8(this->GetIsolate(), "zzzz").ToLocalChecked(),
-	//	v8::ReadOnly
-	//).ToChecked();
-	// add "mat" read-only property
-	object->DefineOwnProperty(
-		this->GetIsolate()->GetCurrentContext(),
-		v8::String::NewFromUtf8Literal(this->GetIsolate(), "mat", v8::NewStringType::kInternalized),
-		v8::String::NewFromUtf8(this->GetIsolate(), ToString(watchpoint->GetMemoryAccessType()).c_str()).ToLocalChecked(),
-		v8::ReadOnly
- 	).ToChecked();
-	// add "mat" read-only property
-	object->DefineOwnProperty(
-		this->GetIsolate()->GetCurrentContext(),
-		v8::String::NewFromUtf8Literal(this->GetIsolate(), "mt", v8::NewStringType::kInternalized),
-		v8::String::NewFromUtf8(this->GetIsolate(), ToString(watchpoint->GetMemoryType()).c_str()).ToLocalChecked(),
-		v8::ReadOnly
- 	).ToChecked();
-	// add "address" read-only property
-	object->DefineOwnProperty(
-		this->GetIsolate()->GetCurrentContext(),
-		v8::String::NewFromUtf8Literal(this->GetIsolate(), "address", v8::NewStringType::kInternalized),
-		MakeInteger(this->GetIsolate(), watchpoint->GetAddress()),
-		v8::ReadOnly
- 	).ToChecked();
-	// add "size" read-only property
-	object->DefineOwnProperty(
-		this->GetIsolate()->GetCurrentContext(),
-		v8::String::NewFromUtf8Literal(this->GetIsolate(), "size", v8::NewStringType::kInternalized),
-		MakeInteger(this->GetIsolate(), watchpoint->GetSize()),
-		v8::ReadOnly
- 	).ToChecked();
-	// add "overlook" read-only property
-	object->DefineOwnProperty(
-		this->GetIsolate()->GetCurrentContext(),
-		v8::String::NewFromUtf8Literal(this->GetIsolate(), "overlook", v8::NewStringType::kInternalized),
-		v8::Boolean::New(this->GetIsolate(), watchpoint->Overlooks()),
-		v8::ReadOnly
- 	).ToChecked();
-	
-	// keep object reference for setting "this" of callback
-	shadow_object.Reset(this->GetIsolate(), object);
-	
-	return handle_scope.Escape(object);
-}
-
-template <typename CONFIG>
-v8::Local<v8::Object> WatchpointWrapper<CONFIG>::MakeObject()
-{
-	v8::EscapableHandleScope handle_scope(this->GetIsolate());
-	// create object template
-	v8::Local<v8::ObjectTemplate> object_template = MakeObjectTemplate(this->GetIsolate());
-	// create object
-	v8::Local<v8::Object> object = this->template MakeObject<This>(object_template);
-	
-	return handle_scope.Escape(object);
-}
-
-template <typename CONFIG>
 unisim::util::debug::Watchpoint<typename CONFIG::ADDRESS> *WatchpointWrapper<CONFIG>::GetWatchpoint() const
 {
 	return watchpoint;
 }
 
-//template <typename CONFIG>
-//void WatchpointWrapper<CONFIG>::XXXX(const v8::FunctionCallbackInfo<v8::Value>& args)
-//{
-//	v8::Local<v8::Value> recv = shadow_object.Get(this->GetIsolate()); // "this"
-//}
-
 template <typename CONFIG>
-void WatchpointWrapper<CONFIG>::Enable(const v8::FunctionCallbackInfo<v8::Value>& args)
+void WatchpointWrapper<CONFIG>::GetMemoryAccessType(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	event_bridge.Trap(true);
+	info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), ToString(watchpoint->GetMemoryAccessType()).c_str()).ToLocalChecked());
 }
 
 template <typename CONFIG>
-void WatchpointWrapper<CONFIG>::Disable(const v8::FunctionCallbackInfo<v8::Value>& args)
+void WatchpointWrapper<CONFIG>::GetMemoryType(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	event_bridge.Trap(false);
+	info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), ToString(watchpoint->GetMemoryType()).c_str()).ToLocalChecked());
+}
+
+template <typename CONFIG>
+void WatchpointWrapper<CONFIG>::GetAddress(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), watchpoint->GetAddress()));
+}
+
+template <typename CONFIG>
+void WatchpointWrapper<CONFIG>::GetSize(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), watchpoint->GetSize()));
+}
+
+template <typename CONFIG>
+void WatchpointWrapper<CONFIG>::GetOverlook(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	info.GetReturnValue().Set(v8::Boolean::New(this->GetIsolate(), watchpoint->Overlooks()));
+}
+
+template <typename CONFIG>
+void WatchpointWrapper<CONFIG>::Help(std::ostream& stream)
+{
+	stream <<
+#include <unisim/service/debug/nodejs/doc/watchpoint.h>
+	;
 }
 
 } // end of namespace nodejs

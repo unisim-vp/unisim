@@ -47,6 +47,7 @@ namespace debug {
 namespace nodejs {
 
 using unisim::util::nodejs::ToString;
+using unisim::util::ostream::ToString;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,34 +63,143 @@ template <typename CONFIG>
 const uint32_t DataObjectWrapper<CONFIG>::CLASS_ID = unisim::util::nodejs::ObjectWrapper::AllocateClassId();
 
 template <typename CONFIG>
-v8::Global<v8::ObjectTemplate> DataObjectWrapper<CONFIG>::cached_object_template;
+v8::Local<v8::FunctionTemplate> DataObjectWrapper<CONFIG>::CreateFunctionTemplate(NodeJS<CONFIG>& nodejs)
+{
+	v8::Isolate *isolate = nodejs.GetIsolate();
+	v8::EscapableHandleScope handle_scope(isolate);
+	
+	// Create function template for the constructor function
+	v8::Local<v8::FunctionTemplate> data_object_function_template = unisim::util::nodejs::CreateCtorFunctionTemplate<NodeJS<CONFIG>, &This::Ctor>(isolate, nodejs);
+	
+	// Get the object template
+	v8::Local<v8::ObjectTemplate> object_template = data_object_function_template->InstanceTemplate();
+	
+	// Set accessors
+	struct { const char *property_name; v8::AccessorNameGetterCallback accessor_getter_callback; v8::AccessorNameSetterCallback accessor_setter_callback; } accessors_config[] =
+	{
+		{ "expression"       , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetExpression                                                                >, 0 },
+		{ "name"             , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetName                                                                      >, 0 },
+		{ "processor"        , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetProcessor                                                                 >, 0 },
+		{ "bitSize"          , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetBitSize                                                                   >, 0 },
+		{ "type"             , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetType                                                                      >, 0 },
+		{ "cvUnqualifiedType", unisim::util::nodejs::AccessorGetterCallback<This, &This::GetCVUnqualifiedType                                                         >, 0 },
+		{ "endian"           , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetEndian                                                                    >, 0 },
+		{ "address"          , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetAddress                                                                   >, 0 },
+		{ "exists"           , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::Exists        > >, 0 },
+		{ "isOptimizedOut"   , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsOptimizedOut> >, 0 },
+		{ "isObject"         , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsObject      > >, 0 },
+		{ "isStructure"      , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsStructure   > >, 0 },
+		{ "isUnion"          , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsUnion       > >, 0 },
+		{ "isClass"          , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsClass       > >, 0 },
+		{ "isInterface"      , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsInterface   > >, 0 },
+		{ "isBasic"          , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsBasic       > >, 0 },
+		{ "isChar"           , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsChar        > >, 0 },
+		{ "isInteger"        , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsInteger     > >, 0 },
+		{ "isBoolean"        , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsBoolean     > >, 0 },
+		{ "isFloat"          , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsFloat       > >, 0 },
+		{ "isPointer"        , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsPointer     > >, 0 },
+		{ "isFunction"       , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsFunction    > >, 0 },
+		{ "isArray"          , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsArray       > >, 0 },
+		{ "isConst"          , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsConst       > >, 0 },
+		{ "isVoid"           , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsVoid        > >, 0 },
+		{ "isVolatile"       , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsVolatile    > >, 0 },
+		{ "isCharPointer"    , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsCharPointer > >, 0 },
+		{ "isSigned"         , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetIsSomething<&unisim::util::debug::DataObjectRef<ADDRESS>::IsSigned      > >, 0 },
+	};
+	for(auto accessor_config : accessors_config)
+	{
+		object_template->SetAccessor(
+			v8::String::NewFromUtf8(isolate, accessor_config.property_name, v8::NewStringType::kInternalized).ToLocalChecked(),
+			accessor_config.accessor_getter_callback,
+			accessor_config.accessor_setter_callback
+		);
+	}
+	
+	// Get the prototype template
+	v8::Local<v8::Template> prototype_template = data_object_function_template->PrototypeTemplate();
+	
+	// Add methods
+	struct { const char *method_name; v8::FunctionCallback callback; } methods_config[] =
+	{
+		{ "get", &unisim::util::nodejs::FunctionCallback<This, &This::GetCb> },
+		{ "set", &unisim::util::nodejs::FunctionCallback<This, &This::SetCb> }
+	};
+	for(auto method_config : methods_config)
+	{
+		prototype_template->Set(isolate, method_config.method_name, v8::FunctionTemplate::New(isolate, method_config.callback));
+	}
+	
+	return handle_scope.Escape(data_object_function_template);
+}
+
+// DataObject() => DataObject
+// DataObject(processor: Processor, expression : string) => DataObject
+template <typename CONFIG>
+void DataObjectWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::HandleScope handle_scope(args.GetIsolate());
+	
+	if(!args.IsConstructCall())
+	{
+		nodejs.Throw(nodejs.TypeError(std::string("Constructor ") + CLASS_NAME + " requires 'new'"));
+		return;
+	}
+	
+	ProcessorWrapper<CONFIG> *processor_wrapper = 0;
+	std::string expression;
+	if(args.Length() != 0)
+	{
+		struct Synopsis { std::string str() const { return std::string(CLASS_NAME) + "(processor: Processor, expression : string)"; } };
+		v8::Local<v8::Value> arg0 = args[0];
+		if(!arg0->IsObject() || !(processor_wrapper = ProcessorWrapper<CONFIG>::GetInstance(arg0)))
+		{
+			nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a Processor for 'processor'"));
+			return;
+		}
+		v8::Local<v8::Value> arg1 = args[1];
+		if(arg1->IsNullOrUndefined() || !ToString(args.GetIsolate(), arg1, expression))
+		{
+			nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a string for 'expression'"));
+			return;
+		}
+	}
+	
+	DataObjectWrapper<CONFIG> *data_object_wrapper = new DataObjectWrapper<CONFIG>(nodejs, processor_wrapper, expression);
+	data_object_wrapper->template BindObject<This>(args.This());
+	args.GetReturnValue().Set(args.This());
+}
 
 template <typename CONFIG>
-DataObjectWrapper<CONFIG>::DataObjectWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG>& _processor_wrapper, const std::string& _expr, std::size_t size)
-	: Super(_nodejs, size ? size : sizeof(*this))
-	, shadow_object()
+DataObjectWrapper<CONFIG>::DataObjectWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG> *_processor_wrapper, const std::string& _expression, std::size_t size)
+	: Super(_nodejs, /* ptr */ 0, size ? size : sizeof(*this))
 	, processor_wrapper(_processor_wrapper)
-	, expr(_expr)
+	, expression(_expression)
 	, data_object()
 {
 }
 
 template <typename CONFIG>
-DataObjectWrapper<CONFIG>::DataObjectWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG>& _processor_wrapper, unisim::util::debug::DataObjectRef<ADDRESS> _data_object, std::size_t size)
-	: Super(_nodejs, size ? size : sizeof(*this))
+DataObjectWrapper<CONFIG>::DataObjectWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG> *_processor_wrapper, unisim::util::debug::DataObjectRef<ADDRESS> _data_object, std::size_t size)
+	: Super(_nodejs, /* ptr */ 0, size ? size : sizeof(*this))
 	, processor_wrapper(_processor_wrapper)
-	, expr(_data_object.GetName())
+	, expression(_data_object.GetName())
 	, data_object(_data_object)
 {
 }
 
 template <typename CONFIG>
-void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions& options)
+void DataObjectWrapper<CONFIG>::Update()
 {
 	if(data_object.IsUndefined())
 	{
-		data_object = (*this->GetProcessor())[expr];
+		data_object = (*this->GetProcessor())[expression];
 	}
+}
+
+template <typename CONFIG>
+void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions& options)
+{
+	Update();
 
 	try
 	{
@@ -288,10 +398,7 @@ void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions
 template <typename CONFIG>
 v8::Local<v8::Value> DataObjectWrapper<CONFIG>::Get(const GetOptions& options)
 {
-	if(data_object.IsUndefined())
-	{
-		data_object = (*this->GetProcessor())[expr];
-	}
+	Update();
 	
 	try
 	{
@@ -556,13 +663,6 @@ v8::Local<v8::Value> DataObjectWrapper<CONFIG>::Get(const GetOptions& options)
 	return v8::Local<v8::Value>();
 }
 
-template <typename CONFIG>
-template <bool (unisim::util::debug::DataObjectRef<typename CONFIG::ADDRESS>::*METHOD)() const> 
-bool DataObjectWrapper<CONFIG>::IsSomething()
-{
-	return ((&data_object)->*METHOD)();
-}
-
 // DataObject.set(value : *, [options : Object])
 template <typename CONFIG>
 void DataObjectWrapper<CONFIG>::SetCb(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -618,129 +718,116 @@ void DataObjectWrapper<CONFIG>::GetCb(const v8::FunctionCallbackInfo<v8::Value>&
 }
 
 template <typename CONFIG>
+void DataObjectWrapper<CONFIG>::GetExpression(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), expression.c_str()).ToLocalChecked());
+}
+
+template <typename CONFIG>
 template <bool (unisim::util::debug::DataObjectRef<typename CONFIG::ADDRESS>::*METHOD)() const>
-void DataObjectWrapper<CONFIG>::IsSomethingCb(const v8::FunctionCallbackInfo<v8::Value>& args)
+void DataObjectWrapper<CONFIG>::GetIsSomething(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	v8::HandleScope handle_scope(args.GetIsolate());
-	v8::Local<v8::Boolean> value = v8::Boolean::New(args.GetIsolate(), IsSomething<METHOD>());
-	args.GetReturnValue().Set(value);
-}
-
-template <typename CONFIG>
-void DataObjectWrapper<CONFIG>::Cleanup()
-{
-	cached_object_template.Reset();
-}
-
-template <typename CONFIG>
-void DataObjectWrapper<CONFIG>::Finalize()
-{
-	shadow_object.Reset();
-	Super::Finalize();
-}
-
-template <typename CONFIG>
-void DataObjectWrapper<CONFIG>::FillObjectTemplate(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template)
-{
-	// add "set" method
-	object_template->Set(isolate, "set", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::SetCb>(isolate));
-	// add "get" method
-	object_template->Set(isolate, "get", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::GetCb>(isolate));
-	// add "isObject" method
-	object_template->Set(isolate, "isObject", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsObject> >(isolate));
-	// add "isStructure" method
-	object_template->Set(isolate, "isStructure", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsStructure> >(isolate));
-	// add "isUnion" method
-	object_template->Set(isolate, "isUnion", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsUnion> >(isolate));
-	// add "isClass" method
-	object_template->Set(isolate, "isClass", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsClass> >(isolate));
-	// add "isInterface" method
-	object_template->Set(isolate, "isInterface", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsInterface> >(isolate));
-	// add "isBasic" method
-	object_template->Set(isolate, "isBasic", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsBasic> >(isolate));
-	// add "isChar" method
-	object_template->Set(isolate, "isChar", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsChar> >(isolate));
-	// add "isInteger" method
-	object_template->Set(isolate, "isInteger", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsInteger> >(isolate));
-	// add "isBoolean" method
-	object_template->Set(isolate, "isBoolean", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsBoolean> >(isolate));
-	// add "isFloat" method
-	object_template->Set(isolate, "isFloat", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsFloat> >(isolate));
-	// add "isPointer" method
-	object_template->Set(isolate, "isPointer", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsPointer> >(isolate));
-	// add "isFunction" method
-	object_template->Set(isolate, "isFunction", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsFunction> >(isolate));
-	// add "isArray" method
-	object_template->Set(isolate, "isArray", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsArray> >(isolate));
-	// add "isConst" method
-	object_template->Set(isolate, "isConst", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsConst> >(isolate));
-	// add "isEnum" method
-	object_template->Set(isolate, "isEnum", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsEnum> >(isolate));
-	// add "isVoid" method
-	object_template->Set(isolate, "isVoid", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsVoid> >(isolate));
-	// add "isVolatile" method
-	object_template->Set(isolate, "isVolatile", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsVolatile> >(isolate));
-	// add "isCharPointer" method
-	object_template->Set(isolate, "isCharPointer", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsCharPointer> >(isolate));
-	// add "isSigned" method
-	object_template->Set(isolate, "isSigned", unisim::util::nodejs::CreateFunctionTemplate<DataObjectWrapper<CONFIG>, &DataObjectWrapper<CONFIG>::IsSomethingCb<&unisim::util::debug::DataObjectRef<ADDRESS>::IsSigned> >(isolate));
-}
-
-template <typename CONFIG>
-v8::Local<v8::ObjectTemplate> DataObjectWrapper<CONFIG>::MakeObjectTemplate(v8::Isolate *isolate)
-{
-	v8::EscapableHandleScope handle_scope(isolate);
+	Update();
 	
-	v8::Local<v8::ObjectTemplate> object_template;
-	
-	if(cached_object_template.IsEmpty())
+	if(data_object.IsDefined())
 	{
-		// create object template
-		object_template = unisim::util::nodejs::CreateObjectTemplate(isolate);
-		// fill object template
-		FillObjectTemplate(isolate, object_template);
-		// cache object template
-		cached_object_template.Reset(isolate, object_template);
+		info.GetReturnValue().Set(v8::Boolean::New(this->GetIsolate(), ((&data_object)->*METHOD)()));
 	}
-	else
+}
+
+template <typename CONFIG>
+void DataObjectWrapper<CONFIG>::GetName(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	Update();
+	
+	if(data_object.IsDefined())
 	{
-		object_template = cached_object_template.Get(isolate);
+		info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), data_object.GetName()).ToLocalChecked());
 	}
-	
-	return handle_scope.Escape(object_template);
 }
 
 template <typename CONFIG>
-template <typename T>
-v8::Local<v8::Object> DataObjectWrapper<CONFIG>::MakeObject(v8::Local<v8::ObjectTemplate> object_template)
+void DataObjectWrapper<CONFIG>::GetProcessor(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	v8::EscapableHandleScope handle_scope(this->GetIsolate());
-	// create object
-	v8::Local<v8::Object> object = Super::template MakeObject<T>(object_template);
-	// add "expr" read-only property
-	object->DefineOwnProperty(
-		this->GetIsolate()->GetCurrentContext(),
-		v8::String::NewFromUtf8Literal(this->GetIsolate(), "expr", v8::NewStringType::kInternalized),
-		v8::String::NewFromUtf8(this->GetIsolate(), expr.c_str()).ToLocalChecked(),
-		v8::ReadOnly
-	).ToChecked();
-	
-	// keep object reference for setting "this" of callback
-	shadow_object.Reset(this->GetIsolate(), object);
-	
-	return handle_scope.Escape(object);
+	if(processor_wrapper)
+	{
+		info.GetReturnValue().Set(processor_wrapper->MakeObject());
+	}
 }
 
 template <typename CONFIG>
-v8::Local<v8::Object> DataObjectWrapper<CONFIG>::MakeObject()
+void DataObjectWrapper<CONFIG>::GetBitSize(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	v8::EscapableHandleScope handle_scope(this->GetIsolate());
-	// create object template
-	v8::Local<v8::ObjectTemplate> object_template = MakeObjectTemplate(this->GetIsolate());
-	// create object
-	v8::Local<v8::Object> object = this->template MakeObject<This>(object_template);
+	Update();
 	
-	return handle_scope.Escape(object);
+	if(data_object.IsDefined())
+	{
+		info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), data_object.GetBitSize()));
+	}
+}
+
+template <typename CONFIG>
+void DataObjectWrapper<CONFIG>::GetType(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	Update();
+	
+	if(data_object.IsDefined())
+	{
+		const unisim::util::debug::Type *type = data_object.GetType();
+		if(type)
+		{
+			info.GetReturnValue().Set(TypeWrapper<CONFIG>::MakeObjectFromType(this->nodejs, type));
+		}
+	}
+}
+
+template <typename CONFIG>
+void DataObjectWrapper<CONFIG>::GetCVUnqualifiedType(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	Update();
+	
+	if(data_object.IsDefined())
+	{
+		const unisim::util::debug::Type *type = data_object.GetCVUnqualifiedType();
+		if(type)
+		{
+			info.GetReturnValue().Set(TypeWrapper<CONFIG>::MakeObjectFromType(this->nodejs, type));
+		}
+	}
+}
+
+template <typename CONFIG>
+void DataObjectWrapper<CONFIG>::GetEndian(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	Update();
+	
+	if(data_object.IsDefined())
+	{
+		info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), ToString(data_object.GetEndian()).c_str()).ToLocalChecked());
+	}
+}
+
+template <typename CONFIG>
+void DataObjectWrapper<CONFIG>::GetAddress(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	Update();
+	
+	if(data_object.IsDefined())
+	{
+		ADDRESS addr = 0;
+		if(data_object.GetAddress(addr))
+		{
+			info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), addr));
+		}
+	}
+}
+
+template <typename CONFIG>
+void DataObjectWrapper<CONFIG>::Help(std::ostream& stream)
+{
+	stream <<
+#include <unisim/service/debug/nodejs/doc/data_object.h>
+	;
 }
 
 } // end of namespace nodejs

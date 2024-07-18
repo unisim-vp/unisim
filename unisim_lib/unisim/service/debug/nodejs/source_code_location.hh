@@ -54,23 +54,21 @@ struct SourceCodeLocationWrapper : ObjectWrapper<CONFIG>
 	typedef typename CONFIG::TIME_TYPE TIME_TYPE;
 	static const char *CLASS_NAME;
 	static const uint32_t CLASS_ID;
+	static bool IsA(uint32_t class_id) { return class_id == CLASS_ID; }
+	static v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(NodeJS<CONFIG>& nodejs);
+	static void Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args);
 	SourceCodeLocationWrapper(NodeJS<CONFIG>& nodejs, unisim::util::debug::SourceCodeLocation const& _source_code_location, std::size_t size = 0);
 	virtual ~SourceCodeLocationWrapper();
 	unisim::util::debug::SourceCodeLocation const& GetSourceCodeLocation() const;
-	//void XXXX(const v8::FunctionCallbackInfo<v8::Value>& args);
-	virtual void Finalize();
-	v8::Local<v8::Object> MakeObject();
-	static void Cleanup();
+	void GetSourceCodeFilename(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void GetLineNo(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void GetColNo(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
-protected:
-	template <typename T> v8::Local<v8::Object> MakeObject(v8::Local<v8::ObjectTemplate> object_template);
-	static void FillObjectTemplate(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template);
+	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
+	static void Help(std::ostream& stream);
 private:
 	unisim::util::debug::SourceCodeLocation source_code_location;
-	v8::Global<v8::Object> shadow_object;
-	static v8::Global<v8::ObjectTemplate> cached_object_template;
-	static v8::Local<v8::ObjectTemplate> MakeObjectTemplate(v8::Isolate *isolate);
 };
 
 } // end of namespace nodejs

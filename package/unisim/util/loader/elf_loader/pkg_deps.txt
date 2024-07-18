@@ -11,3 +11,4 @@ unisim/util/debug/dwarf
 unisim/util/debug/elf_symtab
 unisim/util/endian
 unisim/util/likely
+unisim/util/locate

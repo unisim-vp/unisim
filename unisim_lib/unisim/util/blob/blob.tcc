@@ -147,104 +147,104 @@ template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetFilename(const char *_filename)
 {
 	filename = _filename;
-	capability = (Capability)(capability | CAP_FILENAME);
+	capability |= CAP_FILENAME;
 }
 
 template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetFileFormat(FileFormat _ffmt)
 {
 	ffmt = _ffmt;
-	capability = (Capability)(capability | CAP_FILE_FORMAT);
+	capability |= CAP_FILE_FORMAT;
 }
 
 template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetEntryPoint(MEMORY_ADDR _entry_point)
 {
 	entry_point = _entry_point;
-	capability = (Capability)(capability | CAP_ENTRY_POINT);
+	capability |= CAP_ENTRY_POINT;
 }
 
 template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetArchitecture(const char *_architecture)
 {
 	architecture = _architecture;
-	capability = (Capability)(capability | CAP_ARCHITECTURE);
+	capability |= CAP_ARCHITECTURE;
 }
 
 template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetStackBase(MEMORY_ADDR _stack_base)
 {
 	stack_base = _stack_base;
-	capability = (Capability)(capability | CAP_STACK_BASE);
+	capability |= CAP_STACK_BASE;
 }
 
 template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetEndian(endian_type _endian)
 {
 	endian = _endian;
-	capability = (Capability)(capability | CAP_ENDIAN);
+	capability |= CAP_ENDIAN;
 }
 
 template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetFileEndian(endian_type _file_endian)
 {
 	file_endian = _file_endian;
-	capability = (Capability)(capability | CAP_FILE_ENDIAN);
+	capability |= CAP_FILE_ENDIAN;
 }
 
 template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetAddressSize(unsigned int _address_size)
 {
 	address_size = _address_size;
-	capability = (Capability)(capability | CAP_ADDRESS_SIZE);
+	capability |= CAP_ADDRESS_SIZE;
 }
 
 template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetMemoryAtomSize(unsigned int _memory_atom_size)
 {
 	memory_atom_size = _memory_atom_size;
-	capability = (Capability)(capability | CAP_MEMORY_ATOM_SIZE);
+	capability |= CAP_MEMORY_ATOM_SIZE;
 }
 
 template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetELF_PHOFF(uint64_t _elf_phoff)
 {
 	elf_phoff = _elf_phoff;
-	capability = (Capability)(capability | CAP_ELF_PHOFF);
+	capability |= CAP_ELF_PHOFF;
 }
 
 template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetELF_PHENT(unsigned int _elf_phent)
 {
 	elf_phent = _elf_phent;
-	capability = (Capability)(capability | CAP_ELF_PHENT);
+	capability |= CAP_ELF_PHENT;
 }
 
 template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetELF_PHNUM(unsigned int _elf_phnum)
 {
 	elf_phnum = _elf_phnum;
-	capability = (Capability)(capability | CAP_ELF_PHNUM);
+	capability |= CAP_ELF_PHNUM;
 }
 
 template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetELF_Flags(uint32_t _elf_flags)
 {
 	elf_flags = _elf_flags;
-	capability = (Capability)(capability | CAP_ELF_FLAGS);
+	capability |= CAP_ELF_FLAGS;
 }
 
 template <class MEMORY_ADDR>
-Capability Blob<MEMORY_ADDR>::GetCapability() const
+unsigned int Blob<MEMORY_ADDR>::GetCapability() const
 {
 	// Synthesize overall blob capabilities
-	Capability ret_capability = capability;
+	unsigned int ret_capability = capability;
 	typename std::vector<const Blob<MEMORY_ADDR> *>::const_iterator blob_iter;
 	for(blob_iter = blobs.begin(); blob_iter != blobs.end(); blob_iter++)
 	{
 		const Blob<MEMORY_ADDR> *blob = *blob_iter;
 		
-		ret_capability = (Capability)(ret_capability | blob->GetCapability());
+		ret_capability |= blob->GetCapability();
 	}
 	
 	return ret_capability;

@@ -1,0 +1,8 @@
+# Declare suffix for Markdown files
+SUFFIXES=.md
+
+# Add an automake rule to transform a markdown file into a C++ header file containing only a C++ raw string literal
+.md.h:
+	@mkdir -p $(@D)
+	( echo 'R"(' && cat "$<" && echo ')"' ) > $(top_builddir)/$@
+

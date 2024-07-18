@@ -94,7 +94,7 @@ public:
 	const DWARF_StatementProgram<MEMORY_ADDR> *GetStmtList() const;
 
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
-	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, bool local_only) const;
+	void ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner, MEMORY_ADDR pc, bool local_only) const;
 	
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindVariableDIE(const char *name) const;
@@ -121,9 +121,6 @@ public:
 	
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
-	std::ostream& debug_info_stream;
-	std::ostream& debug_warning_stream;
-	std::ostream& debug_error_stream;
 	const bool& debug;
 	DWARF_Format dw_fmt;
 	DWARF_Version dw_ver;

@@ -82,9 +82,6 @@ public:
 private:
 	const DWARF_Handler<ADDRESS> *dw_handler;
 	const DWARF_DIE<ADDRESS> *dw_subprogram_die;
-	std::ostream& debug_info_stream;
-	std::ostream& debug_warning_stream;
-	std::ostream& debug_error_stream;
 	const bool& debug;
 	std::string name;
 	bool external_flag;

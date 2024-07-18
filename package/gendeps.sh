@@ -378,7 +378,7 @@ function crawl_directory
 		list_files "${BASE}" template "${TEMPLATE_LIST[@]}"
 		local ISA_LIST=(*.isa)
 		list_files "${BASE}" isa "${ISA_LIST[@]}"
-		local DATA_LIST=(*.xml *.svg *.css *.js *.json *.ini *.ico *.png)
+		local DATA_LIST=(*.xml *.svg *.css *.js *.json *.ini *.ico *.png *.md)
 		list_files "${BASE}" data "${DATA_LIST[@]}"
 
 		local FILENAME
@@ -508,3 +508,25 @@ echo "unisim/component/cxx/processor/hcs12x/xb.isa" >  "${PACKAGE_DIR}/unisim/co
 echo "unisim/component/cxx/processor/hcs12x/s12xgate.isa" >  "${PACKAGE_DIR}/unisim/component/cxx/processor/hcs12x/isa_s12xgate_list.txt"
 
 echo "m4/float16" >> "${PACKAGE_DIR}/unisim/util/floating_point/pkg_deps.txt"
+
+function gen_doc_md_to_h()
+{
+	local MODULE="$1"
+	(
+		cd "${UNISIM_LIB_DIR}"
+		H_FILES=""
+		while IFS= read -r MD_FILE; do
+			H_FILE="$(echo "${MD_FILE}" | sed -e 's/\.md$/\.h/g')"
+			H_FILES+=" ${H_FILE}"
+		done < <(find "${MODULE}" -type f -name "*.md")
+		cat << EOF > "${PACKAGE_DIR}/${MODULE}/am_list.txt"
+# Add generated .h files from markdown files to automake lists
+noinst_HEADERS+=${H_FILES}
+BUILT_SOURCES+=${H_FILES}
+CLEANFILES+=${H_FILES}
+EOF
+		echo "am/md_to_h" >> "${PACKAGE_DIR}/${MODULE}/pkg_deps.txt"
+	)
+}
+
+gen_doc_md_to_h unisim/service/debug/nodejs/doc

@@ -102,16 +102,17 @@ class InlineDebuggerBase : public virtual unisim::kernel::Object
 public:
 	InlineDebuggerBase(const char *_name, unisim::kernel::Object *parent);
 	virtual ~InlineDebuggerBase();
-	virtual void SigInt();
+	virtual bool SigInt();
 	
-	std::string SearchFile(const char *filename);
-	bool LocateFile(const char *file_path, std::string& match_file_path);
+	bool LocateFile(const std::string& file_path, std::string& match_file_path);
+	bool LocateSourceFile(const std::string& file_path, std::string& match_file_path);
 
 protected:
 	virtual void Interrupt() = 0;
 	
 	std::string search_path;
 	unisim::kernel::variable::Parameter<std::string> param_search_path;
+	bool is_started;
 };
 
 template <class ADDRESS>
@@ -166,8 +167,6 @@ public:
 
 	virtual bool EndSetup();
 	virtual void OnDisconnect();
-	
-	bool IsStarted() const;
 protected:
 	virtual void Interrupt();
 private:
@@ -231,8 +230,6 @@ private:
 	};
 	std::map<ADDRESS,VisitedInstructionPage> visited_instructions;
 	
-	bool is_started;
-
 	void Tokenize(const std::string& str, std::vector<std::string>& tokens);
 	bool ParseAddr(const char *s, ADDRESS& addr);
 	bool ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size);
@@ -312,7 +309,6 @@ private:
 	void DumpRegisters();
 	bool EditBuffer(ADDRESS addr, std::vector<uint8_t>& buffer);
 	bool EditMemory(ADDRESS addr);
-	void DumpSymbols(const typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& symbols, const char *name = 0);
 	void DumpSymbols(const char *name = 0);
 	void MonitorGetFormat(const char *cmd, char &format);
 	void DumpVariables(const char *cmd, const char *name = 0, typename unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
@@ -352,7 +348,7 @@ private:
 	void PrintDataObject(const char *data_object_name);
 	bool EditDataObject(const char *data_object_name);
 	bool SetDataObject(const char *data_object_name, const char *literal);
-	void ListDataObjects(typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope = unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_BOTH_GLOBAL_AND_LOCAL);
+	void ListDataObjects(typename unisim::service::interfaces::DataObjectLookupBase::Scope scope = unisim::service::interfaces::DataObjectLookupBase::SCOPE_BOTH_GLOBAL_AND_LOCAL);
 	void TrackDataObject(const char *data_object_name);
 	void UntrackDataObject(const char *data_object_name);
 	void PrintDataObject(const unisim::util::debug::DataObjectRef<ADDRESS>& data_object);

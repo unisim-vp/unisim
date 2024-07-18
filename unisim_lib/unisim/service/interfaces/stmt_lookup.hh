@@ -51,32 +51,64 @@ struct StatementScanner : public ServiceInterface
   virtual void Append(const unisim::util::debug::Statement<MEMORY_ADDR> *) = 0;
 };
 
-template <class MEMORY_ADDR>
-class StatementLookup : public ServiceInterface
+struct StatementLookupBase : ServiceInterface
 {
-public:
 	typedef enum
 	{
-		OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT,
-		OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION,
-		OPT_FIND_EXACT_STMT,
-		OPT_FIND_NEXT_STMT,
-		OPT_FIND_NEXT_STMT_WITHIN_FUNCTION
+		SCOPE_NEAREST_LOWER_OR_EQUAL_STMT,
+		SCOPE_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION,
+		SCOPE_EXACT_STMT,
+		SCOPE_NEXT_STMT,
+		SCOPE_NEXT_STMT_WITHIN_FUNCTION
 	}
-	FindStatementOption;
+	Scope;
 	
+	static constexpr Scope Scopes[] = { SCOPE_NEAREST_LOWER_OR_EQUAL_STMT, SCOPE_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION, SCOPE_EXACT_STMT, SCOPE_NEXT_STMT, SCOPE_NEXT_STMT_WITHIN_FUNCTION };
+};
+
+template <class MEMORY_ADDR>
+struct StatementLookup : StatementLookupBase
+{
 	virtual void ScanStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, const char *filename = 0) const = 0;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, const char *filename = 0, FindStatementOption opt = OPT_FIND_EXACT_STMT) const = 0;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, const char *filename = 0, FindStatementOption opt = OPT_FIND_EXACT_STMT) const = 0;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, const char *filename = 0, Scope scope = SCOPE_EXACT_STMT) const = 0;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, MEMORY_ADDR addr, const char *filename = 0, Scope scope = SCOPE_EXACT_STMT) const = 0;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename = 0) const = 0;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename = 0) const = 0;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename = 0) const = 0;
 	
 	void ScanStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, const std::string& filename) const { ScanStatements(scanner, filename.length() ? filename.c_str() : 0); }
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, const std::string& filename, FindStatementOption opt = OPT_FIND_EXACT_STMT) const { return FindStatement(addr, filename.length() ? filename.c_str() : 0, opt); }
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, const std::string& filename, FindStatementOption opt = OPT_FIND_EXACT_STMT) const { return FindStatements(stmts, addr, filename.length() ? filename.c_str() : 0); }
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, const std::string& filename, Scope scope = SCOPE_EXACT_STMT) const { return FindStatement(addr, filename.length() ? filename.c_str() : 0, scope); }
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, MEMORY_ADDR addr, const std::string& filename, Scope scope = SCOPE_EXACT_STMT) const { return FindStatements(scanner, addr, filename.length() ? filename.c_str() : 0); }
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatement(source_code_location, filename.length() ? filename.c_str() : 0); }
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatements(stmts, source_code_location, filename.length() ? filename.c_str() : 0); }
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatements(scanner, source_code_location, filename.length() ? filename.c_str() : 0); }
 };
+
+inline std::ostream& operator << (std::ostream& stream, const typename StatementLookupBase::Scope scope)
+{
+	switch(scope)
+	{
+		case StatementLookupBase::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT: stream << "nearest-lower-or-equal"; break;
+		case StatementLookupBase::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION: stream << "nearest-lower-or-equal-stmt-within-function"; break;
+		case StatementLookupBase::SCOPE_EXACT_STMT: stream << "exact-stmt"; break;
+		case StatementLookupBase::SCOPE_NEXT_STMT: stream << "next-stmt"; break;
+		case StatementLookupBase::SCOPE_NEXT_STMT_WITHIN_FUNCTION: stream << "next-stmt-within-function"; break;
+	}
+	return stream;
+}
+
+inline std::istream& operator >> (std::istream& stream, typename StatementLookupBase::Scope& scope)
+{
+	std::string str;
+	if(stream >> str)
+	{
+		if(str == "nearest-lower-or-equal") scope = StatementLookupBase::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT;
+		else if(str == "nearest-lower-or-equal-stmt-within-function") scope = StatementLookupBase::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION;
+		else if(str == "exact-stmt") scope = StatementLookupBase::SCOPE_EXACT_STMT;
+		else if(str == "next-stmt") scope = StatementLookupBase::SCOPE_NEXT_STMT;
+		else if(str == "next-stmt-within-function") scope = StatementLookupBase::SCOPE_NEXT_STMT_WITHIN_FUNCTION;
+		else stream.setstate(std::ios::failbit);
+	}
+	return stream;
+}
 
 } // end of namespace interfaces
 } // end of namespace service

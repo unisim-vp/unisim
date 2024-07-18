@@ -191,7 +191,6 @@ private:
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
-	virtual void SigInt();
 };
 
 
@@ -475,9 +474,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	
 	//  - Debugger run-time configuration
 	simulator->SetVariable("debugger.parse-dwarf", false);
+	simulator->SetVariable("debugger.architecture[0]", "tms320c3x");
 
 	//  - Inline debugger
 	simulator->SetVariable("inline-debugger.memory-atom-size", 4);
+	simulator->SetVariable("inline-debugger.program-counter-name", "PC");
 	
 	//  - GDB server
 	simulator->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_tms320c3x.xml");
@@ -577,14 +578,6 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 int Simulator::GetExitStatus() const
 {
 	return exit_status;
-}
-
-void Simulator::SigInt()
-{
-	if(!enable_inline_debugger)
-	{
-		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-	}
 }
 
 int sc_main(int argc, char *argv[])

@@ -43,16 +43,22 @@ namespace unisim {
 namespace service {
 namespace interfaces {
 
-template <class T>
-class SymbolTableLookup : public ServiceInterface
+template <typename ADDRESS>
+struct SymbolTableScanner : ServiceInterface
+{
+	virtual void Append(const unisim::util::debug::Symbol<ADDRESS> *symbol) = 0;
+};
+
+template <typename ADDRESS>
+struct SymbolTableLookup : ServiceInterface
 {
 public:
-	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<T> *>& lst, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr) const = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name) const = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
+	virtual void ScanSymbols(SymbolTableScanner<ADDRESS>& scanner) const = 0;
+	virtual void ScanSymbols(SymbolTableScanner<ADDRESS>& scanner, typename unisim::util::debug::SymbolBase::Type type) const = 0;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr) const = 0;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name) const = 0;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const = 0;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::SymbolBase::Type type) const = 0;
 };
 
 } // end of namespace interfaces

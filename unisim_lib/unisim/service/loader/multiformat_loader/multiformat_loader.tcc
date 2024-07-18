@@ -681,22 +681,7 @@ typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiFormatLoa
 	{
 		if((magic[0] == 'S') && (magic[1] == '0')) return FFMT_S19;
 		
-		if((magic[0] == 0xc1) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0xc2) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x92) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x93) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x95) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x98) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x99) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x9d) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0xc1)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0xc2)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0x92)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0x93)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0x95)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0x98)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0x99)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0x9d)) return FFMT_COFF;
+		if(unisim::util::loader::coff_loader::CoffLoader<MEMORY_ADDR>::Supports(unisim::util::endian::Host2LittleEndian(*(uint16_t *)(&magic[0])))) return FFMT_COFF;
 	}
 	
 	return FFMT_RAW;

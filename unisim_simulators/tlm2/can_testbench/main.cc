@@ -445,8 +445,6 @@ private:
 	unisim::kernel::logger::xml_file::Writer *logger_xml_file_writer;
 	
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
-	
-	virtual void SigInt();
 };
 
 Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
@@ -605,11 +603,6 @@ void Simulator::Run()
 	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
 	std::cerr << "simulated time: " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
 	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
-}
-
-void Simulator::SigInt()
-{
-	unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 }
 
 extern "C" 

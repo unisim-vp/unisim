@@ -1234,14 +1234,6 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("web-terminal1.title", "Serial Terminal over uart1");
 }
 
-void Simulator::SigInt()
-{
-  if(!enable_inline_debugger)
-    {
-      unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-    }
-}
-
 #define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
 
 CPU::CP15Reg*

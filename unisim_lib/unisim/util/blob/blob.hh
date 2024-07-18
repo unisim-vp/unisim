@@ -96,7 +96,7 @@ public:
 	void SetELF_PHNUM(unsigned int elf_phnum);
 	void SetELF_Flags(uint32_t elf_flags);
 	
-	Capability GetCapability() const;
+	unsigned int GetCapability() const;
 	const char *GetFilename() const;
 	FileFormat GetFileFormat() const;
 	MEMORY_ADDR GetEntryPoint() const;
@@ -128,7 +128,7 @@ public:
 	void Catch() const;
 	void Release() const;
 private:
-	Capability capability;
+	unsigned int capability;
 	std::string filename;
 	std::string architecture;
 	FileFormat ffmt;
@@ -148,10 +148,21 @@ private:
 	unsigned int *refcount;
 };
 
-
 } // end of namespace blob
 } // end of namespace util
 } // end of namespace unisim
+
+inline std::ostream& operator << (std::ostream& stream, unisim::util::blob::FileFormat ffmt)
+{
+	switch(ffmt)
+	{
+		case unisim::util::blob::FFMT_UNKNOWN: stream << "unknown"; break;
+		case unisim::util::blob::FFMT_ELF32  : stream << "ELF32"; break;
+		case unisim::util::blob::FFMT_ELF64  : stream << "ELF64"; break;
+		case unisim::util::blob::FFMT_COFF   : stream << "COFF"; break;
+	}
+	return stream;
+}
 
 #endif
 

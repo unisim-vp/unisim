@@ -67,10 +67,10 @@ public:
 	void Setup(StatementLookup<ADDRESS>*) override { for(unsigned i = 0; i < MAX_IMPORTS; i++) stmt_lookup_import[i]->RequireSetup(); }
 
 	virtual void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const char *filename) const;
-	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
-	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
+	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const;
+	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const;
 	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
-	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
+	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
 };
 
 } // end of namespace stmt_lookup

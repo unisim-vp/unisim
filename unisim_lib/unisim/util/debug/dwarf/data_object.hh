@@ -121,9 +121,6 @@ private:
 	mutable DWARF_BitVector bv;
 	bool hold;
 	const bool& debug;
-	std::ostream& debug_info_stream;
-	std::ostream& debug_warning_stream;
-	std::ostream& debug_error_stream;
 };
 
 template <class ADDRESS>

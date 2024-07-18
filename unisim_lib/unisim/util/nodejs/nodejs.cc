@@ -107,7 +107,9 @@ NodeJS::NodeJS(const std::string& _executable_path)
 	, nodejs_thrd_mutex()
 	, nodejs_thrd_cond()
 	, nodejs_thrd_cond_val(false)
+	, env_mutex()
 	, object_wrappers()
+	, ctor_function_templates()
 {
 }
 
@@ -130,25 +132,50 @@ NodeJS::~NodeJS()
 	}
 }
 
-void NodeJS::AddObject(ObjectWrapper *object_wrapper)
+void NodeJS::Map(ObjectWrapper *object_wrapper)
 {
 	std::pair<ObjectWrappers::iterator, bool> r = object_wrappers.insert(object_wrapper);
-	if(object_wrapper->size && r.second)
+	if(r.second)
 	{
-		this->isolate->AdjustAmountOfExternalAllocatedMemory(+object_wrapper->size);
+		if(object_wrapper->size)
+		{
+			this->isolate->AdjustAmountOfExternalAllocatedMemory(+object_wrapper->size);
+		}
+		const void *ptr = object_wrapper->ptr;
+		if(ptr)
+		{
+			object_wrapper_map[ptr] = object_wrapper;
+		}
+		
+		object_wrapper->Catch();
+	}
+	else
+	{
+		struct Bad {};
+		throw Bad();
 	}
 }
 
-void NodeJS::RemoveObject(ObjectWrapper *object_wrapper)
+void NodeJS::Unmap(ObjectWrapper *object_wrapper)
 {
 	if(object_wrappers.count(object_wrapper))
 	{
+		const void *ptr = object_wrapper->ptr;
+		if(ptr)
+		{
+			object_wrapper_map.erase(ptr);
+		}
 		if(object_wrapper->size)
 		{
 			this->isolate->AdjustAmountOfExternalAllocatedMemory(-object_wrapper->size);
 		}
 		object_wrappers.erase(object_wrapper);
-		delete object_wrapper;
+		object_wrapper->Release();
+	}
+	else
+	{
+		struct Bad {};
+		throw Bad();
 	}
 }
 
@@ -159,6 +186,11 @@ void NodeJS::Cleanup()
 		ObjectWrapper *object_wrapper = *object_wrappers.begin();
 		object_wrapper->Finalize();
 	}
+	for(CtorFunctionTemplates::iterator it = ctor_function_templates.begin(); it != ctor_function_templates.end(); ++it)
+	{
+		(*it).second.Reset();
+	}
+	ctor_function_templates.clear();
 }
 
 bool NodeJS::Initialize()
@@ -295,7 +327,14 @@ bool NodeJS::Killed() const
 
 void NodeJS::Kill()
 {
-	if(isolate && env) node::Stop(env->get());
+	{
+		std::unique_lock<std::mutex> lock(env_mutex);
+		if(env)
+		{
+			node::Stop(env->get());
+			env = 0;
+		}
+	}
 	killed = true;
 	UnblockNodeJS();
 }
@@ -420,7 +459,10 @@ void NodeJS::Thread()
 									{
 										DebugInfoStream() << "Initialization succeeded" << std::endl;
 									}
-									this->env = &env;
+									{
+										std::unique_lock<std::mutex> lock(env_mutex);
+										this->env = &env;
+									}
 									init_status = true;
 									init_cond_val = true;
 									init_cond.notify_one();
@@ -506,7 +548,11 @@ void NodeJS::Thread()
 							// node::Stop() can be used to explicitly stop the event loop and keep
 							// further JavaScript from running. It can be called from any thread,
 							// and will act like worker.terminate() if called from another thread.
-							node::Stop(env.get());
+							{
+								std::unique_lock<std::mutex> lock(env_mutex);
+								node::Stop(env.get());
+								this->env = 0;
+							}
 							
 							this->require.Reset();
 							
@@ -527,6 +573,9 @@ void NodeJS::Thread()
 						}
 						init_status = false;
 					}
+					
+					// Free our own V8 resources
+					Cleanup();
 					
 					this->context.Reset();
 				}
@@ -568,7 +617,6 @@ void NodeJS::Thread()
 			}
 			if(err != 0) std::cerr << uv_err_name(err) << std::endl;
 			assert(err == 0);
-			env = 0;
 			
 			if(init_status)
 			{
@@ -831,32 +879,36 @@ void NodeJS::UnblockNodeJS()
 	nodejs_thrd_mutex.unlock();
 }
 
-//////////////////////////////// ObjectWrapper /////////////////////////////////
+//////////////////////////////// ObjectWrapper ////////////////////////////////
 
-ObjectWrapper::ObjectWrapper(NodeJS& _nodejs, std::size_t _size)
+ObjectWrapper::ObjectWrapper(NodeJS& _nodejs, const void *_ptr, std::size_t _size)
 	: nodejs(_nodejs)
+	, ptr(_ptr)
 	, size(_size)
+	, this_object()
+	, ref_count(0)
 {
-	nodejs.AddObject(this);
+	nodejs.Map(this);
 }
 
 ObjectWrapper::~ObjectWrapper()
 {
+	// std::cerr << "ObjectWrapper::~ObjectWrapper(this=" << this << ")" << std::endl;
+	// ptr = 0;
+	// size = 0;
+	// this_object.Reset();
 }
 
 void ObjectWrapper::Finalize()
 {
-	nodejs.RemoveObject(this);
+	// std::cerr << "ObjectWrapper::Finalize(this=" << this << ")" << std::endl;
+	this_object.Reset();
+	nodejs.Unmap(this);
 }
 
-v8::Local<v8::Object> ObjectWrapper::MakeObject(v8::Local<v8::ObjectTemplate> object_template, uint32_t class_id)
+void ObjectWrapper::BindObject(NodeJS& nodejs, v8::Local<v8::Object> object)
 {
-	v8::EscapableHandleScope handle_scope(this->GetIsolate());
-	
-	// create object
-	v8::Local<v8::Object> local_object = unisim::util::nodejs::CreateObject<ObjectWrapper, &ObjectWrapper::Finalize>(this->GetIsolate(), object_template, this, class_id);
-
-	return handle_scope.Escape(local_object);
+	unisim::util::nodejs::template BindObject<ObjectWrapper, &ObjectWrapper::Finalize>(nodejs.GetIsolate(), object, /* ptr */ 0, /* class_id */ 0);
 }
 
 } // end of namespace nodejs

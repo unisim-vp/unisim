@@ -41,6 +41,7 @@
 #include <unisim/util/debug/subprogram.hh>
 #include <unisim/util/debug/variable.hh>
 #include <unisim/util/debug/decl_location.hh>
+#include <unisim/service/interfaces/data_object_lookup.hh>
 #include <list>
 #include <vector>
 #include <set>
@@ -700,7 +701,7 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindVariableDIE(const char *name) const;
 
-	void EnumerateDataObjectNames(std::set<std::string>& name_set) const;
+	void ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner) const;
 	
 	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 	template <typename VISITOR, typename T = bool> T ScanType(VISITOR& visitor) const;
@@ -791,9 +792,6 @@ private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_DIE<MEMORY_ADDR> *dw_parent_die;
-	std::ostream& debug_info_stream;
-	std::ostream& debug_warning_stream;
-	std::ostream& debug_error_stream;
 	const bool& debug;
 	uint64_t offset;
 	unsigned int id;

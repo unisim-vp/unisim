@@ -130,11 +130,12 @@ template <typename ADDRESS>
 class SubProgramHook : public CustomHook<ADDRESS, SubProgramHook<ADDRESS> >
 {
 public:
-	SubProgramHook(const SubProgram<ADDRESS> *_subprogram) : subprogram(_subprogram) {}
+	SubProgramHook(const SubProgram<ADDRESS> *_subprogram) : subprogram(_subprogram) { subprogram->Catch(); }
+	virtual ~SubProgramHook() { subprogram->Release(); }
 	
 	const SubProgram<ADDRESS> *GetSubProgram() const { return subprogram; }
 	
-	virtual void Print(std::ostream& stream) const { stream << "Source code hook at " << subprogram->GetName() << " in File \"" << subprogram->GetFilename() << "\""; }
+	virtual void Print(std::ostream& stream) const { stream << "Subprogram hook at " << subprogram->GetName() << " in File \"" << subprogram->GetFilename() << "\""; }
 
 private:
 	const SubProgram<ADDRESS> *subprogram;

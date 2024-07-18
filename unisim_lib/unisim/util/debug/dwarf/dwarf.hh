@@ -142,16 +142,16 @@ public:
 	// High level interface
 	bool HasDebugInfo() const;
 	void ScanStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner) const;
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::Scope scope) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::Scope scope) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const;
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
 	std::vector<MEMORY_ADDR> *GetBackTrace(unsigned int prc_num) const;
 	bool GetReturnAddress(unsigned int prc_num, MEMORY_ADDR& ret_addr) const;
 	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(unsigned int prc_num, const char *data_object_name) const;
 	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, const char *data_object_name) const;
-	void EnumerateDataObjectNames(unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
-	void EnumerateDataObjectNames(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
+	void ScanDataObjectNames(unsigned int prc_num, unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope = unisim::service::interfaces::DataObjectLookupBase::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
+	void ScanDataObjectNames(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope = unisim::service::interfaces::DataObjectLookupBase::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	const DWARF_SubProgram<MEMORY_ADDR> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 	const DWARF_SubProgram<MEMORY_ADDR> *FindSubProgram(MEMORY_ADDR pc, const char *filename = 0) const;
 	unisim::util::debug::DataObject<MEMORY_ADDR> *GetReturnValue(unsigned int prc_num) const;
@@ -315,8 +315,8 @@ private:
 	bool FindDataObject(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, FindDataObjectArguments& args) const;
 	bool FindDataObjectProlog(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, FindDataObjectArguments& args) const;
 	bool FindDataObjectEpilog(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, FindDataObjectArguments& args) const;
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> *stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> *stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR> *scanner, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::Scope scope) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR> *scanner, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
 	
 	bool GetFrameBase(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, MEMORY_ADDR& frame_base) const;
 	
@@ -325,6 +325,7 @@ private:
 	endian_type GetArchEndianness() const;
 	uint8_t GetFileAddressSize() const;
 	uint8_t GetArchAddressSize() const;
+	bool HasFilename() const;
 	const char *GetFilename() const;
 	const char *GetArchitecture() const;
 	
@@ -339,6 +340,9 @@ private:
 	
 	// Symbol table
 	const unisim::util::debug::SymbolTable<MEMORY_ADDR> *GetSymbolTable() const;
+	
+	// Blob
+	const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	// Statement matrix methods
 	void DumpStatementMatrix();
@@ -351,6 +355,9 @@ private:
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface(unsigned int prc_num) const;
 
 	// Debug stuf
+	std::ostream& GetGeneralDebugInfoStream() const;
+	std::ostream& GetGeneralDebugWarningStream() const;
+	std::ostream& GetGeneralDebugErrorStream() const;
 	std::ostream& GetDebugInfoStream() const;
 	std::ostream& GetDebugWarningStream() const;
 	std::ostream& GetDebugErrorStream() const;

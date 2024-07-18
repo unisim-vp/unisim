@@ -107,19 +107,19 @@ public:
 	virtual const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	// unisim::service::interfaces::SymbolTableLookup
-	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+	virtual void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner) const;
+	virtual void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner, typename unisim::util::debug::SymbolBase::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
-	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const;
+	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::SymbolBase::Type type) const;
 	
 	// unisim::service::interfaces::StatementLookup
 	virtual void ScanStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, const char *filename) const;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, const char *filename, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, const char *filename, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, const char *filename, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::Scope scope) const;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, MEMORY_ADDR addr, const char *filename, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::Scope scope) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
 
 private:
 	unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym> *elf_loader;

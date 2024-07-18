@@ -35,33 +35,27 @@
 #ifndef __UNISIM_UTIL_DEBUG_SYMBOL_TCC__
 #define __UNISIM_UTIL_DEBUG_SYMBOL_TCC__
 
+#include <unisim/util/debug/symbol.hh>
 #include <iostream>
 #include <sstream>
-#include <string.h>
 
 namespace unisim {
 namespace util {
 namespace debug {
 
-using std::endl;
-using std::hex;
-using std::dec;
-using std::stringstream;
-
 template <class T>
-Symbol<T>::Symbol(const char *_name, T _addr, T _size, typename unisim::util::debug::Symbol<T>::Type _type, T _memory_atom_size) :
-	name(_name),
-	addr(_addr),
-	size(_size),
-	type(_type),
-	memory_atom_size(_memory_atom_size)
+Symbol<T>::Symbol(const char *_name, T _addr, T _size, typename unisim::util::debug::Symbol<T>::Type _type, T _memory_atom_size)
+	: SymbolBase(_name, _type)
+	, addr(_addr)
+	, size(_size)
+	, memory_atom_size(_memory_atom_size)
 {
 }
 
 template <class T>
 std::string Symbol<T>::GetFriendlyName(T addr) const
 {
-	stringstream sstr;
+	std::stringstream sstr;
 	
 	sstr << name;
 	if(type == unisim::util::debug::Symbol<T>::SYM_FUNC)

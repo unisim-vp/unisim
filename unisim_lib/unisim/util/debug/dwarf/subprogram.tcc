@@ -60,9 +60,6 @@ DWARF_SubProgram<ADDRESS>::DWARF_SubProgram(const DWARF_DIE<ADDRESS> *_dw_subpro
 	: unisim::util::debug::SubProgram<ADDRESS>()
 	, dw_handler(_dw_subprogram_die->GetHandler())
 	, dw_subprogram_die(_dw_subprogram_die)
-	, debug_info_stream(dw_handler->GetDebugInfoStream())
-	, debug_warning_stream(dw_handler->GetDebugWarningStream())
-	, debug_error_stream(dw_handler->GetDebugErrorStream())
 	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
 	, name()
 	, external_flag(false)
@@ -107,7 +104,7 @@ DWARF_SubProgram<ADDRESS>::DWARF_SubProgram(const DWARF_DIE<ADDRESS> *_dw_subpro
 		const unisim::util::debug::SymbolTable<ADDRESS> *symbol_table = dw_handler->GetSymbolTable();
 		if(symbol_table)
 		{
-			symbol = symbol_table->FindSymbolByName(_name, unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC);
+			symbol = symbol_table->FindSymbolByName(_name, unisim::util::debug::SymbolBase::SYM_FUNC);
 		}
 	}
 	
@@ -148,7 +145,7 @@ const char *DWARF_SubProgram<ADDRESS>::GetName() const
 template <class ADDRESS>
 const char *DWARF_SubProgram<ADDRESS>::GetFilename() const
 {
-	return dw_handler->GetFilename();
+	return dw_handler->HasFilename() ? dw_handler->GetFilename() : 0;
 }
 
 template <class ADDRESS>
@@ -547,7 +544,7 @@ bool DWARF_SubProgram<ADDRESS>::GetReturnValueLocation(const DWARF_MachineState<
 	{
 		if(debug)
 		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", evaluation of \"" << name << "\" subprogram return value location expression failed" << std::endl;
+			dw_handler->GetDebugInfoStream() << "evaluation of \"" << name << "\" subprogram return value location expression failed" << std::endl;
 		}
 	}
 	
@@ -557,7 +554,7 @@ bool DWARF_SubProgram<ADDRESS>::GetReturnValueLocation(const DWARF_MachineState<
 	{
 		if(debug)
 		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't determine byte size (with padding) of \"" << name << "\" subprogram return value" << std::endl;
+			dw_handler->GetDebugInfoStream() << "can't determine byte size (with padding) of \"" << name << "\" subprogram return value" << std::endl;
 		}
 	}
 	loc.SetByteSize(dw_byte_size);
@@ -568,7 +565,7 @@ bool DWARF_SubProgram<ADDRESS>::GetReturnValueLocation(const DWARF_MachineState<
 	{
 		if(debug)
 		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't determine bit size of \"" << name << "\" subprogram return value" << std::endl;
+			dw_handler->GetDebugInfoStream() << "can't determine bit size of \"" << name << "\" subprogram return value" << std::endl;
 		}
 	}
 	loc.SetBitSize(dw_bit_size);

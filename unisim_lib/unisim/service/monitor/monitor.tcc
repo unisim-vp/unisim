@@ -161,7 +161,19 @@ void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* e
 			list<const Symbol<ADDRESS> *> symbol_registries;
 
 			if (symbol_table_lookup_import) {
-				symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+				struct SymbolTableScanner : unisim::service::interfaces::SymbolTableScanner<ADDRESS>
+				{
+					list<const Symbol<ADDRESS> *>& symbol_registries;
+					
+					SymbolTableScanner(list<const Symbol<ADDRESS> *>& _symbol_registries) : symbol_registries(_symbol_registries) {}
+					virtual void Append(const Symbol<ADDRESS> *symbol)
+					{
+						symbol_registries.push_back(symbol);
+					}
+				};
+				
+				SymbolTableScanner symbol_table_scanner(symbol_registries);
+				symbol_table_lookup_import->ScanSymbols(symbol_table_scanner, Symbol<ADDRESS>::SYM_OBJECT);
 
 			}
 

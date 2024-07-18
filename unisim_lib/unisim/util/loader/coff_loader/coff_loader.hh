@@ -176,7 +176,8 @@ public:
 	void DumpFileHandlers(std::ostream& os);
 	void Reset();
 private:
-	std::map<uint16_t, FileHandler<MEMORY_ADDR> *> file_handlers;
+	typedef std::map<uint16_t, FileHandler<MEMORY_ADDR> *> FileHandlers;
+	FileHandlers file_handlers;
 };
 
 typedef enum
@@ -193,6 +194,8 @@ public:
 	CoffLoader(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
 	virtual ~CoffLoader();
 
+	static bool Supports(uint16_t magic);
+
 	void SetOption(Option opt, MEMORY_ADDR addr);
 	void SetOption(Option opt, const char *s);
 	void SetOption(Option opt, bool flag);
@@ -205,12 +208,12 @@ public:
 	void ParseSymbols();
 	const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
-	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+	void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner) const;
+	void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner, typename unisim::util::debug::SymbolBase::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const;
+	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::SymbolBase::Type type) const;
 
 private:
 	// symbol storage classes
@@ -335,7 +338,7 @@ private:
 	bool verbose;
 
 	// File handler registry
-	FileHandlerRegistry<MEMORY_ADDR> file_handler_registry;
+	static FileHandlerRegistry<MEMORY_ADDR> file_handler_registry;
 
 	// Blob
 	unisim::util::blob::Blob<MEMORY_ADDR> *blob;
@@ -348,7 +351,6 @@ private:
 	//MEMORY_ADDR basic_type_sizes[NUM_BASIC_TYPES];
 	
 	unisim::util::debug::coff_symtab::Coff_SymtabHandler<MEMORY_ADDR> *symtab_handler;
-
 };
 
 } // end of namespace coff_loader

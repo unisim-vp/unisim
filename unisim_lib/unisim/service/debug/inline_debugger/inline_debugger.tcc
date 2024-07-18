@@ -141,7 +141,6 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, next_stmt_event(0)
 	, finish_event(0)
 	, visited_instructions()
-	, is_started(false)
 {
 	param_memory_atom_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 }
@@ -596,7 +595,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 	
 	PrintTrackedDataObjects();
 	
-	Disasm(cia, 1, next_addr);
+	Disasm(cia * memory_atom_size, 1, next_addr);
 
 	if(running_mode == INLINE_DEBUGGER_MODE_TRAVERSE)
 	{
@@ -914,12 +913,12 @@ void InlineDebugger<ADDRESS>::DebugYield()
 					if(strcmp(parm[1].c_str(), "global") == 0)
 					{
 						recognized = true;
-						ListDataObjects(unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_GLOBAL_ONLY);
+						ListDataObjects(unisim::service::interfaces::DataObjectLookupBase::SCOPE_GLOBAL_ONLY);
 					}
 					else if(strcmp(parm[1].c_str(), "local") == 0)
 					{
 						recognized = true;
-						ListDataObjects(unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_LOCAL_ONLY);
+						ListDataObjects(unisim::service::interfaces::DataObjectLookupBase::SCOPE_LOCAL_ONLY);
 					}
 					break;
 				}
@@ -1515,11 +1514,14 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "<untrackobject | untrackobj | utob> <data object name>" << std::endl;
 	(*std_output_stream) << "    untrack data object" << std::endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
-	(*std_output_stream) << "<whatis> <data object name>" << std::endl;
+	(*std_output_stream) << "whatis <data object name>" << std::endl;
 	(*std_output_stream) << "    print data object type" << std::endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
-	(*std_output_stream) << "<info> <subprogram name>" << std::endl;
+	(*std_output_stream) << "info subprogram <subprogram name>" << std::endl;
 	(*std_output_stream) << "    print information about a subprogram" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "info frame <frame number>" << std::endl;
+	(*std_output_stream) << "    print information about a frame" << std::endl;
 	(*std_output_stream) << "========================= BREAKPOINTS/WATCHPOINTS ==============================" << std::endl;
 	(*std_output_stream) << "<b | break> [<symbol | *address | filename:lineno>]" << std::endl;
 	(*std_output_stream) << "    set a breakpoint at 'symbol', 'address', or 'filename:lineno'. If 'symbol', 'address'," << std::endl;
@@ -1563,7 +1565,7 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count, ADDRESS &next_addr
 		const unisim::util::debug::Symbol<ADDRESS> *last_symbol = 0;
 		do
 		{
-			const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(addr, /* filename */ 0, first ? unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION : unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);
+			const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(addr, /* filename */ 0, first ? unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION : unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_EXACT_STMT);
 			first = false;
 			
 			if(stmt)
@@ -1817,7 +1819,7 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 				}
 				(*inline_debugger.std_output_stream) << ")";
 				
-				const unisim::util::debug::Statement<ADDRESS> *stmt = inline_debugger.stmt_lookup_import->FindStatement(addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION);
+				const unisim::util::debug::Statement<ADDRESS> *stmt = inline_debugger.stmt_lookup_import->FindStatement(addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION);
 				
 				if(stmt)
 				{
@@ -2292,138 +2294,67 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const unisim::kernel
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpSymbols(const typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& symbols, const char *name)
-{
-	bool found = false;
-	
-	typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>::const_iterator symbol_iter;
-	for(symbol_iter = symbols.begin(); symbol_iter != symbols.end(); symbol_iter++)
-	{
-		const unisim::util::debug::Symbol<ADDRESS> *symbol = *symbol_iter;
-		
-		std::string symbol_name(symbol->GetName());
-		
-		if(!name || ((*name == '~') && symbol_name.find(name + 1, 0, strlen(name + 1)) != std::string::npos) || (symbol_name.compare(name) == 0))
-		{
-			if(!found)
-			{
-				// print header of table
-				(*std_output_stream) << "  ";
-				(*std_output_stream).fill(' ');
-				(*std_output_stream).width(2 * sizeof(ADDRESS));
-				(*std_output_stream) << "Address";
-				(*std_output_stream).fill(' ');
-				(*std_output_stream).width(1 + (2 * sizeof(ADDRESS)));
-				(*std_output_stream) << "Size";
-				(*std_output_stream).width(10);
-				(*std_output_stream) << "Type";
-				(*std_output_stream).width(0);
-				(*std_output_stream) << " Name";
-				(*std_output_stream) << std::endl;
-			}
-			
-			std::string type_name;
-			
-			switch(symbol->GetType())
-			{
-				case unisim::util::debug::Symbol<ADDRESS>::SYM_NOTYPE:
-					type_name = "no type";
-					break;
-				case unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT:
-					type_name = "object";
-					break;
-				case unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC:
-					type_name = "function";
-					break;
-				case unisim::util::debug::Symbol<ADDRESS>::SYM_SECTION:
-					type_name = "section";
-					break;
-				case unisim::util::debug::Symbol<ADDRESS>::SYM_FILE:
-					type_name = "file";
-					break;
-				case unisim::util::debug::Symbol<ADDRESS>::SYM_COMMON:
-					type_name = "common";
-					break;
-				case unisim::util::debug::Symbol<ADDRESS>::SYM_TLS:
-					type_name = "tls";
-					break;
-				case unisim::util::debug::Symbol<ADDRESS>::SYM_NUM:
-					type_name = "num";
-					break;
-				case unisim::util::debug::Symbol<ADDRESS>::SYM_LOOS:
-					type_name = "loos";
-					break;
-				case unisim::util::debug::Symbol<ADDRESS>::SYM_HIOS:
-					type_name = "hios";
-					break;
-				case unisim::util::debug::Symbol<ADDRESS>::SYM_LOPROC:
-					type_name = "loproc";
-					break;
-				case unisim::util::debug::Symbol<ADDRESS>::SYM_HIPROC:
-					type_name = "hiproc";
-					break;
-			}
-			
-			(*std_output_stream) << std::hex << "0x";
-			(*std_output_stream).fill('0');
-			(*std_output_stream).width(2 * sizeof(ADDRESS));
-			(*std_output_stream) << (symbol->GetAddress() / memory_atom_size) << std::dec;
-			(*std_output_stream).fill(' ');
-			(*std_output_stream).width(1 + (2 * sizeof(ADDRESS)));
-			(*std_output_stream) << (symbol->GetSize() / memory_atom_size);
-			(*std_output_stream).width(10);
-			(*std_output_stream) << type_name;
-			(*std_output_stream).width(0);
-			(*std_output_stream) << " " << symbol->GetName();
-			(*std_output_stream) << std::endl;
-			
-			found = true;
-		}
-	}
-	
-	if(!found)
-	{
-		(*std_output_stream) << "unknown symbol \"" << ((*name == '~') ? name + 1 : name) << "\"" << std::endl;
-	}
-}
-
-template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpSymbols(const char *name)
 {
-	unsigned int i;
-	typename unisim::util::debug::Symbol<ADDRESS>::Type types[] = {
-		unisim::util::debug::Symbol<ADDRESS>::SYM_NOTYPE,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_SECTION,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_FILE,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_COMMON,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_TLS,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_NUM,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_LOOS,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_HIOS,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_LOPROC,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_HIPROC
-	};
-	
-	typename std::list<const unisim::util::debug::Symbol<ADDRESS> *> symbols;
-	
-	for(i = 0; i < (sizeof(types) / sizeof(types[0])); i++)
+	if(symbol_table_lookup_import)
 	{
-		typename unisim::util::debug::Symbol<ADDRESS>::Type type = types[i];
-
-		if(symbol_table_lookup_import)
+		struct SymbolTableScanner : unisim::service::interfaces::SymbolTableScanner<ADDRESS>
 		{
-			symbol_table_lookup_import->GetSymbols(symbols, type);
+			InlineDebugger<ADDRESS>& inline_debugger;
+			const char *name;
+			bool found;
+			
+			SymbolTableScanner(InlineDebugger<ADDRESS>& _inline_debugger, const char *_name) : inline_debugger(_inline_debugger), name(_name), found(false) {}
+			
+			virtual void Append(const unisim::util::debug::Symbol<ADDRESS> *symbol)
+			{
+				std::string symbol_name(symbol->GetName());
+				
+				if(!name || ((*name == '~') && symbol_name.find(name + 1, 0, strlen(name + 1)) != std::string::npos) || (symbol_name.compare(name) == 0))
+				{
+					if(!found)
+					{
+						// print header of table
+						(*inline_debugger.std_output_stream) << "  ";
+						(*inline_debugger.std_output_stream).fill(' ');
+						(*inline_debugger.std_output_stream).width(2 * sizeof(ADDRESS));
+						(*inline_debugger.std_output_stream) << "Address";
+						(*inline_debugger.std_output_stream).fill(' ');
+						(*inline_debugger.std_output_stream).width(1 + (2 * sizeof(ADDRESS)));
+						(*inline_debugger.std_output_stream) << "Size";
+						(*inline_debugger.std_output_stream).width(10);
+						(*inline_debugger.std_output_stream) << "Type";
+						(*inline_debugger.std_output_stream).width(0);
+						(*inline_debugger.std_output_stream) << " Name";
+						(*inline_debugger.std_output_stream) << std::endl;
+					}
+					
+					(*inline_debugger.std_output_stream) << std::hex << "0x";
+					(*inline_debugger.std_output_stream).fill('0');
+					(*inline_debugger.std_output_stream).width(2 * sizeof(ADDRESS));
+					(*inline_debugger.std_output_stream) << (symbol->GetAddress() / inline_debugger.memory_atom_size) << std::dec;
+					(*inline_debugger.std_output_stream).fill(' ');
+					(*inline_debugger.std_output_stream).width(1 + (2 * sizeof(ADDRESS)));
+					(*inline_debugger.std_output_stream) << (symbol->GetSize() / inline_debugger.memory_atom_size);
+					(*inline_debugger.std_output_stream).width(10);
+					(*inline_debugger.std_output_stream) << symbol->GetType();
+					(*inline_debugger.std_output_stream).width(0);
+					(*inline_debugger.std_output_stream) << " " << symbol->GetName();
+					(*inline_debugger.std_output_stream) << std::endl;
+					
+					found = true;
+				}
+			}
+		};
+		
+		SymbolTableScanner symbol_table_scanner(*this, name);
+		symbol_table_lookup_import->ScanSymbols(symbol_table_scanner);
+		if(!symbol_table_scanner.found)
+		{
+			(*std_output_stream) << "unknown symbol \"" << ((*name == '~') ? name + 1 : name) << "\"" << std::endl;
 		}
 	}
-	
-	if(!symbols.empty())
-	{
-		DumpSymbols(symbols, name);
-	}
 }
-
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetVariable(const char *name, const char *value)
@@ -2509,36 +2440,43 @@ void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::LoadMacro(const char *filename)
 {
-	std::string path(SearchFile(filename));
-	
-	std::ifstream f(path.c_str(), std::ifstream::in);
-	
-	if(f.fail())
+	std::string path;
+	if(!LocateFile(filename, path))
 	{
-		(*std_error_stream) << "WARNING! Can't open macro file \"" << path << "\"" << std::endl;
-		return;
-	}
-	
-	std::stack<std::string> macro;
-	std::string line;
+		std::ifstream f(path.c_str(), std::ifstream::in);
 		
-	do
-	{
-		getline(f, line);
-		if(f.bad())
+		if(f.fail())
 		{
-			(*std_error_stream) << "WARNING! I/O error while reading file \"" << path << "\"" << std::endl;
+			(*std_error_stream) << "WARNING! Can't open macro file \"" << path << "\"" << std::endl;
 			return;
 		}
-		if (f.eof()) break;
-		macro.push(line);
-	} while(!f.eof());
-	
-	while(!macro.empty())
+		
+		std::stack<std::string> macro;
+		std::string line;
+			
+		do
+		{
+			getline(f, line);
+			if(f.bad())
+			{
+				(*std_error_stream) << "WARNING! I/O error while reading file \"" << path << "\"" << std::endl;
+				return;
+			}
+			if (f.eof()) break;
+			macro.push(line);
+		} while(!f.eof());
+		
+		while(!macro.empty())
+		{
+			const std::string& s = macro.top();
+			exec_queue.push_front(s);
+			macro.pop();
+		}
+	}
+	else
 	{
-		const std::string& s = macro.top();
-		exec_queue.push_front(s);
-		macro.pop();
+		(*std_error_stream) << "WARNING! Can't locate macro file \"" << filename << "\"" << std::endl;
+		return;
 	}
 }
 
@@ -2587,7 +2525,7 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 	bool match;
 	std::string match_source_path;
 	
-	if((match = LocateFile(source_path, match_source_path)))
+	if((match = LocateSourceFile(source_path, match_source_path)))
 	{
 		(*std_output_stream) << match_source_path;
 	}
@@ -2661,7 +2599,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace()
 				(*std_output_stream) << ">";
 			}
 
-			const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(i == 0 ? addr : (addr - 1), /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION);
+			const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(i == 0 ? addr : (addr - 1), /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION);
 			
 			if(stmt)
 			{
@@ -2679,7 +2617,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace()
 					source_path += source_filename;
 					(*std_output_stream) << " from ";
 					std::string match_source_path;
-					if(LocateFile(source_path.c_str(), match_source_path))
+					if(LocateSourceFile(source_path.c_str(), match_source_path))
 					{
 						(*std_output_stream) << match_source_path;
 					}
@@ -2779,7 +2717,7 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 
 	const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
 	
-	if(symbol && ((symbol->GetType() == unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT) || (symbol->GetType() == unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC)))
+	if(symbol && ((symbol->GetType() == unisim::util::debug::SymbolBase::SYM_OBJECT) || (symbol->GetType() == unisim::util::debug::SymbolBase::SYM_FUNC)))
 	{
 		addr = symbol->GetAddress();
 		return true;
@@ -2885,7 +2823,7 @@ void InlineDebugger<ADDRESS>::ListSourceFiles()
 	{
 		const std::string& source_path = (*source_filename_iter);
 		std::string match_source_path;
-		if(LocateFile(source_path.c_str(), match_source_path))
+		if(LocateSourceFile(source_path.c_str(), match_source_path))
 		{
 			(*std_output_stream) << "[OK] " << match_source_path << std::endl;
 		}
@@ -2910,11 +2848,32 @@ void InlineDebugger<ADDRESS>::EnableBinary(const char *filename, bool enable)
 		file_path = filename;
 	}
 	
-	if(debug_info_loading_import->EnableBinary(file_path, enable))
+	struct ExecutableBinaryFileScanner : unisim::service::interfaces::ExecutableBinaryFileScanner
 	{
-		(*std_output_stream) << "Binary File \"" << file_path << "\" " << (enable ? "enabled" : "disabled") << std::endl;
-	}
-	else
+		InlineDebugger<ADDRESS> *inline_debugger;
+		const char *filename;
+		bool enable;
+		bool found;
+		
+		virtual void Append(unisim::service::interfaces::ExecutableBinaryFile *exec_bin_file)
+		{
+			if(strcmp(exec_bin_file->GetFilename(), filename) == 0)
+			{
+				(*inline_debugger->std_output_stream) << "Binary File \"" << filename << "\" " << (enable ? "enabled" : "disabled") << std::endl;
+				exec_bin_file->Enable(enable);
+				found = true;
+			}
+		}
+	};
+	
+	ExecutableBinaryFileScanner exec_bin_file_scanner;
+	exec_bin_file_scanner.inline_debugger = this;
+	exec_bin_file_scanner.filename = file_path;
+	exec_bin_file_scanner.enable = enable;
+	exec_bin_file_scanner.found = false;
+	debug_info_loading_import->ScanExecutableBinaryFiles(exec_bin_file_scanner);
+
+	if(!exec_bin_file_scanner.found)
 	{
 		(*std_error_stream) << "Can't " << (enable ? "enable" : "disable") << " binary File \"" << file_path << "\"" << std::endl;
 	}
@@ -2923,15 +2882,21 @@ void InlineDebugger<ADDRESS>::EnableBinary(const char *filename, bool enable)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::ListBinaryFiles()
 {
-	std::list<std::string> lst;
-	debug_info_loading_import->EnumerateBinaries(lst);
-	std::list<std::string>::const_iterator iter;
-	for(iter = lst.begin(); iter != lst.end(); iter++)
+	struct ExecutableBinaryFileScanner : unisim::service::interfaces::ExecutableBinaryFileScanner
 	{
-		const std::string& filename = *iter;
-		bool enabled = debug_info_loading_import->IsBinaryEnabled(filename.c_str());
-		(*std_output_stream) << filename << ": " << (enabled ? "enabled" : "disabled") << std::endl;
-	}
+		InlineDebugger<ADDRESS> *inline_debugger;
+		
+		virtual void Append(unisim::service::interfaces::ExecutableBinaryFile *exec_bin_file)
+		{
+			const std::string& filename = exec_bin_file->GetFilename();
+			bool enabled = exec_bin_file->IsEnabled();
+			(*inline_debugger->std_output_stream) << filename << ": " << (enabled ? "enabled" : "disabled") << std::endl;
+		}
+	};
+	
+	ExecutableBinaryFileScanner exec_bin_file_scanner;
+	exec_bin_file_scanner.inline_debugger = this;
+	debug_info_loading_import->ScanExecutableBinaryFiles(exec_bin_file_scanner);
 }
 
 template <class ADDRESS>
@@ -3412,18 +3377,24 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, const 
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::ListDataObjects(typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope)
+void InlineDebugger<ADDRESS>::ListDataObjects(typename unisim::service::interfaces::DataObjectLookupBase::Scope scope)
 {
 	if(data_object_lookup_import)
 	{
-		std::set<std::string> data_object_name_set;
-		data_object_lookup_import->EnumerateDataObjectNames(data_object_name_set, scope);
-		
-		std::set<std::string>::const_iterator it;
-		for(it = data_object_name_set.begin(); it != data_object_name_set.end(); it++)
+		struct DataObjectNameScanner : unisim::service::interfaces::DataObjectNameScanner
 		{
-			(*std_output_stream) << (*it) << std::endl;
-		}
+			InlineDebugger<ADDRESS>& inline_debugger;
+			
+			DataObjectNameScanner(InlineDebugger<ADDRESS>& _inline_debugger) : inline_debugger(_inline_debugger) {}
+			
+			virtual void Append(const char *data_object_name)
+			{
+				(*inline_debugger.std_output_stream) << data_object_name << std::endl;
+			}
+		};
+		
+		DataObjectNameScanner data_object_name_scanner(*this);
+		data_object_lookup_import->ScanDataObjectNames(data_object_name_scanner, scope);
 	}
 	else
 	{
@@ -4033,12 +4004,6 @@ bool InlineDebugger<ADDRESS>::IsVisited(ADDRESS _cia)
 	ADDRESS hi_address = VisitedInstructionPage::MaskLowerBits(_cia);
 	VisitedInstructionPage& vip = visited_instructions[hi_address];
 	return vip.Get(_cia);
-}
-
-template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsStarted() const
-{
-	return is_started;
 }
 
 } // end of namespace inline_debugger

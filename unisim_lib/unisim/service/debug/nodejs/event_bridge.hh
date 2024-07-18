@@ -56,23 +56,29 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 {
 	typedef typename CONFIG::ADDRESS ADDRESS;
 	
-	EventBridge(NodeJS<CONFIG>& _nodejs, unisim::util::debug::Event<ADDRESS> *_event, v8::Global<v8::Object> const& _recv)
+	EventBridge(NodeJS<CONFIG>& _nodejs, unisim::util::debug::Event<ADDRESS> *_event)
 		: nodejs(_nodejs)
 		, event(_event)
-		, recv(this->GetIsolate(), _recv)
+		, recv()
 		, listening_event(false)
 		, trap(false)
 		, functions()
 		, resolvers()
 	{
-		event->AddEventListener(this);
-		event->Catch();
+		if(event)
+		{
+			event->AddEventListener(this);
+			event->Catch();
+		}
 	}
 	
 	virtual ~EventBridge()
 	{
-		event->RemoveEventListener(this);
-		event->Release();
+		if(event)
+		{
+			event->RemoveEventListener(this);
+			event->Release();
+		}
 		
 		for(typename Functions::iterator it = functions.begin(); it != functions.end(); ++it)
 		{
@@ -86,24 +92,46 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 		}
 	}
 	
-	void Trap(bool flag = true)
+	void Trap(bool flag)
 	{
-		trap = flag;
-		if(!Update(true))
+		if(Update(flag || !functions.empty() || !resolvers.empty()))
+		{
+			trap = flag;
+		}
+		else
 		{
 			this->Throw(SetRemoveError());
 		}
 	}
 	
-	bool AddListener(v8::Local<v8::Function> function)
+	bool Trap() const
 	{
-		functions.resize(functions.size() + 1);
-		functions.back().Reset(this->GetIsolate(), function);
+		return trap;
+	}
+	
+	bool AddListener(v8::Local<v8::Function> function, v8::Local<v8::Object> _recv)
+	{
 		if(!Update(true))
 		{
 			this->Throw(SetRemoveError());
 			return false;
 		}
+		
+		if(functions.empty())
+		{
+			recv.Reset(this->GetIsolate(), _recv); // "this"
+		}
+		else
+		{
+			if(recv.IsEmpty() || (recv != _recv))
+			{
+				struct Bad {};
+				throw Bad();
+			}
+		}
+		functions.resize(functions.size() + 1);
+		functions.back().Reset(this->GetIsolate(), function);
+		
 		return true;
 	}
 	
@@ -111,28 +139,31 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 	{
 		v8::EscapableHandleScope handle_scope(this->GetIsolate());
 		v8::Local<v8::Context> context = this->GetContext();
+		if(!Update(true))
+		{
+			Reject(SetRemoveError());
+			return handle_scope.Escape(v8::Undefined(this->GetIsolate()).template As<v8::Promise>());
+		}
 		v8::Local<v8::Promise::Resolver> resolver;
 		if(!v8::Promise::Resolver::New(context).ToLocal(&resolver))
 		{
 			this->DebugErrorStream() << "Can't create Javascript promise resolver" << std::endl;
 			this->Kill();
-			return v8::Undefined(this->GetIsolate()).template As<v8::Promise>();
+			return handle_scope.Escape(v8::Undefined(this->GetIsolate()).template As<v8::Promise>());
 		}
 		resolvers.resize(resolvers.size() + 1);
 		resolvers.back().Reset(this->GetIsolate(), resolver);
-		if(Update(true))
-		{
-			return handle_scope.Escape(resolver->GetPromise());
-		}
-		else
-		{
-			Reject(SetRemoveError());
-			return v8::Undefined(this->GetIsolate()).template As<v8::Promise>();
-		}
+		return handle_scope.Escape(resolver->GetPromise());
 	}
 	
 	void RemoveListener(v8::Local<v8::Function> func)
 	{
+		if(!Update(trap || !resolvers.empty()))
+		{
+			this->Throw(SetRemoveError());
+			return;
+		}
+		
 		Functions::iterator it = functions.begin();
 		while(it != functions.end())
 		{
@@ -148,9 +179,9 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 			}
 		}
 		
-		if(!Update(trap || !functions.empty() || !resolvers.empty()))
+		if(functions.empty())
 		{
-			this->Throw(SetRemoveError());
+			recv.Reset();
 		}
 	}
 	

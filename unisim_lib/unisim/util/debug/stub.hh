@@ -63,8 +63,8 @@ public:
 	private:
 	};
 	
-	Stub(const SubProgram<ADDRESS> *_subprogram) : subprogram(_subprogram), ref_count(0) {}
-	virtual ~Stub() {}
+	Stub(const SubProgram<ADDRESS> *_subprogram) : subprogram(_subprogram), ref_count(0) { subprogram->Catch(); }
+	virtual ~Stub() { subprogram->Release(); }
 	
 	const SubProgram<ADDRESS> *GetSubProgram() const { return subprogram; }
 	

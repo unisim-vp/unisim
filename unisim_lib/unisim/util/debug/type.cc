@@ -268,24 +268,36 @@ const IntegerType& Type::AsInteger() const             { assert(IsInteger()); re
 const FloatingPointType& Type::AsFloat() const         { assert(IsFloat()); return *(const FloatingPointType *) this; }
 const BooleanType& Type::AsBoolean() const             { assert(IsBoolean()); return *(const BooleanType *) this; }
 const CompositeType& Type::AsComposite() const         { assert(IsComposite()); return *(const CompositeType *) this; }
+const StructureType& Type::AsStructure() const         { assert(IsStructure()); return *(const StructureType *) this; }
+const UnionType& Type::AsUnion() const                 { assert(IsUnion()); return *(const UnionType *) this; }
+const ClassType& Type::AsClass() const                 { assert(IsClass()); return *(const ClassType *) this; }
+const InterfaceType& Type::AsInterface() const         { assert(IsInterface()); return *(const InterfaceType *) this; }
 const PointerType& Type::AsPointer() const             { assert(IsPointer()); return *(const PointerType *) this; }
 const Typedef& Type::AsTypedef() const                 { assert(IsTypedef()); return *(const Typedef *) this; }
 const FunctionType& Type::AsFunction() const           { assert(IsFunction()); return *(const FunctionType *) this; }
 const ArrayType& Type::AsArray() const                 { assert(IsArray()); return *(const ArrayType *) this; }
 const EnumType& Type::AsEnum() const                   { assert(IsEnum()); return *(const EnumType *) this; }
 const UnspecifiedType& Type::AsUnspecifiedType() const { assert(IsUnspecified()); return *(const UnspecifiedType *) this; }
+const VolatileType& Type::AsVolatile() const           { assert(IsVolatile()); return *(const VolatileType *) this; }
+const ConstType& Type::AsConst() const                 { assert(IsConst()); return *(const ConstType *) this; }
 
 CharType& Type::AsChar()                   { assert(IsChar()); return *(CharType *) this; }
 IntegerType& Type::AsInteger()             { assert(IsInteger()); return *(IntegerType *) this; }
 FloatingPointType& Type::AsFloat()         { assert(IsFloat()); return *(FloatingPointType *) this; }
 BooleanType& Type::AsBoolean()             { assert(IsBoolean()); return *(BooleanType *) this; }
 CompositeType& Type::AsComposite()         { assert(IsComposite()); return *(CompositeType *) this; }
+StructureType& Type::AsStructure()         { assert(IsStructure()); return *(StructureType *) this; }
+UnionType& Type::AsUnion()                 { assert(IsUnion()); return *(UnionType *) this; }
+ClassType& Type::AsClass()                 { assert(IsClass()); return *(ClassType *) this; }
+InterfaceType& Type::AsInterface()         { assert(IsInterface()); return *(InterfaceType *) this; }
 PointerType& Type::AsPointer()             { assert(IsPointer()); return *(PointerType *) this; }
 Typedef& Type::AsTypedef()                 { assert(IsTypedef()); return *(Typedef *) this; }
 FunctionType& Type::AsFunction()           { assert(IsFunction()); return *(FunctionType *) this; }
 ArrayType& Type::AsArray()                 { assert(IsArray()); return *(ArrayType *) this; }
 EnumType& Type::AsEnum()                   { assert(IsEnum()); return *(EnumType *) this; }
 UnspecifiedType& Type::AsUnspecifiedType() { assert(IsUnspecified()); return *(UnspecifiedType *) this; }
+VolatileType& Type::AsVolatile()           { assert(IsVolatile()); return *(VolatileType *) this; }
+ConstType& Type::AsConst()                 { assert(IsConst()); return *(ConstType *) this; }
 
 std::ostream& operator << (std::ostream& os, const Type& type)
 {
@@ -961,6 +973,11 @@ void FunctionType::Add(const FormalParameter *formal_param)
 	formal_params.push_back(formal_param);
 }
 
+const Type *FunctionType::GetReturnType() const
+{
+	return return_type;
+}
+
 std::string FunctionType::BuildCDecl(char const **identifier, bool collapsed) const
 {
 	std::stringstream sstr;
@@ -1074,6 +1091,26 @@ Enumerator::Enumerator(const char *_name, uint64_t _value)
 
 Enumerator::~Enumerator()
 {
+}
+
+const char *Enumerator::GetName() const
+{
+	return name.c_str();
+}
+
+bool Enumerator::IsSigned() const
+{
+	return sign;
+}
+
+int64_t Enumerator::GetSignedValue() const
+{
+	return sign ? -value : value;
+}
+
+uint64_t Enumerator::GetUnsignedValue() const
+{
+	return value;
 }
 
 std::ostream& operator << (std::ostream& os, const Enumerator& enumerator)

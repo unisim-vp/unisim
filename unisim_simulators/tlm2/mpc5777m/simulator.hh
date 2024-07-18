@@ -639,8 +639,6 @@ private:
 	void DMASource(const std::string& source_req, const std::string& source_ack, unsigned int dmamux_num, unsigned int dma_source_num);
 	void DMASource(const std::string& source_req, const std::string& source_ack, unsigned int dmamux_num0, unsigned int dma_source_num0, unsigned int dmamux_num1, unsigned int dma_source_num1);
 	void DMASource(const std::string& source_req, const std::string& source_ack, unsigned int dmamux_num0, unsigned int dma_source_num0, unsigned int dmamux_num1, unsigned int dma_source_num1, unsigned int dmamux_num2, unsigned int dma_source_num2);
-	
-	virtual void SigInt();
 };
 
 #endif // __MPC5777M_SIMULATOR_HH__

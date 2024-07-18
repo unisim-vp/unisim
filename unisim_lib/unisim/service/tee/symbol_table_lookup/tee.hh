@@ -66,12 +66,12 @@ public:
 
 	void Setup(SymbolTableLookup<ADDRESS>*) override { for(unsigned i = 0; i < MAX_IMPORTS; i++) symbol_table_lookup_import[i]->RequireSetup(); }
 
-	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
-	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbol(const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
+	virtual void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner) const;
+	virtual void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner, typename unisim::util::debug::SymbolBase::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr) const;
 	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name) const;
-	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
-	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::SymbolBase::Type type) const;
 };
 
 } // end of namespace symbol_table_lookup

@@ -115,16 +115,20 @@ void SubProgram<ADDRESS>::Release() const
 }
 
 template <class ADDRESS>
-template <typename VISITOR> void SubProgram<ADDRESS>::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T SubProgram<ADDRESS>::Scan(VISITOR& visitor) const
 {
 	Type const *return_type = GetReturnType();
-	if(!return_type->Visit(visitor)) return;
+	T ret = return_type->Visit(visitor);
+	if(ret) return ret;
 	unsigned int arity = GetArity();
 	for(unsigned int i = 0; i < arity; ++i)
 	{
 		FormalParameter const *formal_param = GetFormalParameter(i);
-		if(!visitor.Visit(formal_param)) break;
+		T ret = visitor.Visit(formal_param);
+		if(ret) return ret;
 	}
+	
+	return T();
 }
 
 } // end of namespace debug

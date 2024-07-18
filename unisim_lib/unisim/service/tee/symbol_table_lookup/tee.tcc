@@ -75,7 +75,7 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-void Tee<ADDRESS, MAX_IMPORTS>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+void Tee<ADDRESS, MAX_IMPORTS>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner) const
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -84,14 +84,14 @@ void Tee<ADDRESS, MAX_IMPORTS>::GetSymbols(typename std::list<const unisim::util
 		{
 			if(*symbol_table_lookup_import[i])
 			{
-				(*symbol_table_lookup_import[i])->GetSymbols(lst, type);
+				(*symbol_table_lookup_import[i])->ScanSymbols(scanner);
 			}
 		}
 	}
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSymbol(const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+void Tee<ADDRESS, MAX_IMPORTS>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -100,12 +100,10 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::
 		{
 			if(*symbol_table_lookup_import[i])
 			{
-				const typename unisim::util::debug::Symbol<ADDRESS> *symbol = (*symbol_table_lookup_import[i])->FindSymbol(name, addr, type);
-				if(symbol) return symbol;
+				(*symbol_table_lookup_import[i])->ScanSymbols(scanner, type);
 			}
 		}
 	}
-	return 0;
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
@@ -145,7 +143,7 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -163,7 +161,7 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)

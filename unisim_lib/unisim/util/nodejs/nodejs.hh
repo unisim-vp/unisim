@@ -48,8 +48,10 @@
 #include <condition_variable>
 #include <iostream>
 #include <set>
+#include <map>
 
 #include <node.h>
+#include <node_buffer.h>
 
 namespace unisim {
 namespace util {
@@ -68,34 +70,53 @@ struct ObjectWrapper;
 
 ///////////////////////////// Helper functions ////////////////////////////////
 
+// Convert a V8 value to a C++ string
 bool ToString(v8::Isolate *isolate, v8::Local<v8::Value> value, std::string& str);
 
+// Convert a V8 value to an integral C++ value
 template <typename T> bool ToInt(v8::Isolate *isolate, v8::Local<v8::Value> value, T& out);
 
+// Make a V8 value from an integral C++ value
 template <typename T> v8::Local<v8::Value> MakeInteger(v8::Isolate *isolate, T value);
 
+// Trampoline for global callbacks as member method of top level class (i.e. NodeJS)
 template <class CLASS, void (CLASS::*MEMBER_METHOD)(const v8::FunctionCallbackInfo<v8::Value>& args)>
 void GlobalFunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& args);
 
+// A v8::FunctionCallback that acts as a trampoline for a member method of a class (not the top level class)
 template <class CLASS, void (CLASS::*MEMBER_METHOD)(const v8::FunctionCallbackInfo<v8::Value>& args)>
 void FunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& args);
 
+// A v8::FunctionCallback that acts as a trampoline for a constructor
+template <class DATA, void (*CTOR)(DATA& data, const v8::FunctionCallbackInfo<v8::Value>& args)>
+void CtorFunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& args);
+
+// A v8::AccessorNameGetterCallback that acts as a trampoline for a "getter"
+template <class CLASS, void (CLASS::*MEMBER_METHOD)(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)>
+void AccessorGetterCallback(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+
+// A v8::AccessorNameSetterCallback that acts as a trampoline for a "setter"
+template <class CLASS, void (CLASS::*MEMBER_METHOD)(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)>
+void AccessorSetterCallback(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info);
+
+// Create object template and account for two internal fields for a pointer to object wrapper and a class identifier
 inline v8::Local<v8::ObjectTemplate> CreateObjectTemplate(v8::Isolate *isolate);
 
+// Create function template
 template <class CLASS, void (CLASS::*MEMBER_METHOD)(const v8::FunctionCallbackInfo<v8::Value>& args)>
 v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(v8::Isolate *isolate);
 
-template <class CLASS, void (CLASS::*MEMBER_METHOD)(const v8::FunctionCallbackInfo<v8::Value>& args)>
-v8::Local<v8::Function> CreateFunction(v8::Local<v8::Context> context);
+// Create function template for constructor
+template <class DATA, void (*CTOR)(DATA& data, const v8::FunctionCallbackInfo<v8::Value>& args)>
+v8::Local<v8::FunctionTemplate> CreateCtorFunctionTemplate(v8::Isolate *isolate, DATA& data);
 
-template <class CLASS>
-v8::Local<v8::Object> CreateObject(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template, CLASS *ptr, uint32_t class_id);
-
+// Bind V8 object with a C++ object instance
 template <class CLASS, void (CLASS::*FINALIZE_METHOD)()>
-v8::Local<v8::Object> CreateObject(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template, CLASS *ptr, uint32_t class_id);
+void BindObject(v8::Isolate *isolate, v8::Local<v8::Object> object, CLASS *ptr, uint32_t class_id);
 
 /////////////////////////////////// NodeJS ////////////////////////////////////
 
+// Top level class
 struct NodeJS
 {
 	NodeJS(const std::string& executable_path);
@@ -151,8 +172,15 @@ protected:
 	
 	void Cleanup();
 	
-	void AddObject(ObjectWrapper *object_wrapper);
-	void RemoveObject(ObjectWrapper *object_wrapper);
+	void Map(ObjectWrapper *object_wrapper);
+	void Unmap(ObjectWrapper *object_wrapper);
+	template <typename T> T *GetObjectWrapper(const void *ptr);
+	
+	template <typename T>
+	void RegisterCtorFunctionTemplate(v8::Local<v8::FunctionTemplate> function_template);
+	
+	template <typename T>
+	v8::Local<v8::FunctionTemplate> GetCtorFunctionTemplate();
 	
 	v8::Isolate *GetIsolate() const { return isolate; }
 	v8::Local<v8::Context> GetContext() { return context.Get(isolate); }
@@ -194,8 +222,13 @@ private:
 	std::mutex nodejs_thrd_mutex;
 	std::condition_variable nodejs_thrd_cond;
 	bool nodejs_thrd_cond_val;
+	std::mutex env_mutex;
 	typedef std::set<ObjectWrapper *> ObjectWrappers;
 	ObjectWrappers object_wrappers;
+	typedef std::unordered_map<const void *, ObjectWrapper *> ObjectWrapperMap;
+	ObjectWrapperMap object_wrapper_map;
+	typedef std::map<std::string, v8::Global<v8::FunctionTemplate> > CtorFunctionTemplates;
+	CtorFunctionTemplates ctor_function_templates;
 	
 	template <typename T>
 	static bool IsInstanceOf(v8::Local<v8::Value> value);
@@ -216,14 +249,18 @@ private:
 
 //////////////////////////////// ObjectWrapper /////////////////////////////////
 
+// C++ object wrapper that wraps itself in a V8 object
 struct ObjectWrapper
 {
-	ObjectWrapper(NodeJS& nodejs, std::size_t size);
+	enum { MAGIC = 0xBABA0000 };
+	ObjectWrapper(NodeJS& nodejs, const void *ptr, std::size_t size);
 	virtual ~ObjectWrapper();
 	
 	virtual void Finalize();
 	
-	static uint32_t AllocateClassId() { static uint32_t class_id = 0; return ++class_id; }
+	static uint32_t AllocateClassId() { static uint32_t class_id = 0; return (++class_id) | MAGIC; }
+	void Catch() const { ref_count++; }
+	void Release() const { if(ref_count && (--ref_count == 0)) delete this; }
 protected:
 	v8::Isolate *GetIsolate() const { return nodejs.GetIsolate(); }
 	v8::Local<v8::Context> GetContext() { return nodejs.GetContext(); }
@@ -236,16 +273,24 @@ protected:
 	v8::Local<v8::Value> RangeError(const std::string& err_msg) const { return nodejs.RangeError(err_msg); }
 	v8::Local<v8::Value> TypeError(const std::string& err_msg) const { return nodejs.TypeError(err_msg); }
 	v8::Local<v8::Value> Error(const std::string& err_msg) const { return nodejs.Error(err_msg); }
-	void Throw(v8::Local<v8::Value> error) { return nodejs.Throw(error); }
-	template <typename T> v8::Local<v8::Object> MakeObject(v8::Local<v8::ObjectTemplate> object_template);
+	void Throw(v8::Local<v8::Value> error) { nodejs.Throw(error); }
 	template <typename T> static bool IsInstanceOf(v8::Local<v8::Value> value) { return NodeJS::IsInstanceOf<T>(value); }
 	template <typename T> static T *GetInstanceOf(v8::Local<v8::Value> value) { return NodeJS::GetInstanceOf<T>(value); }
+	template <typename T> void BindObject(v8::Local<v8::Object> object);
+	v8::Local<v8::Object> ThisObject() { return this_object.Get(GetIsolate()); }
+	void CatchObject(v8::Local<v8::Object> object) { this_object.Reset(GetIsolate(), object); }
+	void ReleaseObject() { this_object.Reset(); }
+	template <typename T> v8::Local<v8::Object> MakeObject();
+	template <typename T> v8::Local<v8::Object> MakePersistentObject();
+	static void BindObject(NodeJS& nodejs, v8::Local<v8::Object> object);
 private:
 	friend struct NodeJS;
 	
 	NodeJS& nodejs;
-	std::size_t size;
-	v8::Local<v8::Object> MakeObject(v8::Local<v8::ObjectTemplate> object_template, uint32_t class_id);
+	const void *ptr;                    // pointer to wrapped C++ object (key)
+	std::size_t size;                   // external memory size
+	v8::Global<v8::Object> this_object; // caught "this"
+	mutable unsigned int ref_count;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -319,13 +364,36 @@ v8::Local<v8::Value> MakeInteger(v8::Isolate *isolate, T value)
 template <class CLASS, void (CLASS::*MEMBER_METHOD)(const v8::FunctionCallbackInfo<v8::Value>& args)>
 void GlobalFunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	(static_cast<CLASS *>(args.Data().As<v8::External>()->Value())->*MEMBER_METHOD)(args);
+	void *ptr = args.Data().As<v8::External>()->Value();
+	if(ptr) (static_cast<CLASS *>(ptr)->*MEMBER_METHOD)(args);
 }
 
 template <class CLASS, void (CLASS::*MEMBER_METHOD)(const v8::FunctionCallbackInfo<v8::Value>& args)>
 void FunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	(static_cast<CLASS *>(args.This()->GetInternalField(0).As<v8::External>()->Value())->*MEMBER_METHOD)(args);
+	void *ptr = args.This()->GetInternalField(0).As<v8::External>()->Value();
+	if(ptr) (static_cast<CLASS *>(ptr)->*MEMBER_METHOD)(args);
+}
+
+template <class DATA, void (*CTOR)(DATA& data, const v8::FunctionCallbackInfo<v8::Value>& args)>
+void CtorFunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	void *ptr = args.Data().As<v8::External>()->Value();
+	if(ptr) (*CTOR)(*static_cast<DATA *>(ptr), args);
+}
+
+template <class CLASS, void (CLASS::*MEMBER_METHOD)(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)>
+void AccessorGetterCallback(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	void *ptr = info.Holder()->GetInternalField(0).As<v8::External>()->Value();
+	if(ptr) (static_cast<CLASS *>(ptr)->*MEMBER_METHOD)(property, info);
+}
+
+template <class CLASS, void (CLASS::*MEMBER_METHOD)(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)>
+void AccessorSetterCallback(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+{
+	void *ptr = info.Holder()->GetInternalField(0).As<v8::External>()->Value();
+	if(ptr) (static_cast<CLASS *>(ptr)->*MEMBER_METHOD)(property, value, info);
 }
 
 inline v8::Local<v8::ObjectTemplate> CreateObjectTemplate(v8::Isolate *isolate)
@@ -342,36 +410,51 @@ v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(v8::Isolate *isolate)
 	return v8::FunctionTemplate::New(isolate, &FunctionCallback<CLASS, MEMBER_METHOD>);
 }
 
-template <class CLASS, void (CLASS::*MEMBER_METHOD)(const v8::FunctionCallbackInfo<v8::Value>& args)>
-v8::Local<v8::Function> CreateFunction(v8::Local<v8::Context> context)
-{
-	return v8::Function::New(context, &FunctionCallback<CLASS, MEMBER_METHOD>).ToLocalChecked();
-}
-
-template <class CLASS>
-v8::Local<v8::Object> CreateObject(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template, CLASS *ptr, uint32_t class_id)
+template <class DATA, void (*CTOR)(DATA& data, const v8::FunctionCallbackInfo<v8::Value>& args)>
+v8::Local<v8::FunctionTemplate> CreateCtorFunctionTemplate(v8::Isolate *isolate, DATA& data)
 {
 	v8::EscapableHandleScope scope(isolate);
-	v8::Local<v8::Object> local_object = object_template->NewInstance(isolate->GetCurrentContext()).ToLocalChecked();
-	local_object->SetInternalField(0, v8::External::New(isolate, reinterpret_cast<void *>(ptr)));
-	local_object->SetInternalField(1, v8::Integer::New(isolate, class_id));
-	return scope.Escape(local_object);
+	v8::Local<v8::FunctionTemplate> ctor = v8::FunctionTemplate::New(isolate, &CtorFunctionCallback<DATA, CTOR>, v8::External::New(isolate, reinterpret_cast<void *>(&data)));
+	ctor->InstanceTemplate()->SetInternalFieldCount(2);
+	return scope.Escape(ctor);
 }
 
 template <class CLASS, void (CLASS::*FINALIZE_METHOD)()>
-v8::Local<v8::Object> CreateObject(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template, CLASS *ptr, uint32_t class_id)
+void BindObject(v8::Isolate *isolate, v8::Local<v8::Object> object, CLASS *ptr, uint32_t class_id)
 {
-	v8::EscapableHandleScope scope(isolate);
-	v8::Local<v8::Object> local_object = object_template->NewInstance(isolate->GetCurrentContext()).ToLocalChecked();
-	local_object->SetInternalField(0, v8::External::New(isolate, reinterpret_cast<void *>(ptr)));
-	local_object->SetInternalField(1, v8::Integer::New(isolate, class_id));
-	v8::Global<v8::Object> global_object(isolate, local_object);
-	global_object.SetWeak(ptr, [](const v8::WeakCallbackInfo<CLASS>& data)
+	object->SetInternalField(0, v8::External::New(isolate, reinterpret_cast<void *>(ptr)));
+	object->SetInternalField(1, v8::Integer::New(isolate, class_id));
+	v8::Global<v8::Object> global_object(isolate, object);
+	if(ptr)
 	{
-		CLASS *ptr = static_cast<CLASS *>(data.GetParameter());
-		(ptr->*FINALIZE_METHOD)();
-	}, v8::WeakCallbackType::kParameter);
-	return scope.Escape(local_object);
+		global_object.SetWeak(ptr, [](const v8::WeakCallbackInfo<CLASS>& data)
+		{
+			CLASS *ptr = static_cast<CLASS *>(data.GetParameter());
+			(ptr->*FINALIZE_METHOD)();
+		}, v8::WeakCallbackType::kParameter);
+	}
+}
+
+template <typename T>
+bool IsInstanceOf(v8::Local<v8::Value> value)
+{
+	bool is_instance_of;
+	if(!value->IsObject())
+	{
+		is_instance_of = false;
+	}
+	else
+	{
+		v8::Local<v8::Object> object = value.As<v8::Object>();
+		is_instance_of = (object->InternalFieldCount() >= 2) && T::IsA(object->GetInternalField(1).As<v8::Integer>()->Value());
+	}
+	return is_instance_of;
+}
+
+template <typename T>
+void IsInstanceOf(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	args.GetReturnValue().Set(v8::Boolean::New(args.GetIsolate(), IsInstanceOf<T>(args[0])));
 }
 
 /////////////////////////////////// NodeJS ////////////////////////////////////
@@ -383,10 +466,11 @@ void NodeJS::CreateIsInstanceOf()
 	
 	v8::Local<v8::Function> ctor_function = GetCtorFunction<T>();
 	// add a property to the constructor function named "is..." (e.g. Foo.isFoo) which is a function convenient to test whether constructor function constructed the argument
-	ctor_function->Set(
+	ctor_function->DefineOwnProperty(
 		this->context.Get(isolate),
 		v8::String::NewFromUtf8(isolate, (std::string("is") + (const char *) T::CLASS_NAME).c_str(), v8::NewStringType::kInternalized).ToLocalChecked(),
-		v8::Function::New(this->context.Get(isolate), &NodeJS::IsInstanceOf<T>).ToLocalChecked()
+		v8::Function::New(this->context.Get(isolate), &NodeJS::IsInstanceOf<T>).ToLocalChecked(),
+		v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
 	).Check();
 }
 
@@ -414,7 +498,7 @@ bool NodeJS::IsInstanceOf(v8::Local<v8::Value> value)
 	else
 	{
 		v8::Local<v8::Object> object = value.As<v8::Object>();
-		is_instance_of = (object->InternalFieldCount() >= 2) && (object->GetInternalField(1).As<v8::Integer>()->Value() == T::CLASS_ID);
+		is_instance_of = (object->InternalFieldCount() >= 2) && T::IsA(object->GetInternalField(1).As<v8::Integer>()->Value());
 	}
 	return is_instance_of;
 }
@@ -430,7 +514,7 @@ T *NodeJS::GetInstanceOf(v8::Local<v8::Value> value)
 {
 	if(!value->IsObject()) return 0;
 	v8::Local<v8::Object> object = value.As<v8::Object>();
-	return ((object->InternalFieldCount() >= 2) && (object->GetInternalField(1).As<v8::Integer>()->Value() == T::CLASS_ID)) ? static_cast<T *>(object->GetInternalField(0).As<v8::External>()->Value()) : 0;
+	return ((object->InternalFieldCount() >= 2) && T::IsA(object->GetInternalField(1).As<v8::Integer>()->Value())) ? static_cast<T *>(object->GetInternalField(0).As<v8::External>()->Value()) : 0;
 }
 
 template <class CLASS, void (CLASS::*MEMBER_METHOD)(const v8::FunctionCallbackInfo<v8::Value>& args)>
@@ -445,17 +529,58 @@ v8::Local<v8::Function> NodeJS::CreateFunction()
 	return v8::Function::New(GetContext(), &GlobalFunctionCallback<CLASS, MEMBER_METHOD>, v8::External::New(GetIsolate(), reinterpret_cast<void *>(dynamic_cast<CLASS *>(this)))).ToLocalChecked();
 }
 
-//////////////////////////// ObjectWrapper<> /////////////////////////////
+template <typename T>
+void NodeJS::RegisterCtorFunctionTemplate(v8::Local<v8::FunctionTemplate> function_template)
+{
+	ctor_function_templates[T::CLASS_NAME].Reset(GetIsolate(), function_template);
+}
 
 template <typename T>
-v8::Local<v8::Object> ObjectWrapper::MakeObject(v8::Local<v8::ObjectTemplate> object_template)
+v8::Local<v8::FunctionTemplate> NodeJS::GetCtorFunctionTemplate()
 {
 	v8::EscapableHandleScope handle_scope(GetIsolate());
+	v8::Local<v8::FunctionTemplate> function_template = ctor_function_templates[T::CLASS_NAME].Get(GetIsolate());
+	return handle_scope.Escape(function_template);
+}
 
-	// set prototype of object using the prototype of the constructor function, so that 'new Foo() instanceof Foo == true' works.
-	v8::Local<v8::Object> object = MakeObject(object_template, T::CLASS_ID);
-	object->SetPrototype(GetContext(), nodejs.template GetCtorFunction<T>()->Get(GetContext(), v8::String::NewFromUtf8Literal(GetIsolate(), "prototype")).ToLocalChecked()).ToChecked();
-	
+template <typename T>
+T *NodeJS::GetObjectWrapper(const void *ptr)
+{
+	if(ptr)
+	{
+		ObjectWrapperMap::iterator it = object_wrapper_map.find(ptr);
+		if(it != object_wrapper_map.end())
+		{
+			return static_cast<T *>((*it).second);
+		}
+	}
+	return 0;
+}
+
+//////////////////////////// ObjectWrapper /////////////////////////////
+
+template <typename T>
+void ObjectWrapper::BindObject(v8::Local<v8::Object> object)
+{
+	unisim::util::nodejs::template BindObject<ObjectWrapper, &ObjectWrapper::Finalize>(GetIsolate(), object, this, T::CLASS_ID);
+}
+
+template <typename T>
+v8::Local<v8::Object> ObjectWrapper::MakeObject()
+{
+	v8::EscapableHandleScope handle_scope(GetIsolate());
+	v8::Local<v8::Function> ctor_function = nodejs.GetCtorFunction<T>();
+	v8::Local<v8::Object> object = ctor_function->NewInstance(GetContext()).ToLocalChecked();
+	this->BindObject<T>(object);
+	return handle_scope.Escape(object);
+}
+
+template <typename T>
+v8::Local<v8::Object> ObjectWrapper::MakePersistentObject()
+{
+	v8::EscapableHandleScope handle_scope(GetIsolate());
+	v8::Local<v8::Object> object = this->template MakeObject<T>();
+	this->CatchObject(object); // this is a persistent object: catch "this"
 	return handle_scope.Escape(object);
 }
 

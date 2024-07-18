@@ -49,6 +49,7 @@
 #include "unisim/kernel/logger/logger_server.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/hypapp/hypapp.hh"
+#include "unisim/util/locate/locate.hh"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -489,29 +490,7 @@ bool ResolvePath(const std::string& prefix_dir,
 	std::string unresolved_dir = prefix_dir;
 	unresolved_dir += '/';
 	unresolved_dir += suffix_dir;
-//	char resolved_dir_buf[PATH_MAX + 1];
-	char resolved_dir_buf[FILENAME_MAX + 1];
-
-#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
-	if ( realpath(unresolved_dir.c_str(), 
-				resolved_dir_buf) )
-	{
-		out_dir = resolved_dir_buf;
-		return true;
-	}
-#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	DWORD length = GetFullPathName(unresolved_dir.c_str(), 
-			PATH_MAX + 1, 
-			resolved_dir_buf, 
-			0);
-	if(length > 0)
-	{
-		resolved_dir_buf[length] = 0;
-		out_dir = resolved_dir_buf;
-		return true;
-	}
-#endif
-	return false;
+	return unisim::util::locate::ResolvePath(unresolved_dir, out_dir);
 }
 
 //=============================================================================
@@ -1118,8 +1097,9 @@ bool Object::EndSetup()
 	return true;
 }
 
-void Object::SigInt()
+bool Object::SigInt()
 {
+	return false; // not handled
 }
 
 void Object::Kill()
@@ -1285,7 +1265,7 @@ void ServicePortBase::Connect(ServicePortBase* fwd)
 		return;
 	}
 #ifdef DEBUG_KERNEL
-	std::cerr << GetName() << " -> " << srv_export.GetName() << std::endl;
+	std::cerr << GetName() << " -> " << fwd->GetName() << std::endl;
 #endif
 	fwd_port = fwd;
 	fwd->bwd_ports.push_back(this);
@@ -3092,8 +3072,9 @@ bool Simulator::IsWarningEnabled() const
 	return enable_warning;
 }
 
-void Simulator::SigInt()
+bool Simulator::SigInt()
 {
+	return false; // not handled
 }
 
 void Simulator::Kill()
@@ -3256,15 +3237,23 @@ void Simulator::MTSigInt()
 
 void Simulator::BroadcastSigInt()
 {
-	this->SigInt();
 	Lock();
+	bool handled = false;
 	std::map<std::string, Object *>::iterator object_iter;
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
 		Object *object = (*object_iter).second;
-		object->SigInt();
+		if(object->SigInt()) handled = true;
 	}
 	Unlock();
+	if(!handled)
+	{
+		handled = this->SigInt();
+	}
+	if(!handled)
+	{
+		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
+	}
 }
 
 void Simulator::Lock()

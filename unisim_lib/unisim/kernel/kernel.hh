@@ -417,7 +417,7 @@ public:
 	void SetVariable(const char *variable_name, float variable_value);
 	void SetVariable(const char *variable_name, double variable_value);
 	
-	virtual void SigInt();
+	virtual bool SigInt();
 	virtual void Kill();
 private:
 	pthread_mutex_t mutex;
@@ -464,7 +464,7 @@ public:
 	 * setup, id can call any import. */
 	virtual bool EndSetup();
 	
-	virtual void SigInt();
+	virtual bool SigInt();
 	virtual void Kill();
 	bool Killed() const { return killed; }
 

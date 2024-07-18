@@ -60,9 +60,6 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 	, bv(arch_endianness)
 	, hold(false)
 	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
-	, debug_info_stream(dw_handler->GetDebugInfoStream())
-	, debug_warning_stream(dw_handler->GetDebugWarningStream())
-	, debug_error_stream(dw_handler->GetDebugErrorStream())
 {
 	if(dw_data_object_type)
 	{
@@ -171,7 +168,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 	{
 		const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges = dw_data_object_loc->GetRanges();
 		
-		debug_info_stream << "PC ranges for which data object location is valid are ";
+		std::ostream& debug_info_stream = dw_handler->GetDebugInfoStream() << "PC ranges for which data object location is valid are ";
 		typename std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >::const_iterator it;
 		for(it = ranges.begin(); it != ranges.end(); it++)
 		{
@@ -194,7 +191,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
+					dw_handler->GetDebugInfoStream() << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
 				}
 				uint8_t buffer[dw_byte_size];
 				memset(buffer, 0, dw_byte_size);
@@ -203,7 +200,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 					MEMORY_ADDR addr = dw_addr + (dw_data_object_bit_offset / 8);
 					if(!mem_if->ReadMemory(addr, buffer, dw_byte_size))
 					{
-						debug_error_stream << "Can't read memory at 0x" << std::hex << addr << std::dec << " (" << dw_byte_size << " bytes)" << std::endl;
+						dw_handler->GetGeneralDebugErrorStream() << "Can't read memory at 0x" << std::hex << addr << std::dec << " (" << dw_byte_size << " bytes)" << std::endl;
 						return false;
 					}
 					
@@ -214,7 +211,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 					MEMORY_ADDR addr = dw_addr + ((dw_data_object_bit_offset - 7) / 8);
 					if(!mem_if->ReadMemory(addr, buffer, dw_byte_size))
 					{
-						debug_error_stream << "Can't read memory at 0x" << addr << std::dec << " (" << dw_byte_size << " bytes)" << std::endl;
+						dw_handler->GetGeneralDebugErrorStream() << "Can't read memory at 0x" << addr << std::dec << " (" << dw_byte_size << " bytes)" << std::endl;
 						return false;
 					}
 
@@ -232,7 +229,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 				const DWARF_Register<MEMORY_ADDR> *dw_reg = dw_curr_frame->GetRegister(dw_reg_num);
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << " (" << (dw_reg ? dw_reg->GetName() : "?") << ")" << std::endl;
+					dw_handler->GetDebugInfoStream() << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << " (" << (dw_reg ? dw_reg->GetName() : "?") << ")" << std::endl;
 				}
 				if(!dw_reg) return false;
 				
@@ -296,7 +293,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 								
 								if(debug)
 								{
-									debug_info_stream << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << " (" << (dw_reg ? dw_reg->GetName() : "?") << "), dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+									dw_handler->GetDebugInfoStream() << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << " (" << (dw_reg ? dw_reg->GetName() : "?") << "), dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
 								if(!dw_reg) return false;
@@ -347,7 +344,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 								unsigned int dw_bit_size = dw_mem_loc_piece->GetBitSize();
 								if(debug)
 								{
-									debug_info_stream << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+									dw_handler->GetDebugInfoStream() << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
 								MEMORY_ADDR dw_byte_size = dw_bit_size ? (dw_bit_size + dw_bit_offset + 7) / 8 : arch_address_size;
@@ -373,7 +370,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 				
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_IMPLICIT_SIMPLE_VALUE: dw_implicit_simple_value=0x" << std::hex << dw_implicit_simple_value << std::dec << std::endl;
+					dw_handler->GetDebugInfoStream() << "DW_LOC_IMPLICIT_SIMPLE_VALUE: dw_implicit_simple_value=0x" << std::hex << dw_implicit_simple_value << std::dec << std::endl;
 				}
 				
 				bv.Append(dw_implicit_simple_value, dw_data_object_bit_offset, dw_data_object_bit_size);
@@ -394,7 +391,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 				
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_IMPLICIT_BLOCK_VALUE: dw_implicit_block_value=" << (*dw_implicit_block_value) << std::endl;
+					dw_handler->GetDebugInfoStream() << "DW_LOC_IMPLICIT_BLOCK_VALUE: dw_implicit_block_value=" << (*dw_implicit_block_value) << std::endl;
 				}
 				
 				bv.Append(dw_implicit_block_value->GetValue(), dw_data_object_bit_offset, dw_data_object_bit_size);
@@ -427,7 +424,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
+					dw_handler->GetDebugInfoStream() << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
 				}
 				uint8_t buffer[dw_byte_size];
 				memset(buffer, 0, dw_byte_size);
@@ -455,7 +452,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 				DWARF_Register<MEMORY_ADDR> *dw_reg = dw_curr_frame->GetRegister(dw_reg_num);
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << std::endl;
+					dw_handler->GetDebugInfoStream() << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << std::endl;
 				}
 				if(!dw_reg) return false;
 				
@@ -523,7 +520,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 								unsigned int dw_bit_size = dw_reg_loc_piece->GetBitSize();
 								if(debug)
 								{
-									debug_info_stream << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+									dw_handler->GetDebugInfoStream() << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
 								DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_mach_state->GetCurrentFrame(prc_num);
@@ -596,7 +593,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 								unsigned int dw_bit_size = dw_mem_loc_piece->GetBitSize();
 								if(debug)
 								{
-									debug_info_stream << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+									dw_handler->GetDebugInfoStream() << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
 								MEMORY_ADDR dw_byte_size = dw_bit_size ? (dw_bit_size + dw_bit_offset + 7) / 8 : arch_address_size;

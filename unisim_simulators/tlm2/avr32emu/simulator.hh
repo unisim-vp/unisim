@@ -178,7 +178,6 @@ private:
 	unisim::kernel::variable::Parameter<bool> param_enable_profiler;
 
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
-	virtual void SigInt();
 };
 
 #endif // __AVR32EMU_SIMULATOR_HH__

@@ -165,24 +165,24 @@ public:
 	virtual bool BeginSetup();
 	
 	// Symbols
-	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { GetSymbols(MAX_FRONT_ENDS, lst, type); }
-	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbol(const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { return FindSymbol(MAX_FRONT_ENDS, name, addr, type); }
+	void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner) const { ScanSymbols(MAX_FRONT_ENDS, scanner); }
+	void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner, typename unisim::util::debug::SymbolBase::Type type) const { ScanSymbols(MAX_FRONT_ENDS, scanner, type); }
 	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr) const { return FindSymbolByAddr(MAX_FRONT_ENDS, addr); }
 	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name) const { return FindSymbolByName(MAX_FRONT_ENDS, name); }
-	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { return FindSymbolByName(MAX_FRONT_ENDS, name, type); }
-	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { return FindSymbolByAddr(MAX_FRONT_ENDS, addr, type); }
+	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const { return FindSymbolByName(MAX_FRONT_ENDS, name, type); }
+	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::SymbolBase::Type type) const { return FindSymbolByAddr(MAX_FRONT_ENDS, addr, type); }
 
 	// Statements
 	void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const char *filename) const { ScanStatements(MAX_FRONT_ENDS, scanner, filename); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatement(MAX_FRONT_ENDS, addr, filename, opt); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatements(MAX_FRONT_ENDS, stmts, addr, filename, opt); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const { return FindStatement(MAX_FRONT_ENDS, addr, filename, scope); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const { return FindStatements(MAX_FRONT_ENDS, scanner, addr, filename, scope); }
 	const unisim::util::debug::Statement<ADDRESS> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const { return FindStatement(MAX_FRONT_ENDS, source_code_location, filename); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const { return FindStatements(MAX_FRONT_ENDS, stmts, source_code_location, filename); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const { return FindStatements(MAX_FRONT_ENDS, scanner, source_code_location, filename); }
 	void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const std::string& filename) const { ScanStatements(MAX_FRONT_ENDS, scanner, filename.length() ? filename.c_str() : 0); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, const std::string& filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatement(MAX_FRONT_ENDS, addr, filename.length() ? filename.c_str() : 0, opt); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const std::string& filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatements(MAX_FRONT_ENDS, stmts, addr, filename.length() ? filename.c_str() : 0, opt); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, const std::string& filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const { return FindStatement(MAX_FRONT_ENDS, addr, filename.length() ? filename.c_str() : 0, scope); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, ADDRESS addr, const std::string& filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const { return FindStatements(MAX_FRONT_ENDS, scanner, addr, filename.length() ? filename.c_str() : 0, scope); }
 	const unisim::util::debug::Statement<ADDRESS> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatement(MAX_FRONT_ENDS, source_code_location, filename.length() ? filename.c_str() : 0); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatements(MAX_FRONT_ENDS, stmts, source_code_location, filename.length() ? filename.c_str() : 0); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatements(MAX_FRONT_ENDS, scanner, source_code_location, filename.length() ? filename.c_str() : 0); }
 	
 private:
 	// Exports to CPUs
@@ -270,24 +270,24 @@ private:
 	void ScanRegisters(unsigned int front_end_num, unsigned int prc_num, unisim::service::interfaces::RegisterScanner& scanner);
 	
 	// unisim::service::interfaces::SymbolTableLookup<ADDRESS> (tagged)
-	void GetSymbols(unsigned int front_end_num, typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
-	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbol(unsigned int front_end_num, const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
+	void ScanSymbols(unsigned int front_end_num, unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner) const;
+	void ScanSymbols(unsigned int front_end_num, unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner, typename unisim::util::debug::SymbolBase::Type type) const;
 	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(unsigned int front_end_num, ADDRESS addr) const;
 	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(unsigned int front_end_num, const char *name) const;
-	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(unsigned int front_end_num, const char *name, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
-	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(unsigned int front_end_num, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
+	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(unsigned int front_end_num, const char *name, typename unisim::util::debug::SymbolBase::Type type) const;
+	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(unsigned int front_end_num, ADDRESS addr, typename unisim::util::debug::SymbolBase::Type type) const;
 	
 	// unisim::service::interfaces::StatementLookup<ADDRESS> (tagged)
 	void ScanStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const char *filename) const;
-	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
-	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const;
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const;
 	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
-	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
 	void ScanStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const std::string& filename) const { ScanStatements(front_end_num, scanner, filename.length() ? filename.c_str() : 0); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, ADDRESS addr, const std::string& filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatement(front_end_num, addr, filename.length() ? filename.c_str() : 0, opt); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const std::string& filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatements(front_end_num, stmts, addr, filename.length() ? filename.c_str() : 0, opt); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, ADDRESS addr, const std::string& filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const { return FindStatement(front_end_num, addr, filename.length() ? filename.c_str() : 0, scope); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, ADDRESS addr, const std::string& filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const { return FindStatements(front_end_num, scanner, addr, filename.length() ? filename.c_str() : 0, scope); }
 	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatement(front_end_num, source_code_location, filename.length() ? filename.c_str() : 0); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatements(front_end_num, stmts, source_code_location, filename.length() ? filename.c_str() : 0); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatements(front_end_num, scanner, source_code_location, filename.length() ? filename.c_str() : 0); }
 	
 	// unisim::service::interfaces::StackFrame<ADDRESS> (tagged)
 	bool SelectStackFrame(unsigned int front_end_num, unsigned int frame_num);
@@ -307,9 +307,7 @@ private:
 	
 	// unisim::service::interfaces::DebugInfoLoading (tagged)
 	bool LoadDebugInfo(unsigned int front_end_num, const char *filename);
-	bool EnableBinary(unsigned int front_end_num, const char *filename, bool enable);
-	void EnumerateBinaries(unsigned int front_end_num, std::list<std::string>& lst) const;
-	bool IsBinaryEnabled(unsigned int front_end_num, const char *filename) const;
+	void ScanExecutableBinaryFiles(unsigned int front_end_num, unisim::service::interfaces::ExecutableBinaryFileScanner& scanner) const;
 	
 	// unisim::service::interfaces::DataObjectLookup<ADDRESS> (tagged)
 	unisim::util::debug::DataObjectRef<ADDRESS> FindDataObject(unsigned int front_end_num, const char *data_object_name) const;
@@ -318,8 +316,8 @@ private:
 	unisim::util::debug::DataObjectRef<ADDRESS> GetReturnValue(unsigned int front_end_num, unsigned int prc_num) const;
 	unisim::util::debug::DataObjectRef<ADDRESS> GetSubProgramParameter(unsigned int front_end_num, unsigned int index) const;
 	unisim::util::debug::DataObjectRef<ADDRESS> GetSubProgramParameter(unsigned int front_end_num, unsigned int prc_num, unsigned int index) const;
-	void EnumerateDataObjectNames(unsigned int front_end_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const;
-	void EnumerateDataObjectNames(unsigned int front_end_num, unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const;
+	void ScanDataObjectNames(unsigned int front_end_num, unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope) const;
+	void ScanDataObjectNames(unsigned int front_end_num, unsigned int prc_num, unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope) const;
 	
 	// unisim::service::interfaces::SubProgramLookup<ADDRESS> (tagged)
 	const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(unsigned int front_end_num, const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
@@ -415,7 +413,7 @@ private:
 		virtual unisim::util::debug::DataObjectRef<ADDRESS> FindDataObject(const char *data_object_name) const { bool l = dbg.Lock(front_end_num); unisim::util::debug::DataObjectRef<ADDRESS> ret = dbg.FindDataObject(front_end_num, prc_num, data_object_name); if(l) { dbg.Unlock(front_end_num); } return ret; }
 		virtual unisim::util::debug::DataObjectRef<ADDRESS> GetReturnValue() const { bool l = dbg.Lock(front_end_num); unisim::util::debug::DataObjectRef<ADDRESS> ret = dbg.GetReturnValue(front_end_num, prc_num); if(l) { dbg.Unlock(front_end_num); } return ret; }
 		virtual unisim::util::debug::DataObjectRef<ADDRESS> GetSubProgramParameter(unsigned int index) const { bool l = dbg.Lock(front_end_num); unisim::util::debug::DataObjectRef<ADDRESS> ret = dbg.GetSubProgramParameter(front_end_num, prc_num, index); if(l) { dbg.Unlock(front_end_num); } return ret; }
-		virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const { bool l = dbg.Lock(front_end_num); dbg.EnumerateDataObjectNames(front_end_num, prc_num, name_set, scope); if(l) { dbg.Unlock(front_end_num); } }
+		virtual void ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope) const { bool l = dbg.Lock(front_end_num); dbg.ScanDataObjectNames(front_end_num, prc_num, scanner, scope); if(l) { dbg.Unlock(front_end_num); } } 
 	private:
 		Debugger<CONFIG>& dbg;
 		unsigned int front_end_num;
@@ -710,19 +708,19 @@ private:
 		virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner) { bool l = dbg.Lock(id); dbg.ScanRegisters(id, scanner); if(l) { dbg.Unlock(id); } }
 		
 		// unisim::service::interfaces::SymbolTableLookup<ADDRESS>
-		virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { bool l = dbg.Lock(id); dbg.GetSymbols(id, lst, type); if(l) { dbg.Unlock(id); } }
-		virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbol(const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { bool l = dbg.Lock(id); const typename unisim::util::debug::Symbol<ADDRESS> *ret = dbg.FindSymbol(id, name, addr, type); if(l) { dbg.Unlock(id); } return ret; }
+		virtual void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner) const { bool l = dbg.Lock(id); dbg.ScanSymbols(id, scanner); if(l) { dbg.Unlock(id); } }
+		virtual void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner, typename unisim::util::debug::SymbolBase::Type type) const { bool l = dbg.Lock(id); dbg.ScanSymbols(id, scanner, type); if(l) { dbg.Unlock(id); }}
 		virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr) const { bool l = dbg.Lock(id); const typename unisim::util::debug::Symbol<ADDRESS> *ret = dbg.FindSymbolByAddr(id, addr); if(l) { dbg.Unlock(id); } return ret; }
 		virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name) const { bool l = dbg.Lock(id); const typename unisim::util::debug::Symbol<ADDRESS> *ret = dbg.FindSymbolByName(id, name); if(l) { dbg.Unlock(id); } return ret; }
-		virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { bool l = dbg.Lock(id); const typename unisim::util::debug::Symbol<ADDRESS> *ret = dbg.FindSymbolByName(id, name, type); if(l) { dbg.Unlock(id); } return ret; }
-		virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { bool l = dbg.Lock(id); const typename unisim::util::debug::Symbol<ADDRESS> *ret = dbg.FindSymbolByAddr(id, addr, type); if(l) { dbg.Unlock(id); } return ret; }
+		virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const { bool l = dbg.Lock(id); const typename unisim::util::debug::Symbol<ADDRESS> *ret = dbg.FindSymbolByName(id, name, type); if(l) { dbg.Unlock(id); } return ret; }
+		virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::SymbolBase::Type type) const { bool l = dbg.Lock(id); const typename unisim::util::debug::Symbol<ADDRESS> *ret = dbg.FindSymbolByAddr(id, addr, type); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// unisim::service::interfaces::StatementLookup<ADDRESS>
 		virtual void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const char *filename) const { bool l = dbg.Lock(id); dbg.ScanStatements(id, scanner, filename); if(l) { dbg.Unlock(id); } }
-		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatement(id, addr, filename, opt); if(l) { dbg.Unlock(id); } return ret; }
-		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatements(id, stmts, addr, filename, opt); if(l) { dbg.Unlock(id); } return ret; }
+		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatement(id, addr, filename, scope); if(l) { dbg.Unlock(id); } return ret; }
+		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatements(id, scanner, addr, filename, scope); if(l) { dbg.Unlock(id); } return ret; }
 		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatement(id, source_code_location, filename); if(l) { dbg.Unlock(id); } return ret; }
-		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatements(id, stmts, source_code_location, filename); if(l) { dbg.Unlock(id); } return ret; }
+		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatements(id, scanner, source_code_location, filename); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// unisim::service::interfaces::StackFrame<ADDRESS>
 		virtual bool SelectStackFrame(unsigned int frame_num) { /*dbg.Lock();*/ bool ret = dbg.SelectStackFrame(id, frame_num); /*dbg.Unlock();*/ return ret; }
@@ -735,15 +733,13 @@ private:
 		
 		// unisim::service::interfaces::DebugInfoLoading
 		virtual bool LoadDebugInfo(const char *filename) { bool l = dbg.Lock(id); bool ret = dbg.LoadDebugInfo(id, filename); if(l) { dbg.Unlock(id); } return ret; }
-		virtual bool EnableBinary(const char *filename, bool enable) { bool l = dbg.Lock(id); bool ret = dbg.EnableBinary(id, filename, enable); if(l) { dbg.Unlock(id); } return ret; }
-		virtual void EnumerateBinaries(std::list<std::string>& lst) const { bool l = dbg.Lock(id); dbg.EnumerateBinaries(id, lst); if(l) { dbg.Unlock(id); } }
-		virtual bool IsBinaryEnabled(const char *filename) const { bool l = dbg.Lock(id); bool ret = dbg.IsBinaryEnabled(id, filename); if(l) { dbg.Unlock(id); } return ret; }
+		virtual void ScanExecutableBinaryFiles(unisim::service::interfaces::ExecutableBinaryFileScanner& scanner) const { bool l = dbg.Lock(id); dbg.ScanExecutableBinaryFiles(id, scanner); if(l) { dbg.Unlock(id); } }
 		
 		// unisim::service::interfaces::DataObjectLookup<ADDRESS>
 		virtual unisim::util::debug::DataObjectRef<ADDRESS> FindDataObject(const char *data_object_name) const { bool l = dbg.Lock(id); unisim::util::debug::DataObjectRef<ADDRESS> ret = dbg.FindDataObject(id, data_object_name); if(l) { dbg.Unlock(id); } return ret; }
 		virtual unisim::util::debug::DataObjectRef<ADDRESS> GetReturnValue() const { bool l = dbg.Lock(id); unisim::util::debug::DataObjectRef<ADDRESS> ret = dbg.GetReturnValue(id); if(l) { dbg.Unlock(id); } return ret; }
 		virtual unisim::util::debug::DataObjectRef<ADDRESS> GetSubProgramParameter(unsigned int index) const { bool l = dbg.Lock(id); unisim::util::debug::DataObjectRef<ADDRESS> ret = dbg.GetSubProgramParameter(id, index); if(l) { dbg.Unlock(id); } return ret; }
-		virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const { bool l = dbg.Lock(id); dbg.EnumerateDataObjectNames(id, name_set, scope); if(l) { dbg.Unlock(id); } }
+		virtual void ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope) const { bool l = dbg.Lock(id); dbg.ScanDataObjectNames(id, scanner, scope); if(l) { dbg.Unlock(id); } }
 		
 		// unisim::service::interfaces::SubProgramLookup<ADDRESS>
 		virtual const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(const char *subprogram_name, const char *filename, const char *compilation_unit_name) const { bool l = dbg.Lock(id); const unisim::util::debug::SubProgram<ADDRESS> *ret = dbg.FindSubProgram(id, subprogram_name, filename, compilation_unit_name); if(l) { dbg.Unlock(id); } return ret; }
@@ -1182,7 +1178,7 @@ private:
 		{
 			has_stack_frame_info = this->GetDebugger().GetStackFrameInfos(this->GetFrontEndNumber(), this->GetProcessorNumber(), &stack_frame_info, 1) != 0;
 			
-			const unisim::util::debug::Statement<ADDRESS> *stmt = this->GetDebugger().FindStatement(this->GetFrontEndNumber(), stack_frame_info.pc, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);
+			const unisim::util::debug::Statement<ADDRESS> *stmt = this->GetDebugger().FindStatement(this->GetFrontEndNumber(), stack_frame_info.pc, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_EXACT_STMT);
 			
 			this->SetStatement(stmt);
 			
@@ -1201,7 +1197,7 @@ private:
 		{
 			bool stepped = false;
 			
-			const unisim::util::debug::Statement<ADDRESS> *stmt = this->GetDebugger().FindStatement(this->GetFrontEndNumber(), next_addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);
+			const unisim::util::debug::Statement<ADDRESS> *stmt = this->GetDebugger().FindStatement(this->GetFrontEndNumber(), next_addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_EXACT_STMT);
 			
 			if(stmt && stmt->IsBeginningOfSourceStatement())
 			{
@@ -1479,7 +1475,7 @@ private:
 						
 						if(this->GetDebugger().GetStackFrameInfos(this->GetFrontEndNumber(), this->GetProcessorNumber(), &stack_frame_info, 1) != 0)
 						{
-							const unisim::util::debug::Statement<ADDRESS> *stmt = this->GetDebugger().FindStatement(this->GetFrontEndNumber(), stack_frame_info.pc, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);
+							const unisim::util::debug::Statement<ADDRESS> *stmt = this->GetDebugger().FindStatement(this->GetFrontEndNumber(), stack_frame_info.pc, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_EXACT_STMT);
 							
 							if(stmt && stmt->IsBeginningOfSourceStatement())
 							{
@@ -1557,35 +1553,40 @@ private:
 			typedef std::vector<const unisim::util::debug::Statement<ADDRESS> *> Statements;
 			Statements stmts;
 			
-			dbg.FindStatements(front_end_num, stmts, this->GetSourceCodeLocation(), this->GetFilename());
-			
-			if(stmts.size())
+			struct StatementScanner : unisim::service::interfaces::StatementScanner<ADDRESS>
 			{
-				for(typename Statements::iterator it = stmts.begin(); it != stmts.end(); ++it)
+				SourceCodeBreakpoint& source_code_breakpoint;
+				bool found;
+				bool status;
+				
+				StatementScanner(SourceCodeBreakpoint& _source_code_breakpoint) : source_code_breakpoint(_source_code_breakpoint), found(false), status(true) {}
+				
+				virtual void Append(const unisim::util::debug::Statement<ADDRESS> *stmt)
 				{
-					const unisim::util::debug::Statement<ADDRESS> *stmt = *it;
+					if(!status) return;
+					
+					found = true;
 					
 					ADDRESS brkp_addr = stmt->GetAddress();
 					
-					unisim::util::debug::Breakpoint<ADDRESS> *brkp = dbg.CreateBreakpoint(front_end_num, brkp_addr, /* internal */ true);
+					unisim::util::debug::Breakpoint<ADDRESS> *brkp = source_code_breakpoint.dbg.CreateBreakpoint(source_code_breakpoint.front_end_num, source_code_breakpoint.GetProcessorNumber(), brkp_addr, /* internal */ true);
 					
-					event_combinator.Attach(brkp);
+					source_code_breakpoint.event_combinator.Attach(brkp);
 					
-					if(!dbg.Listen(front_end_num, brkp))
+					if(!source_code_breakpoint.dbg.Listen(source_code_breakpoint.front_end_num, brkp))
 					{
-						event_combinator.Detach(brkp);
-						if(!Remove()) throw InternalError("Can't remove source code breakpoint internal resources");
-						return false;
+						status = false;
+						source_code_breakpoint.event_combinator.Detach(brkp);
+						if(!source_code_breakpoint.Remove()) throw InternalError("Can't remove source code breakpoint internal resources");
 					}
 				}
-			}
-			else
-			{
-				// no statements
-				return false;
-			}
+			};
 			
-			return true;
+			StatementScanner stmt_scanner(*this);
+			
+			dbg.FindStatements(front_end_num, stmt_scanner, this->GetSourceCodeLocation(), this->GetFilename());
+			
+			return stmt_scanner.found && stmt_scanner.status;
 		}
 		
 		bool Remove()
@@ -1632,7 +1633,7 @@ private:
 			
 			ADDRESS brkp_addr = subprogram->GetAddress();
 				
-			unisim::util::debug::Breakpoint<ADDRESS> *brkp = dbg.CreateBreakpoint(front_end_num, brkp_addr, /* internal */ true);
+			unisim::util::debug::Breakpoint<ADDRESS> *brkp = dbg.CreateBreakpoint(front_end_num, this->GetProcessorNumber(), brkp_addr, /* internal */ true);
 			
 			event_combinator.Attach(brkp);
 			
@@ -1681,7 +1682,7 @@ private:
 		{
 			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = stub->GetSubProgram();
 			ADDRESS brkp_addr = subprogram->GetAddress();
-			unisim::util::debug::Breakpoint<ADDRESS> *brkp = dbg.CreateBreakpoint(front_end_num, brkp_addr, /* internal */ true);
+			unisim::util::debug::Breakpoint<ADDRESS> *brkp = dbg.CreateBreakpoint(front_end_num, this->GetProcessorNumber(), brkp_addr, /* internal */ true);
 			this->Attach(brkp);
 			
 			if(!dbg.Listen(front_end_num, brkp))
@@ -1741,34 +1742,41 @@ private:
 			{
 				unisim::util::debug::SourceCodeHook<ADDRESS> *src_code_hook = static_cast<unisim::util::debug::SourceCodeHook<ADDRESS> *>(hook);
 				
-				typedef std::vector<const unisim::util::debug::Statement<ADDRESS> *> Statements;
-				Statements stmts;
-				
-				dbg.FindStatements(front_end_num, stmts, src_code_hook->GetSourceCodeLocation(), src_code_hook->GetFilename());
-				
-				if(stmts.size())
+				struct StatementScanner : unisim::service::interfaces::StatementScanner<ADDRESS>
 				{
-					for(typename Statements::iterator it = stmts.begin(); it != stmts.end(); ++it)
+					HookHandler& hook_handler;
+					bool found;
+					bool status;
+					
+					StatementScanner(HookHandler& _hook_handler) : hook_handler(_hook_handler), found(false), status(true) {}
+					
+					virtual void Append(const unisim::util::debug::Statement<ADDRESS> *stmt)
 					{
-						const unisim::util::debug::Statement<ADDRESS> *stmt = *it;
+						if(!status) return;
+						
+						found = true;
 						
 						ADDRESS brkp_addr = stmt->GetAddress();
 						
-						unisim::util::debug::Breakpoint<ADDRESS> *brkp = dbg.CreateBreakpoint(front_end_num, brkp_addr, /* internal */ true);
+						unisim::util::debug::Breakpoint<ADDRESS> *brkp = hook_handler.dbg.CreateBreakpoint(hook_handler.front_end_num, hook_handler.GetProcessorNumber(), brkp_addr, /* internal */ true);
 						
-						this->Attach(brkp);
+						hook_handler.Attach(brkp);
 						
-						if(!dbg.Listen(front_end_num, brkp))
+						if(!hook_handler.dbg.Listen(hook_handler.front_end_num, brkp))
 						{
-							this->Detach(brkp);
-							if(!this->Remove()) throw InternalError("Can't remove hook handler");
-							return false;
+							status = false;
+							hook_handler.Detach(brkp);
+							if(!hook_handler.Remove()) throw InternalError("Can't remove hook handler");
 						}
 					}
-				}
-				else
+				};
+				
+				StatementScanner stmt_scanner(*this);
+				
+				dbg.FindStatements(front_end_num, stmt_scanner, src_code_hook->GetSourceCodeLocation(), src_code_hook->GetFilename());
+				
+				if(!stmt_scanner.found || !stmt_scanner.status)
 				{
-					// no statements
 					return false;
 				}
 			}
@@ -1778,7 +1786,7 @@ private:
 				
 				ADDRESS brkp_addr = addr_hook->GetAddress();
 				
-				unisim::util::debug::Breakpoint<ADDRESS> *brkp = dbg.CreateBreakpoint(front_end_num, brkp_addr, /* internal */ true);
+				unisim::util::debug::Breakpoint<ADDRESS> *brkp = dbg.CreateBreakpoint(front_end_num, this->GetProcessorNumber(), brkp_addr, /* internal */ true);
 				
 				this->Attach(brkp);
 				
@@ -1797,7 +1805,7 @@ private:
 				
 				ADDRESS brkp_addr = subprogram->GetAddress();
 				
-				unisim::util::debug::Breakpoint<ADDRESS> *brkp = dbg.CreateBreakpoint(front_end_num, brkp_addr, /* internal */ true);
+				unisim::util::debug::Breakpoint<ADDRESS> *brkp = dbg.CreateBreakpoint(front_end_num, this->GetProcessorNumber(), brkp_addr, /* internal */ true);
 				
 				this->Attach(brkp);
 				
@@ -1924,6 +1932,37 @@ private:
 	std::vector<bool> enable_elf32_loaders[MAX_FRONT_ENDS];
 	std::vector<bool> enable_elf64_loaders[MAX_FRONT_ENDS];
 	std::vector<bool> enable_coff_loaders[MAX_FRONT_ENDS];
+	struct ExecutableBinaryFile : unisim::service::interfaces::ExecutableBinaryFile
+	{
+		Debugger<CONFIG>& dbg;
+		unsigned front_end_num;
+		unsigned loader_num;
+		const unisim::util::blob::Blob<ADDRESS> *blob;
+		
+		ExecutableBinaryFile(Debugger<CONFIG>& _dbg, unsigned int _front_end_num, unsigned int _loader_num, const unisim::util::blob::Blob<ADDRESS> *_blob)
+			: dbg(_dbg), front_end_num(_front_end_num), loader_num(_loader_num), blob(_blob)
+		{
+		}
+		virtual const char *GetFilename() const { return (blob->GetCapability() & unisim::util::blob::CAP_FILENAME) ? blob->GetFilename() : ""; }
+		virtual unisim::util::blob::FileFormat GetFileFormat() const { return blob->GetFileFormat(); }
+		virtual bool IsEnabled() const { return Enable(); }
+		virtual void Enable(bool enable) { Enable() = enable; dbg.dw_mach_state[front_end_num].EnableBinary(blob, enable); }
+		
+		std::vector<bool>::reference Enable() const
+		{
+			switch(blob->GetFileFormat())
+			{
+				case unisim::util::blob::FFMT_UNKNOWN: break;
+				case unisim::util::blob::FFMT_ELF32: return dbg.enable_elf32_loaders[front_end_num][loader_num];
+				case unisim::util::blob::FFMT_ELF64: return dbg.enable_elf64_loaders[front_end_num][loader_num];
+				case unisim::util::blob::FFMT_COFF: return dbg.enable_coff_loaders[front_end_num][loader_num];
+			}
+			static std::vector<bool> _(1, false);
+			return _[0];
+		}
+	};
+	typedef std::vector<ExecutableBinaryFile *> ExecutableBinaryFiles;
+	ExecutableBinaryFiles exec_bin_files[MAX_FRONT_ENDS];
 	
 	void SetupELFSymtab(const typename unisim::util::blob::Blob<ADDRESS> *blob);
 	void SetupDWARF(const typename unisim::util::blob::Blob<ADDRESS> *blob);
@@ -1963,29 +2002,29 @@ private:
 	{
 		const unisim::util::debug::Statement<ADDRESS> *ret_stmt;
 		ADDRESS addr;
-		typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt;
-		StatementFilter(ADDRESS _addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption _opt) : ret_stmt(0), addr(_addr), opt(_opt) {}
+		typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope;
+		StatementFilter(ADDRESS _addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope _scope) : ret_stmt(0), addr(_addr), scope(_scope) {}
 		const typename unisim::util::debug::Statement<ADDRESS> *Filter(const typename unisim::util::debug::Statement<ADDRESS> *stmt)
 		{
 			if(stmt)
 			{
-				switch(opt)
+				switch(scope)
 				{
-					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
-					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION:
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT:
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION:
 						if(stmt->GetAddress() <= addr)
 						{
 							if(!ret_stmt || ((addr - stmt->GetAddress()) < (addr - ret_stmt->GetAddress()))) ret_stmt = stmt;
 						}
 						break;
-					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT:
-					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT_WITHIN_FUNCTION:
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEXT_STMT:
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEXT_STMT_WITHIN_FUNCTION:
 						if(stmt->GetAddress() > addr)
 						{
 							if(!ret_stmt || ((stmt->GetAddress() - addr) < (ret_stmt->GetAddress() - addr))) ret_stmt = stmt;
 						}
 						break;
-					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT:
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_EXACT_STMT:
 						return stmt;
 						break;
 				}

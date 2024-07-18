@@ -110,26 +110,28 @@ public:
 	
 	typedef typename unisim::util::debug::Symbol<MEMORY_ADDR> Symbol;
 
-	void GetSymbols(typename std::list<const Symbol*>& lst, typename Symbol::Type type) const;
-	const Symbol *FindSymbol(const char *name, MEMORY_ADDR addr, typename Symbol::Type type) const;
+	void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner) const;
+	void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner, typename unisim::util::debug::SymbolBase::Type type) const;
 	const Symbol *FindSymbolByAddr(MEMORY_ADDR addr) const;
 	const Symbol *FindSymbolByName(const char *name) const;
-	const Symbol *FindSymbolByName(const char *name, typename Symbol::Type type) const;
-	const Symbol *FindSymbolByAddr(MEMORY_ADDR addr, typename Symbol::Type type) const;
+	const Symbol *FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const;
+	const Symbol *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::SymbolBase::Type type) const;
 	
 	unisim::util::debug::SymbolTable<MEMORY_ADDR> const *GetSymbolTable() const;
 	
 	void ScanStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner) const;
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::Scope scope) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::Scope scope) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::Scope scope) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
 
 	std::vector<MEMORY_ADDR> *GetBackTrace(unsigned int prc_num) const;
 	bool GetReturnAddress(unsigned int prc_num, MEMORY_ADDR& ret_addr) const;
 	
 	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(unsigned int prc_num, const char *data_object_name) const;
-	void EnumerateDataObjectNames(unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
+	void ScanDataObjectNames(unsigned int prc_num, unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope = unisim::service::interfaces::DataObjectLookupBase::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	
 	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(MEMORY_ADDR pc, const char *filename = 0) const;

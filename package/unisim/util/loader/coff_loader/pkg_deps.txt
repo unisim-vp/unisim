@@ -15,3 +15,4 @@ unisim/util/debug/coff_symtab
 unisim/util/endian
 unisim/util/likely
 unisim/util/loader/coff_loader/ti
+unisim/util/locate

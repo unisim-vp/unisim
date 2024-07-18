@@ -2,5 +2,6 @@ m4/nodejs
 std/cassert
 std/fstream
 std/iostream
+std/map
 std/set
 std/string

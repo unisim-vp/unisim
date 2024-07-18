@@ -103,19 +103,19 @@ void DWARF_MachineState<MEMORY_ADDR>::Unregister(const DWARF_Handler<MEMORY_ADDR
 template <class MEMORY_ADDR>
 void DWARF_MachineState<MEMORY_ADDR>::Initialize()
 {
-	if(!reg_num_mapping_filename.empty())
+	unsigned int num_processors = architectures.size();
+	unsigned int prc_num;
+	
+	for(prc_num = 0; prc_num  < num_processors; prc_num++)
 	{
-		unsigned int num_processors = architectures.size();
-		unsigned int prc_num;
+		unisim::service::interfaces::Registers *_regs_if = GetRegistersInterface(prc_num);
 		
-		for(prc_num = 0; prc_num  < num_processors; prc_num++)
+		if(_regs_if)
 		{
-			unisim::service::interfaces::Registers *_regs_if = GetRegistersInterface(prc_num);
+			const char *architecture = GetArchitecture(prc_num);
 			
-			if(_regs_if)
+			if(!reg_num_mapping_filename.empty())
 			{
-				const char *architecture = GetArchitecture(prc_num);
-				
 				if(verbose)
 				{
 					GetDebugInfoStream() << "Loading DWARF register number mapping from \"" << reg_num_mapping_filename << "\" for Processor #" << prc_num << " (\"" << architecture << "\" architecture)" << std::endl;
@@ -152,31 +152,31 @@ void DWARF_MachineState<MEMORY_ADDR>::Initialize()
 					GetDebugWarningStream() << "Unknown architecture" << std::endl;
 					architectures[prc_num].dw_reg_num_mapping = 0;
 				}
-				
-				struct ArchRegsScanner : unisim::service::interfaces::RegisterScanner
-				{
-					ArchRegsScanner(typename Architecture::RegistersRegistry& _registers_registry) : registers_registry(_registers_registry) {}
-					
-					virtual void Append(unisim::service::interfaces::Register *arch_reg)
-					{
-						if(!registers_registry.GetRegister(arch_reg->GetName()))
-						{
-							registers_registry.AddRegisterInterface(arch_reg, /* is_owner */ false);
-						}
-					}
-					
-					typename Architecture::RegistersRegistry& registers_registry;
-				};
-				
-				ArchRegsScanner arch_regs_scanner(architectures[prc_num].registers_registry);
-				_regs_if->ScanRegisters(arch_regs_scanner);
-			}
 			
-			Architecture& architecture = architectures[prc_num];
-			DWARF_Frame<MEMORY_ADDR> *inner_frame = new DWARF_Frame<MEMORY_ADDR>(this, prc_num);
-			inner_frame->LoadArchRegs();
-			architecture.frames.push_back(inner_frame);
-			architecture.sel = 0;
+				Architecture& architecture = architectures[prc_num];
+				DWARF_Frame<MEMORY_ADDR> *inner_frame = new DWARF_Frame<MEMORY_ADDR>(this, prc_num);
+				inner_frame->LoadArchRegs();
+				architecture.frames.push_back(inner_frame);
+				architecture.sel = 0;
+			}
+		
+			struct ArchRegsScanner : unisim::service::interfaces::RegisterScanner
+			{
+				ArchRegsScanner(typename Architecture::RegistersRegistry& _registers_registry) : registers_registry(_registers_registry) {}
+				
+				virtual void Append(unisim::service::interfaces::Register *arch_reg)
+				{
+					if(!registers_registry.GetRegister(arch_reg->GetName()))
+					{
+						registers_registry.AddRegisterInterface(arch_reg, /* is_owner */ false);
+					}
+				}
+				
+				typename Architecture::RegistersRegistry& registers_registry;
+			};
+			
+			ArchRegsScanner arch_regs_scanner(architectures[prc_num].registers_registry);
+			_regs_if->ScanRegisters(arch_regs_scanner);
 		}
 	}
 }
@@ -627,6 +627,7 @@ unsigned int DWARF_MachineState<MEMORY_ADDR>::BuildFrames(unsigned int prc_num, 
 	if(prc_num >= architectures.size()) return 0;
 	Frames& frames = architectures[prc_num].frames;
 	unsigned int level = frames.size();
+	if(!level) return 0;
 	if(depth && (level >= depth)) return level;
 	
 	DWARF_Frame<MEMORY_ADDR> *frame = frames[level - 1];
@@ -657,14 +658,14 @@ unsigned int DWARF_MachineState<MEMORY_ADDR>::BuildFrames(unsigned int prc_num, 
 		const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
 		if(debug)
 		{
-			GetDebugInfoStream() << "In File \"" << dw_handler->GetFilename() << "\", computed call frame information:" << std::endl << *cfi << std::endl;
+			dw_handler->GetDebugInfoStream() << "computed call frame information:" << std::endl << *cfi << std::endl;
 		}
 		
 		typename unisim::util::debug::dwarf::DWARF_CFIRow<MEMORY_ADDR> *cfi_row = cfi->GetLowestRow(pc);
 		
 		if(debug)
 		{
-			GetDebugInfoStream() << "In File \"" << dw_handler->GetFilename() << "\", lowest Rule Matrix Row:" << *cfi_row << std::endl;
+			dw_handler->GetDebugInfoStream() << "lowest Rule Matrix Row:" << *cfi_row << std::endl;
 		}
 		
 		unsigned int dw_ret_addr_reg_num = dw_cie->GetReturnAddressRegister();
@@ -678,7 +679,7 @@ unsigned int DWARF_MachineState<MEMORY_ADDR>::BuildFrames(unsigned int prc_num, 
 		{
 			if(debug)
 			{
-				GetDebugInfoStream() << "In File \"" << dw_handler->GetFilename() << "\", no more unwinding context" << std::endl;
+				dw_handler->GetDebugInfoStream() << "no more unwinding context" << std::endl;
 			}
 			frames.pop_back();
 			delete outer_frame;
@@ -692,7 +693,7 @@ unsigned int DWARF_MachineState<MEMORY_ADDR>::BuildFrames(unsigned int prc_num, 
 		
 		if(debug)
 		{
-			GetDebugInfoStream() << "In File \"" << dw_handler->GetFilename() << "\", return address: 0x" << std::hex << ret_addr << std::dec << std::endl;
+			dw_handler->GetDebugInfoStream() << "return address: 0x" << std::hex << ret_addr << std::dec << std::endl;
 		}
 
 		pc = ret_addr - 1; // we take return address - 1 in the hope it is in the same context as the caller
@@ -704,13 +705,13 @@ unsigned int DWARF_MachineState<MEMORY_ADDR>::BuildFrames(unsigned int prc_num, 
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_MachineState<MEMORY_ADDR>::EnableBinary(const char *filename, bool enable)
+bool DWARF_MachineState<MEMORY_ADDR>::EnableBinary(const unisim::util::blob::Blob<MEMORY_ADDR> *_blob, bool enable)
 {
 	bool found = false;
 	for(typename Handlers::iterator it = handlers.begin(); it != handlers.end(); ++it)
 	{
 		Handler& handler = *it;
-		if(strcmp(handler.dw_handler->GetFilename(), filename) == 0)
+		if(handler.dw_handler->GetBlob() == _blob)
 		{
 			handler.enable = enable;
 			found = true;
@@ -787,7 +788,7 @@ unisim::util::debug::DataObjectRef<MEMORY_ADDR> DWARF_MachineState<MEMORY_ADDR>:
 }
 
 template <class MEMORY_ADDR>
-void DWARF_MachineState<MEMORY_ADDR>::EnumerateDataObjectNames(unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope) const
+void DWARF_MachineState<MEMORY_ADDR>::ScanDataObjectNames(unsigned int prc_num, unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope) const
 {
 	const char *architecture = GetArchitecture(prc_num);
 	for(typename Handlers::const_iterator it = handlers.begin(); it != handlers.end(); ++it)
@@ -799,7 +800,7 @@ void DWARF_MachineState<MEMORY_ADDR>::EnumerateDataObjectNames(unsigned int prc_
 			
 			if(!architecture || (strcmp(architecture, dw_handler->GetArchitecture()) == 0))
 			{
-				dw_handler->EnumerateDataObjectNames(this, prc_num, name_set, scope);
+				dw_handler->ScanDataObjectNames(this, prc_num, scanner, scope);
 			}
 		}
 	}

@@ -57,17 +57,60 @@ template <typename CONFIG>
 const uint32_t PointerWrapper<CONFIG>::CLASS_ID = unisim::util::nodejs::ObjectWrapper::AllocateClassId();
 
 template <typename CONFIG>
-v8::Global<v8::ObjectTemplate> PointerWrapper<CONFIG>::cached_object_template;
+v8::Local<v8::FunctionTemplate> PointerWrapper<CONFIG>::CreateFunctionTemplate(NodeJS<CONFIG>& nodejs)
+{
+	v8::Isolate *isolate = nodejs.GetIsolate();
+	v8::EscapableHandleScope handle_scope(isolate);
+	
+	// Create function template for the constructor function
+	v8::Local<v8::FunctionTemplate> pointer_function_template = unisim::util::nodejs::CreateCtorFunctionTemplate<NodeJS<CONFIG>, &This::Ctor>(isolate, nodejs);
+	
+	// Get the prototype template
+	v8::Local<v8::Template> prototype_template = pointer_function_template->PrototypeTemplate();
+	
+	// Add methods
+	struct { const char *method_name; v8::FunctionCallback callback; } methods_config[] =
+	{
+		{ "set"  , &unisim::util::nodejs::FunctionCallback<This, &This::Set  > },
+		{ "get"  , &unisim::util::nodejs::FunctionCallback<This, &This::Get  > },
+		{ "deref", &unisim::util::nodejs::FunctionCallback<This, &This::Deref> }
+	};
+	for(auto method_config : methods_config)
+	{
+		prototype_template->Set(isolate, method_config.method_name, v8::FunctionTemplate::New(isolate, method_config.callback));
+	}
+	
+	return handle_scope.Escape(pointer_function_template);
+}
+
+// Pointer() => Pointer
+template <typename CONFIG>
+void PointerWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::HandleScope handle_scope(args.GetIsolate());
+	
+	if(!args.IsConstructCall())
+	{
+		nodejs.Throw(nodejs.TypeError(std::string("Constructor ") + CLASS_NAME + " requires 'new'"));
+		return;
+	}
+	
+	ProcessorWrapper<CONFIG> *processor_wrapper = 0;
+	unisim::util::debug::DataObjectRef<ADDRESS> pointer_data_object;
+	PointerWrapper<CONFIG> *pointer_wrapper = new PointerWrapper<CONFIG>(nodejs, processor_wrapper, pointer_data_object);
+	pointer_wrapper->template BindObject<This>(args.This());
+	args.GetReturnValue().Set(args.This());
+}
 
 template <typename CONFIG>
-PointerWrapper<CONFIG>::PointerWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG>& _processor_wrapper, unisim::util::debug::DataObjectRef<ADDRESS> _pointer_data_object)
-	: Super(_nodejs)
-	, shadow_object()
+PointerWrapper<CONFIG>::PointerWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG> *_processor_wrapper, unisim::util::debug::DataObjectRef<ADDRESS> _pointer_data_object, std::size_t size)
+	: Super(_nodejs, /* ptr */ 0, size ? size : sizeof(*this))
 	, processor_wrapper(_processor_wrapper)
 	, pointer_data_object(_pointer_data_object)
 {
 }
 
+// Pointer.set(value: Number)
 template <typename CONFIG>
 void PointerWrapper<CONFIG>::Set(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -91,6 +134,7 @@ void PointerWrapper<CONFIG>::Set(const v8::FunctionCallbackInfo<v8::Value>& args
 	pointer_data_object = addr;
 }
 
+// Pointer.get() => Number
 template <typename CONFIG>
 void PointerWrapper<CONFIG>::Get(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -108,6 +152,7 @@ void PointerWrapper<CONFIG>::Get(const v8::FunctionCallbackInfo<v8::Value>& args
 	args.GetReturnValue().Set(address);
 }
 
+// Pointer.deref() => DataObject
 template <typename CONFIG>
 void PointerWrapper<CONFIG>::Deref(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -116,75 +161,11 @@ void PointerWrapper<CONFIG>::Deref(const v8::FunctionCallbackInfo<v8::Value>& ar
 }
 
 template <typename CONFIG>
-void PointerWrapper<CONFIG>::Cleanup()
+void PointerWrapper<CONFIG>::Help(std::ostream& stream)
 {
-	cached_object_template.Reset();
-}
-
-template <typename CONFIG>
-void PointerWrapper<CONFIG>::Finalize()
-{
-	shadow_object.Reset();
-	Super::Finalize();
-}
-
-template <typename CONFIG>
-void PointerWrapper<CONFIG>::FillObjectTemplate(v8::Isolate *isolate, v8::Local<v8::ObjectTemplate> object_template)
-{
-	// add "set" method
-	object_template->Set(isolate, "set", unisim::util::nodejs::CreateFunctionTemplate<PointerWrapper<CONFIG>, &PointerWrapper<CONFIG>::Set>(isolate));
-	// add "get" method
-	object_template->Set(isolate, "get", unisim::util::nodejs::CreateFunctionTemplate<PointerWrapper<CONFIG>, &PointerWrapper<CONFIG>::Get>(isolate));
-	// add "deref" method
-	object_template->Set(isolate, "deref", unisim::util::nodejs::CreateFunctionTemplate<PointerWrapper<CONFIG>, &PointerWrapper<CONFIG>::Deref>(isolate));
-}
-
-template <typename CONFIG>
-v8::Local<v8::ObjectTemplate> PointerWrapper<CONFIG>::MakeObjectTemplate(v8::Isolate *isolate)
-{
-	v8::EscapableHandleScope handle_scope(isolate);
-	v8::Local<v8::ObjectTemplate> object_template;
-	
-	if(cached_object_template.IsEmpty())
-	{
-		// create object template
-		object_template = unisim::util::nodejs::CreateObjectTemplate(isolate);
-		// fill object template
-		FillObjectTemplate(isolate, object_template);
-		// cache object template
-		cached_object_template.Reset(isolate, object_template);
-	}
-	else
-	{
-		object_template = cached_object_template.Get(isolate);
-	}
-	
-	return handle_scope.Escape(object_template);
-}
-
-template <typename CONFIG>
-template <typename T>
-v8::Local<v8::Object> PointerWrapper<CONFIG>::MakeObject(v8::Local<v8::ObjectTemplate> object_template)
-{
-	v8::EscapableHandleScope handle_scope(this->GetIsolate());
-	// create object
-	v8::Local<v8::Object> object = Super::template MakeObject<T>(object_template);
-	// keep object reference for setting "this" of callback
-	shadow_object.Reset(this->GetIsolate(), object);
-	
-	return handle_scope.Escape(object);
-}
-
-template <typename CONFIG>
-v8::Local<v8::Object> PointerWrapper<CONFIG>::MakeObject()
-{
-	v8::EscapableHandleScope handle_scope(this->GetIsolate());
-	// create object template
-	v8::Local<v8::ObjectTemplate> object_template = MakeObjectTemplate(this->GetIsolate());
-	// create object
-	v8::Local<v8::Object> object = this->template MakeObject<This>(object_template);
-	
-	return handle_scope.Escape(object);
+	stream <<
+#include <unisim/service/debug/nodejs/doc/pointer.h>
+	;
 }
 
 } // end of namespace nodejs
