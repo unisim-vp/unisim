@@ -1,44 +1,42 @@
-                                  UNISIM
+                                  UNISIM-VP
 
-    Simulation is a solution to the test needs of both microprocessors and software 
-running on microprocessors. A silicon implementation of these microprocessors is
-usually not available before the end of the architecture design flow, essentially
-for cost reasons. The sooner these simulation models are available, the sooner the
-compilers, the operating system and the applications can be designed while meeting
-a good integration with the architecture.
-    Actually, simulation is the core of research in micro-architecture since it
-allows evaluating new techniques in various contexts, and gives a better understanding
-of their properties. Simulation is also a convenient technique to debug software
-where a hardware prototype is not yet available. The capabilities of simulation
-platforms to inject faults into the simulated system and to easily observe the
-system behavior are also useful during hardware and software integration process.
-    Since a couple of years, SystemC has emerged as a defacto standard for simulating
-systems on chip (SoC) and embedded processors. The main assets of SystemC are the
-modular structure of simulators which facilitates components reuse and sharing,
-its ability to combine cycle level and transactional level modeling, and now its
-large use by the community.
+UNISIM-VP is a processor simulation framework designed primarily for dynamic
+binary code analysis. Its goal is to facilitate tasks such as software
+introspection, debugging, validation, and verification. The UNISIM-VP tools are
+intended to enhance the quality, safety, and security of critical software in
+embedded and cyber-physical systems.
 
-UNISIM is a joint open source initiative of CEA List, INRIA Futurs and Princeton
-University to develop a complete simulation environment based on SystemC. Other
-institutions have also participated: Brigham Young University, Universitat Politecnica
-de Catalunya, Barcelona Supercomputing Center, Ghent University, University of 
-Perpignan, ARM and ST Microelectronics.
+Utilizing processor simulators, UNISIM-VP runs real code at the machine code
+level. Using various advanced techniques for software and hardware emulation it
+can provide an execution environment that closely mimics the final
+environment. Complex environments such as embedded systems, critical systems,
+and cyber-physical systems (CPS) are a primary concern. This ability to
+faithfully simulate code execution allows for the detection and correction of
+errors before deployment on actual hardware.
 
-UNISIM brings:
-  (1) A methodology for developing the hardware models;
-  (2) A library of hardware models;
-  (3) Several tools to facilitate hardware model development/debugging/exploitation.
+UNISIM-VP's simulation platforms offer advanced software analysis techniques,
+including dynamic tainting, fuzzing, and semi-symbolic execution within fully
+simulated systems. These platforms enable automatic and detailed observation of
+system behavior. The simulation platform is composed of a comprehensive and
+modular set of librabry design to easily assemble a wide range of tools
+(e.g. debuggers, fuzzers). These tools allow for thorough examination and
+validation of software behavior in simulated environments.
 
-It is freely available on the web at http://www.unisim-vp.org and through subversion
-at https://www.unisim-vp.org/svn (use "guest" as login and no password).
+UNISIM-VP was born as a joint open-source initiative by CEA List, INRIA Futurs,
+and Princeton University. UNISIM-VP's origins lie in hardware simulation and the
+framework was initially designed for the development, debugging, and
+exploitation of hardware models. While acknowledging the importance of its
+historical roots, the project has constantly evolved toward software validation
+and verification, thanks to its enthusiastic contributors and industrial
+use-cases.
 
-UNISIM softwares are composed of three main packages:
-- UNISIM Tools (located in sub-directory unisim_tools)
-- UNISIM Library (located in sub-directory unisim_lib)
-- UNISIM Simulators (located in sub-directory unisim_simulators)
-And an optional package for unit module tests:
-- UNISIM Tests (located in sub-directory unisim_tests)
+UNISIM-VP have also benefited from the collaboration of other prestigious
+institutions such as Brigham Young University, Universitat Politècnica de
+Catalunya, Barcelona Supercomputing Center, Ghent University, Perpignan
+University, Versailles University, Sorbonne University, ARM, ST Microelectronics
+and Thales.
 
-See file README in each subdirectory for information on a particular package of UNISIM
-See file COPYING of each package for license information.
-For installation instructions, please read file INSTALL
+UNISIM-VP offers:
+  (1) Libraries and tools for developing software validation tools;
+  (2) A library of software and hardware models (CPUs, memories, peripherals);
+  (3) Several tools to facilitate the development, debugging, and exploitation of system models.
