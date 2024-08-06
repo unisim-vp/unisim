@@ -332,7 +332,8 @@ struct Arch
     unsigned const size = OPSIZE/8;
     uint8_t bytes[size];
     MemRead( (uint8_t*)&bytes[0], addr + segbase(seg), size );
-    typename TypeFor<Arch,OPSIZE>::u result = 0;
+    typedef typename TypeFor<Arch,OPSIZE>::u u_type;
+    u_type result = u_type( 0 );
     memcpy((void*)&result, (void const*)&bytes[0], OPSIZE/8);
     return result;
   }
@@ -587,7 +588,7 @@ public:
 
   void xsave(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t bv, RMOp const& rmop);
   void xrstor(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t bv, RMOp const& rmop);
- 
+
   typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
   Operation* latest_instruction;
   struct IPage

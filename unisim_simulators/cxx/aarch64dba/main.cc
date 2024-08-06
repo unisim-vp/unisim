@@ -43,7 +43,7 @@ template <typename T>
 bool getu( T& res, char const* arg )
 {
   char *end;
-  uint64_t tmp = strtoull( arg, &end, 0 );
+  uint64_t tmp = strtoull( arg, &end, 16 );
   if ((*arg == '\0') or (*end != '\0'))
     return false;
   res = tmp;
@@ -60,18 +60,18 @@ struct Usage
   }
 };
 
-bool process(aarch64::Decoder& decoder, char const* addr_arg, char const* code_arg)
+bool process(aarch64::Decoder& decoder, std::ostream& sink, char const* addr_arg, char const* code_arg)
 {
   uint64_t addr;
   uint32_t code;
 
   if (not getu(addr, addr_arg) or not getu(code, code_arg))
     {
-      std::cerr << "<addr> and <code> should be, respectively, 64bits and 32bits numeric values.\n";
+      std::cerr << "<addr> and <code> should be, respectively, 64bits and 32bits hexadecimal numeric values.\n";
       return false;
     }
 
-  decoder.process( std::cout, addr, code );
+  decoder.process( sink, addr, code );
   return true;
 }
 
@@ -80,41 +80,57 @@ main( int argc, char** argv )
 {
   aarch64::Decoder decoder;
 
-  if (3 == argc and 0 == strcmp(argv[1],"sav"))
+  if (strcmp(argv[1], "file") == 0)
     {
-      // Special treatment of SAV files
-      std::ifstream source(argv[2]);
+      if (argc < 3 or argc > 4)
+        { std::cerr << Usage{argv[0]}; return 1; }
+        
+      std::string insns(argv[argc-1]);
+      std::ifstream source(insns);
 
-      if (not source.good()) { std::cerr << "Cannot open SAV file: " << argv[2] << "\n"; return 1; }
+      if (not source.good())
+        {
+          std::cerr << "Cannot open " << insns << '\n' << Usage{argv[0]};
+          return 1;
+        }
 
-      std::string code, disasm;
+      std::string args[2]; // mode, address, insn code
+      std::string disasm;
+      int cl_argcount = argc - 3;
+      for (int idx = 0; idx < cl_argcount; ++idx )
+        args[idx] = argv[2+idx];
+
       int line = 0;
       for (;;)
         {
-          if (not (source >> code).good() or not getline(source, disasm).good()) break;
+          for (int idx = cl_argcount; idx < 2; ++idx)
+            if (not (source >> args[idx]).good())
+              return 0;
+          if (not getline(source, disasm).good())
+            return 0;
           line += 1;
-          code.insert(0,"0x");
-          if (not process( decoder, "0x4000", code.c_str() ))
+          std::cout << "(";
+          if (not process( decoder, std::cout, args[0].c_str(), args[1].c_str() ))
             {
-              std::cerr << argv[2] << ':' << line << ": cannot process SAV instruction " << code << ' ' << disasm << std::endl;
-              break;
+              std::cerr << argv[2] << ':' << line << ": cannot process instruction " << args[1].c_str() << ' ' << disasm << '\n' << Usage{argv[0]};
+              return 1;
             }
+          std::cout << ")\n";
         }
       return 0;
     }
 
-  if (argc < 3)
+  if (argc == 3)
     {
-      std::cerr << "Wrong number of CLI arguments.\n"
-                << Usage{argv[0]};
-      return 1;
+      if (not process(decoder, std::cout, argv[argc-2], argv[argc-1]))
+        {
+          std::cerr << Usage{argv[0]};
+          return 1;
+        }
+      return 0;
     }
 
-  if (not process(decoder, argv[argc-2], argv[argc-1]))
-    {
-      std::cerr << Usage{argv[0]};
-      return 1;
-    }
-
-  return 0;
+  std::cerr << "Wrong number of CLI arguments.\n"
+            << Usage{argv[0]};
+  return 1;
 }

@@ -98,8 +98,6 @@ struct ArmBranch
   bool thumb, has_branch;
   BOOL next_thumb;
 
-  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
-  void report(AccessReport, unsigned, bool) const {}
   void SetQC() {}
 
   U32 GetGPR(int idx) { if (idx != 15) return U32(); return r15; }

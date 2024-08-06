@@ -128,7 +128,7 @@ namespace vector {
       if (size > final_size)
         size = final_size;
     }
-    
+
     static void initial( Byte*, void*, unsigned, bool ) {}
 
     VUnion() : transfer( &initial ), size(0) {}
@@ -152,13 +152,13 @@ namespace vector {
     static void ToBytes( uint8_t* dst, T src )
     {
       for (unsigned idx = 0; idx < sizeof (T); ++idx)
-        { dst[idx^E] = src & 0xff; src >>= 8; }
+        { dst[idx^E] = uint8_t(src & T(0xff)); src >>= 8; }
     }
     static void FromBytes( T& dst, uint8_t const* src )
     {
-      T tmp = 0;
+      T tmp = T(0);
       for (unsigned idx = sizeof (T); idx-- > 0;)
-        { tmp <<= 8; tmp |= uint32_t( src[idx^E] ); }
+        { tmp <<= 8; tmp |= T( src[idx^E] ); }
       dst = tmp;
     }
     static void Destroy( T& obj ) { /* Base scalar, no need for specific destructor */ }
@@ -193,7 +193,7 @@ namespace vector {
     static void Allocate( _Float16& obj ) { /* No need for specific constructor */ }
   };
 #endif
-  
+
   template <unsigned E> struct VectorTypeInfo<float,E>
   {
     enum bytecount_t { bytecount = 4 };

@@ -161,8 +161,6 @@ struct Runner : public unisim::component::cxx::processor::arm::CPU<unisim::compo
   };
 
   static CP15Reg* CP15GetRegister(uint8_t, uint8_t, uint8_t, uint8_t) { static CP15Reg _; return &_; }
-  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
-  void report(AccessReport, unsigned, bool) const {}
 
   Arm32 arm32iset;
   Thumb2 thumb2iset;

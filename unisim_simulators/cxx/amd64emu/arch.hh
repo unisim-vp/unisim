@@ -331,7 +331,7 @@ struct Arch
     typename Memory::Page* page = m_mem.getpage( addr );
 
     typedef typename TypeFor<Arch,OPSIZE>::u u_type;
-    u_type result = 0;
+    u_type result = u_type(0);
 
     for (uintptr_t idx = 0; idx < int_size; ++idx, ++ addr)
       {

@@ -91,9 +91,6 @@ struct CPU
 
   CPU(const sc_core::sc_module_name& name, Object* parent = 0);
 
-  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
-  void report(AccessReport, unsigned, bool) const {}
-
   typedef CPU CACHE_CPU;
 
   template <class ACTUAL_CACHE>

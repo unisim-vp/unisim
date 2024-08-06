@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2016,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -180,7 +180,7 @@ CPU<CPU_IMPL>::CPU(const char *name, Object *parent)
     };
     dbg_reg = new CurrentProgramStatusRegister( *this );
     registers_registry.AddRegisterInterface( dbg_reg );
-    
+
     struct VectorRegister : unisim::service::interfaces::Register
     {
       VectorRegister( CPU& _cpu, unsigned _reg, std::string const& _name ) : cpu(_cpu), reg(_reg), name(_name) {}
@@ -201,12 +201,12 @@ CPU<CPU_IMPL>::CPU(const char *name, Object *parent)
         dbg_reg = new VectorRegister( *this, idx, regname.str());
         registers_registry.AddRegisterInterface( dbg_reg );
       }
-    
+
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpcr", &this->fpcr );
     registers_registry.AddRegisterInterface( dbg_reg );
     var_reg = new unisim::kernel::variable::Register<uint32_t>( "fpcr", this, this->fpcr, "Floating-point Control Register" );
     variable_register_pool.insert( var_reg );
-    
+
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpsr", &this->fpsr );
     registers_registry.AddRegisterInterface( dbg_reg );
     var_reg = new unisim::kernel::variable::Register<uint32_t>( "fpsr", this, this->fpsr, "Floating-point Status Register" );
@@ -456,17 +456,9 @@ CPU<CPU_IMPL>::StepInstruction()
     // op->disasm( *this, std::cerr );
     // std::cerr << std::endl;
 
-    // uint64_t oldspval = GetGSR(31);
-
     /* Execute instruction */
     asm volatile( "arm64_operation_execute:" );
     op->execute( *static_cast<CPU_IMPL*>(this) );
-
-    // uint64_t newspval = GetGSR(31);
-
-    // if (newspval != oldspval) {
-    //   std::cerr << std::hex  << "  SP: 0x" << oldspval << " => 0x" << newspval << std::endl;
-    // }
 
     if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
       memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
@@ -729,7 +721,7 @@ CPU<CPU_IMPL>::ExceptionReturn()
 {
   struct ERET {};
   throw ERET();
-  
+
 }
 
 /** Check access permissions for op1-n system registers
@@ -810,7 +802,7 @@ typename CPU<CPU_IMPL>::SysReg const*
 CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 )
 {
   typedef typename SysReg::Encoding Encoding;
-  
+
   struct DCSysReg : public SysReg
   {
     virtual char const* ReadOperation() const override { return "dc<bad-read>"; }
@@ -868,7 +860,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const override { return U64(cpu.fpcr); }
         } x; return &x;
       }
-      
+
     case SYSENCODE(0b11,0b011,0b0100,0b0100,0b001): // FPSR, Floating-point Status Register
       {
         static struct : public SysReg {
@@ -878,7 +870,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const override { return U64(cpu.fpsr); }
         } x; return &x;
       }
-      
+
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b111 ):
       {
         static struct : public WOOpSysReg {

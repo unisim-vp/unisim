@@ -52,7 +52,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   //   =====================================================================
   //   =                             Data Types                            =
   //   =====================================================================
-    
+
   typedef unisim::util::symbolic::SmartValue<double>   F64;
   typedef unisim::util::symbolic::SmartValue<float>    F32;
   typedef unisim::util::symbolic::SmartValue<bool>     BOOL;
@@ -64,7 +64,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   typedef unisim::util::symbolic::SmartValue<int16_t>  S16;
   typedef unisim::util::symbolic::SmartValue<int32_t>  S32;
   typedef unisim::util::symbolic::SmartValue<int64_t>  S64;
-    
+
   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
   typedef unisim::util::symbolic::ValueType            ValueType;
@@ -72,7 +72,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
 
   typedef unisim::component::cxx::processor::sparc::isa::sv8::Operation<Processor> Operation;
   typedef unisim::component::cxx::processor::sparc::ASI ASI;
-  typedef unisim::component::cxx::processor::sparc::Trap_t::TrapType_t TrapType_t;  
+  typedef unisim::component::cxx::processor::sparc::Trap_t::TrapType_t TrapType_t;
 
   template <typename RID>
   static Expr newRegRead( RID id ) { return new unisim::util::symbolic::binsec::RegRead<RID>( id ); }
@@ -95,7 +95,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
     }
 
     void Repr(std::ostream& sink) const { sink << c_str(); }
-    
+
     Flag() : code(end) {}
     Flag( Code _code ) : code(_code) {}
     Flag( char const* _code ) : code(end) { init( _code ); }
@@ -129,7 +129,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
     GPR( unsigned idx ) : code(Code(idx)) {}
     GPR( char const* _code ) : code(end) { init( _code ); }
   };
-  
+
   struct YREG
     : public unisim::util::symbolic::WithValueType<YREG>
   {
@@ -137,7 +137,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
     void Repr( std::ostream& sink ) const { sink << "y"; }
     int cmp( YREG const& rhs ) const { return 0; }
   };
-  
+
   struct Conditions
   {
     Conditions(Processor& _scanner) : scanner(_scanner) {}
@@ -167,7 +167,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   // //   =====================================================================
   // //   =                      Construction/Destruction                     =
   // //   =====================================================================
-    
+
   Processor(U32 const& insn_addr)
     : path(0)
     , gpr()
@@ -186,7 +186,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
     for (Flag flag; flag.next();)
       flags[flag.idx()] = newRegRead(flag);
   }
-  
+
   bool
   close( Processor const& ref, uint32_t linear_nia )
   {
@@ -205,21 +205,21 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
         path->add_sink( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
         return complete;
       }
-    
+
     for (GPR reg; reg.next();)
       if (gpr[reg.idx()].expr != ref.gpr[reg.idx()].expr)
         path->add_sink( newRegWrite( reg, gpr[reg.idx()].expr ) );
 
     if (yreg.expr != ref.yreg.expr)
       path->add_sink( newRegWrite( YREG(), yreg.expr ) );
-      
+
     for (Flag flag; flag.next();)
       if (flags[flag.idx()].expr != ref.flags[flag.idx()].expr)
         path->add_sink( newRegWrite( flag, flags[flag.idx()].expr ) );
 
     for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
       path->add_sink( *itr );
-    
+
     return complete;
   }
 
@@ -230,7 +230,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   struct Illegal {};
   struct Unimplemented {};
   void UndefinedInstruction(Operation const&) { throw Unimplemented(); }
-    
+
   bool concretize( Expr cexp )
   {
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
@@ -240,7 +240,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
     path = path->next( predicate );
     return predicate;
   }
-  
+
   template <typename T>
   bool Test( unisim::util::symbolic::SmartValue<T> const& cond )
   {
@@ -249,11 +249,11 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
 
     return concretize( BOOL(cond).expr );
   }
-  
+
   //   =====================================================================
   //   =             General Purpose Registers access methods              =
   //   =====================================================================
-    
+
   void SetGPR( unsigned id, U32 const& value ) { if (id != 0) gpr[id] = value; }
   U32  GetGPR( unsigned id ) { return id == 0 ? U32(0) : gpr[id];  }
   U32  GetY() { return yreg; }
@@ -276,9 +276,9 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   void SetS(BOOL) { throw 0; }
   BOOL GetPS() { throw 0; return BOOL(); }
   void SetPS(BOOL) { throw 0; }
-  
+
   //   ====================================================================
-  //   =                 Vector  Registers access methods                 
+  //   =                 Vector  Registers access methods
   //   ====================================================================
 
   void SetF32( unsigned id, F32 const& value ) { throw 0; }
@@ -311,11 +311,11 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   void SetPSR(U32) { throw 0; }
   void SetWIM(U32) { throw 0; }
   void SetTBR(U32) { throw 0; }
-  
+
   //   =====================================================================
   //   =                      Control Transfer methods                     =
   //   =====================================================================
-  
+
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
   U32  GetPC() { return current_instruction_address; }
   void DelayBranch(U32 target, branch_type_t bt )
@@ -329,7 +329,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
     branch_annul = annul;
     delay_slot = true;
   }
-  
+
   void Abort( TrapType_t trap ) { throw 0; }
   void StopFetch() { throw 0; }
   void SWTrap(U32) { throw 0; }
@@ -372,18 +372,19 @@ struct Translator
 {
   typedef unisim::component::cxx::processor::sparc::isa::sv8::Decoder<Processor> Decoder;
   typedef unisim::component::cxx::processor::sparc::isa::sv8::Operation<Processor> Operation;
-  
+
   typedef unisim::util::symbolic::binsec::ActionNode ActionNode;
-  
+
   Translator( uint32_t _addr, uint32_t _code0, uint32_t _code1 )
     : coderoot(new ActionNode), addr(_addr), code0(_code0), code1(_code1)
   {}
   ~Translator() { delete coderoot; }
-   
+
   void
   translate( std::ostream& sink )
   {
-    sink << "(address . " << unisim::util::symbolic::binsec::dbx(4, addr) << ")\n";
+    typedef unisim::util::symbolic::binsec::dbx print_dbx;
+    sink << "(address . " << print_dbx(4, addr) << ")\n";
 
     struct Instruction
     {
@@ -410,7 +411,7 @@ struct Translator
     // Processor::U64      insn_addr = Expr(new InstructionAddress); //< symbolic instruction address
     Processor reference( insn_addr );
 
-    struct 
+    struct
     {
       uint32_t size;
       Instruction& insn0;
@@ -421,14 +422,14 @@ struct Translator
       {
         switch (size)
           {
-          default: 
-            sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(4, code0()) << ")\n";
+          default:
+            sink << "(opcode . " << print_dbx(4, code0()) << ")\n";
             sink << "(mnemonic . \"";
             insn0.disassemble(sink);
             sink << "\")\n";
             break;
           case 8:
-            sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(8, uint64_t(code0()) << 32 | code1()) << ")\n";
+            sink << "(opcode . " << print_dbx(8, uint64_t(code0()) << 32 | code1()) << ")\n";
             sink << "(mnemonic . \"";
             insn0.disassemble(sink);
             sink << " | ";
@@ -500,11 +501,7 @@ struct Translator
     headers.write(sink);
 
     // Translate to DBA
-    unisim::util::symbolic::binsec::Program program;
-    program.Generate( coderoot );
-    typedef unisim::util::symbolic::binsec::Program::const_iterator Iterator;
-    for (Iterator itr = program.begin(), end = program.end(); itr != end; ++itr)
-      sink << "(" << unisim::util::symbolic::binsec::dbx(8, addr) << ',' << std::dec << itr->first << ") " << itr->second << std::endl;
+    coderoot->generate(sink, 8, addr);
   }
 
   ActionNode*               coderoot;

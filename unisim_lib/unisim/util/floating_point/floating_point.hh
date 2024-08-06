@@ -316,7 +316,9 @@ template <> inline float FromUnpacked<float>( UnpackedFloat const& unpacked ) { 
 template <> inline __UNISIM_FP_CONSTEXPR float FromPacked<float, uint32_t>( uint32_t a ) { return unisim::util::floating_point::_FromPacked<float>( a ); }
 inline uint32_t ToPacked( float a ) { return unisim::util::floating_point::_ToPacked<float>( a ); }
 inline void ToUnpacked( UnpackedFloat& unpacked, float a ) { unisim::util::floating_point::_ToUnpacked<float>( unpacked, a ); }
+#if HAVE_FLOAT16
 template <> inline float FConvert<float, _Float16>( _Float16 a ) { return float( a ); }
+#endif
 template <> inline float FConvert<float, float>( float a ) { return a; }
 template <> inline float FConvert<float, double>( double a ) { return float( a ); }
 inline bool IsNaN( float a ) { return unisim::util::floating_point::_IsNaN<float>( a ); }
@@ -342,7 +344,9 @@ template <> inline double FromUnpacked<double>( UnpackedFloat const& unpacked ) 
 template <> inline __UNISIM_FP_CONSTEXPR double FromPacked<double, uint64_t>( uint64_t a ) { return unisim::util::floating_point::_FromPacked<double>( a ); }
 inline uint64_t ToPacked( double a ) { return unisim::util::floating_point::_ToPacked<double>( a ); }
 inline void ToUnpacked( UnpackedFloat& unpacked, double a ) { unisim::util::floating_point::_ToUnpacked<double>( unpacked, a ); }
+#if HAVE_FLOAT16
 template <> inline double FConvert<double, _Float16>( _Float16 a ) { return double( a ); }
+#endif
 template <> inline double FConvert<double, float>( float a ) { return double( a ); }
 template <> inline double FConvert<double, double>( double a ) { return a; }
 inline bool IsNaN( double a ) { return unisim::util::floating_point::_IsNaN<double>( a ); }

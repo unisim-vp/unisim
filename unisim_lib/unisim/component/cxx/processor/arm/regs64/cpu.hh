@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015-2021,
+ *  Copyright (c) 2015-2024,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -37,6 +37,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_REGS64_CPU_HH__
 
 #include <unisim/component/cxx/vector/vector.hh>
+#include <type_traits>
 
 namespace unisim {
 namespace component {

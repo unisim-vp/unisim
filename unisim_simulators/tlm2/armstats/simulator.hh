@@ -81,9 +81,6 @@
 struct CPU : public  unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU>
 {
   CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent = 0);
-
-  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
-  void report(AccessReport, unsigned, bool) const {}
 };
 
 class Simulator

@@ -45,7 +45,7 @@
 uint32_t getu32( uint32_t& res, char const* arg )
 {
   char *end;
-  uint32_t tmp = strtoul( arg, &end, 0 );
+  uint32_t tmp = strtoul( arg, &end, 16 );
   if ((*arg == '\0') or (*end != '\0'))
     return false;
   res = tmp;
@@ -56,7 +56,7 @@ void usage( std::ostream& sink, char const* progname )
 {
   sink << "usage:\n"
        << "  " << progname << " <exec_status_flags> <address> <encoding>\n"
-       << "  " << progname << " <exec_status_flags> <file>\n";
+       << "  " << progname << " file [<exec_status_flags> [<address>]] <file>\n";
 }
 
 template <unsigned N>
@@ -133,36 +133,57 @@ main( int argc, char** argv )
 {
   aarch32::Decoder decoder;
 
-  if (argc == 2)
+  if (strcmp(argv[1], "file") == 0)
     {
-      std::ifstream source(argv[1]);
+      if (argc < 3 or argc > 5)
+        return usage(std::cerr, argv[0]), 1;
+
+      std::string insns(argv[argc-1]);
+      std::ifstream source(insns);
+
       if (not source.good())
         {
-          std::cerr << "Cannot open " << argv[1] << "\n";
-          usage(std::cerr, argv[0]);
-          return 1;
+          std::cerr << "Cannot open " << insns << "\n";
+          return usage(std::cerr, argv[0]), 1;
         }
-      std::string fbuf, abuf, cbuf;
-      for (;; getline(source, fbuf))
+
+      std::string args[3]; // mode, address, insn code
+      std::string disasm;
+      int cl_argcount = argc - 3;
+      for (int idx = 0; idx < cl_argcount; ++idx )
+        args[idx] = argv[2+idx];
+
+      int line = 0;
+      for (;;)
         {
-          if (not (source >> fbuf).good() or not (source >> abuf).good() or not (source >> cbuf).good()) break;
-          //std::ofstream sink("/dev/null");                                                                                                                                                 
-          std::ostream& sink(std::cout);
-          if (not process(decoder, sink, fbuf.c_str(), abuf.c_str(), cbuf.c_str()))
-            { usage(std::cerr, argv[0]); return 1; }
+          for (int idx = cl_argcount; idx < 3; ++idx)
+            if (not (source >> args[idx]).good())
+              return 0;
+          if (not getline(source, disasm).good())
+            return 0;
+          line += 1;
+          std::cout << "(";
+          if (not process(decoder, std::cout, args[0].c_str(), args[1].c_str(), args[2].c_str()))
+            {
+              std::cerr << argv[2] << ':' << line << ": cannot process instruction " << args[2] << ' ' << disasm << std::endl;
+              return usage(std::cerr, argv[0]), 1;
+            }
+          std::cout << ")\n";
         }
       return 0;
     }
 
-  if (argc != 4)
+  if (argc == 4)
     {
-      std::cerr << "Wrong number of CLI arguments.\n";
-      usage(std::cerr, argv[0]);
-      return 1;
+      if (not process(decoder, std::cout, argv[1], argv[2], argv[3] ))
+        {
+          usage(std::cerr, argv[0]);
+          return 1;
+        }
+      return 0;
     }
 
-  if (not process(decoder, std::cout, argv[1], argv[2], argv[3] ))
-    { usage(std::cerr, argv[0]); return 1; }
-
-  return 0;
+  std::cerr << "Wrong number of CLI arguments.\n";
+  usage(std::cerr, argv[0]);
+  return 1;
 }

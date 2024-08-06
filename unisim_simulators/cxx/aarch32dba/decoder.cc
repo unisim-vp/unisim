@@ -178,7 +178,6 @@ struct Processor
 
     typedef unisim::util::arithmetic::BitField<28,4> NZCVRF; /* Grouped Integer Condition Flags */
 
-
     typedef unisim::util::arithmetic::BitField<24,1> JRF; /* Jazelle execution state bit */
     typedef unisim::util::arithmetic::BitField< 9,1> ERF; /* Endianness execution state */
     typedef unisim::util::arithmetic::BitField< 5,1> TRF; /* Thumb execution state bit */
@@ -1008,7 +1007,7 @@ public:
     }
 
     void Repr(std::ostream& sink) const { sink << c_str(); }
-    
+
     Flag() : code(end) {}
     Flag( Code _code ) : code(_code) {}
     Flag( char const* _code ) : code(end) { init( _code ); }
@@ -1165,7 +1164,6 @@ void UpdateStatusAddWithCarry( Processor& state, Processor::U32 const& res, Proc
     }
 }
 
-
 struct ARMISA : public unisim::component::cxx::processor::arm::isa::arm32::Decoder<Processor>
 {
   typedef unisim::component::cxx::processor::arm::isa::arm32::CodeType CodeType;
@@ -1297,11 +1295,7 @@ namespace
         }
 
       // Translate to DBA
-      unisim::util::symbolic::binsec::Program program;
-      program.Generate( coderoot );
-      typedef unisim::util::symbolic::binsec::Program::const_iterator Iterator;
-      for (Iterator itr = program.begin(), end = program.end(); itr != end; ++itr)
-        sink << "(" << unisim::util::symbolic::binsec::dbx(4, addr) << ',' << std::dec << itr->first << ") " << itr->second << std::endl;
+      coderoot->generate(sink, 4, addr);
     }
 
     StatusRegister const& status;
@@ -1314,7 +1308,7 @@ void
 Decoder::process( std::ostream& sink, uint32_t addr, uint32_t code )
 {
   Translator actset( *this, addr, code );
-  
+
   actset.translate( sink );
 }
 
@@ -1482,7 +1476,6 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-
 
       /*********************************
        * Memory system fault registers *
