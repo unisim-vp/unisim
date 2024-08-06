@@ -3,7 +3,10 @@ libc/stdio
 libc/stdlib
 libc/unistd
 m4/pthread
+m4/real_path
 m4/systemc
+m4/windows
+m4/windows_io
 std/fstream
 std/iostream
 std/list

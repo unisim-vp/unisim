@@ -138,30 +138,32 @@ bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
 unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
 
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
-EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
+	EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
 dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.tcc\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.tcc\
 
 CLEANFILES=\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.tcc\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.tcc
 
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
-	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.hh
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.hh: ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
+	\$(mkdir_p) \$(@D)
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm32/arm32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa
 
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
-	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.hh
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.hh: ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
+	\$(mkdir_p) \$(@D)
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa
 EOF
 )
 

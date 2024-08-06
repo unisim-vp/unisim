@@ -1,3 +1,4 @@
+am/isa_to_cpp
 libc/assert
 libc/inttypes
 libc/string
@@ -8,6 +9,7 @@ std/map
 std/sstream
 std/stdexcept
 std/string
+unisim/component/cxx/processor/tms320c3x/isa
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/variable

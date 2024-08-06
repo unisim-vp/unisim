@@ -40,7 +40,7 @@
 #include <unisim/util/debug/source_code_location.hh>
 #include <unisim/util/debug/subprogram.hh>
 #include <inttypes.h>
-#include <list>
+#include <string>
 
 namespace unisim {
 namespace util {

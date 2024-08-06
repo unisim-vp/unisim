@@ -139,16 +139,17 @@ dist_share_DATA = ${UNISIM_SIMULATOR_PKG_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.tcc
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.tcc
 
 CLEANFILES=\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.tcc
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.tcc
 
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
-	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.isa
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.hh
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
+	\$(mkdir_p) \$(@D)
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa/arm64/arm64 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.isa
 
 EOF
 )

@@ -1,4 +1,4 @@
+libc/inttypes
+std/string
 unisim/service/interfaces/interface
-unisim/util/debug
-unisim/util/debug
 unisim/util/debug

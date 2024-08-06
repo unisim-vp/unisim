@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([thread],, AC_MSG_ERROR([thread is missing]))

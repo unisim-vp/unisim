@@ -46,7 +46,7 @@
 #include <unisim/kernel/variable/sc_time/sc_time.hh>
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
-#include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
+#include <unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>

@@ -36,8 +36,8 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/cpu.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm32.hh>
-#include <unisim/component/cxx/processor/arm/isa_thumb.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm32/arm32.hh>
+#include <unisim/component/cxx/processor/arm/isa/thumb2/thumb.hh>
 #include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>

@@ -6,5 +6,6 @@ std/map
 std/sstream
 std/stdexcept
 std/string
+std/typeinfo
 std/vector
 unisim/util/endian

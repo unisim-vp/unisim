@@ -38,7 +38,7 @@
 
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/variable/variable.hh>
-#include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh>
+#include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa/avr32uc.hh>
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/config.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/service/interfaces/memory.hh>

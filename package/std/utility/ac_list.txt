@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([utility],, AC_MSG_ERROR([utility is missing]))

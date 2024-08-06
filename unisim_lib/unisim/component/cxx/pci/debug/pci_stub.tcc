@@ -36,6 +36,8 @@
 #define __UNISIM_COMPONENT_CXX_PCI_DEBUG_PCI_STUB_TCC__
 
 #include <unisim/util/likely/likely.hh>
+#include <unisim/util/debug/breakpoint_registry.tcc>
+#include <unisim/util/debug/watchpoint_registry.tcc>
 #include <sstream>
 
 namespace unisim {

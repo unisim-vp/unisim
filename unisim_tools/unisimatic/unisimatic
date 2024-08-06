@@ -1,0 +1,2391 @@
+#!/bin/bash
+###########################################################################
+#                               Unisimatic                                #
+#                           -------------------                           #
+#  begin     : Thu May 7 2009                                             #
+#  copyright : (C) 2009-2024 Commissariat à l'énergie atomique            #
+#                            et aux énergies alternatives                 #
+#  authors   : Gilles Mouchard, Yves Lhuillier                            #
+#  email     : gilles.mouchard@cea.fr, yves.lhuillier@cea.fr              #
+#                                                                         #
+###########################################################################
+#                                                                         #
+#   This program is free software; you can redistribute it and/or modify  #
+#   it under the terms of the GNU General Public License version 2        #
+#   as published by the Free Software Foundation.                         #
+#                                                                         #
+###########################################################################
+
+#set -x
+shopt -s nullglob
+set -o pipefail
+
+#################################################### globals ###########################################################
+
+SELF="$(realpath "${BASH_SOURCE}")"
+APP_NAME="unisimatic"
+APP_VERSION=1.0.0
+USER_CONFIG_FILE=".config/${APP_NAME}/config.yaml"
+DEFAULT_PROJECT_DISTRIB_FILE='distrib.conf'
+CONFIG_YAML="${HOME}/${USER_CONFIG_FILE}"
+DEFAULT_VERBOSE_LEVEL=3
+VERBOSE_LEVEL=${DEFAULT_VERBOSE_LEVEL}
+INCLUDE_UNTRACKED_FILES='no'
+OPTIONS=()
+
+################################################ from config.yaml ######################################################
+
+# Repositories:
+
+REPOSITORY_NAMES=()
+declare -A REPOSITORY_DIRS                 # repo name   => dir
+declare -A REPOSITORY_PACKAGE_DIR          # repo name   => package_dir
+declare -A REPOSITORY_NAMES_BY_PATH        # path        => repo name
+declare -A REPOSITORY_NAMES_BY_PACKAGE_DIR # package_dir => repo name
+declare -A REPOSITORY_DIST_SUBDIR          # repo name   => dist subdir
+unset DEFAULT_REPOSITORY_NAME
+
+# Projects:
+
+PROJECT_NAMES=()
+declare -A PROJECT_DIRS          # project name => dir
+declare -A PROJECT_DISTRIB_FILES # project name => distrib file
+declare -A PROJECT_NAMES_BY_PATH # path         => project name
+
+# Builds:
+
+BUILD_NAMES=()
+declare -A BUILD_PROJECT_NAMES      # build name => project name
+declare -A BUILD_DIRS               # build name => build dir 
+declare -A BUILD_DIST_DIRS          # build name => dist dir 
+declare -A BUILD_COMMANDS           # build name => command
+declare -A BUILD_NAMES_BY_BUILD_DIR # build dir  => build name
+declare -A BUILD_NAMES_BY_DIST_DIR  # dist dir   => build name
+
+#################################################### logging ###########################################################
+
+# print awful debug messages if VERBOSE_LEVEL >= 5
+function annoy()
+{
+	if [ $# -ne 0 ]; then
+		[ ${VERBOSE_LEVEL} -lt 5 ] || echo -e "$@"
+	elif [ ${VERBOSE_LEVEL} -ge 5 ]; then
+		cat
+	else
+		cat > /dev/null
+	fi
+}
+
+# print debug messages if VERBOSE_LEVEL >= 4
+function debug()
+{
+	if [ $# -ne 0 ]; then
+		[ ${VERBOSE_LEVEL} -lt 4 ] || echo -e "$@"
+	elif [ ${VERBOSE_LEVEL} -ge 4 ]; then
+		cat
+	else
+		cat > /dev/null
+	fi
+}
+
+# print general information if VERBOSE_LEVEL >= 3
+function info()
+{
+	[ ${VERBOSE_LEVEL} -lt 3 ] || echo -e "$@"
+}
+
+# print orange warning message if VERBOSE_LEVEL >= 2
+function warn()
+{
+  [ ${VERBOSE_LEVEL} -lt 2 ] || echo -e "\033[33mWARNING! $@\033[0m" >&2
+}
+
+# print red error message if VERBOSE_LEVEL >= 1
+function error()
+{
+  [ ${VERBOSE_LEVEL} -lt 1 ] || echo -e "\033[31mERROR! $@\033[0m" >&2
+}
+
+# abort on error
+function die()
+{
+  error "$@"
+  exit 1
+}
+
+# print an error message because of wrong usage, display usage and exit
+function bad()
+{
+  error "$@"
+  usage
+  exit 1
+}
+
+#################################################### help ###########################################################
+
+# print full help
+function detailed_help()
+{
+	usage
+	cat << EOF
+Details:
+
+  A 'repository' is a bare directory on the file system, containing files (source codes, data, ...) shared with projects 
+  or other repositories, and with a companion directory (package_dir) for indexing packages that provides this repository. 
+  A 'repository package' is a subdirectory 'package_dir' directory that indexes individual files, but not only. Repository package can depends 
+  on other repository packages. There is one repository package per subdirectory of repository, plus repository packages (mostly manually written) for 
+  expressing system dependencies (third party library with their headers, system headers, ...). A project is a bare 
+  directory which contains the source code of a tool (such as a simulator, an ISS generator, or an executable binary 
+  analyzer) and one or more project distribution files (i.e. ${DEFAULT_PROJECT_DISTRIB_FILE}).
+
+  Command 'gendeps' is for dependency generation of repositories, while Command 'dist' is for distributing all necessary 
+  material to build a project into a distribution directory. When invoking ${APP_NAME^} through a symbolic link named 
+  'gendeps' or 'dist', no command shall be passed as argument because ${APP_NAME^} infers the command from the basename of 
+  symbolic link.
+
+  When generating dependencies, if no repository is specified as argument, ${APP_NAME^} considers all the enabled 
+  repositories. For each sub-directory of the repository, i.e. a repository package, ${APP_NAME^} creates file lists. It applies 
+  special rules for 'unisim/service/interfaces' so that one file is considered as a repository package. The dependencies, file lists, 
+  and code snippets, are stored in 'package_dir' of repository.
+
+  ${APP_NAME^} configuration file, written in YAML, is stored in ~/${USER_CONFIG_FILE}.
+  When unspecified by user, default repository is the first enabled one.
+  Default project distribution file is '${DEFAULT_PROJECT_DISTRIB_FILE}'.
+
+  Below is a sample configuration file for ${APP_NAME^}:
+
+    repositories:
+      - name: unisim_lib
+        path: /path/to/unisim_lib
+        package_dir: ../package
+        enabled: yes
+        default: yes
+      - name: genisslib
+        path: /path/to/genisslib
+        package_dir: package
+        enabled: yes
+    projects:
+      - name: simulator
+        path: /path/to/simulator
+        config_file: ${DEFAULT_PROJECT_DISTRIB_FILE}
+        enabled: yes
+    builds:
+      - name: simulator
+        project: simulator
+        build_dir: /path/to/build_dir
+        dist_dir: /path/to/dist_dir
+        enabled: yes
+        command: |
+          ./configure
+          make
+        
+    ---    
+
+  A project directory shall contains at least one project distribution file at the root (e.g. ${DEFAULT_PROJECT_DISTRIB_FILE}).
+  A project distribution file is a Bash script with preloaded builtin functions (i.e. directives).
+  A project distribution file can:
+    - declare package that the distribute file provides, along with version, full name, and authors,
+    - use another project using directive 'subproject <project name>',
+      provided that it is declared and enabled in ~/${USER_CONFIG_FILE}.
+    - import repository packages from repositories using directive 'import <repository name> <package>'
+      or simply 'import <package>' (when a default repository exists).
+    - distribute source code files from imported repository packages using directive 'copy [<list name>...]'
+    - distribute project files using directive 'dist_copy [<file>...]'
+    - use a file list using directive 'files [<list>...]' (e.g. for automake)
+    - use code snippets using directive 'lines [<list>...]' (e.g. for autoconf or automake)
+    - write an autoconf file using directive 'output_configure_ac'
+    - write an automake file using directive 'output_makefile_am'
+    - generate 'configure' using directive 'build_configure'
+
+Directives:
+
+$(help)
+EOF
+}
+
+# display usage
+function usage()
+{
+  cat << EOF
+Usage: ${APP_NAME} [<options>] <command> [<command arguments>...]
+
+About:
+
+  ${APP_NAME^} provides UNISIM-VP developpers with a two-pass packaging system:
+
+    - 1st pass: dependency generation of repositories (i.e. command 'gendeps'),
+    - 2nd pass: distribution of files from multiple repositories and projects into a single distribution directory (i.e. command 'dist').
+
+  ${APP_NAME^} also provides a shell for querying package database, and a building capability intended for CI/CD.
+
+Commands:
+
+  gendeps [<repository>...]
+  
+        Generate dependencies of repositories
+        
+  dist <source> <distribution directory>
+  
+        Distribute a project from a source.
+        
+        Sources:
+        
+          - project directory
+          - project distribution file (e.g. ${DEFAULT_PROJECT_DISTRIB_FILE})
+          - name of a project declared in ~/${USER_CONFIG_FILE}
+        
+  shell
+  
+        Start an interactive shell for querying the database of repository packages
+
+  build [<build>...]
+
+        Build
+
+Options:
+
+  -h, --help
+        Display help and exit.
+
+  --detailed-help
+        Display detailed help and exit.
+        
+  -v, --version
+        Output version information and exit.
+
+  --verbose[=<level>]
+        Increase or set verbosity level (default: ${DEFAULT_VERBOSE_LEVEL})
+        
+  --config[=<config file>]
+        Dump configuration or set configuration file to use instead of ~/${USER_CONFIG_FILE}
+
+  --include-untracked-files
+        Generate dependencies for untracked files too (Git)
+
+License:
+
+  GPLv2
+  Copyright (c) 2024 Commissariat à l'énergie atomique et aux énergies alternatives.
+
+Authors:
+
+  - Gilles Mouchard <gilles.mouchard@cea.fr>
+  - Yves Lhuillier <yves.lhuillier@cea.fr
+
+EOF
+}
+
+function help()
+{
+	if [ $# -eq 0 ] || [ "$1" = 'help' ]; then
+cat << EOF
+  help [<command>]
+
+      Get help.
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'package' ]; then
+cat << EOF
+  package [<package name>]
+
+      Get or set package name.
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'version' ]; then
+cat << EOF
+  version [<package version>]
+
+      Get or set version of package
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'full_name' ]; then
+cat << EOF
+  full_name [<package full name>]
+
+      Get or set package full name.
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'author' ]; then
+cat << EOF
+  author [<author>]
+
+      Get authors or add an author.
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'authors' ]; then
+cat << EOF
+  authors [<author>...]
+
+      Get authors or add authors.
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'subproject' ]; then
+cat << EOF
+  subproject <project name> [<subdirectory>]
+
+      Distribute a subproject.
+
+      Example:
+
+      subproject genisslib
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'use' ]; then
+cat << EOF
+  use <repository name> [<subdirectory>]
+
+      Use an implicit repository for subsequent imports.
+
+      Example:
+
+      use unisim_lib
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'import' ]; then
+cat << EOF
+  import [<repository name>] <package>
+
+      Import a package.
+      This creates "lists" (e.g. source, header,...).
+
+      Example:
+
+      import unisim/kernel
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'copy' ]; then
+cat << EOF
+  copy [<list name>...]
+
+      Distribute files of specified lists from imported repository packages.
+
+      Example:
+
+      copy source header
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'dist_copy' ]; then
+cat << EOF
+  dist_copy [<file>...]
+
+      Distribute files of project.
+
+      Example:
+
+      dist_copy main.cc
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'lines' ]; then
+cat << EOF
+  lines [<list name>...]
+
+      Get the content of specified lists, with one entry per line (convenient for autoconf or automake snippets).
+
+      Example:
+
+      SNIPPET="\$(lines sh)"
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'files' ]; then
+cat << EOF
+  files [<list name>[:<only-in>]...]
+
+      Get content of specified lists, with each entry separated by space (convenient for file lists in Makefile).
+      If <only-in> is specified, only files from this directory are returned.
+
+      Example:
+
+      MY_FILES=\$(files source header)
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'includes' ]; then
+cat << EOF
+  includes
+
+      Output search path of headers as C preprocessor options.
+
+      Example:
+
+      gcc \$(includes) ...
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'output_configure_ac' ]; then
+cat << EOF
+  output_configure_ac [<file>]
+
+      Output configure.ac using file specified as argument.
+
+      Example:
+
+      output_configure_ac <(cat << EOF
+      \$(lines ac_common_header)
+      \$(lines ac)
+      \$(lines ac_common_footer)
+      EOF
+    )
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'output_makefile_am' ]; then
+cat << EOF
+  output_makefile_am <file>
+
+      Output Makefile.am using file specified as argument.
+
+      Example:
+
+      output_makefile_am <(cat << EOF
+      \$(lines am_common_header)
+      \$(lines am)
+      EOF
+      )
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'am_cppflags' ]; then
+cat << EOF
+  am_cppflags
+
+      Output CPPFLAGS for automake to put in Makefile.am.
+
+      Example:
+
+      output_makefile_am <(cat << EOF
+      ...
+      AM_CPPFLAGS=\\\$(am_cppflags)
+      ...
+      EOF
+      )
+
+EOF
+	fi
+	if [ $# -eq 0 ] || [ "$1" = 'build_configure' ]; then
+cat << EOF
+  build_configure
+
+      Build configure.
+
+EOF
+	fi
+}
+
+#################################################### config ###########################################################
+
+# Check if external programs are available
+function check_external_programs()
+{
+	if ! command -v envsubst &> /dev/null; then
+		die "Please install envsubst (http://www.gnu.org/software/gettext/)"
+	fi
+
+	if ! command -v yq &> /dev/null; then
+		die "Please install yq (https://github.com/mikefarah/yq)"
+	fi
+
+	if ! command -v jq &> /dev/null; then
+		die "Please install jq (https://stedolan.github.io/jq/)"
+	fi
+}
+
+function tilda_expansion()
+{
+	local REPLACEMENT="$(echo "${HOME}" | sed -e 's/[]\/$*.^[\#-]/\\&/g')"
+	sed -e "s/^~/${REPLACEMENT}/"
+}
+
+# Load configuration file (~/.config/unisimatic/config.yaml)
+function config()
+{
+	[ -f "${CONFIG_YAML}" ] || die "${APP_NAME^} configuration file ${CONFIG_YAML} not found"
+	
+	local PROPERTY
+	local PROP_IDX
+	
+	# Repositories
+
+	local REPO_NAME_REGEX='^[a-zA-Z_-][a-zA-Z0-9_-]*$'
+	local REPO_NAME
+	local REPO_DIR
+	local REPO_ENABLED
+	local REPO_DEFAULT
+	local REPO_IDX=0
+	PROP_IDX=0
+	while IFS= read -r -d $'\0' PROPERTY; do
+		case ${PROP_IDX} in
+			0)
+				REPO_ENABLED="${PROPERTY}"
+				;;
+			1)
+				[ "${REPO_ENABLED}" = 'true' ] || continue
+				# get name of repository
+				REPO_NAME="${PROPERTY}"
+				# repository shall have a name
+				[ -n "${REPO_NAME}" ] || die "in ${CONFIG_YAML}, repository #${REPO_IDX} has no name"
+				# check that the repository name is well formed
+				[[ "${REPO_NAME}" =~ ${REPO_NAME_REGEX} ]] || die "in ${CONFIG_YAML}, name of repository #${REPO_IDX} is ill-formed"
+				# check that there's not yet a repository enabled with the same name
+				if [ -n "${REPOSITORY_DIRS["${REPO_NAME}"]+x}" ]; then
+					die "in ${CONFIG_YAML}, two or more repositories with name \"${REPO_NAME}\" are enabled at the same time"
+				fi
+				;;
+			2)
+				[ "${REPO_ENABLED}" = 'true' ] || continue
+				# get the directory of the repository
+				REPO_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
+				# repository shall have a directory
+				[ -n "${REPO_DIR}" ] || die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" has no directory"
+				# check that the directory path looks like an absolute path
+				[[ "${REPO_DIR}" = /* ]] || die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" shall have an absolute directory path"
+				# check that the directory exists and directory path is well formed
+				REPO_DIR="$(realpath -e -q "${REPO_DIR}")"
+				if [ $? -ne 0 ] || [ ! -d "${REPO_DIR}" ]; then
+					die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" has either an invalid directory path or repository directory was not found"
+				fi
+				# check that there's not yet a repository with the same directory path
+				[ -z "${REPOSITORY_NAMES_BY_PATH["${REPO_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled repositories with same directory path"
+				;;
+			3)
+				[ "${REPO_ENABLED}" = 'true' ] || continue
+				# get package_dir of the repository
+				REPO_PACKAGE_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
+				# repository shall have a package_dir
+				[ -n "${REPO_PACKAGE_DIR}" ] || die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" has no package_dir"
+				# check that package_dir path looks like an absolute path
+				[[ "${REPO_PACKAGE_DIR}" = /* ]] || REPO_PACKAGE_DIR="${REPO_DIR}/${REPO_PACKAGE_DIR}"
+				# check that the package_dir path exists and is well formed
+				REPO_PACKAGE_DIR="$(realpath -e -q "${REPO_PACKAGE_DIR}")"
+				if [ $? -ne 0 ] || [ ! -d "${REPO_PACKAGE_DIR}" ]; then
+					die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" has an invalid package_dir or package_dir directory was not found"
+				fi
+				# check that there's not yet a repository with the same package_dir path
+				[ -z "${REPOSITORY_NAMES_BY_PACKAGE_DIR["${REPO_PACKAGE_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled repositories with same package_dir"
+				;;
+			4)
+				[ "${REPO_ENABLED}" = 'true' ] || continue
+				# get default flag of the repository
+				REPO_DEFAULT="${PROPERTY}"
+				# if default flag exists and it is true
+				if [ "${REPO_DEFAULT}" = 'true' ]; then
+					# check that there is only one default repository at a time
+					[ -z "${DEFAULT_REPOSITORY_NAME+x}" ] || die "in ${CONFIG_YAML}, multiple default repositories"
+					# this repository is the default one
+					DEFAULT_REPOSITORY_NAME="${REPO_NAME}"
+				fi
+				
+				# everything is fine with this repository: add it into the database
+				REPOSITORY_NAMES+=("${REPO_NAME}")
+				REPOSITORY_DIRS["${REPO_NAME}"]="${REPO_DIR}"
+				REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]="${REPO_PACKAGE_DIR}"
+				REPOSITORY_NAMES_BY_PATH["${REPO_DIR}"]="${REPO_NAME}"
+				REPOSITORY_NAMES_BY_PACKAGE_DIR["${REPO_PACKAGE_DIR}"]="${REPO_NAME}"
+				
+				REPO_IDX=$((${REPO_IDX}+1))
+				;;
+		esac
+		PROP_IDX=$((${PROP_IDX}+1))
+		[ ${PROP_IDX} -le 4 ] || PROP_IDX=0
+	done < <(yq -r '.repositories | to_entries | map(.value.enabled // false, .value.name // "", .value.directory // "", .value.package_dir // "", .value.default // false) | join("\u0000")' "${CONFIG_YAML}" && echo -e '\0')
+
+	# Projects
+
+	local PROJECT_ENABLED
+	local PROJECT_NAME_REGEX='^[a-zA-Z_-][a-zA-Z0-9_-]*$'
+	local PROJECT_NAME
+	local PROJECT_DIR
+	local PROJECT_DISTRIB_FILE
+	local PROJECT_IDX=0
+	PROP_IDX=0
+	while IFS= read -r -d $'\0' PROPERTY; do
+		case ${PROP_IDX} in
+			0)
+				PROJECT_ENABLED="${PROPERTY}"
+				;;
+			1)
+				[ "${PROJECT_ENABLED}" = 'true' ] || continue
+				# get name of the project
+				PROJECT_NAME="${PROPERTY}"
+				# project shall have a name
+				[ -n "${PROJECT_NAME}" ] || die "in ${CONFIG_YAML}, Project #${PROJECT_IDX} has no name"
+				# check that the project name is well formed
+				[[ "${PROJECT_NAME}" =~ ${PROJECT_NAME_REGEX} ]] || die "in ${CONFIG_YAML}, name of Project #${PROJECT_IDX} is ill-formed"
+				# check that there's not yet a project enabled with the same name
+				if [ -n "${PROJECT_DIRS["${PROJECT_NAME}"]+x}" ]; then
+					die "in ${CONFIG_YAML}, two or more projects with name \"${PROJECT_NAME}\" are enabled at the same time"
+				fi
+				;;
+			2)
+				[ "${PROJECT_ENABLED}" = 'true' ] || continue
+				# get the path of the project directory
+				PROJECT_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
+				# project shall have a path
+				[ -n "${PROJECT_DIR}" ] || die "in ${CONFIG_YAML}, project #${PROJECT_IDX} with name \"${PROJECT_NAME}\" has no path"
+				# check that the directory path looks like an absolute path
+				[[ "${PROJECT_DIR}" = /* ]] || die "in ${CONFIG_YAML}, project #${PROJECT_IDX} with name \"${PROJECT_NAME}\" shall have an absolute directory path"
+				# check that the directory exists and directory path is well formed
+				PROJECT_DIR="$(realpath -e -q "${PROJECT_DIR}")"
+				if [ $? -ne 0 ] || [ ! -d "${PROJECT_DIR}" ]; then
+					die "in ${CONFIG_YAML}, project #${PROJECT_IDX} with name \"${PROJECT_NAME}\" has an invalid directory path or project directory was not found"
+				fi
+				# check that there's not yet a project with the same directory path
+				[ -z "${PROJECT_NAMES_BY_PATH["${PROJECT_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled projects with same directory path"
+				;;
+			3)
+				[ "${PROJECT_ENABLED}" = 'true' ] || continue
+				# get path to the project distribution file
+				PROJECT_DISTRIB_FILE="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
+				if [ -n "${PROJECT_DISTRIB_FILE}" ]; then
+					# if there is a path and it is not an absolute path, then it is relative to the project directory
+					[[ "${PROJECT_DISTRIB_FILE}" = /* ]] || PROJECT_DISTRIB_FILE="${PROJECT_DIR}/${PROJECT_DISTRIB_FILE}"
+				else
+					# if there is no path, then use the default
+					PROJECT_DISTRIB_FILE="${PROJECT_DIR}/${DEFAULT_PROJECT_DISTRIB_FILE}"
+				fi
+				# check that the configuration file exists
+				[ -f "${PROJECT_DISTRIB_FILE}" ] || die "in ${CONFIG_YAML}, configuration file \"${PROJECT_DISTRIB_FILE}\" of Project #${PROJECT_IDX} with name \"${PROJECT_NAME}\" not found"
+				
+				# everything is fine with this project: add it into the database
+				PROJECT_NAMES+=("${PROJECT_NAME}")
+				PROJECT_DIRS["${PROJECT_NAME}"]="${PROJECT_DIR}"
+				PROJECT_DISTRIB_FILES["${PROJECT_NAME}"]="${PROJECT_DISTRIB_FILE}"
+				PROJECT_NAMES_BY_PATH["${PROJECT_DIR}"]="${REPO_NAME}"
+				
+				PROJECT_IDX=$((${PROJECT_IDX}+1))
+				;;
+		esac
+		PROP_IDX=$((${PROP_IDX}+1))
+		[ ${PROP_IDX} -le 3 ] || PROP_IDX=0
+	done < <(yq -r '.projects | to_entries | map(.value.enabled, .value.name, .value.directory, .value.distrib_file) | join("\u0000")' "${CONFIG_YAML}" && echo -e '\0')
+
+	# Builds
+
+	local BUILD_ENABLED
+	local BUILD_NAME_REGEX='^[a-zA-Z_-][a-zA-Z0-9_-]*$'
+	local BUILD_NAME
+	local BUILD_PROJECT_NAME
+	local BUILD_DIR
+	local BUILD_DIST_DIR
+	local BUILD_COMMAND
+	local BUILD_IDX=0
+	PROP_IDX=0
+	while IFS= read -r -d $'\0' PROPERTY; do
+		case ${PROP_IDX} in
+			0)
+				BUILD_ENABLED="${PROPERTY}"
+				;;
+			1)
+				[ "${BUILD_ENABLED}" = 'true' ] || continue
+				# get name of the build
+				BUILD_NAME="${PROPERTY}"
+				# build shall have a name
+				[ -n "${BUILD_NAME}" ] || die "in ${CONFIG_YAML}, Build #${BUILD_IDX} has no name"
+				# check that the build name is well formed
+				[[ "${BUILD_NAME}" =~ ${BUILD_NAME_REGEX} ]] || die "in ${CONFIG_YAML}, name of Build #${BUILD_IDX} is ill-formed"
+				# check that there's not yet a build enabled with the same name
+				if [ -n "${BUILD_DIRS["${BUILD_NAME}"]+x}" ]; then
+					die "in ${CONFIG_YAML}, two or more builds with name \"${BUILD_NAME}\" are enabled at the same time"
+				fi
+				;;
+			2)
+				[ "${BUILD_ENABLED}" = 'true' ] || continue
+				# get name of the source project
+				BUILD_PROJECT_NAME="${PROPERTY}"
+				# build shall have a project
+				[ -n "${BUILD_PROJECT_NAME}" ] || die "in ${CONFIG_YAML}, Build #${BUILD_IDX} has no project"
+				[ -n "${PROJECT_DIRS["${BUILD_PROJECT_NAME}"]+x}" ] || die "in ${CONFIG_YAML}, Project of Build #${BUILD_IDX} with name \"${BUILD_NAME}\" not found"
+				;;
+			3)
+				[ "${BUILD_ENABLED}" = 'true' ] || continue
+				# get the build directory of the build
+				BUILD_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
+				# build may have a build directory
+				if [ -n "${BUILD_DIR}" ]; then
+					# check that the build directory path looks like an absolute path
+					[[ "${BUILD_DIR}" = /* ]] || die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" shall have an absolute path for the build directory"
+					# check that build directory path is valid and canonicalize build directory path
+					BUILD_DIR="$(realpath -m -q "${BUILD_DIR}")"
+					if [ $? -ne 0 ]; then
+						die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" has an invalid build directory path"
+					fi
+					# check that there's not yet a build with the same build directory
+					[ -z "${BUILD_NAMES_BY_BUILD_DIR["${BUILD_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled builds with same build directory"
+				else
+					unset BUILD_DIR
+				fi
+				;;
+			4)
+				[ "${BUILD_ENABLED}" = 'true' ] || continue
+				# get the distribution directory of the build
+				BUILD_DIST_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
+				# build may have a distribution directory
+				if [ -n "${BUILD_DIST_DIR}" ]; then
+					# check that the distribution directory path looks like an absolute path
+					[[ "${BUILD_DIST_DIR}" = /* ]] || die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" shall have an absolute path for the distribution directory"
+					# check that distribution directory path is valid and canonicalize distribution directory path
+					BUILD_DIST_DIR="$(realpath -m -q "${BUILD_DIST_DIR}")"
+					if [ $? -ne 0 ]; then
+						die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" has an invalid distribution directory path"
+					fi
+					# check that there's not yet a build with the same directory
+					[ -z "${BUILD_NAMES_BY_DIST_DIR["${BUILD_DIST_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled builds with same distribution directory"
+				else
+					unset BUILD_DIST_DIR
+				fi
+				;;
+			5)
+				[ "${BUILD_ENABLED}" = 'true' ] || continue
+				# get command of the build
+				BUILD_COMMAND="${PROPERTY}"
+				# build shall have a command
+				[ $? -eq 0 ] || die "in ${CONFIG_YAML}, Build #${BUILD_IDX} has no command"
+				
+				# build shall have a build directory and/or a distribution directory
+				[ -n "${BUILD_DIR+x}" ] || [ -n "${BUILD_DIST_DIR+x}" ] || die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" has neither a build directory nor a distribution directory"
+				[ -n "${BUILD_DIR+x}" ] || BUILD_DIR="${BUILD_DIST_DIR}"
+				[ -n "${BUILD_DIST_DIR+x}" ] || BUILD_DIST_DIR="${BUILD_DIR}"
+				
+				# everything is fine with this build: add it into the database
+				BUILD_NAMES+=("${BUILD_NAME}")
+				BUILD_PROJECT_NAMES["${BUILD_NAME}"]="${BUILD_PROJECT_NAME}"
+				BUILD_DIRS["${BUILD_NAME}"]="${BUILD_DIR}"
+				BUILD_DIST_DIRS["${BUILD_NAME}"]="${BUILD_DIST_DIR}"
+				BUILD_COMMANDS["${BUILD_NAME}"]="${BUILD_COMMAND}"
+				BUILD_NAMES_BY_BUILD_DIR["${BUILD_DIR}"]="${BUILD_NAME}"
+				BUILD_NAMES_BY_BUILD_DIR["${BUILD_DIST_DIR}"]="${BUILD_NAME}"
+				
+				BUILD_IDX=$((${BUILD_IDX}+1))
+				;;
+		esac
+		PROP_IDX=$((${PROP_IDX}+1))
+		[ ${PROP_IDX} -le 5 ] || PROP_IDX=0
+	done < <(yq -r -j '.builds | to_entries | map(.value.enabled // false, .value.name // "", .value.project // "", .value.build_dir // "", .value.dist_dir // "", .value.command // "") | join("\u0000")' "${CONFIG_YAML}" && echo -e '\0')
+
+	debug "Global configuration from ${CONFIG_YAML}:\n"
+	if [ ${#REPOSITORY_NAMES[@]} -ne 0 ]; then
+		debug "Repositories:"
+		for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+			debug "  - Repository \"${REPO_NAME}\" at ${REPOSITORY_DIRS["${REPO_NAME}"]} with package_dir at ${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"
+		done
+		debug ''
+	fi
+	if [ ${#PROJECT_NAMES[@]} -ne 0 ]; then
+		debug "Projects:"
+		for PROJECT_NAME in "${PROJECT_NAMES[@]}"; do
+			debug "  - Project \"${PROJECT_NAME}\" at ${PROJECT_DIRS["${PROJECT_NAME}"]} with project distribution file ${PROJECT_DISTRIB_FILES["${PROJECT_NAME}"]}"
+		done
+		debug ''
+	fi
+	if [ ${#BUILD_NAMES[@]} -ne 0 ]; then
+		debug "Builds:"
+		for BUILD_NAME in "${BUILD_NAMES[@]}"; do
+			debug "  - Build \"${BUILD_NAME}\" at ${BUILD_DIRS["${BUILD_NAME}"]} from Project \"${BUILD_PROJECT_NAMES["${BUILD_NAME}"]}\" distributed at ${BUILD_DIST_DIRS["${BUILD_NAME}"]}"
+			debug "    command:"
+			debug "    $(echo "${BUILD_COMMANDS["${BUILD_NAME}"]}" | sed -e '1s/^/  /g' -e '2,$s/^/      /g')"
+		done
+		debug ''
+	fi
+}
+
+#################################################### gendeps ###########################################################
+
+# concatenate paths. An empty path is eluded.
+function concat_paths()
+{
+	local _PATH
+	while [ $# -ne 0 ]; do
+		if [ -n "${_PATH}" ] && [ -n "$1" ]; then
+			_PATH+='/'
+		fi
+		_PATH+="$1"
+		shift
+	done
+	echo "${_PATH}"
+}
+
+# normalize the path when referencing an header file from a source file in a repository
+function normalize_include_dependency()
+{
+	local OWN_REPO_DIR="$1"
+	local FROM_DIRPATH="$2"
+	local FILEPATH="$3"
+	
+	if [[ "${FILEPATH}" = '../'* ]] || [[ "${FILEPATH}" = './'* ]]; then
+		realpath -q -m --relative-to="${OWN_REPO_DIR}" "${FROM_DIRPATH}/${FILEPATH}"
+	elif [[ "${FILEPATH}" != '/'* ]]; then
+		if [ -f "${FROM_DIRPATH}/${FILEPATH}" ]; then
+			realpath -q -m --relative-to="${OWN_REPO_DIR}" "${FROM_DIRPATH}/${FILEPATH}"
+		else
+			realpath -q -m --relative-to="${PWD}" "${FILEPATH}"
+		fi
+	else
+		realpath -q -m "${FILEPATH}"
+	fi
+}
+
+# resolve repository package dependency, in order or priority:
+# - looking at own package_dir (for package information manually edited)
+# - looking at own repository directory
+# - looking at other repository package_dir or repository directory
+function resolve_pkg_dep()
+{
+	local OWN_REPO_DIR="$1"
+	local OWN_PACKAGE_DIR="$2"
+	local PKG_DEP="$3"
+
+	local REPO_NAME
+	local REPO_PACKAGE_DIR
+	if [ ! -d "${OWN_PACKAGE_DIR}/${PKG_DEP}" ]; then
+		if [ ! -d "${OWN_REPO_DIR}/${PKG_DEP}" ]; then
+			for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+				REPO_DIR="${REPOSITORY_DIRS["${REPO_NAME}"]}"
+				REPO_PACKAGE_DIR="${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"
+				if [ -d "${REPO_PACKAGE_DIR}/${PKG_DEP}" ] || [ -d "${REPO_DIR}/${PKG_DEP}" ]; then
+					echo "${REPO_NAME} ${PKG_DEP}"
+					return
+				fi
+			done
+		fi
+	fi
+	
+	echo "${PKG_DEP}"
+}
+
+# resolve repository that provides repository package content
+function resolve_pkg_dep_repository()
+{
+	local OWN_REPO_NAME="$1"
+	local PKG_DEP="$2"
+	local REPO_NAME
+
+	if [ "${PKG_DEP}" = '.' ]; then
+		echo "${OWN_REPO_NAME}"
+		return 0
+	else
+		for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+			REPO_DIR="${REPOSITORY_DIRS["${REPO_NAME}"]}"
+			if [ -d "${REPO_DIR}/${PKG_DEP}" ]; then
+				echo "${REPO_NAME}"
+				return 0
+			fi
+		done
+	fi
+	
+	return 1
+}
+
+# resolve a file, in order of priority:
+# - looking in own repository
+# - looking at other repository
+function resolve_file()
+{
+	local OWN_REPO_DIR="$1"
+	local FILE="$2"
+	local REPO_NAME
+	
+	if [ -f "${OWN_REPO_DIR}/${FILE}" ]; then
+		echo "${OWN_REPO_DIR}/${FILE}"
+		return 0
+	else
+		for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+			REPO_DIR="${REPOSITORY_DIRS["${REPO_NAME}"]}"
+			if [ -f "${REPO_DIR}/${FILE}" ]; then
+				echo "${REPO_DIR}/${FILE}"
+				return 0
+			fi
+		done
+	fi
+	
+	return 1
+}
+
+# resolve repository package dependency based on header include
+function sysdep_by_include()
+{
+	local OWN_REPO_DIR="$1"
+	local OWN_PACKAGE_DIR="$2"
+	local FILEPATH="$3"
+	local REGEX="$4"
+	local PKG_DEP="$5"
+	local PKG_DEPS_TXT="$6"
+	if grep -qs -E "^#[[:blank:]]*include[[:blank:]]*<${REGEX}>" "${FILEPATH}"; then
+		resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${PKG_DEP}" >> "${PKG_DEPS_TXT}"
+	fi
+}
+
+# upstream quircks for discovering file dependencies
+function discover_file_deps_quirks()
+{
+	local OWN_REPO_DIR="$1"
+	local OWN_PACKAGE_DIR="$2"
+	local FILEPATH="$3"
+	local PKG_DEPS_TXT="$4"
+	
+	# realpath
+	if grep -qs "realpath(" "${FILEPATH}"; then
+		resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" 'm4/real_path' >> "${PKG_DEPS_TXT}"
+	fi
+	
+	# endian
+	if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<sys/param\.h>' "${FILEPATH}" && grep -qs 'ENDIAN' "${FILEPATH}"; then
+		resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" 'm4/endian' >> "${PKG_DEPS_TXT}"
+	fi
+	
+	# _Float16
+	if grep -qsw '_Float16' "${FILEPATH}"; then
+		resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" 'm4/float16' >> "${PKG_DEPS_TXT}"
+	fi
+	
+	# realpath
+	if grep -qs "shmget(" "${FILEPATH}" ||
+	   grep -qs "shmctl(" "${FILEPATH}" ||
+	   grep -qs "shmat(" "${FILEPATH}"; then
+		resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" 'm4/shared_memory' >> "${PKG_DEPS_TXT}"
+	fi
+}
+
+# test if a file is a source code file
+function is_source_code()
+{
+	local FILEPATH="$1"
+	local cc_regex='\.cc$|\.cpp$'
+	local hh_regex='\.hh$|\.h$\.hpp$'
+	local tcc_regex='\.tcc$|\.tpp$'
+	local isa_regex='\.isa$'
+	local src_regex="${cc_regex}|${hh_regex}|${tcc_regex}|${isa_regex}"
+	[[ "${FILEPATH}" =~ ${src_regex} ]]
+}
+
+# get repository package dependency based on header include
+function include_deps()
+{
+	local FILEPATH="$1"
+	local isa_regex='\.isa$'
+	if is_source_code "${FILEPATH}"; then
+		grep -E '^#[[:blank:]]*include[[:blank:]]*[<"]' "${FILEPATH}" | sed -e 's/^#[[:blank:]]*include[[:blank:]]*"//g' -e 's/^#[[:blank:]]*include[[:blank:]]*<//g' -e 's/".*$//g' -e 's/>.*$//g'
+		if [[ "${FILEPATH}" =~ ${isa_regex} ]]; then
+			grep -E '^[[:blank:]]*include[[:blank:]]*"' "${FILEPATH}" | sed -e 's/^[[:blank:]]*include[[:blank:]]*"//g' -e 's/".*$//g'
+		fi
+	fi
+}
+
+# add a file in built list
+function built()
+{
+	local REPO_NAME="$1"
+	local PKG_NAME="$2"
+	local LIST_NAME="$3"
+	local FILE="$4"
+	local BUILT_LIST_NAME
+	local BUILT_LIST_TXT
+	for BUILT_LIST_NAME in 'built' "built_${LIST_NAME}"; do
+		BUILT_LIST_TXT="${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}/${PKG_NAME}/${BUILT_LIST_NAME}_list.txt"
+		mkdir -p "$(dirname "${BUILT_LIST_TXT}")"
+#		echo "\$(top_builddir)/${FILE}" >> "${BUILT_LIST_TXT}"
+		echo "${FILE}" >> "${BUILT_LIST_TXT}"
+		sort -u -o "${BUILT_LIST_TXT}" "${BUILT_LIST_TXT}"
+	done
+}
+
+# resolve repository package system dependencies
+function resolve_pkg_sysdep()
+{
+	local OWN_REPO_DIR="$1"
+	local OWN_PACKAGE_DIR="$2"
+	local INCLUDE_DEP="$3"
+	local REGEX="^$4$"
+	local PKG_DEP="$5"
+	local PKG_DEPS_TXT="$6"
+	if [[ "${INCLUDE_DEP}" =~ ${REGEX} ]]; then
+		resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${PKG_DEP}" >> "${PKG_DEPS_TXT}"
+		return 0
+	fi
+	return 1
+}
+
+# resolve (still pending) repository package dependencies using quirks
+function resolve_pkg_dep_quirks()
+{
+	local OWN_REPO_DIR
+	local OWN_PACKAGE_DIR
+	local UNRESOLVED_TXT
+	local INCLUDE_DEP
+	local -a INCLUDE_DEPS
+	local PKG_DEP
+	local PKG_DEPS_TXT
+	local regex
+	local RESOLVED
+	local FIXED
+	local OWN_REPO_NAME
+	for OWN_REPO_NAME in "$@"; do
+		OWN_REPO_DIR="${REPOSITORY_DIRS["${OWN_REPO_NAME}"]}"
+		OWN_PACKAGE_DIR="${REPOSITORY_PACKAGE_DIR["${OWN_REPO_NAME}"]}"
+		while IFS= read -r -d $'\0' UNRESOLVED_TXT; do
+			PKG_DEPS_TXT="$(dirname "${UNRESOLVED_TXT}")/pkg_deps.txt"
+			INCLUDE_DEPS=()
+			while IFS= read -r INCLUDE_DEP; do
+				INCLUDE_DEPS+=("${INCLUDE_DEP}")
+			done < "${UNRESOLVED_TXT}"
+			
+			for INCLUDE_DEP in "${INCLUDE_DEPS[@]}"; do
+				RESOLVED='no'
+				FIXED='no'
+				while true; do
+					if [[ "${INCLUDE_DEP}" = 'config.h' ]]; then
+						FIXED='yes'
+						break
+					fi
+				
+					regex='\.hh$|\.h$|\.hpp$'
+					if [[ "${INCLUDE_DEP}" =~ ${regex} ]]; then
+						# Mardown -> C++ header: .md -> .h
+						local MD_FILE="$(sed -e 's/\.h$/\.md/g' -e 's/\.hh$/\.md/g' -e 's/\.hpp$/\.md/g' <<< "${INCLUDE_DEP}")"
+						if resolve_file "${OWN_REPO_DIR}" "${MD_FILE}" &> /dev/null; then
+							resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" 'am/md_to_h' >> "${PKG_DEPS_TXT}"
+							local PKG_DEP="$(dirname "${INCLUDE_DEP}")"
+							local PKG_DEP_REPO_NAME
+							PKG_DEP_REPO_NAME="$(resolve_pkg_dep_repository "${OWN_REPO_NAME}" "${PKG_DEP}")"
+							if [ $? -eq 0 ]; then
+								debug "In repository ${OWN_REPO_NAME}, ${INCLUDE_DEP} can be built from ${MD_FILE} of repository ${PKG_DEP_REPO_NAME}"
+								built "${PKG_DEP_REPO_NAME}" "${PKG_DEP}" 'header' "${INCLUDE_DEP}"
+								RESOLVED='yes'
+								break
+							fi
+						fi
+					fi
+			
+					regex='\.hh$|\.tcc$'
+					if [[ "${INCLUDE_DEP}" =~ ${regex} ]]; then
+						## .isa -> .hh .tcc .cc
+						local ISA_FILE="$(sed -e 's/\.hh$/\.isa/g' -e 's/\.tcc/\.isa/g' <<< "${INCLUDE_DEP}")"
+						if resolve_file "${OWN_REPO_DIR}" "${ISA_FILE}" &> /dev/null; then
+							resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" 'am/isa_to_cpp' >> "${PKG_DEPS_TXT}"
+							local PKG_DEP="$(dirname "${INCLUDE_DEP}")"
+							local PKG_DEP_REPO_NAME
+							PKG_DEP_REPO_NAME="$(resolve_pkg_dep_repository "${OWN_REPO_NAME}" "${PKG_DEP}")"
+							if [ $? -eq 0 ]; then
+								debug "In repository ${OWN_REPO_NAME}, ${INCLUDE_DEP} can be built from ${ISA_FILE} of repository ${PKG_DEP_REPO_NAME}"
+								local BASENAME="$(sed -e 's/\.hh$//g' -e 's/\.tcc$//g' <<< "${INCLUDE_DEP}")"
+								local FOUND_HH='no'
+								local FOUND_TCC='no'
+								for _INCLUDE_DEP in "${INCLUDE_DEPS[@]}"; do
+									[ "${_INCLUDE_DEP}" != "${BASENAME}.hh" ] || FOUND_HH='yes'
+									[ "${_INCLUDE_DEP}" != "${BASENAME}.tcc" ] || FOUND_TCC='yes'
+								done
+								if [ "${FOUND_HH}" = 'yes' ]; then
+									built "${PKG_DEP_REPO_NAME}" "${PKG_DEP}" 'header' "${BASENAME}.hh"
+								fi
+								if [ "${FOUND_TCC}" = 'yes' ]; then
+									built "${PKG_DEP_REPO_NAME}" "${PKG_DEP}" 'template' "${BASENAME}.tcc"
+								elif [ "${FOUND_HH}" = 'yes' ]; then
+									built "${PKG_DEP_REPO_NAME}" "${PKG_DEP}" 'source' "${BASENAME}.cc"
+								fi
+								RESOLVED='yes'
+								break
+							fi
+						fi
+					fi
+					
+					regex='_sub\.isa$'
+					if [[ "${INCLUDE_DEP}" =~ ${regex} ]]; then
+						# .isa subdecoder
+						local ISA_FILE="$(sed -e 's/_sub\.isa$/\.isa/g' <<< "${INCLUDE_DEP}")"
+						if resolve_file "${OWN_REPO_DIR}" "${ISA_FILE}" &> /dev/null; then
+							local PKG_DEP="$(dirname "${INCLUDE_DEP}")"
+							local PKG_DEP_REPO_NAME
+							PKG_DEP_REPO_NAME="$(resolve_pkg_dep_repository "${OWN_REPO_NAME}" "${PKG_DEP}")"
+							if [ $? -eq 0 ]; then
+								debug "In repository ${OWN_REPO_NAME}, ${INCLUDE_DEP} can be built from ${ISA_FILE} of repository ${PKG_DEP_REPO_NAME}"
+								built "${PKG_DEP_REPO_NAME}" "${PKG_DEP}" 'isa' "${INCLUDE_DEP}"
+								local AM_LIST_TXT="${REPOSITORY_PACKAGE_DIR["${PKG_DEP_REPO_NAME}"]}/${PKG_DEP}/am_list.txt"
+								mkdir -p "$(dirname "${AM_LIST_TXT}")"
+								echo "${INCLUDE_DEP}: $(sed -e 's/\.isa$/\.hh/g' <<< "${ISA_FILE}")" >> "${AM_LIST_TXT}"
+								RESOLVED='yes'
+								break
+							fi
+						fi
+					fi
+					
+					# try to resolve by system or third party include header
+					if resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'systemc'             'm4/systemc'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'systemc\.h'          'm4/systemc'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'tlm'                 'm4/systemc'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'tlm_utils/.*\.h'     'm4/systemc'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'scml2\.h'            'm4/scml2'               "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'scml2\.h'            'm4/scml2'               "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'scml2_logging\.h'    'm4/scml2'               "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'scmlinc/.*\.h'       'm4/scml2'               "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'gmp\.h'              'm4/gmp'                 "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'sys/socket\.h'       'm4/bsd_sockets'         "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'netinet/in\.h'       'm4/bsd_sockets'         "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'arpa/inet\.h'        'm4/bsd_sockets'         "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'netinet/tcp\.h'      'm4/bsd_sockets'         "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'netdb\.h'            'm4/bsd_sockets'         "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'winsock2\.h'         'm4/bsd_sockets'         "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'sys/un\.h'           'm4/bsd_sockets'         "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'sys/times\.h'        'm4/times'               "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cxxabi\.h'           'm4/cxxabi'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'execinfo\.h'         'm4/cxxabi'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'libxml/.*\.h'        'm4/libxml2'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'dlfcn\.h'            'm4/get_exec_path'       "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'tvs/.*\.h'           'm4/tvs'                 "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'RTI/.*\.h'           'm4/hla_rti1516e'        "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'softfloat_emu/.*\.h' 'm4/softfloat_emu'       "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'v8\.h'               'm4/v8js'                "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'node\.h'             'm4/nodejs'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'node_buffer\.h'      'm4/nodejs'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'uv\.h'               'm4/nodejs'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'editline/.*\.h'      'm4/libedit'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'pthread\.h'          'm4/pthread'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'Python\.h'           'm4/python_dev'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'boost/.*\.hpp'       'm4/boost'               "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cacti.*\.hh'         'm4/cacti'               "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'SDL\.h'              'm4/sdl'                 "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'SDL_.*\.h'           'm4/sdl'                 "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'artimon\.h'          'm4/artimon'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'artimon\.h'          'm4/artimon'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'lua\.h'              'm4/lua'                 "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'windows\.h'          'm4/windows'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'process\.h'          'm4/windows_process'     "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'io\.h'               'm4/windows_io'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'crt_externs\.h'      'm4/darwin_crt_externs'  "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'ieee754\.h'          'm4/libc_ieee754'        "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'assert\.h'           'libc/assert'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'ctype\.h'            'libc/ctype'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'errno\.h'            'libc/errno'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'fcntl\.h'            'libc/fcntl'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'fenv\.h'             'libc/fenv'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'float\.h'            'libc/float'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'getopt\.h'           'libc/getopt'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'inttypes\.h'         'libc/inttypes'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'limits\.h'           'libc/limits'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'math\.h'             'libc/math'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'signal\.h'           'libc/signal'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'stdarg\.h'           'libc/stdarg'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'stdio\.h'            'libc/stdio'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'stdlib\.h'           'libc/stdlib'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'string\.h'           'libc/string'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'stddef\.h'           'libc/stddef'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'sys/types\.h'        'sys/types'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'sys/shm\.h'          'm4/shared_memory'       "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'unistd\.h'           'libc/unistd'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'stdint\.h'           'libc/stdint'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'time\.h'             'libc/time'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'dirent\.h'           'libc/dirent'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'fstream'             'std/fstream'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cassert'             'std/cassert'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cmath'               'std/cmath'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cerrno'              'std/cerrno'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cstddef'             'std/cstddef'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cstdio'              'std/cstdio'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cstdlib'             'std/cstdlib'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cstring'             'std/cstring'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'iomanip'             'std/iomanip'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'stdexcept'           'std/stdexcept'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'deque'               'std/deque'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'list'                'std/list'               "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'sstream'             'std/sstream'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'iosfwd'              'std/iosfwd'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'iostream'            'std/iostream'           "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'ios'                 'std/ios'                "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'stack'               'std/stack'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'map'                 'std/map'                "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'ostream'             'std/ostream'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'queue'               'std/queue'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'vector'              'std/vector'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'string'              'std/string'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'set'                 'std/set'                "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'unordered_set'       'std/unordered_set'      "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'algorithm'           'std/algorithm'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cctype'              'std/cctype'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'climits'             'std/climits'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cfenv'               'std/cfenv'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cfloat'              'std/cfloat'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cstdint'             'std/cstdint'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'limits'              'std/limits'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'memory'              'std/memory'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'thread'              'std/thread'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'condition_variable'  'std/condition_variable' "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'mutex'               'std/mutex'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'regex'               'std/regex'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'typeinfo'            'std/typeinfo'           "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'utility'             'std/utility'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'functional'          'std/functional'         "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cstdarg'             'std/cstdarg'            "${PKG_DEPS_TXT}"; then
+						RESOLVED='yes'
+						FIXED='yes'
+						break
+					fi
+					
+					warn "In repository ${OWN_REPO_NAME}, repository package $(dirname "${UNRESOLVED_TXT#"${OWN_PACKAGE_DIR}"/}"): ${INCLUDE_DEP} dependency can't be resolved"
+					break
+				done
+				
+				if [ "${RESOLVED}" = 'yes' ]; then
+					debug "In repository ${OWN_REPO_NAME}, repository package $(dirname "${UNRESOLVED_TXT#"${OWN_PACKAGE_DIR}"/}"): ${INCLUDE_DEP} dependency was resolved"
+
+					if [ "${FIXED}" != 'yes' ]; then
+						PKG_DEP="$(pkg_dep "${INCLUDE_DEP}")"
+						[ "${PKG_DEP}" = '.' ] || echo "${PKG_DEP}" >> "${PKG_DEPS_TXT}"
+						FIXED='yes'
+					fi
+					
+					sed -i -e "/^$(echo -n "${INCLUDE_DEP}" | sed -e 's/[]\/$*.^[\#-]/\\&/g')$/d" "${UNRESOLVED_TXT}"
+					[ -s "${UNRESOLVED_TXT}" ] || rm -f "${UNRESOLVED_TXT}"
+				fi
+			done
+			if [ -f "${PKG_DEPS_TXT}" ]; then
+				sort -u -o "${PKG_DEPS_TXT}" "${PKG_DEPS_TXT}"
+			fi
+		done < <(find "${REPOSITORY_PACKAGE_DIR["${OWN_REPO_NAME}"]}" -name ".unresolved.txt" -print0)
+	done
+}
+
+# get repository package name of a file
+function pkg_dep()
+{
+	local INCLUDE_DEP="$1"
+	local interfaces_regex='^unisim/service/interfaces'
+	if [[ "${INCLUDE_DEP}" =~ ${interfaces_regex} ]]; then
+		echo "${INCLUDE_DEP}" | sed -e 's/\.hh$//'
+	else
+		echo "$(dirname "${INCLUDE_DEP}")"
+	fi
+}
+
+# discover file (or directory) dependencies
+function discover_file_deps()
+{
+	local OWN_REPO_DIR="$1"
+	local OWN_PACKAGE_DIR="$2"
+	local BASE="$3"
+	local FILENAME="$4"
+	local INCLUDE_DEP
+	local PKG_DEP
+	
+	local DIRPATH="$(concat_paths "${OWN_REPO_DIR}" "${BASE}")"
+	
+	local FILEPATH="${DIRPATH}/${FILENAME}"
+	
+	can_process_file "${DIRPATH}/${FILENAME}" || return
+
+	mkdir -p "$(concat_paths "${OWN_PACKAGE_DIR}" "${BASE}")"
+	local PKG_DEPS_TXT="$(concat_paths "${OWN_PACKAGE_DIR}" "${BASE}")/pkg_deps.txt"
+	
+	if is_source_code "${FILEPATH}"; then
+		for INCLUDE_DEP in $(include_deps "${FILEPATH}"); do
+			INCLUDE_DEP="$(normalize_include_dependency "${OWN_REPO_DIR}" "$(dirname "${FILEPATH}")" "${INCLUDE_DEP}")"
+			PKG_DEP="$(pkg_dep "${INCLUDE_DEP}")"
+			
+			if resolve_file "${OWN_REPO_DIR}" "${INCLUDE_DEP}" &> /dev/null; then
+				if [ "${BASE}" != "${PKG_DEP}" ] && [ "${PKG_DEP}" != '.' ]; then
+					resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${PKG_DEP}" >> "${PKG_DEPS_TXT}"
+				fi
+			else
+				local UNRESOLVED_TXT="$(concat_paths "${OWN_PACKAGE_DIR}" "${BASE}")/.unresolved.txt"
+				debug "${INCLUDE_DEP} dependency is pending"
+				echo "${INCLUDE_DEP}" >> "${UNRESOLVED_TXT}"
+				sort -u -o "${UNRESOLVED_TXT}" "${UNRESOLVED_TXT}"
+			fi
+		done
+		discover_file_deps_quirks "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${FILEPATH}" "${PKG_DEPS_TXT}"
+	fi
+	
+	if [ -f "${PKG_DEPS_TXT}" ]; then
+		sort -u -o "${PKG_DEPS_TXT}" "${PKG_DEPS_TXT}"
+	fi
+}
+
+# build list of files
+function list_files()
+{
+	local OWN_REPO_DIR="$1"
+	shift
+	local OWN_PACKAGE_DIR="$1"
+	shift
+	local BASE="$1"
+	shift
+	local LIST_NAME="$1"
+	shift
+	local FILENAME_LIST=("$@")
+	local LIST_TXT="$(concat_paths "${OWN_PACKAGE_DIR}" "${BASE}")/${LIST_NAME}_list.txt"
+	
+	mkdir -p "$(concat_paths "${OWN_PACKAGE_DIR}" "${BASE}")"
+	
+	if [ ${#FILENAME_LIST[@]} -ne 0 ]; then
+		printf "" > "${LIST_TXT}"
+		local FILENAME
+		for FILENAME in "${FILENAME_LIST[@]}"; do
+			can_process_file "$(concat_paths "${OWN_REPO_DIR}" "${BASE}")/${FILENAME}" || continue
+			echo "$(concat_paths "${BASE}" "${FILENAME}")" >> "${LIST_TXT}"
+		done
+		[ -s "${LIST_TXT}" ] || rm -f "${LIST_TXT}"
+	fi
+}
+
+# quirk for unisim/service/interfaces: create a repository package for each unisim/service/interfaces header file with a single entry list
+function list_interfaces_files()
+{
+	local OWN_REPO_DIR="$1"
+	local OWN_PACKAGE_DIR="$2"
+	local INTERFACE_DIR="${OWN_REPO_DIR}/unisim/service/interfaces"
+	
+	pushd "${INTERFACE_DIR}" > /dev/null || die "Can't enter directory ${INTERFACE_DIR}"
+	local HEADER_FILENAME
+	for HEADER_FILENAME in *.hh; do
+		can_process_file "${OWN_REPO_DIR}/unisim/service/interfaces/${HEADER_FILENAME}" || continue
+		local PKG_NAME=$(echo "${HEADER_FILENAME}" | sed -e 's/\.hh$//')
+		mkdir -p "${OWN_PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}"
+		echo "unisim/service/interfaces/${HEADER_FILENAME}" > "${OWN_PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}/header_list.txt"
+	done
+	popd > /dev/null
+}
+
+# quirk for unisim/service/interfaces: for each interface header discover dependencies
+function discover_interfaces_file_deps()
+{
+	local OWN_REPO_DIR="$1"
+	local OWN_PACKAGE_DIR="$2"
+	local INTERFACE_DIR="${OWN_REPO_DIR}/unisim/service/interfaces"
+	
+	pushd "${INTERFACE_DIR}" > /dev/null || die "Can't enter ${INTERFACE_DIR}"
+	local interfaces_regex='^unisim/service/interfaces'
+	local HEADER_FILENAME
+	for HEADER_FILENAME in *.hh *.h *.hpp; do
+		can_process_file "${INTERFACE_DIR}/${HEADER_FILENAME}" || continue
+		local PKG_NAME=$(echo "${HEADER_FILENAME}" | sed -e 's/\.hh$//' -e 's/\.h$//' -e 's/\.hpp$//')
+		local PKG_DEPS_TXT="${OWN_PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}/pkg_deps.txt"
+		printf "" > "${PKG_DEPS_TXT}"
+		local INCLUDE_DEP
+		for INCLUDE_DEP in $(include_deps "${HEADER_FILENAME}"); do
+			INCLUDE_DEP="$(normalize_include_dependency "${OWN_REPO_DIR}" "unisim/service/interfaces" "${INCLUDE_DEP}")"
+			local PKG_DEP="$(pkg_dep "${INCLUDE_DEP}")"
+			
+			if resolve_file "${OWN_REPO_DIR}" "${INCLUDE_DEP}" &> /dev/null; then
+				resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${PKG_DEP}" >> "${PKG_DEPS_TXT}"
+			else
+				local UNRESOLVED_TXT="${OWN_PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}/.unresolved.txt"
+				debug "${INCLUDE_DEP} dependency is pending"
+				echo "${INCLUDE_DEP}" >> "${UNRESOLVED_TXT}"
+				sort -u -o "${UNRESOLVED_TXT}" "${UNRESOLVED_TXT}"
+			fi
+		done
+	done
+	popd > /dev/null
+}
+
+function can_process_file()
+{
+	local FILEPATH="$1"
+	[ "${FILENAME}" != "attic" ] || return 1
+	[ "${INCLUDE_UNTRACKED_FILES}" = "yes" ] || git ls-files --error-unmatch "${FILEPATH}" &> /dev/null
+}
+
+function ignore_directory()
+{
+	local DIRPATH="$1"
+	[ -f "${DIRPATH}/.unisimaticignore" ]
+}
+
+function crawl_directory()
+{
+	local OWN_REPO_DIR="$1"
+	local OWN_PACKAGE_DIR="$2"
+	local BASE="$3"
+	
+	local DIRPATH="$(concat_paths "${OWN_REPO_DIR}" "${BASE}")"
+	local PKG_DEPS_TXT="$(concat_paths "${OWN_PACKAGE_DIR}" "${BASE}")/pkg_deps.txt"
+	local UNRESOLVED_TXT="$(concat_paths "${OWN_PACKAGE_DIR}" "${BASE}")/.unresolved.txt"
+	
+	[ ! -f "${PKG_DEPS_TXT}" ] || rm -f "${PKG_DEPS_TXT}"
+	[ ! -f "${UNRESOLVED_TXT}" ] || rm -f "${UNRESOLVED_TXT}"
+	
+	if ignore_directory "${DIRPATH}" || [ "${DIRPATH}" = "${OWN_PACKAGE_DIR}" ]; then
+		debug "Ignoring ${DIRPATH}"
+		return
+	fi
+	
+	debug "Crawling at ${OWN_REPO_DIR} with package_dir ${OWN_PACKAGE_DIR} and base ${BASE}"
+	
+	pushd "${DIRPATH}" > /dev/null || die "Can't enter directory ${DIRPATH}"
+	
+	if [ "${BASE}" = "unisim/service/interfaces" ]; then
+		list_interfaces_files "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}"
+		discover_interfaces_file_deps "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}"
+	else
+		local SOURCE_LIST=(*.cc *.cpp)
+		list_files "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${BASE}" source "${SOURCE_LIST[@]}"
+		local HEADER_LIST=(*.hh *.h *.hpp)
+		list_files "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${BASE}" header "${HEADER_LIST[@]}"
+		local TEMPLATE_LIST=(*.tcc *.tpp)
+		list_files "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${BASE}" template "${TEMPLATE_LIST[@]}"
+		local ISA_LIST=(*.isa)
+		list_files "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${BASE}" isa "${ISA_LIST[@]}"
+		local DATA_LIST=(*.xml *.svg *.css *.js *.json *.ini *.ico *.png *.md)
+		list_files "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${BASE}" data "${DATA_LIST[@]}"
+
+		local FILENAME
+		for FILENAME in *; do
+			local FILEPATH="${DIRPATH}/${FILENAME}"
+			if [ -d "${FILEPATH}" ]; then
+				if can_process_file "${FILENAME}"; then
+					crawl_directory "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "$(concat_paths "${BASE}" "${FILENAME}")" &
+				fi
+			elif [ -f "${FILEPATH}" ]; then
+				discover_file_deps "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${BASE}" "${FILENAME}"
+			fi
+		done
+		
+		wait
+	fi
+	popd > /dev/null
+}
+
+function gendeps()
+{
+	local REPO_NAME
+	local REPO_DIR
+	local REPO_PACKAGE_DIR
+	local -a REPO_NAMES=("$@")
+	[ ${#REPO_NAMES[@]} -ne 0 ] || REPO_NAMES=("${REPOSITORY_NAMES[@]}")
+
+	for REPO_NAME in "${REPO_NAMES[@]}"; do
+		debug "Generating dependencies of Repository \"${REPO_NAME}\""
+		[ -n "${REPOSITORY_DIRS["${REPO_NAME}"]+x}" ] || [ -n "${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]+x}" ] || die "repository $1 not found"
+		REPO_DIR="${REPOSITORY_DIRS["${REPO_NAME}"]}"
+		REPO_PACKAGE_DIR="${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"
+		crawl_directory "${REPO_DIR}" "${REPO_PACKAGE_DIR}"
+	done
+	
+	resolve_pkg_dep_quirks "${REPO_NAMES[@]}"
+}
+
+#################################################### dist ###########################################################
+
+function package()
+{
+	if [ $# -eq 0 ]; then
+		[ -n "${PACKAGE_NAME+x}" ] || die "Package name is undefined"
+		echo "${PACKAGE_NAME}"
+	else
+		if [ -n "${PACKAGE_NAME+x}" ]; then
+			error "package: redefining package is not allowed"
+			return 1
+		fi
+		local PACKAGE_NAME_REGEX='^[a-zA-Z_-][a-zA-Z0-9_-]*$'
+		if [[ ! "$1" =~ ${PACKAGE_NAME_REGEX} ]]; then
+			error "package: invalid package name"
+			return 1
+		fi
+		PACKAGE_NAME="$1"
+		info "Package: ${PACKAGE_NAME}"
+	fi
+}
+
+function am_package()
+{
+	printf '%s' "${PACKAGE_NAME}" | sed -e 's/-/_/g'
+}
+
+function version()
+{
+	if [ $# -eq 0 ]; then
+		[ -n "${PACKAGE_VERSION+x}" ] || die "Package version is undefined"
+		echo "${PACKAGE_VERSION}"
+	else
+		if [ -z "$1" ]; then
+			error "version: invalid package version"
+			return 1
+		fi
+		if [ -n "${PACKAGE_VERSION+x}" ]; then
+			error "package: redefining package version is not allowed"
+			return 1
+		fi
+		PACKAGE_VERSION="$1"
+		info "Package version: ${PACKAGE_VERSION}"
+	fi
+}
+
+function am_version()
+{
+	printf '%s' "${PACKAGE_VERSION}" | sed -e 's/\./_/g'
+}
+
+function full_name()
+{
+	if [ $# -eq 0 ]; then
+		if [ -n "${PACKAGE_FULL_NAME+x}" ]; then
+			echo "${PACKAGE_FULL_NAME}"
+		else
+			package
+		fi
+	else
+		if [ -z "$*" ]; then
+			error "full_name: invalid package full name"
+			return 1
+		fi
+		if [ -n "${PACKAGE_FULL_NAME+x}" ]; then
+			error "project: redefining package full name is not allowed"
+			return 1
+		fi
+		PACKAGE_FULL_NAME="$*"
+		info "Package full name: ${PACKAGE_FULL_NAME}"
+	fi
+}
+
+function author()
+{
+	if [ $# -eq 0 ]; then
+		authors
+	fi
+	local PACKAGE_AUTHOR="$*"
+	if [ -z "${PACKAGE_AUTHOR}" ]; then
+		error "author: invalid package author"
+		return 1
+	fi
+	info "Package author: ${PACKAGE_AUTHOR}"
+	[ -z "${PACKAGE_AUTHORS}" ] || PACKAGE_AUTHORS+=', '
+	PACKAGE_AUTHORS+="${PACKAGE_AUTHOR}"
+}
+
+function authors()
+{
+	if [ $# -eq 0 ]; then
+		echo "${PACKAGE_AUTHORS}"
+	else
+		while [ $# -ne 0 ]; do
+			author "$1"
+			shift
+		done
+	fi
+}
+
+function subproject()
+{
+	if [ $# -eq 0 ]; then
+		error "subproject: missing Subproject name"
+		return 1
+	fi
+	[ -n "${DIST_DIR+x}" ] || die "subproject: distribution directory is undefined"
+	local SUBPROJECT_NAME="$1"
+	local DIST_SUBDIR
+	if [ -n "$2" ]; then
+		DIST_SUBDIR="$2"
+	else
+		DIST_SUBDIR="${SUBPROJECT_NAME}"
+	fi
+	local REL_DIST_SUBDIR
+	pushd "${DIST_DIR}" > /dev/null || die "Can't enter directory ${DIST_DIR}"
+	REL_DIST_SUBDIR="$(realpath --relative-to="${DIST_DIR}" "${DIST_SUBDIR}")"
+	[ $? -eq 0 ] || die "${DIST_SUBDIR} is invalid"
+	[[ "${REL_DIST_SUBDIR}" != '../'* ]] || die "${DIST_SUBDIR} is not in distribution directory"
+	popd > /dev/null
+	info "Distributing Subproject \"${SUBPROJECT_NAME}\" in Subdirectory ${DIST_SUBDIR}"
+	[ -n "${PROJECT_DISTRIB_FILES["${SUBPROJECT_NAME}"]+x}" ] || die "missing Subproject \"${SUBPROJECT_NAME}\""
+	local SUBPROJECT_DISTRIB_FILE="${PROJECT_DISTRIB_FILES["${SUBPROJECT_NAME}"]}"
+	
+	local VAR_NAME="${SUBPROJECT_NAME}_SUBDIR"
+	[ -z "${!VAR_NAME+x}" ] || die "while processing 'subproject $@', there is already a repository or project named \"${SUBPROJECT_NAME}\""
+	eval "${VAR_NAME}=${DIST_SUBDIR}"
+	
+	"${SELF}" "${OPTIONS[@]}" dist "${SUBPROJECT_DISTRIB_FILE}" "${DIST_DIR}/${DIST_SUBDIR}" || die "failed to distribute Subproject \"${SUBPROJECT_NAME}\""
+	
+	SUBPROJECT_NAMES+=("${SUBPROJECT_NAME}")
+}
+
+# get or set verbosity level
+function verbose()
+{
+	if [ $# -eq 0 ]; then
+		echo ${VERBOSE_LEVEL}
+	else
+		local regex='^[0-9][0-9]*$'
+		if [[ ! "$1" =~ ${regex} ]]; then
+			error "expecting a verbose level >= 0"
+			return 1
+		fi
+		VERBOSE_LEVEL=$1
+	fi
+}
+
+# Use an implicit repository for subsequent imports
+function use()
+{
+	if [ $# -eq 0 ]; then
+		error "no repository specified to use"
+		return 1
+	fi
+	
+	local REPO_NAME
+	for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+		if [ "${REPO_NAME}" = "$1" ]; then
+			USE_REPOSITORY_NAME="$1"
+			local REPO_DIST_SUBDIR
+			if [ $# -ge 2 ]; then
+				[ -n "${DIST_DIR+x}" ] || die "use: distribution directory is undefined"
+				local SUBDIR="$2"
+				pushd "${DIST_DIR}" > /dev/null || die "Can't enter directory ${DIST_DIR}"
+				REPO_DIST_SUBDIR="$(realpath --relative-to="${DIST_DIR}" "${SUBDIR}")"
+				[ $? -eq 0 ] || die "${USE_SUBDIR} is invalid"
+				[[ "${REPO_DIST_SUBDIR}" != '../'* ]] || die "${SUBDIR} is not in distribution directory"
+				popd > /dev/null
+			else
+				REPO_DIST_SUBDIR='.'
+			fi
+			info "Using Repository \"${REPO_NAME}\" in ${REPO_DIST_SUBDIR}"
+			REPOSITORY_DIST_SUBDIR["${REPO_NAME}"]="${REPO_DIST_SUBDIR}"
+			local VAR_NAME="${REPO_NAME}_SUBDIR"
+			[ -z "${!VAR_NAME+x}" ] || die "while processing 'use $@', there is already a repository or project named \"${REPO_NAME}\""
+			eval "${VAR_NAME}=${REPO_DIST_SUBDIR}"
+			return;
+		fi
+	done
+	
+	die "Unknown repository \"$1\" to use"
+}
+
+# trim a character string on both sides
+function trim()
+{
+	local ARG="$1"
+	# remove leading whitespace characters
+	ARG="${ARG#"${ARG%%[![:space:]]*}"}"
+	# remove trailing whitespace characters
+	ARG="${ARG%"${ARG##*[![:space:]]}"}"
+	echo "${ARG}"
+}
+
+# Import a repository package. This creates "lists" (e.g. source, header,...).
+function import()
+{
+	local REPO_NAME
+	local PKG
+	[ $# -ne 0 ] || PKG='.'
+	if [ $# -ge 2 ]; then
+		REPO_NAME="$1"
+		PKG="$2"
+	else
+		if [ -n "${USE_REPOSITORY_NAME+x}" ]; then
+			REPO_NAME="${USE_REPOSITORY_NAME}"
+		else
+			REPO_NAME="${DEFAULT_REPOSITORY_NAME}"
+		fi
+		PKG="$1"
+	fi
+	
+	[ -n "${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]+x}" ] || die "repository \"${REPO_NAME}\" not found"
+	local PACKAGE_DIR="${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"
+	
+	if [ -d "${PACKAGE_DIR}/${PKG}" ]; then
+		if [ -z ${PACKAGE_IMPORTED["${PACKAGE_DIR}/${PKG}"]} ]; then
+			PACKAGE_IMPORTED["${PACKAGE_DIR}/${PKG}"]=1
+			
+			local PKG_DEPS_TXT="${PACKAGE_DIR}/${PKG}/pkg_deps.txt"
+			
+			if [ -f "${PKG_DEPS_TXT}" ]; then
+				local DEP_PKG_LINE
+				local FROM_REPO_NAME
+				local DEP_PKG
+				while IFS= read -r DEP_PKG_LINE; do
+					DEP_PKG_LINE="$(trim "${DEP_PKG_LINE}")"
+					if [[ "${DEP_PKG_LINE}" = *' '* ]]; then
+						read -r FROM_REPO_NAME DEP_PKG <<< "${DEP_PKG_LINE}"
+					else
+						FROM_REPO_NAME="${REPO_NAME}"
+						DEP_PKG="${DEP_PKG_LINE}"
+					fi
+					debug "In \"${REPO_NAME}\", Package \"${PKG}\" requires Packages \"${DEP_PKG}\" from Repository \"${FROM_REPO_NAME}\""
+					if ! import "${FROM_REPO_NAME}" "${DEP_PKG}"; then
+						error "Missing dependency: In \"${REPO_NAME}\", Package \"${PKG}\" requires Packages \"${DEP_PKG}\" from Repository \"${FROM_REPO_NAME}\""
+						unset PACKAGE_IMPORTED["${PACKAGE_DIR}/${PKG}"]
+						return 1
+					fi
+				done < "${PKG_DEPS_TXT}"
+			fi
+			info "Importing Package \"${PKG}\" from Repository \"${REPO_NAME}\""
+			PACKAGE_PATHS+=("${PACKAGE_DIR}/${PKG}")
+			REPOSITORY_USED["${REPO_NAME}"]=1
+		fi
+		return 0
+	fi
+
+	die "in \"${REPO_NAME}\", Package \"${PKG}\" is missing"
+	return 1
+}
+
+# list repository package content from a repository depending on a mode:
+# - files: return a list of files (paths are relative to distribution directory) separated with space
+# - lines: return a list of lines separated with line return
+# - copy: return a list of files (paths are relative to repository directory) separated with space
+function list_pkg()
+{
+	local REPO_NAME="$1"
+	shift
+	local MODE="$1"
+	shift
+	local SEPFMT
+	if [ "${MODE}" = 'files' ] || [ "${MODE}" = 'copy' ]; then
+		SEPFMT=' '
+	elif [ "${MODE}" = 'lines' ]; then
+		SEPFMT=$'\n'
+	else
+		die "Internal error"
+	fi
+	local STATUS=1
+	while [ $# -ne 0 ]; do
+		local ONLY_IN
+		local LIST_NAME
+		IFS=: read LIST_NAME ONLY_IN <<< "$1"
+		local SEP=''
+		local PACKAGE_PATH
+		local PACKAGE_DIR
+		for PACKAGE_PATH in "${PACKAGE_PATHS[@]}"; do
+			local IN_REPO='no'
+			for PACKAGE_DIR in "${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"; do
+				if [[ "${PACKAGE_PATH}" = "${PACKAGE_DIR}"/* ]]; then
+					IN_REPO='yes'
+					break
+				fi
+			done
+			[ "${IN_REPO}" = 'yes' ] || continue
+			LIST_FILENAME="${PACKAGE_PATH}/${LIST_NAME}_list.txt"
+			if [ -f "${LIST_FILENAME}" ]; then
+				local ITEM
+				while IFS= read -r ITEM; do
+					if [ "${MODE}" = 'files' ] || [ "${MODE}" = 'copy' ]; then
+						if [[ "${ITEM}" != "${ONLY_IN}"/* ]]; then
+							continue;
+						fi
+						
+						if [ "${MODE}" = 'files' ] && [ -n "${REPOSITORY_DIST_SUBDIR["${REPO_NAME}"]+x}" ]; then
+							local REPO_DIST_SUBDIR="${REPOSITORY_DIST_SUBDIR["${REPO_NAME}"]}"
+							[[ "${REPO_DIST_SUBDIR}" != './'* ]] || ITEM="${REPO_DIST_SUBDIR}/${ITEM}"
+						fi
+					fi
+					echo -n "${SEP}${ITEM}"
+					SEP="$SEPFMT"
+					STATUS=0
+				done < "${LIST_FILENAME}"
+			fi
+		done
+		
+		if [ -z "${SEP}" ]; then
+			annoy "There is nothing in List \"${LIST_NAME}\" from repository \"${REPO_NAME}\"" >&2
+		fi
+		shift
+	done
+	
+	return ${STATUS}
+}
+
+# return a list of files (paths are relative to distribution directory) separated with space
+function files()
+{
+	local STATUS=1
+	local REPO_NAME
+	local SEP=''
+	for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+		echo -n "${SEP}"
+		if list_pkg "${REPO_NAME}" 'files' "$@"; then
+			SEP=' '
+			STATUS=0
+		fi
+	done
+	
+	return ${STATUS}
+}
+
+# return a list of lines separated with line return
+function lines()
+{
+	local STATUS=1
+	local LIST_NAME
+	local REPO_NAME
+	local AUX_M4_DIR
+	local SEP=''
+	while [ $# -ne 0 ]; do
+		LIST_NAME="$1"
+		shift
+		if [ "${LIST_NAME}" = "ac_config_macro_dirs" ]; then
+			if ac_config_macro_dirs; then
+				STATUS=0
+			fi
+		elif [ "${LIST_NAME}" = 'ac_common_header' ]; then
+			full_name > /dev/null
+			version > /dev/null
+			authors > /dev/null
+			package > /dev/null
+cat << EOF
+AC_INIT([$(full_name)], [$(version)], [$(authors)], [$(package)])
+$(lines ac_config_macro_dirs)
+AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
+AC_PROG_INSTALL
+LT_INIT([win32-dll], [dlopen])
+AC_SUBST(LIBTOOL_DEPS)
+AC_PROG_LN_S
+AC_LANG([C++])
+CPPFLAGS="-D_LARGEFILE64_SOURCE \${CPPFLAGS}"
+case "\${host}" in
+	*mingw*)
+		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
+		CXXFLAGS="-Wa,-mbig-obj \${CXXFLAGS}"
+		;;
+	*)
+		;;
+esac
+AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/$(package)-$(version)"], [path of shared data relative to bin directory])
+EOF
+			STATUS=0
+		elif [ "${LIST_NAME}" = 'ac_common_footer' ]; then
+cat << EOF
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+EOF
+			STATUS=0
+		elif [ "${LIST_NAME}" = 'am_common_header' ]; then
+cat << EOF
+ACLOCAL_AMFLAGS=$(aclocal_includes)
+AM_CPPFLAGS=$(am_cppflags)
+LIBTOOL_DEPS = @LIBTOOL_DEPS@
+libtool: \$(LIBTOOL_DEPS)
+	\$(SHELL) ./config.status libtool
+EOF
+			STATUS=0
+		elif [ "${LIST_NAME}" = 'ac' ]; then
+			for REPO_NAME in "${!REPOSITORY_DIST_SUBDIR[@]}"; do
+				echo "${REPO_NAME}_SUBDIR=${REPOSITORY_DIST_SUBDIR["${REPO_NAME}"]}"
+				echo "AC_SUBST(${REPO_NAME}_SUBDIR)"
+				STATUS=0
+			done
+		fi
+		
+		if [ ${#SUBPROJECT_NAMES[@]} -ne 0 ]; then
+			local LIST_NAME
+			if [ "${LIST_NAME}" = 'ac' ]; then
+				echo "AC_CONFIG_SUBDIRS([${SUBPROJECT_NAMES[@]}])"
+				STATUS=0
+			elif [ "${LIST_NAME}" = 'am' ]; then
+				echo "SUBDIRS=${SUBPROJECT_NAMES[@]}"
+				STATUS=0
+			fi
+		fi
+		
+		for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+			if list_pkg "${REPO_NAME}" 'lines' "${LIST_NAME}"; then
+				echo -n "${SEP}"
+				SEP=$'\n'
+				STATUS=0
+			fi
+		done
+	done
+	return ${STATUS}
+}
+
+# test whether a file that depends on a repository package needs to be updated
+function pkg_deps_changed()
+{
+	for PACKAGE_PATH in "${PACKAGE_PATHS[@]}"; do
+		for FILE in "${PACKAGE_PATH}"/*; do
+			if [ ! -e "$1" -o "${FILE}" -nt "$1" ]; then
+				return 0;
+			fi
+		done
+	done
+	return 1;
+}
+
+# test whether a file that depends on another file needs to be updated
+function has_to_build() {
+	if [ ! -e "$1" -o "$2" -nt "$1" ]; then
+		return 0;
+	else
+		return 1;
+	fi
+}
+
+# Copy a file from a source to a destination
+function dist_copy2()
+{
+	if has_to_build "$2" "$1"; then
+		debug "$1 ==> $2"
+		mkdir -p "$(dirname $2)"
+		${DISTCOPY} -f "$1" "$2" || die "dist_copy2: failed copying $1 to $2"
+		return 0
+	fi
+	return 1
+}
+
+# Distribute files of project
+function dist_copy()
+{
+	[ -n "${DIST_DIR+x}" ] || die "dist_copy: distribution directory is undefined"
+	local status=1
+	pushd "${PROJECT_DIR}" > /dev/null || die "Can't enter directory ${PROJECT_DIR}"
+	for FILE in "$@"; do
+		local REL_FILEPATH
+		REL_FILEPATH="$(realpath --relative-to="${PROJECT_DIR}" "${FILE}")"
+		[ $? -eq 0 ] || die "${FILE} is invalid"
+		[[ "${REL_FILEPATH}" != '../'* ]] || die "${FILE} (${REL_FILEPATH}) is not in project directory"
+		if dist_copy2 "${PROJECT_DIR}/${REL_FILEPATH}" "${DIST_DIR}/${REL_FILEPATH}"; then
+			status=0
+		fi
+	done
+	popd > /dev/null
+	return ${status}
+}
+
+# Distribute files of specified lists from imported repository packages
+function copy()
+{
+	[ -n "${DIST_DIR+x}" ] || die "copy: distribution directory is undefined"
+	local status=1
+	local REPO_DIR
+	local REPO_DIST_SUBDIR
+	local DIST_FILE
+	local REPO_NAME
+	local LIST_NAME
+	for LIST_NAME in "$@"; do
+		info "Distributing ${LIST_NAME}"
+		for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+			for FILE in $(list_pkg "${REPO_NAME}" 'copy' "${LIST_NAME}"); do
+				REPO_DIR="${REPOSITORY_DIRS["${REPO_NAME}"]}"
+				if [ -n "${REPOSITORY_DIST_SUBDIR["${REPO_NAME}"]+x}" ]; then
+					REPO_DIST_SUBDIR="${REPOSITORY_DIST_SUBDIR["${REPO_NAME}"]}"
+					DIST_FILE="${DIST_DIR}/${REPO_DIST_SUBDIR}/${FILE}"
+				else
+					DIST_FILE="${DIST_DIR}/${FILE}"
+				fi
+				if dist_copy2 "${REPO_DIR}/${FILE}" "${DIST_FILE}"; then
+					local FILE_EXTENSION="${FILE##*.}"
+					[ "${FILE_EXTENSION}" != 'm4' ] || has_to_build_configure='yes' # Some imported files (m4 macros) impact configure generation
+					status=0
+				fi
+			done
+		done
+	done
+	return ${status}
+}
+
+# return declaration for autoconf of m4 macro directories
+function ac_config_macro_dirs()
+{
+	local STATUS=1
+	local M4_DIR
+	local -A M4_DIRS
+	while IFS=$'\n' read -r M4_FILE; do
+		M4_DIR="$(dirname "${M4_FILE}")"
+		if [ -z "${M4_DIRS["${M4_DIR}"]+x}" ]; then
+			echo "AC_CONFIG_MACRO_DIRS([${M4_DIR}])"
+			M4_DIRS["${M4_DIR}"]=1
+			STATUS=0
+		fi
+	done < <(lines m4)
+	
+	return ${STATUS}
+}
+
+# return aclocal macro includes
+function aclocal_includes()
+{
+	local STATUS=1
+	local M4_DIR
+	local -A M4_DIRS
+	local SEP=''
+	while IFS=$'\n' read -r M4_FILE; do
+		M4_DIR="$(dirname "${M4_FILE}")"
+		if [ -z "${M4_DIRS["${M4_DIR}"]+x}" ]; then
+			echo -n "${SEP}-I ${M4_DIR}"
+			M4_DIRS["${M4_DIR}"]=1
+			SEP=' '
+			STATUS=0
+		fi
+	done < <(lines m4)
+	
+	return ${STATUS}
+}
+
+# return include directories, one directory per line
+function include_dirs()
+{
+	local REPO_NAME
+	local INCLUDE_DIR
+	for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+		if [ -n "${REPOSITORY_USED["${REPO_NAME}"]+x}" ]; then
+			if list_pkg "${REPO_NAME}" 'lines' 'header' > /dev/null; then
+				if [ -n "${REPOSITORY_DIST_SUBDIR["${REPO_NAME}"]+x}" ]; then
+					INCLUDE_DIR="$(echo "${REPOSITORY_DIST_SUBDIR["${REPO_NAME}"]}" | sed -e 's/[$#]/\\&/g')"
+				else
+					INCLUDE_DIR='.'
+				fi
+				
+				echo "${INCLUDE_DIR}"
+			fi
+		fi
+	done
+}
+
+# return search path of headers as C preprocessor options
+function includes()
+{
+	local INCLUDE_DIR
+	local SEP=''
+	while IFS=$'\n' read -r INCLUDE_DIR; do
+		echo -n "${SEP}-I${INCLUDE_DIR}"
+		SEP=' '
+	done < <(include_dirs)
+}
+
+# return CPPFLAGS for automake
+function am_cppflags()
+{
+	local INCLUDE_DIR
+	local SEP=''
+	while IFS=$'\n' read -r INCLUDE_DIR; do
+		INCLUDE_DIR="${INCLUDE_DIR#.}"
+		echo -n "${SEP}-I\$(top_srcdir)${INCLUDE_DIR} -I\$(top_builddir)${INCLUDE_DIR}"
+		SEP=' '
+	done < <(include_dirs)
+}
+
+# output configure.ac
+function output_configure_ac()
+{
+	[ -n "${DIST_DIR+x}" ] || die "output_configure_ac: distribution directory is undefined"
+	local PACKAGE_CONFIGURE_AC
+	PACKAGE_CONFIGURE_AC="${DIST_DIR}/configure.ac"
+	if has_to_build "${PACKAGE_CONFIGURE_AC}" "${PROJECT_DISTRIB_FILE}" || \
+	   pkg_deps_changed "${PACKAGE_CONFIGURE_AC}" || \
+	   has_to_build "${PACKAGE_CONFIGURE_AC}" "${SELF}"; then
+		package > /dev/null # die if missing
+		version > /dev/null # die if missing
+		info "Generating $(package)' configure.ac"
+		if [ $# -ne 0 ]; then
+cat << EOF  > "${PACKAGE_CONFIGURE_AC}"
+# This file is automatically generated by ${APP_NAME^}.
+# You should not modify this file.
+$(cat "$1")
+EOF
+		else
+cat << EOF > "${PACKAGE_CONFIGURE_AC}"
+# This file is automatically generated by ${APP_NAME^}.
+# You should not modify this file.
+$(lines ac_common_header)
+$(lines ac)
+$(lines ac_common_footer)
+EOF
+		fi
+		has_to_build_configure=yes
+	fi
+}
+
+# output Makefile.am
+function output_makefile_am()
+{
+	[ -n "${DIST_DIR+x}" ] || die "output_makefile_am: distribution directory is undefined"
+	local PACKAGE_MAKEFILE_AM="${DIST_DIR}/Makefile.am"
+	
+	if has_to_build "${PACKAGE_MAKEFILE_AM}" "${PROJECT_DISTRIB_FILE}" || \
+	   pkg_deps_changed "${PACKAGE_MAKEFILE_AM}" || \
+	   has_to_build "${PACKAGE_MAKEFILE_AM}" "${SELF}"; then
+		package > /dev/null # die if missing
+		version > /dev/null # die if missing
+		info "Generating $(package) Makefile.am"
+cat << EOF > "${PACKAGE_MAKEFILE_AM}"
+# This file is automatically generated by ${APP_NAME^}.
+# You should not modify this file.
+$(cat "$1")
+EOF
+		has_to_build_configure=yes
+	fi
+}
+
+# build configure
+function build_configure()
+{
+	[ -n "${DIST_DIR+x}" ] || die "build_configure: distribution directory is undefined"
+	local PROJECT_CONFIG_SUBDIR="${DIST_DIR}/config"
+	local PACKAGE_CONFIGURE="${DIST_DIR}/configure"
+	
+	mkdir -p "${PROJECT_CONFIG_SUBDIR}"
+	
+	if has_to_build "${PACKAGE_CONFIGURE}" "${SELF}"; then
+		has_to_build_configure=yes
+	fi
+	
+	if [ "${has_to_build_configure}" = "yes" ]; then
+		package > /dev/null # die if missing
+		info "Building $(package) configure"
+		local PACKAGE_CONFIGURE_AC="${DIST_DIR}/configure.ac"
+		[ -f "${PACKAGE_CONFIGURE_AC}" ] || die "Missing configure.ac. Did you forget to call output_configure_ac?"
+		local PACKAGE_MAKEFILE_AM="${DIST_DIR}/Makefile.am"
+		[ -f "${PACKAGE_MAKEFILE_AM}" ] || die "Missing Makefile.am. Did you forget to call output_makefile_am?"
+		local CMD="cd '${DIST_DIR}' && aclocal $(aclocal_includes)"
+		# optionally run libtoolize only if LT_INIT is present in configure.ac
+		if grep -qs "LT_INIT" "${PACKAGE_CONFIGURE_AC}"; then
+			CMD+=" && libtoolize --force"
+		fi
+		CMD+=" && autoconf --force"
+		if grep -qs "AC_CONFIG_HEADERS" "${PACKAGE_CONFIGURE_AC}"; then
+			CMD+=" && autoheader"
+		fi
+		CMD+=" && automake -ac"
+		debug "Running: ${CMD}"
+		if ! ${SHELL} -c "${CMD}" 2>&1 | debug; then
+			rm -f "${PACKAGE_CONFIGURE}"
+			local ERR_MSG='Failed building configure.'
+			[ ${VERBOSE_LEVEL} -ge 4 ] || ERR_MSG+=" Rerun with '--verbose=4' to see details."
+			die "${ERR_MSG}"
+		fi
+	fi
+}
+
+# return the names of the subprojects
+function subprojects()
+{
+	echo "${SUBPROJECT_NAMES[@]}"
+}
+
+# return distribution directory
+function dist_dir()
+{
+	[ -n "${DIST_DIR+x}" ] || die "distribution directory is undefined"
+	echo "${DIST_DIR}"
+}
+
+# distribute project into distribution directory
+function dist()
+{
+	[ $# -ge 1 ] || bad "missing Package distribution file in arguments"
+	[ $# -ge 2 ] || bad "missing distribution directory in arguments"
+	local SOURCE="$1"
+	unset PROJECT_DISTRIB_FILE
+	if [ -n "${PROJECT_DIRS["${SOURCE}"]+x}" ]; then
+		PROJECT_DISTRIB_FILE="${PROJECT_DISTRIB_FILES["${SOURCE}"]}"
+		PROJECT_DIR="${PROJECT_DIRS["${SOURCE}"]}"
+	elif [ -d "${SOURCE}" ]; then
+			PROJECT_DISTRIB_FILE="$(realpath "${SOURCE}/${DEFAULT_PROJECT_DISTRIB_FILE}")"
+			PROJECT_DIR="$(realpath "${SOURCE}")"
+	elif [ -f "${SOURCE}" ]; then
+			PROJECT_DISTRIB_FILE="$(realpath "${SOURCE}")"
+			PROJECT_DIR="$(dirname "${PROJECT_DISTRIB_FILE}")"
+	else
+		bad "\"${SOURCE}\" is neither a directory nor a file nor a project from ${CONFIG_YAML}"
+	fi
+	
+	unset DIST_DIR
+	DIST_DIR="$2"
+	mkdir -p "${DIST_DIR}" || die "Can't create distribution directory \"${DIST_DIR}\""
+	DIST_DIR="$(cd "${DIST_DIR}"; pwd)"
+	[ -n "${DISTCOPY}" ] || DISTCOPY=cp
+	
+	unset PACKAGE_NAME
+	unset PACKAGE_VERSION
+	unset PACKAGE_FULL_NAME
+	unset PACKAGE_AUTHORS
+	unset USE_REPOSITORY_NAME
+	has_to_build_configure=no
+	declare -gA PACKAGE_IMPORTED  # pkg => imported
+	declare -ga PACKAGE_PATHS
+	declare -gA REPOSITORY_USED   # repo name => used
+	declare -ga SUBPROJECT_NAMES
+	
+	debug "Distributing using Project distribution file \"${PROJECT_DISTRIB_FILE}\""
+	pushd "${DIST_DIR}" > /dev/null || die "Can't enter directory ${DIST_DIR}"
+	if ! source "${PROJECT_DISTRIB_FILE}"; then
+		if [ -n "${PACKAGE_NAME+x}" ]; then
+			die "Distribution of Package \"${PACKAGE_NAME}\" from \"${PROJECT_DISTRIB_FILE}\" failed"
+		else
+			die "Distribution of package from \"${PROJECT_DISTRIB_FILE}\" failed"
+		fi
+	fi
+	popd > /dev/null
+	
+	if [ -n "${PACKAGE_NAME+x}" ]; then
+		info "Distribution of Package \"${PACKAGE_NAME}\" is up-to-date"
+	else
+		info "Distribution of Package is up-to-date"
+	fi
+	
+}
+
+#################################################### shell ###########################################################
+
+# REPL
+function shell()
+{
+	unset DIST_DIR
+	
+	unset PROJECT_NAME
+	unset PROJECT_VERSION
+	unset PROJECT_FULL_NAME
+	unset PROJECT_AUTHORS
+	unset USE_REPOSITORY_NAME
+	has_to_build_configure=no
+	declare -gA PACKAGE_IMPORTED
+	declare -ga PACKAGE_PATHS
+	
+	local HISTORY_FILE="${HOME}/.config/${APP_NAME}/history"
+	history -r "${HISTORY_FILE}"
+	
+	project test_project
+	version 1.0.0
+	full_name 'My test project'
+	author 'Foo Bar <foo.bar@example.com>'
+	
+cat << EOF
+
+For help, type "help".
+
+EOF
+	
+	local CMD
+	while read -e -p "${APP_NAME}> " CMD; do
+		history -s "${CMD}"
+		eval "${CMD}"
+	done
+	
+	history -w "${HISTORY_FILE}"
+}
+
+################################################### build ###########################################################
+
+function build()
+{
+	if [ $# -eq 0 ]; then
+		warn "Nothing to build"
+		return
+	fi
+	
+	local PATTERN
+	local BUILD_NAME
+	local BUILD_DIR
+	local BUILD_DIST_DIR
+	local BUILD_PROJECT_NAME
+	local BUILD_COMMAND
+	for PATTERN in "$@"; do
+		for BUILD_NAME in "${BUILD_NAMES[@]}"; do
+			if [[ "${BUILD_NAME}" = ${PATTERN} ]]; then
+				info "Building \"${BUILD_NAME}\""
+				[ -n "${BUILD_DIRS["${BUILD_NAME}"]+x}" ] || bad "Build \"${BUILD_NAME}\" does not exist"
+				BUILD_DIR="${BUILD_DIRS["${BUILD_NAME}"]}"
+				mkdir -p "${BUILD_DIR}" || die "Can't create build directory \"${BUILD_DIR}\""
+				BUILD_PROJECT_NAME="${BUILD_PROJECT_NAMES["${BUILD_NAME}"]}"
+				BUILD_DIST_DIR="${BUILD_DIST_DIRS["${BUILD_NAME}"]}"
+				dist "${BUILD_PROJECT_NAME}" "${BUILD_DIST_DIR}"
+				pushd "${BUILD_DIR}" > /dev/null || die "Can't enter directory ${BUILD_DIR}"
+				BUILD_COMMAND="${BUILD_COMMANDS["${BUILD_NAME}"]}"
+				if [ -n "${BUILD_COMMAND}" ]; then
+					debug "Running: ${BUILD_COMMAND}"
+					"${SHELL}" -c "${BUILD_COMMAND}" || die "Build \"${BUILD_NAME}\" failed"
+				fi
+				popd > /dev/null
+				info "Done building \"${BUILD_NAME}\""
+			fi
+		done
+	done
+}
+
+#################################################### main ###########################################################
+
+# main function
+function main()
+{
+	# parse command line options
+	while [ $# -ne 0 ]; do
+		case "$1" in
+			--help|-h)
+				usage
+				exit 0
+				;;
+			--detailed-help)
+				detailed_help
+				exit 0
+				;;
+			--version|-v)
+				echo "${APP_VERSION}"
+				exit 0
+				;;
+			--verbose)
+				OPTIONS+=("$1")
+				VERBOSE_LEVEL=$((${VERBOSE_LEVEL}+1))
+				shift
+				;;
+			--verbose=*)
+				OPTIONS+=("$1")
+				verbose "${1##--verbose=}" || bad "wrong value for option --verbose"
+				shift
+				;;
+			--include-untracked-files)
+				OPTIONS+=("$1")
+				INCLUDE_UNTRACKED_FILES='yes'
+				shift
+				;;
+			--config)
+				check_external_programs
+				verbose 4
+				config
+				exit 0
+				;;
+			--config=*)
+				CONFIG_YAML="$(realpath -m -q "${1##--config=}")"
+				shift
+				;;
+			--)
+				shift
+				break
+				;;
+			-*)
+				bad "Unknown Option $1"
+				;;
+			*)
+				break
+				;;
+		esac
+	done
+
+	check_external_programs
+	config
+
+	local CMD
+	local PROG_NAME="$(basename "${BASH_SOURCE}")"
+	case "${PROG_NAME}" in
+		gendeps|dist|shell|build)
+			CMD="${PROG_NAME}"
+			;;
+		*)
+			CMD="$1"
+			shift
+			;;
+	esac
+
+	case "${CMD}" in
+		gendeps|dist|shell|build)
+			"${CMD}" "$@"
+			;;
+		*)
+			bad "${CMD} is not a command"
+			;;
+	esac
+}
+
+# entry point
+main "$@"

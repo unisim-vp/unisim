@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_AVR32_AVR32A_AVR32UC_CPU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_AVR32_AVR32A_AVR32UC_CPU_TCC__
 
-#include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.tcc>
+#include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa/avr32uc.tcc>
 #include <unisim/util/backtrace/backtrace.hh>
 
 #include "unisim/component/cxx/processor/avr32/avr32a/avr32uc/cpu.hh"

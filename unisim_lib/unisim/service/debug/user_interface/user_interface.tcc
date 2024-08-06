@@ -159,8 +159,7 @@ bool UserInterface<ADDRESS>::EndSetup()
 	unsigned int prc_num;
 	for(prc_num = 0; debug_selecting_import->SelectProcessor(prc_num); prc_num++)
 	{
-		unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = new unisim::util::debug::FetchInsnEvent<ADDRESS>();
-		fetch_insn_event->SetProcessorNumber(prc_num);
+		unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = debug_event_trigger_import->CreateFetchInsnEvent();
 		fetch_insn_event->Catch();
 		
 		fetch_insn_events.push_back(fetch_insn_event);

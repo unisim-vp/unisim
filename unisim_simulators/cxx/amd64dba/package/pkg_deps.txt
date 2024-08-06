@@ -1,0 +1,14 @@
+unisim_lib libc/inttypes
+unisim_lib std/cstdint
+unisim_lib std/cstdlib
+unisim_lib std/cstring
+unisim_lib std/fstream
+unisim_lib std/iosfwd
+unisim_lib std/iostream
+unisim_lib std/vector
+unisim_lib unisim/component/cxx/processor/intel
+unisim_lib unisim/component/cxx/processor/intel/isa
+unisim_lib unisim/component/cxx/vector
+unisim_lib unisim/util/symbolic
+unisim_lib unisim/util/symbolic/binsec
+unisim_lib unisim/util/symbolic/vector

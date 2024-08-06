@@ -1,1 +1,0 @@
-unisim/component/cxx/processor/tesla/isa/src2/src2.isa

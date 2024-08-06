@@ -32,7 +32,7 @@
  * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
  */
 
-#include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
+#include <unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x.hh>
 #include <unisim/component/cxx/processor/hcs12x/cpu.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/inlining/inlining.hh>

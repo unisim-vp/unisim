@@ -1,7 +1,11 @@
 m4/nodejs
 std/cassert
+std/condition_variable
 std/fstream
 std/iostream
 std/map
+std/memory
+std/mutex
 std/set
 std/string
+std/thread

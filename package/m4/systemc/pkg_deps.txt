@@ -1,1 +1,2 @@
+ac/pkg-config
 m4/pthread

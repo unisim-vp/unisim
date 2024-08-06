@@ -6,6 +6,8 @@ libc/stdlib
 libc/unistd
 m4/get_exec_path
 m4/pthread
+m4/real_path
+m4/windows
 std/algorithm
 std/cassert
 std/fstream
@@ -25,4 +27,3 @@ unisim/util/inlining
 unisim/util/likely
 unisim/util/locate
 unisim/util/nat_sort
-m4/real_path

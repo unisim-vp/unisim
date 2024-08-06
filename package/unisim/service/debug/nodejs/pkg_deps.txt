@@ -1,5 +1,7 @@
+am/md_to_h
 m4/libedit
 std/limits
+std/regex
 std/string
 std/unordered_set
 unisim/kernel

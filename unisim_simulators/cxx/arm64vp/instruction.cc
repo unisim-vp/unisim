@@ -34,7 +34,7 @@
 
 #include <architecture.hh>
 #include <cmath>
-#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
+#include <unisim/component/cxx/processor/arm/isa/arm64/arm64.tcc>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <iostream>

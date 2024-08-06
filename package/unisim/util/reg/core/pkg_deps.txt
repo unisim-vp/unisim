@@ -6,6 +6,8 @@ std/map
 std/sstream
 std/stdexcept
 std/string
+std/typeinfo
+std/utility
 std/vector
 unisim/service/interfaces/register
 unisim/util/debug

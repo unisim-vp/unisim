@@ -1,5 +1,6 @@
 libc/inttypes
 libc/stdlib
+m4/libc_ieee754
 std/cmath
 std/cstring
 std/iosfwd

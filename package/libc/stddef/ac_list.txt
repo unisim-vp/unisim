@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([stddef.h],, AC_MSG_ERROR([stddef.h is missing]))

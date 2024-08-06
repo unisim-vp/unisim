@@ -1,3 +1,4 @@
+am/isa_to_cpp
 libc/inttypes
 std/cstring
 std/sstream
@@ -5,6 +6,8 @@ std/stdexcept
 std/string
 unisim/component/cxx/processor/arm
 unisim/component/cxx/processor/arm/isa
+unisim/component/cxx/processor/arm/isa/arm32
+unisim/component/cxx/processor/arm/isa/thumb2
 unisim/component/cxx/processor/opcache
 unisim/kernel/variable
 unisim/service/interfaces/debug_yielding
@@ -22,6 +25,3 @@ unisim/util/likely
 unisim/util/os/linux_os
 unisim/util/simfloat
 unisim/util/truth_table
-unisim/component/cxx/processor/arm/isa/arm32
-unisim/component/cxx/processor/arm/isa/thumb
-unisim/component/cxx/processor/arm/isa/thumb2

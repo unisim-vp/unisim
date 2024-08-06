@@ -6,6 +6,7 @@ std/set
 std/sstream
 std/stdexcept
 std/string
+std/typeinfo
 std/vector
 unisim/kernel
 unisim/kernel/logger

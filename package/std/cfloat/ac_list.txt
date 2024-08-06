@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([cfloat],, AC_MSG_ERROR([cfloat is missing]))

@@ -39,7 +39,7 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm64/arm64.hh>
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/component/cxx/vector/vector.hh>

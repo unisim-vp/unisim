@@ -1,6 +1,6 @@
 libc/inttypes
 libc/string
+m4/endian
 std/iostream
 sys/types
 unisim/util/inlining
-m4/endian

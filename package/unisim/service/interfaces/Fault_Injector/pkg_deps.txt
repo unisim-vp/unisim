@@ -1,1 +1,3 @@
+libc/inttypes
+m4/systemc
 unisim/service/interfaces/interface
