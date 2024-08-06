@@ -34,6 +34,10 @@ Unisimatic also provides a shell for querying package database, and a building c
 	  
 	        Start an interactive shell for querying the database of repository packages
 	
+	  build [<build>...]
+	
+	        Build
+	
 	Options:
 	
 	  -h, --help
