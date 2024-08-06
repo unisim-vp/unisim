@@ -79,3 +79,4 @@ unisim/component/cxx/processor/hcs12x/isa/xb/xb_sub.isa: unisim/component/cxx/pr
 unisim/component/cxx/processor/hcs12x/isa/xb/xb_sub.isa: unisim/component/cxx/processor/hcs12x/isa/xb/xb.hh
 unisim/component/cxx/processor/hcs12x/isa/xb/xb_sub.isa: unisim/component/cxx/processor/hcs12x/isa/xb/xb.hh
 unisim/component/cxx/processor/hcs12x/isa/xb/xb_sub.isa: unisim/component/cxx/processor/hcs12x/isa/xb/xb.hh
+unisim/component/cxx/processor/hcs12x/isa/xb/xb_sub.isa: unisim/component/cxx/processor/hcs12x/isa/xb/xb.hh

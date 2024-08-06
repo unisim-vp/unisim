@@ -10,7 +10,9 @@ unisim_lib std/iostream
 unisim_lib std/set
 unisim_lib unisim/component/cxx/processor/arm/isa
 unisim_lib unisim/component/cxx/processor/arm/isa/arm64
+unisim_lib unisim/component/cxx/processor/arm/regs64
 unisim_lib unisim/util/arithmetic
 unisim_lib unisim/util/floating_point
 unisim_lib unisim/util/symbolic
 unisim_lib unisim/util/symbolic/binsec
+unisim_lib unisim/util/symbolic/vector
