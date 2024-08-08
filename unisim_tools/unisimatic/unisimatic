@@ -1765,7 +1765,7 @@ function list_pkg()
 				local ITEM
 				while IFS= read -r ITEM; do
 					if [ "${MODE}" = 'files' ] || [ "${MODE}" = 'copy' ]; then
-						if [[ "${ITEM}" != "${ONLY_IN}"/* ]]; then
+						if [ -n "${ONLY_IN}" ] && [[ "${ITEM}" != "${ONLY_IN}"/* ]]; then
 							continue;
 						fi
 						
