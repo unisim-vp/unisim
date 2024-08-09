@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([numbers],, AC_MSG_ERROR([numbers is missing]))

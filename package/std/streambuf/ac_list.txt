@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([streambuf],, AC_MSG_ERROR([streambuf is missing]))

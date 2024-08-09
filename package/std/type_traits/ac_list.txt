@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([type_traits],, AC_MSG_ERROR([type_traits is missing]))

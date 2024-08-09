@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([ciso646],, AC_MSG_ERROR([ciso646 is missing]))

@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([charconv],, AC_MSG_ERROR([charconv is missing]))

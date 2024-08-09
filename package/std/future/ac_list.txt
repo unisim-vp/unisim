@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([future],, AC_MSG_ERROR([future is missing]))

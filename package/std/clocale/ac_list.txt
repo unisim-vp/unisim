@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([clocale],, AC_MSG_ERROR([clocale is missing]))

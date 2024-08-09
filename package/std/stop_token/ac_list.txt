@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([stop_token],, AC_MSG_ERROR([stop_token is missing]))

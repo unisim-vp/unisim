@@ -2,3 +2,4 @@ std/cstdint
 std/cstdio
 std/cstring
 std/ostream
+std/streambuf

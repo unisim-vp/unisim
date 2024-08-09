@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([valarray],, AC_MSG_ERROR([valarray is missing]))

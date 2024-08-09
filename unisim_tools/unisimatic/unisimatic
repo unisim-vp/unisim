@@ -1112,6 +1112,7 @@ function resolve_pkg_dep_quirks()
 								local AM_LIST_TXT="${REPOSITORY_PACKAGE_DIR["${PKG_DEP_REPO_NAME}"]}/${PKG_DEP}/am_list.txt"
 								mkdir -p "$(dirname "${AM_LIST_TXT}")"
 								echo "${INCLUDE_DEP}: $(sed -e 's/\.isa$/\.hh/g' <<< "${ISA_FILE}")" >> "${AM_LIST_TXT}"
+								sort -u -o "${AM_LIST_TXT}" "${AM_LIST_TXT}"
 								RESOLVED='yes'
 								break
 							fi
@@ -1223,7 +1224,69 @@ function resolve_pkg_dep_quirks()
 					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'typeinfo'            'std/typeinfo'           "${PKG_DEPS_TXT}" ||
 					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'utility'             'std/utility'            "${PKG_DEPS_TXT}" ||
 					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'functional'          'std/functional'         "${PKG_DEPS_TXT}" ||
-					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cstdarg'             'std/cstdarg'            "${PKG_DEPS_TXT}"; then
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cstdarg'             'std/cstdarg'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cuchar'              'std/cuchar'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'exception'           'std/exception'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'memory_resource'     'std/memory_resource'    "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'array'               'std/array'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'initializer_list'    'std/initializer_list'   "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'random'              'std/random'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'valarray'            'std/valarray'           "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'iterator'            'std/iterator'           "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cwctype'             'std/cwctype'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'compare'             'std/compare'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'ccomplex'            'std/ccomplex'           "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'chrono'              'std/chrono'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'span'                'std/span'               "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'ctime'               'std/ctime'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'scoped_allocator'    'std/scoped_allocator'   "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'expected'            'std/expected'           "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'bit'                 'std/bit'                "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'ciso646'             'std/ciso646'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'unordered_map'       'std/unordered_map'      "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'ranges'              'std/ranges'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'codecvt'             'std/codecvt'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'atomic'              'std/atomic'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'semaphore'           'std/semaphore'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cstdbool'            'std/cstdbool'           "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'concepts'            'std/concepts'           "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'string_view'         'std/string_view'        "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'syncstream'          'std/syncstream'         "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'clocale'             'std/clocale'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'system_error'        'std/system_error'       "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'streambuf'           'std/streambuf'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'typeindex'           'std/typeindex'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'stacktrace'          'std/stacktrace'         "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'source_location'     'std/source_location'    "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cstdalign'           'std/cstdalign'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'execution'           'std/execution'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'numeric'             'std/numeric'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'forward_list'        'std/forward_list'       "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'any'                 'std/any'                "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cwchar'              'std/cwchar'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'variant'             'std/variant'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'numbers'             'std/numbers'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'future'              'std/future'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'shared_mutex'        'std/shared_mutex'       "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'ctgmath'             'std/ctgmath'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'type_traits'         'std/type_traits'        "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'optional'            'std/optional'           "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'filesystem'          'std/filesystem'         "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'charconv'            'std/charconv'           "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'ratio'               'std/ratio'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'complex'             'std/complex'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'latch'               'std/latch'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'version'             'std/version'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'locale'              'std/locale'             "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'cinttypes'           'std/cinttypes'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'csignal'             'std/csignal'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'tuple'               'std/tuple'              "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'barrier'             'std/barrier'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'new'                 'std/new'                "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'coroutine'           'std/coroutine'          "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'csetjmp'             'std/csetjmp'            "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'spanstream'          'std/spanstream'         "${PKG_DEPS_TXT}" ||
+					   resolve_pkg_sysdep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${INCLUDE_DEP}" 'stop_token'          'std/stop_token'         "${PKG_DEPS_TXT}"; then
 						RESOLVED='yes'
 						FIXED='yes'
 						break

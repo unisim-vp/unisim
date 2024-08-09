@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([cstdbool],, AC_MSG_ERROR([cstdbool is missing]))

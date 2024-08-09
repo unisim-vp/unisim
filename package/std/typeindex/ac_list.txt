@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([typeindex],, AC_MSG_ERROR([typeindex is missing]))
