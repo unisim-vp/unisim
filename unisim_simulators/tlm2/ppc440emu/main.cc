@@ -553,9 +553,6 @@ void Simulator::Run()
 	cerr << "Simulation run-time parameters:" << endl;
 	DumpParameters(cerr);
 	cerr << endl;
-	cerr << "Simulation formulas:" << endl;
-	DumpFormulas(cerr);
-	cerr << endl;
 	cerr << "Simulation statistics:" << endl;
 	DumpStatistics(cerr);
 	cerr << endl;

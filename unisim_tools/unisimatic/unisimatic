@@ -530,70 +530,74 @@ function config()
 				REPO_ENABLED="${PROPERTY}"
 				;;
 			1)
-				[ "${REPO_ENABLED}" = 'true' ] || continue
-				# get name of repository
-				REPO_NAME="${PROPERTY}"
-				# repository shall have a name
-				[ -n "${REPO_NAME}" ] || die "in ${CONFIG_YAML}, repository #${REPO_IDX} has no name"
-				# check that the repository name is well formed
-				[[ "${REPO_NAME}" =~ ${REPO_NAME_REGEX} ]] || die "in ${CONFIG_YAML}, name of repository #${REPO_IDX} is ill-formed"
-				# check that there's not yet a repository enabled with the same name
-				if [ -n "${REPOSITORY_DIRS["${REPO_NAME}"]+x}" ]; then
-					die "in ${CONFIG_YAML}, two or more repositories with name \"${REPO_NAME}\" are enabled at the same time"
+				if [ "${REPO_ENABLED}" = 'true' ]; then
+					# get name of repository
+					REPO_NAME="${PROPERTY}"
+					# repository shall have a name
+					[ -n "${REPO_NAME}" ] || die "in ${CONFIG_YAML}, repository #${REPO_IDX} has no name"
+					# check that the repository name is well formed
+					[[ "${REPO_NAME}" =~ ${REPO_NAME_REGEX} ]] || die "in ${CONFIG_YAML}, name of repository #${REPO_IDX} is ill-formed"
+					# check that there's not yet a repository enabled with the same name
+					if [ -n "${REPOSITORY_DIRS["${REPO_NAME}"]+x}" ]; then
+						die "in ${CONFIG_YAML}, two or more repositories with name \"${REPO_NAME}\" are enabled at the same time"
+					fi
 				fi
 				;;
 			2)
-				[ "${REPO_ENABLED}" = 'true' ] || continue
-				# get the directory of the repository
-				REPO_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
-				# repository shall have a directory
-				[ -n "${REPO_DIR}" ] || die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" has no directory"
-				# check that the directory path looks like an absolute path
-				[[ "${REPO_DIR}" = /* ]] || die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" shall have an absolute directory path"
-				# check that the directory exists and directory path is well formed
-				REPO_DIR="$(realpath -e -q "${REPO_DIR}")"
-				if [ $? -ne 0 ] || [ ! -d "${REPO_DIR}" ]; then
-					die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" has either an invalid directory path or repository directory was not found"
+				if [ "${REPO_ENABLED}" = 'true' ]; then
+					# get the directory of the repository
+					REPO_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
+					# repository shall have a directory
+					[ -n "${REPO_DIR}" ] || die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" has no directory"
+					# check that the directory path looks like an absolute path
+					[[ "${REPO_DIR}" = /* ]] || die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" shall have an absolute directory path"
+					# check that the directory exists and directory path is well formed
+					REPO_DIR="$(realpath -e -q "${REPO_DIR}")"
+					if [ $? -ne 0 ] || [ ! -d "${REPO_DIR}" ]; then
+						die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" has either an invalid directory path or repository directory was not found"
+					fi
+					# check that there's not yet a repository with the same directory path
+					[ -z "${REPOSITORY_NAMES_BY_PATH["${REPO_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled repositories with same directory path"
 				fi
-				# check that there's not yet a repository with the same directory path
-				[ -z "${REPOSITORY_NAMES_BY_PATH["${REPO_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled repositories with same directory path"
 				;;
 			3)
-				[ "${REPO_ENABLED}" = 'true' ] || continue
-				# get package_dir of the repository
-				REPO_PACKAGE_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
-				# repository shall have a package_dir
-				[ -n "${REPO_PACKAGE_DIR}" ] || die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" has no package_dir"
-				# check that package_dir path looks like an absolute path
-				[[ "${REPO_PACKAGE_DIR}" = /* ]] || REPO_PACKAGE_DIR="${REPO_DIR}/${REPO_PACKAGE_DIR}"
-				# check that the package_dir path exists and is well formed
-				REPO_PACKAGE_DIR="$(realpath -e -q "${REPO_PACKAGE_DIR}")"
-				if [ $? -ne 0 ] || [ ! -d "${REPO_PACKAGE_DIR}" ]; then
-					die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" has an invalid package_dir or package_dir directory was not found"
+				if [ "${REPO_ENABLED}" = 'true' ]; then
+					# get package_dir of the repository
+					REPO_PACKAGE_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
+					# repository shall have a package_dir
+					[ -n "${REPO_PACKAGE_DIR}" ] || die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" has no package_dir"
+					# check that package_dir path looks like an absolute path
+					[[ "${REPO_PACKAGE_DIR}" = /* ]] || REPO_PACKAGE_DIR="${REPO_DIR}/${REPO_PACKAGE_DIR}"
+					# check that the package_dir path exists and is well formed
+					REPO_PACKAGE_DIR="$(realpath -e -q "${REPO_PACKAGE_DIR}")"
+					if [ $? -ne 0 ] || [ ! -d "${REPO_PACKAGE_DIR}" ]; then
+						die "in ${CONFIG_YAML}, repository #${REPO_IDX} with name \"${REPO_NAME}\" has an invalid package_dir or package_dir directory was not found"
+					fi
+					# check that there's not yet a repository with the same package_dir path
+					[ -z "${REPOSITORY_NAMES_BY_PACKAGE_DIR["${REPO_PACKAGE_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled repositories with same package_dir"
 				fi
-				# check that there's not yet a repository with the same package_dir path
-				[ -z "${REPOSITORY_NAMES_BY_PACKAGE_DIR["${REPO_PACKAGE_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled repositories with same package_dir"
 				;;
 			4)
-				[ "${REPO_ENABLED}" = 'true' ] || continue
-				# get default flag of the repository
-				REPO_DEFAULT="${PROPERTY}"
-				# if default flag exists and it is true
-				if [ "${REPO_DEFAULT}" = 'true' ]; then
-					# check that there is only one default repository at a time
-					[ -z "${DEFAULT_REPOSITORY_NAME+x}" ] || die "in ${CONFIG_YAML}, multiple default repositories"
-					# this repository is the default one
-					DEFAULT_REPOSITORY_NAME="${REPO_NAME}"
+				if [ "${REPO_ENABLED}" = 'true' ]; then
+					# get default flag of the repository
+					REPO_DEFAULT="${PROPERTY}"
+					# if default flag exists and it is true
+					if [ "${REPO_DEFAULT}" = 'true' ]; then
+						# check that there is only one default repository at a time
+						[ -z "${DEFAULT_REPOSITORY_NAME+x}" ] || die "in ${CONFIG_YAML}, multiple default repositories"
+						# this repository is the default one
+						DEFAULT_REPOSITORY_NAME="${REPO_NAME}"
+					fi
+					
+					# everything is fine with this repository: add it into the database
+					REPOSITORY_NAMES+=("${REPO_NAME}")
+					REPOSITORY_DIRS["${REPO_NAME}"]="${REPO_DIR}"
+					REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]="${REPO_PACKAGE_DIR}"
+					REPOSITORY_NAMES_BY_PATH["${REPO_DIR}"]="${REPO_NAME}"
+					REPOSITORY_NAMES_BY_PACKAGE_DIR["${REPO_PACKAGE_DIR}"]="${REPO_NAME}"
+					
+					REPO_IDX=$((${REPO_IDX}+1))
 				fi
-				
-				# everything is fine with this repository: add it into the database
-				REPOSITORY_NAMES+=("${REPO_NAME}")
-				REPOSITORY_DIRS["${REPO_NAME}"]="${REPO_DIR}"
-				REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]="${REPO_PACKAGE_DIR}"
-				REPOSITORY_NAMES_BY_PATH["${REPO_DIR}"]="${REPO_NAME}"
-				REPOSITORY_NAMES_BY_PACKAGE_DIR["${REPO_PACKAGE_DIR}"]="${REPO_NAME}"
-				
-				REPO_IDX=$((${REPO_IDX}+1))
 				;;
 		esac
 		PROP_IDX=$((${PROP_IDX}+1))
@@ -615,55 +619,58 @@ function config()
 				PROJECT_ENABLED="${PROPERTY}"
 				;;
 			1)
-				[ "${PROJECT_ENABLED}" = 'true' ] || continue
-				# get name of the project
-				PROJECT_NAME="${PROPERTY}"
-				# project shall have a name
-				[ -n "${PROJECT_NAME}" ] || die "in ${CONFIG_YAML}, Project #${PROJECT_IDX} has no name"
-				# check that the project name is well formed
-				[[ "${PROJECT_NAME}" =~ ${PROJECT_NAME_REGEX} ]] || die "in ${CONFIG_YAML}, name of Project #${PROJECT_IDX} is ill-formed"
-				# check that there's not yet a project enabled with the same name
-				if [ -n "${PROJECT_DIRS["${PROJECT_NAME}"]+x}" ]; then
-					die "in ${CONFIG_YAML}, two or more projects with name \"${PROJECT_NAME}\" are enabled at the same time"
+				if [ "${PROJECT_ENABLED}" = 'true' ]; then
+					# get name of the project
+					PROJECT_NAME="${PROPERTY}"
+					# project shall have a name
+					[ -n "${PROJECT_NAME}" ] || die "in ${CONFIG_YAML}, Project #${PROJECT_IDX} has no name"
+					# check that the project name is well formed
+					[[ "${PROJECT_NAME}" =~ ${PROJECT_NAME_REGEX} ]] || die "in ${CONFIG_YAML}, name of Project #${PROJECT_IDX} is ill-formed"
+					# check that there's not yet a project enabled with the same name
+					if [ -n "${PROJECT_DIRS["${PROJECT_NAME}"]+x}" ]; then
+						die "in ${CONFIG_YAML}, two or more projects with name \"${PROJECT_NAME}\" are enabled at the same time"
+					fi
 				fi
 				;;
 			2)
-				[ "${PROJECT_ENABLED}" = 'true' ] || continue
-				# get the path of the project directory
-				PROJECT_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
-				# project shall have a path
-				[ -n "${PROJECT_DIR}" ] || die "in ${CONFIG_YAML}, project #${PROJECT_IDX} with name \"${PROJECT_NAME}\" has no path"
-				# check that the directory path looks like an absolute path
-				[[ "${PROJECT_DIR}" = /* ]] || die "in ${CONFIG_YAML}, project #${PROJECT_IDX} with name \"${PROJECT_NAME}\" shall have an absolute directory path"
-				# check that the directory exists and directory path is well formed
-				PROJECT_DIR="$(realpath -e -q "${PROJECT_DIR}")"
-				if [ $? -ne 0 ] || [ ! -d "${PROJECT_DIR}" ]; then
-					die "in ${CONFIG_YAML}, project #${PROJECT_IDX} with name \"${PROJECT_NAME}\" has an invalid directory path or project directory was not found"
+				if [ "${PROJECT_ENABLED}" = 'true' ]; then
+					# get the path of the project directory
+					PROJECT_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
+					# project shall have a path
+					[ -n "${PROJECT_DIR}" ] || die "in ${CONFIG_YAML}, project #${PROJECT_IDX} with name \"${PROJECT_NAME}\" has no path"
+					# check that the directory path looks like an absolute path
+					[[ "${PROJECT_DIR}" = /* ]] || die "in ${CONFIG_YAML}, project #${PROJECT_IDX} with name \"${PROJECT_NAME}\" shall have an absolute directory path"
+					# check that the directory exists and directory path is well formed
+					PROJECT_DIR="$(realpath -e -q "${PROJECT_DIR}")"
+					if [ $? -ne 0 ] || [ ! -d "${PROJECT_DIR}" ]; then
+						die "in ${CONFIG_YAML}, project #${PROJECT_IDX} with name \"${PROJECT_NAME}\" has an invalid directory path or project directory was not found"
+					fi
+					# check that there's not yet a project with the same directory path
+					[ -z "${PROJECT_NAMES_BY_PATH["${PROJECT_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled projects with same directory path"
 				fi
-				# check that there's not yet a project with the same directory path
-				[ -z "${PROJECT_NAMES_BY_PATH["${PROJECT_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled projects with same directory path"
 				;;
 			3)
-				[ "${PROJECT_ENABLED}" = 'true' ] || continue
-				# get path to the project distribution file
-				PROJECT_DISTRIB_FILE="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
-				if [ -n "${PROJECT_DISTRIB_FILE}" ]; then
-					# if there is a path and it is not an absolute path, then it is relative to the project directory
-					[[ "${PROJECT_DISTRIB_FILE}" = /* ]] || PROJECT_DISTRIB_FILE="${PROJECT_DIR}/${PROJECT_DISTRIB_FILE}"
-				else
-					# if there is no path, then use the default
-					PROJECT_DISTRIB_FILE="${PROJECT_DIR}/${DEFAULT_PROJECT_DISTRIB_FILE}"
+				if [ "${PROJECT_ENABLED}" = 'true' ]; then
+					# get path to the project distribution file
+					PROJECT_DISTRIB_FILE="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
+					if [ -n "${PROJECT_DISTRIB_FILE}" ]; then
+						# if there is a path and it is not an absolute path, then it is relative to the project directory
+						[[ "${PROJECT_DISTRIB_FILE}" = /* ]] || PROJECT_DISTRIB_FILE="${PROJECT_DIR}/${PROJECT_DISTRIB_FILE}"
+					else
+						# if there is no path, then use the default
+						PROJECT_DISTRIB_FILE="${PROJECT_DIR}/${DEFAULT_PROJECT_DISTRIB_FILE}"
+					fi
+					# check that the configuration file exists
+					[ -f "${PROJECT_DISTRIB_FILE}" ] || die "in ${CONFIG_YAML}, configuration file \"${PROJECT_DISTRIB_FILE}\" of Project #${PROJECT_IDX} with name \"${PROJECT_NAME}\" not found"
+					
+					# everything is fine with this project: add it into the database
+					PROJECT_NAMES+=("${PROJECT_NAME}")
+					PROJECT_DIRS["${PROJECT_NAME}"]="${PROJECT_DIR}"
+					PROJECT_DISTRIB_FILES["${PROJECT_NAME}"]="${PROJECT_DISTRIB_FILE}"
+					PROJECT_NAMES_BY_PATH["${PROJECT_DIR}"]="${REPO_NAME}"
+					
+					PROJECT_IDX=$((${PROJECT_IDX}+1))
 				fi
-				# check that the configuration file exists
-				[ -f "${PROJECT_DISTRIB_FILE}" ] || die "in ${CONFIG_YAML}, configuration file \"${PROJECT_DISTRIB_FILE}\" of Project #${PROJECT_IDX} with name \"${PROJECT_NAME}\" not found"
-				
-				# everything is fine with this project: add it into the database
-				PROJECT_NAMES+=("${PROJECT_NAME}")
-				PROJECT_DIRS["${PROJECT_NAME}"]="${PROJECT_DIR}"
-				PROJECT_DISTRIB_FILES["${PROJECT_NAME}"]="${PROJECT_DISTRIB_FILE}"
-				PROJECT_NAMES_BY_PATH["${PROJECT_DIR}"]="${REPO_NAME}"
-				
-				PROJECT_IDX=$((${PROJECT_IDX}+1))
 				;;
 		esac
 		PROP_IDX=$((${PROP_IDX}+1))
@@ -687,86 +694,91 @@ function config()
 				BUILD_ENABLED="${PROPERTY}"
 				;;
 			1)
-				[ "${BUILD_ENABLED}" = 'true' ] || continue
-				# get name of the build
-				BUILD_NAME="${PROPERTY}"
-				# build shall have a name
-				[ -n "${BUILD_NAME}" ] || die "in ${CONFIG_YAML}, Build #${BUILD_IDX} has no name"
-				# check that the build name is well formed
-				[[ "${BUILD_NAME}" =~ ${BUILD_NAME_REGEX} ]] || die "in ${CONFIG_YAML}, name of Build #${BUILD_IDX} is ill-formed"
-				# check that there's not yet a build enabled with the same name
-				if [ -n "${BUILD_DIRS["${BUILD_NAME}"]+x}" ]; then
-					die "in ${CONFIG_YAML}, two or more builds with name \"${BUILD_NAME}\" are enabled at the same time"
+				if [ "${BUILD_ENABLED}" = 'true' ]; then
+					# get name of the build
+					BUILD_NAME="${PROPERTY}"
+					# build shall have a name
+					[ -n "${BUILD_NAME}" ] || die "in ${CONFIG_YAML}, Build #${BUILD_IDX} has no name"
+					# check that the build name is well formed
+					[[ "${BUILD_NAME}" =~ ${BUILD_NAME_REGEX} ]] || die "in ${CONFIG_YAML}, name of Build #${BUILD_IDX} is ill-formed"
+					# check that there's not yet a build enabled with the same name
+					if [ -n "${BUILD_DIRS["${BUILD_NAME}"]+x}" ]; then
+						die "in ${CONFIG_YAML}, two or more builds with name \"${BUILD_NAME}\" are enabled at the same time"
+					fi
 				fi
 				;;
 			2)
-				[ "${BUILD_ENABLED}" = 'true' ] || continue
-				# get name of the source project
-				BUILD_PROJECT_NAME="${PROPERTY}"
-				# build shall have a project
-				[ -n "${BUILD_PROJECT_NAME}" ] || die "in ${CONFIG_YAML}, Build #${BUILD_IDX} has no project"
-				[ -n "${PROJECT_DIRS["${BUILD_PROJECT_NAME}"]+x}" ] || die "in ${CONFIG_YAML}, Project of Build #${BUILD_IDX} with name \"${BUILD_NAME}\" not found"
+				if [ "${BUILD_ENABLED}" = 'true' ]; then
+					# get name of the source project
+					BUILD_PROJECT_NAME="${PROPERTY}"
+					# build shall have a project
+					[ -n "${BUILD_PROJECT_NAME}" ] || die "in ${CONFIG_YAML}, Build #${BUILD_IDX} has no project"
+					[ -n "${PROJECT_DIRS["${BUILD_PROJECT_NAME}"]+x}" ] || die "in ${CONFIG_YAML}, Project of Build #${BUILD_IDX} with name \"${BUILD_NAME}\" not found"
+				fi
 				;;
 			3)
-				[ "${BUILD_ENABLED}" = 'true' ] || continue
-				# get the build directory of the build
-				BUILD_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
-				# build may have a build directory
-				if [ -n "${BUILD_DIR}" ]; then
-					# check that the build directory path looks like an absolute path
-					[[ "${BUILD_DIR}" = /* ]] || die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" shall have an absolute path for the build directory"
-					# check that build directory path is valid and canonicalize build directory path
-					BUILD_DIR="$(realpath -m -q "${BUILD_DIR}")"
-					if [ $? -ne 0 ]; then
-						die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" has an invalid build directory path"
+				if [ "${BUILD_ENABLED}" = 'true' ]; then
+					# get the build directory of the build
+					BUILD_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
+					# build may have a build directory
+					if [ -n "${BUILD_DIR}" ]; then
+						# check that the build directory path looks like an absolute path
+						[[ "${BUILD_DIR}" = /* ]] || die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" shall have an absolute path for the build directory"
+						# check that build directory path is valid and canonicalize build directory path
+						BUILD_DIR="$(realpath -m -q "${BUILD_DIR}")"
+						if [ $? -ne 0 ]; then
+							die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" has an invalid build directory path"
+						fi
+						# check that there's not yet a build with the same build directory
+						[ -z "${BUILD_NAMES_BY_BUILD_DIR["${BUILD_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled builds with same build directory"
+					else
+						unset BUILD_DIR
 					fi
-					# check that there's not yet a build with the same build directory
-					[ -z "${BUILD_NAMES_BY_BUILD_DIR["${BUILD_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled builds with same build directory"
-				else
-					unset BUILD_DIR
 				fi
 				;;
 			4)
-				[ "${BUILD_ENABLED}" = 'true' ] || continue
-				# get the distribution directory of the build
-				BUILD_DIST_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
-				# build may have a distribution directory
-				if [ -n "${BUILD_DIST_DIR}" ]; then
-					# check that the distribution directory path looks like an absolute path
-					[[ "${BUILD_DIST_DIR}" = /* ]] || die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" shall have an absolute path for the distribution directory"
-					# check that distribution directory path is valid and canonicalize distribution directory path
-					BUILD_DIST_DIR="$(realpath -m -q "${BUILD_DIST_DIR}")"
-					if [ $? -ne 0 ]; then
-						die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" has an invalid distribution directory path"
+				if [ "${BUILD_ENABLED}" = 'true' ]; then
+					# get the distribution directory of the build
+					BUILD_DIST_DIR="$(echo "${PROPERTY}" | tilda_expansion | envsubst)"
+					# build may have a distribution directory
+					if [ -n "${BUILD_DIST_DIR}" ]; then
+						# check that the distribution directory path looks like an absolute path
+						[[ "${BUILD_DIST_DIR}" = /* ]] || die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" shall have an absolute path for the distribution directory"
+						# check that distribution directory path is valid and canonicalize distribution directory path
+						BUILD_DIST_DIR="$(realpath -m -q "${BUILD_DIST_DIR}")"
+						if [ $? -ne 0 ]; then
+							die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" has an invalid distribution directory path"
+						fi
+						# check that there's not yet a build with the same directory
+						[ -z "${BUILD_NAMES_BY_DIST_DIR["${BUILD_DIST_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled builds with same distribution directory"
+					else
+						unset BUILD_DIST_DIR
 					fi
-					# check that there's not yet a build with the same directory
-					[ -z "${BUILD_NAMES_BY_DIST_DIR["${BUILD_DIST_DIR}"]+x}" ] || die "in ${CONFIG_YAML}, there are multiple enabled builds with same distribution directory"
-				else
-					unset BUILD_DIST_DIR
 				fi
 				;;
 			5)
-				[ "${BUILD_ENABLED}" = 'true' ] || continue
-				# get command of the build
-				BUILD_COMMAND="${PROPERTY}"
-				# build shall have a command
-				[ $? -eq 0 ] || die "in ${CONFIG_YAML}, Build #${BUILD_IDX} has no command"
-				
-				# build shall have a build directory and/or a distribution directory
-				[ -n "${BUILD_DIR+x}" ] || [ -n "${BUILD_DIST_DIR+x}" ] || die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" has neither a build directory nor a distribution directory"
-				[ -n "${BUILD_DIR+x}" ] || BUILD_DIR="${BUILD_DIST_DIR}"
-				[ -n "${BUILD_DIST_DIR+x}" ] || BUILD_DIST_DIR="${BUILD_DIR}"
-				
-				# everything is fine with this build: add it into the database
-				BUILD_NAMES+=("${BUILD_NAME}")
-				BUILD_PROJECT_NAMES["${BUILD_NAME}"]="${BUILD_PROJECT_NAME}"
-				BUILD_DIRS["${BUILD_NAME}"]="${BUILD_DIR}"
-				BUILD_DIST_DIRS["${BUILD_NAME}"]="${BUILD_DIST_DIR}"
-				BUILD_COMMANDS["${BUILD_NAME}"]="${BUILD_COMMAND}"
-				BUILD_NAMES_BY_BUILD_DIR["${BUILD_DIR}"]="${BUILD_NAME}"
-				BUILD_NAMES_BY_BUILD_DIR["${BUILD_DIST_DIR}"]="${BUILD_NAME}"
-				
-				BUILD_IDX=$((${BUILD_IDX}+1))
+				if [ "${BUILD_ENABLED}" = 'true' ]; then
+					# get command of the build
+					BUILD_COMMAND="${PROPERTY}"
+					# build shall have a command
+					[ $? -eq 0 ] || die "in ${CONFIG_YAML}, Build #${BUILD_IDX} has no command"
+					
+					# build shall have a build directory and/or a distribution directory
+					[ -n "${BUILD_DIR+x}" ] || [ -n "${BUILD_DIST_DIR+x}" ] || die "in ${CONFIG_YAML}, build #${BUILD_IDX} with name \"${BUILD_NAME}\" has neither a build directory nor a distribution directory"
+					[ -n "${BUILD_DIR+x}" ] || BUILD_DIR="${BUILD_DIST_DIR}"
+					[ -n "${BUILD_DIST_DIR+x}" ] || BUILD_DIST_DIR="${BUILD_DIR}"
+					
+					# everything is fine with this build: add it into the database
+					BUILD_NAMES+=("${BUILD_NAME}")
+					BUILD_PROJECT_NAMES["${BUILD_NAME}"]="${BUILD_PROJECT_NAME}"
+					BUILD_DIRS["${BUILD_NAME}"]="${BUILD_DIR}"
+					BUILD_DIST_DIRS["${BUILD_NAME}"]="${BUILD_DIST_DIR}"
+					BUILD_COMMANDS["${BUILD_NAME}"]="${BUILD_COMMAND}"
+					BUILD_NAMES_BY_BUILD_DIR["${BUILD_DIR}"]="${BUILD_NAME}"
+					BUILD_NAMES_BY_BUILD_DIR["${BUILD_DIST_DIR}"]="${BUILD_NAME}"
+					
+					BUILD_IDX=$((${BUILD_IDX}+1))
+				fi
 				;;
 		esac
 		PROP_IDX=$((${PROP_IDX}+1))
@@ -925,7 +937,7 @@ function sysdep_by_include()
 	fi
 }
 
-# upstream quircks for discovering file dependencies
+# upstream quirks for discovering file dependencies
 function discover_file_deps_quirks()
 {
 	local OWN_REPO_DIR="$1"
@@ -953,6 +965,24 @@ function discover_file_deps_quirks()
 	   grep -qs "shmctl(" "${FILEPATH}" ||
 	   grep -qs "shmat(" "${FILEPATH}"; then
 		resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" 'm4/shared_memory' >> "${PKG_DEPS_TXT}"
+	fi
+}
+
+# upstream quirks for adding build dependencies
+function discover_file_build_deps_quirks()
+{
+	local OWN_REPO_DIR="$1"
+	local OWN_PACKAGE_DIR="$2"
+	local BASE="$3"
+	local FILENAME="$4"
+	local INCLUDE_DEP="$5"
+	
+	if [[ "${FILENAME}" = *.isa ]] && [[ "${INCLUDE_DEP}" = *_sub.isa ]]; then
+		# quirk: let automake know that there is a build dependency of GenISSLib generated decoder .hh with GenISSLib generated subdecoder .isa to enforce building order
+		local AM_LIST_TXT="${OWN_PACKAGE_DIR}/${BASE}/am_list.txt"
+		mkdir -p "$(dirname "${AM_LIST_TXT}")"
+		echo "$(sed -e 's/\.isa$/\.hh/g' <<< "$(concat_paths "${BASE}" "${FILENAME}")"): ${INCLUDE_DEP}" >> "${AM_LIST_TXT}"
+		sort -u -o "${AM_LIST_TXT}" "${AM_LIST_TXT}"
 	fi
 }
 
@@ -1361,6 +1391,8 @@ function discover_file_deps()
 				debug "${INCLUDE_DEP} dependency is pending"
 				echo "${INCLUDE_DEP}" >> "${UNRESOLVED_TXT}"
 				sort -u -o "${UNRESOLVED_TXT}" "${UNRESOLVED_TXT}"
+				
+				discover_file_build_deps_quirks "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${BASE}" "${FILENAME}" "${INCLUDE_DEP}"
 			fi
 		done
 		discover_file_deps_quirks "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${FILEPATH}" "${PKG_DEPS_TXT}"
@@ -2272,7 +2304,9 @@ function dist()
 	declare -ga SUBPROJECT_NAMES
 	
 	debug "Distributing using Project distribution file \"${PROJECT_DISTRIB_FILE}\""
+	[ -f "${PROJECT_DISTRIB_FILE}" ] || die "\"${PROJECT_DISTRIB_FILE}\": not such file"
 	pushd "${DIST_DIR}" > /dev/null || die "Can't enter directory ${DIST_DIR}"
+	set -e
 	if ! source "${PROJECT_DISTRIB_FILE}"; then
 		if [ -n "${PACKAGE_NAME+x}" ]; then
 			die "Distribution of Package \"${PACKAGE_NAME}\" from \"${PROJECT_DISTRIB_FILE}\" failed"
@@ -2280,6 +2314,7 @@ function dist()
 			die "Distribution of package from \"${PROJECT_DISTRIB_FILE}\" failed"
 		fi
 	fi
+	set +e
 	popd > /dev/null
 	
 	if [ -n "${PACKAGE_NAME+x}" ]; then
@@ -2353,7 +2388,7 @@ function build()
 				mkdir -p "${BUILD_DIR}" || die "Can't create build directory \"${BUILD_DIR}\""
 				BUILD_PROJECT_NAME="${BUILD_PROJECT_NAMES["${BUILD_NAME}"]}"
 				BUILD_DIST_DIR="${BUILD_DIST_DIRS["${BUILD_NAME}"]}"
-				dist "${BUILD_PROJECT_NAME}" "${BUILD_DIST_DIR}"
+				( dist "${BUILD_PROJECT_NAME}" "${BUILD_DIST_DIR}" ) || die "While Build \"${BUILD_NAME}\", distribution of Project \"${BUILD_PROJECT_NAME}\" failed"
 				pushd "${BUILD_DIR}" > /dev/null || die "Can't enter directory ${BUILD_DIR}"
 				BUILD_COMMAND="${BUILD_COMMANDS["${BUILD_NAME}"]}"
 				if [ -n "${BUILD_COMMAND}" ]; then
