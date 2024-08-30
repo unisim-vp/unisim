@@ -200,7 +200,11 @@ bool NodeJS::Initialize()
 		std::vector<std::string> init_node_args;
 		init_node_args.push_back(executable_path);
 		for(auto option : options) init_node_args.push_back(option);
+#if NODE_MAJOR_VERSION >= 22
+		std::shared_ptr<node::InitializationResult> init_result = node::InitializeOncePerProcess(
+#else
 		std::unique_ptr<node::InitializationResult> init_result = node::InitializeOncePerProcess(
+#endif
 			init_node_args,
 			{
 				node::ProcessInitializationFlags::kNoInitializeV8,
