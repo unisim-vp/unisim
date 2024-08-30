@@ -475,6 +475,8 @@ struct TaintedValueFloatingPointStatusAndControl
 	static uint_fast8_t exceptionFlags() { return FloatingPointStatusAndControl<FLOAT>::exceptionFlags(); }
 	static void extF80_roundingPrecision( uint_fast8_t rp ) { FloatingPointStatusAndControl<FLOAT>::extF80_roundingPrecision( rp ); }
 	static uint_fast8_t extF80_roundingPrecision() { return FloatingPointStatusAndControl<FLOAT>::extF80_roundingPrecision(); }
+	static void flushToZero( uint_fast8_t ftz ) { FloatingPointStatusAndControl<FLOAT>::flushToZero( ftz ); }
+	static uint_fast8_t flushToZero() { return FloatingPointStatusAndControl<FLOAT>::flushToZero(); }
 };
 
 #if HAVE_FLOAT16

@@ -84,6 +84,14 @@ enum
 	flag_invalid   = 16
 };
 
+// Flush-to-zero
+enum
+{
+	ftz_never          = 0,
+	ftz_beforeRounding = 1,
+	ftz_afterRounding  = 2
+};
+
 // Unpacked float representation
 struct UnpackedFloat
 {
@@ -177,6 +185,8 @@ struct FloatingPointStatusAndControl
 	static uint_fast8_t exceptionFlags();                    // getter
 	static void extF80_roundingPrecision( uint_fast8_t rp ); // setter
 	static uint_fast8_t extF80_roundingPrecision();          // getter
+	static void flushToZero( uint_fast8_t ftz );             // setter
+	static uint_fast8_t flushToZero();                       // getter
 };
 
 // Generic helper functions dependent from FloatingPointTypeInfo<> trait availability
@@ -427,6 +437,14 @@ private:
 	uint_fast8_t eflags;
 };
 
+struct FlushToZero
+{
+	FlushToZero( uint_fast8_t _flush_to_zero ) : ftz(_flush_to_zero) {}
+	friend std::ostream& operator << (std::ostream& stream, const FlushToZero& value);
+private:
+	uint_fast8_t ftz;
+};
+
 inline std::ostream& operator << (std::ostream& stream, const DetectTininess& value)
 {
 	switch( value.dt )
@@ -461,6 +479,17 @@ inline std::ostream& operator << (std::ostream& stream, const ExceptionFlags& va
 		<< "infinite="  << ( ( value.eflags & flag_infinite  ) != 0 ) << ":"
 		<< "invalid="   << ( ( value.eflags & flag_invalid   ) != 0 )
 		<< ")";
+}
+
+inline std::ostream& operator << (std::ostream& stream, const FlushToZero& value)
+{
+	switch( value.ftz )
+	{
+		case ftz_never         : return stream << "flush-to-zero never";
+		case ftz_beforeRounding: return stream << "flush-to-zero before rounding";
+		case ftz_afterRounding : return stream << "flush-to-zero after rounding";
+	}
+	return stream;
 }
 
 // Floating-point status and control for native host floating-point numbers
@@ -532,6 +561,12 @@ void FloatingPointStatusAndControl<FLOAT>::extF80_roundingPrecision( uint_fast8_
 
 template <typename FLOAT>
 uint_fast8_t FloatingPointStatusAndControl<FLOAT>::extF80_roundingPrecision() { return 80; }
+
+template <typename FLOAT>
+void FloatingPointStatusAndControl<FLOAT>::flushToZero( uint_fast8_t ftz ) {}
+
+template <typename FLOAT>
+uint_fast8_t FloatingPointStatusAndControl<FLOAT>::flushToZero() { return ftz_never; }
 
 // Generic helper functions dependent from FloatingPointTypeInfo<> trait availability
 
