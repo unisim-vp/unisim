@@ -55,6 +55,7 @@ import unisim/component/cxx/vector || exit
 import unisim/util/symbolic/vector || exit
 import unisim/util/symbolic/binsec || exit
 import unisim/util/arithmetic || exit
+import unisim/util/floating_point || exit
 import unisim/util/endian || exit
 import unisim/util/likely || exit
 
@@ -352,8 +353,8 @@ UTIL_INCLUDES=$(includes ${DEST_DIR} unisim/util)
 cat <<EOF >> "${DEST_DIR}/dune"
 (env
   (_
-   (c_flags :standard -std=gnu11 -g0)
-   (cxx_flags :standard -std=gnu++11 -g0)))
+   (c_flags :standard -std=gnu14 -g0)
+   (cxx_flags :standard -std=gnu++14 -g0)))
 
 (subdir
  unisim/util
