@@ -560,8 +560,11 @@ namespace symbolic {
     long double GetFloat( long double ) const override { typedef long double long_double; return long_double(value); }
     uint64_t GetBits(unsigned idx) const override
     {
+      /* Return bits of infinitely precise encoding. */
       if (std::is_floating_point<VALUE_TYPE>::value)
         {
+          struct Bad {};
+          throw Bad();
           return 0;
         }
       else if (idx == 0)

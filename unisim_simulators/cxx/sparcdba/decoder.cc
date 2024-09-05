@@ -316,7 +316,6 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   //   =                      Control Transfer methods                     =
   //   =====================================================================
 
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
   U32  GetPC() { return current_instruction_address; }
   void DelayBranch(U32 target, branch_type_t bt )
   {

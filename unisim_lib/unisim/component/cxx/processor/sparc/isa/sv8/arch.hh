@@ -55,6 +55,8 @@ namespace sv8 {
 template <typename ARCH_IMPL>
 struct Arch
 {
+  enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
+
   /** Check the given condition against the current PSR status.
    * Returns BOOL(true) if the condition holds, BOOL(false) otherwise.
    *
