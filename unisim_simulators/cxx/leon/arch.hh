@@ -172,7 +172,7 @@ namespace Star
     void                          SetFCC(bool nle, bool nge) { fcc() = nle*2 | nge*1; }
 
     /* Control */
-    void                          DelayBranch( uint32_t _target ) { m_nnpc = _target; }
+    void                          DelayBranch( uint32_t _target, branch_type_t ) { m_nnpc = _target; }
     uint32_t                      GetPC() { return m_pc; }
     void                          StopFetch() { m_execute_mode = false; }
     void                          SetAnnul( bool _annul ) { m_annul = _annul; }
@@ -419,7 +419,7 @@ namespace Star
     T
     FMemRead(T const&, ASI asi, uint32_t addr)
     {
-      typename TypeInfo<T>::as_bits res = MemRead(res, asi, addr);
+      auto res = MemRead(typename TypeInfo<T>::as_bits(), asi, addr);
       return *reinterpret_cast<T*>(&res);
     }
     
