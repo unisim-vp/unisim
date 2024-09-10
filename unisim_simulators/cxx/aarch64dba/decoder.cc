@@ -85,11 +85,24 @@ struct Processor
   typedef unisim::util::symbolic::ValueType            ValueType;
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
 
+  struct NeonValue
+  {
+    struct value_type { char _[VUConfig::BYTECOUNT]; };
+    NeonValue() = default;
+    NeonValue(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
+    unisim::util::symbolic::Expr expr;
+    using ValueType = unisim::util::symbolic::ValueType;
+    static ValueType GetType() { return ValueType(ValueType::NA, 8*VUConfig::BYTECOUNT); }
+  };
+
   template <typename RID>
   static Expr newRegRead( RID id ) { return new unisim::util::symbolic::binsec::RegRead<RID>( id ); }
 
   template <typename RID>
   static Expr newRegWrite( RID id, Expr const& value ) { return new unisim::util::symbolic::binsec::RegWrite<RID>( id, value ); }
+
+  template <typename RID>
+  static Expr newPartialRegWrite( RID id, unsigned pos, unsigned size, Expr const& value ) { return new unisim::util::symbolic::binsec::RegWrite<RID>( id, pos, size, value ); }
 
   //   =====================================================================
   //   =                      Construction/Destruction                     =
@@ -115,6 +128,8 @@ struct Processor
       gpr[reg.idx()] = U64(newRegRead(reg));
     for (Flag flag; flag.next();)
       flags[flag.idx()] = newRegRead(flag);
+    for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
+      vector_write(reg, NeonValue( newRegRead( VRegID(reg) ) ));
   }
 
   bool
@@ -138,6 +153,9 @@ struct Processor
     for (Flag flag; flag.next();)
       if (flags[flag.idx()] != ref.flags[flag.idx()])
         path->add_sink( Expr( newRegWrite( flag, flags[flag.idx()] ) ) );
+
+    for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
+      vregsinks(ref, reg);
 
     for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
       path->add_sink( *itr );
@@ -193,6 +211,8 @@ struct Processor
   }
   BOOL GetCarry() const { return BOOL(flags[Flag::C]); }
 
+  void SetQC() {}
+
   //   ====================================================================
   //   =                 Vector  Registers access methods
   //   ====================================================================
@@ -225,6 +245,13 @@ struct Processor
   //   void SetVS64( unsigned reg, S64 value ) { VectorZeroedStorage<S64>(reg)[0] = value; }
 
   //   void ClearHighV( unsigned reg, unsigned bytes ) { for (unsigned idx = bytes; idx < VUnion::BYTECOUNT; idx+=1 ) vector_data[reg][idx] = 0; }
+
+   U8 GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob)
+  {
+    struct CantDoThat {};
+    throw CantDoThat();
+    return U8();
+  }
 
   //   =====================================================================
   //   =              Special/System Registers access methods              =
@@ -347,6 +374,50 @@ struct Processor
     Flag( Code _code ) : code(_code) {}
     Flag( char const* _code ) : code(end) { init( _code ); }
   };
+
+  struct VRegID
+  {
+    VRegID(unsigned _reg) : reg(_reg) {} unsigned reg;
+    static unisim::util::symbolic::ValueType GetType() { return NeonValue::GetType(); }
+    void Repr( std::ostream& sink) const
+    {
+      sink << "q" << std::dec << reg;
+    };
+    int cmp(VRegID const& rhs) const { return int(reg) - int(rhs.reg); }
+  };
+
+  void vregsinks( Processor const& ref, unsigned reg ) const
+  {
+    struct VCorruption {};
+
+    unsigned const vector_size = vector_views[reg].size;
+
+    if (vector_size == 0)
+      return;
+
+    typename VUConfig::Byte bytes[VUConfig::BYTECOUNT];
+    vector_views[reg].transfer( &bytes[0], const_cast<VectorByteShadow*>(&vectors[reg].data[0]), vector_size, false );
+
+    unsigned const elem_size = bytes[0].is_source();
+    if (elem_size == 0 or vector_size % elem_size)
+      { throw VCorruption(); }
+
+    for (unsigned beg = 0; beg < vector_size; beg += elem_size)
+      {
+	if (bytes[beg].is_source() != elem_size)
+	  throw VCorruption();
+	for (unsigned idx = 0; idx < elem_size; ++idx)
+	  {
+	    if (auto x = unisim::util::symbolic::vector::corresponding_origin(bytes[beg].get_node(), idx, beg+idx ))
+	      if (auto vr = dynamic_cast<unisim::util::symbolic::binsec::RegRead<VRegID> const*>( x ))
+		if (vr->id.reg == reg)
+		  continue;
+	    // Found one difference !
+	    path->add_sink( newPartialRegWrite( VRegID(reg), 8*beg, 8*elem_size, bytes[beg].get_node() ) );
+	    break;
+	  }
+      }
+  }
 
   ActionNode*      path;
   Expr             flags[Flag::end];

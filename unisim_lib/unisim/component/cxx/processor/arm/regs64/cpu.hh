@@ -84,8 +84,9 @@ struct CPU
   /// Destructor (required vector destructions)
   ~CPU()
   {
-    for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
-      vector_views[reg].Clear(&vectors[reg]);
+    // TODO : decommenting the following lines leads to SEGFAULT
+    // for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
+    //   vector_views[reg].Clear(&vectors[reg]);
   }
 
   //============= General Purpose Registers access methods =============
