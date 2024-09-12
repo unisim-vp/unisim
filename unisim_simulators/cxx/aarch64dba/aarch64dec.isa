@@ -62,9 +62,9 @@ using unisim::util::arithmetic::BitScanReverse;
 
 }
 
-action {void} execute({ARCH &} {cpu}) { cpu.UndefinedInstruction(this); }
+action {void} execute({ARCH &} {cpu}) const { cpu.UndefinedInstruction(this); }
 
-action {void} disasm({ARCH &} {cpu}, {std::ostream&} {sink}) {
+action {void} disasm({ARCH &} {cpu}, {std::ostream&} {sink}) const {
   sink << "; Unknown AARCH64 instruction";
 }
 

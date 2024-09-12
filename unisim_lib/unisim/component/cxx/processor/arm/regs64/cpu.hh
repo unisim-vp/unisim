@@ -81,20 +81,6 @@ struct CPU
     , vectors()
   {}
 
-  CPU( CPU & other )
-    : gpr(other.gpr)
-    , vector_views()
-    , vectors()
-  {
-    for (unsigned reg = 0; reg < VECTORCOUNT; ++reg) {
-      typename TYPES::U8 *src =
-	other.vector_views[reg].GetConstStorage(&other.vectors[reg], typename TYPES::U8(), VUConfig::BYTECOUNT);
-      typename TYPES::U8 *dst = vector_views[reg].GetStorage(&vectors[reg], typename TYPES::U8(), VUConfig::BYTECOUNT);
-      for (unsigned i = 0; i < VUConfig::BYTECOUNT; ++i)
-	dst[i] = src[i];
-    }
-  }
-
   /// Destructor (required vector destructions)
   ~CPU()
   {

@@ -108,18 +108,13 @@ struct Processor
   //   =                      Construction/Destruction                     =
   //   =====================================================================
 
-  struct StatusRegister
-  {
-    typedef unisim::util::symbolic::Expr       Expr;
-    StatusRegister() {}
-  };
-
-  Processor(StatusRegister const& ref_psr, U64 const& insn_addr)
+  Processor()
     : unisim::component::cxx::processor::arm::regs64::CPU<Processor, ProcTypes>()
     , path(0)
     , flags()
-    , current_instruction_address(insn_addr)
-    , next_instruction_address(insn_addr + U64(4))
+    , current_instruction_address()
+    , return_address()
+    , next_instruction_address()
     , branch_type(B_JMP)
     , stores()
     , unpredictable( false )
@@ -132,12 +127,23 @@ struct Processor
       vector_write(reg, NeonValue( newRegRead( VRegID(reg) ) ));
   }
 
+  typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<Processor> Operation;
+
+  void step(Operation const& operation)
+  {
+    uint64_t insn_addr = operation.GetAddr(), linear_nia = insn_addr + 4;
+    current_instruction_address = insn_addr;
+    return_address = linear_nia;
+    next_instruction_address = U64(linear_nia);
+    operation.execute( *this );
+  }
+
   bool
-  close( Processor const& ref, uint64_t linear_nia )
+  close( Processor const& ref )
   {
     bool complete = path->close();
     if (branch_type == B_CALL)
-      path->add_sink( Expr( new unisim::util::symbolic::binsec::Call<uint64_t>( next_instruction_address.expr, linear_nia ) ) );
+      path->add_sink( Expr( new unisim::util::symbolic::binsec::Call<uint64_t>( next_instruction_address.expr, return_address ) ) );
     else
       path->add_sink( Expr( new unisim::util::symbolic::binsec::Branch( next_instruction_address.expr ) ) );
     if (unpredictable)
@@ -257,7 +263,7 @@ struct Processor
   //   =              Special/System Registers access methods              =
   //   =====================================================================
 
-  U64  GetPC() const { return current_instruction_address; }
+  U64  GetPC() const { return U64(current_instruction_address); }
   U64  GetNPC() const { return next_instruction_address; }
 
   struct SysReg
@@ -421,7 +427,8 @@ struct Processor
 
   ActionNode*      path;
   Expr             flags[Flag::end];
-  U64              current_instruction_address;
+  uint64_t         current_instruction_address;
+  uint64_t         return_address;
   U64              next_instruction_address;
   branch_type_t    branch_type;
   std::set<Expr>   stores;
@@ -463,6 +470,7 @@ struct Translator
       }
       ~Instruction() { delete operation; }
       Operation* operator -> () { return operation; }
+      Operation& operator * () { return *operation; }
 
       Operation* operation;
     };
@@ -477,7 +485,7 @@ struct Translator
 
     Processor::U64      insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
     // Processor::U64      insn_addr = Expr(new InstructionAddress); //< symbolic instruction address
-    Processor reference( status, insn_addr );
+    Processor reference;
 
     // Disassemble
     sink << "(mnemonic . \"";
@@ -490,10 +498,10 @@ struct Translator
       {
         for (bool end = false; not end;)
           {
-            Processor state( reference );
+            Processor state;
             state.path = coderoot;
-            instruction->execute( state );
-            end = state.close( reference, addr + 4 );
+            state.step(*instruction);
+            end = state.close( reference );
           }
         coderoot->simplify();
         coderoot->commit_stats();
@@ -508,7 +516,6 @@ struct Translator
     coderoot->generate(sink, 8, addr);
   }
 
-  Processor::StatusRegister status;
   ActionNode*               coderoot;
   uint64_t                  addr;
   uint32_t                  code;
@@ -522,4 +529,6 @@ Decoder::process( std::ostream& sink, uint64_t addr, uint32_t code )
   translator.translate( sink );
 }
 
+
+  
 }
