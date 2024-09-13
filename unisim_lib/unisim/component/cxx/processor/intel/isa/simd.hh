@@ -3778,11 +3778,64 @@ Operation<ARCH>* newShufp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase
 }
 };
 
-// shufpd_vdq_wdq_ib.disasm = { _sink << "shufpd " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-//
-// /* MOVDDUP -- Move One Double-FP and Duplicate */
-// op movddup_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x12[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// movddup_vdq_wdq.disasm = { _sink << "movddup " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
+template <class ARCH, class VR>
+struct Movddup : public Operation<ARCH>
+{
+  Movddup( OpBase<ARCH> const& opbase, RMOp<ARCH>&& _rm, uint8_t _gn) :
+    Operation<ARCH>(opbase), rm(std::move(_rm)), gn(_gn) {}
+
+  void disasm( std::ostream& sink ) const {
+    sink << (VR::vex() ? "v" : "") << "movddup" << ' ' << DisasmV( VR(), gn ) << ',' << DisasmW( VR(), rm ); }
+
+  void execute( ARCH& arch ) const
+  {
+    enum {
+      OPSIZE = 64,
+      N = VR::SIZE / (2 * OPSIZE)
+    };
+
+    typedef typename TypeFor<ARCH,OPSIZE>::f src_type;
+
+    src_type value[N];
+
+    for (unsigned idx = 0; idx < N; ++idx) {
+      value[idx] = arch.vmm_read( VR(), rm, 2 * idx, src_type() );
+    }
+    for (unsigned idx = 0; idx < N; ++idx) {
+      arch.vmm_write( VR(), gn, 2 * idx, value[idx] );
+      arch.vmm_write( VR(), gn, 2 * idx + 1, value[idx] );
+    }
+  }
+
+  RMOp<ARCH> rm;
+  uint8_t gn;
+};
+
+template <class ARCH> struct DC<ARCH,MOVDDUP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\xf2\x0f\x12" ) & RM() ))
+
+    return newMovddup( ic, _.opbase(), _.rmop(), _.greg() );
+
+  return 0;
+}
+
+Operation<ARCH>* newMovddup( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t gn )
+{
+  if (not ic.vex())
+    return new Movddup<ARCH,SSE>( opbase, std::move(rm), gn );
+
+  uint8_t vn = ic.vreg();
+  if (ic.vlen() == 128)
+    return new Movddup<ARCH,XMM>( opbase, std::move(rm), gn );
+  if (ic.vlen() == 256)
+    return new Movddup<ARCH,YMM>( opbase, std::move(rm), gn );
+
+  return 0;
+}
+};
 
 template <class ARCH, class VR>
 struct VZeroUpper : public Operation<ARCH>
