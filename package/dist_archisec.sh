@@ -4,7 +4,7 @@ SIMPKG=archisec
 SIMPKG_SRCDIR=.
 SIMPKG_DSTDIR=.
 ARCHISEC_SRCDIR=cxx/archisec
-VERSION=0.0.8
+VERSION=0.0.9
 
 source "$(dirname $0)/dist_common.sh"
 
@@ -195,7 +195,7 @@ Frédéric Recoules <frederic.recoules@cea.fr>
 EOF
 
 cat << EOF > "${DEST_DIR}/LICENSE.md"
-Copyright (c) 2007-2023,
+Copyright (c) 2007-2024,
 Commissariat a l'Énergie Atomique et aux Énergies Alternatives (CEA)
 All rights reserved.
 
@@ -244,12 +244,20 @@ See [INSTALL](INSTALL.md) for installation instructions.
 EOF
 
 cat << EOF > "${DEST_DIR}/CHANGES.md"
-## 0.0.8 (2023-03-08)
+## 0.0.9 (2024-09-13)
+
+- support for NEON instructions in AARCH64
+- handling some new VEX encoded instructions (x86)
+- more systematic branchless semantics
+  (e.g. [#37](https://github.com/binsec/binsec/issues/37))
+- various bug fixes and code improvements
+
+## 0.0.8 (2024-03-08)
 
 - support for \`adcx\`, \`adox\` and \`mulx\` (x86)
 - some bug fixes and code improvements
 
-## 0.0.7 (2023-10-32)
+## 0.0.7 (2023-10-23)
 
 - various bug fixes and code improvements
 
