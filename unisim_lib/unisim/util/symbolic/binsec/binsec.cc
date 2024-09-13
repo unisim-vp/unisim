@@ -364,6 +364,15 @@ namespace binsec {
 
         for (auto const& sink : action_tree->get_sinks())
           {
+
+	    if (AssertFalse const* abort = dynamic_cast<AssertFalse const*>( sink.node ))
+	      {
+		std::ostringstream buffer;
+                abort->GenCode(buffer, vars, tail);
+                tail.prepend( new Statement( buffer.str() ) );
+		continue;
+	      }
+
             Assignment const& assignment = dynamic_cast<Assignment const&>( *sink.node );
 
             for (unsigned idx = 0, end = assignment.SubCount(); idx < end; ++idx)
