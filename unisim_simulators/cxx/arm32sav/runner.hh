@@ -40,7 +40,7 @@
 #include <top_thumb.hh>
 #include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/component/cxx/processor/arm/isa/models.hh>
-#include <unisim/component/cxx/processor/arm/cpu.hh>
+#include <unisim/component/cxx/processor/arm/cpu.tcc>
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
 #include <iosfwd>
 #include <cstdlib>

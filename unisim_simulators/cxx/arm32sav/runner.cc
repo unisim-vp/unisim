@@ -33,7 +33,6 @@
  */
 
 #include <runner.hh>
-#include <unisim/component/cxx/processor/arm/cpu.tcc>
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
 #include <iomanip>
 #include <ostream>

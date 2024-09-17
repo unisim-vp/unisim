@@ -242,6 +242,10 @@ Commands:
 
         Build
 
+  clean [<build>...]
+
+        Clean
+
 Options:
 
   -h, --help
@@ -602,7 +606,7 @@ function config()
 		esac
 		PROP_IDX=$((${PROP_IDX}+1))
 		[ ${PROP_IDX} -le 4 ] || PROP_IDX=0
-	done < <(yq -r '.repositories | to_entries | map(.value.enabled // false, .value.name // "", .value.directory // "", .value.package_dir // "", .value.default // false) | join("\u0000")' "${CONFIG_YAML}" && echo -e '\0')
+	done < <(yq -j '.repositories | to_entries | map(.value.enabled // false, .value.name // "", .value.directory // "", .value.package_dir // "", .value.default // false) | join("\u0000")' "${CONFIG_YAML}" && echo -e -n '\0')
 
 	# Projects
 
@@ -2364,42 +2368,74 @@ EOF
 	history -w "${HISTORY_FILE}"
 }
 
-################################################### build ###########################################################
+################################################ build/clean ########################################################
 
-function build()
+function do_build()
 {
-	if [ $# -eq 0 ]; then
-		warn "Nothing to build"
-		return
-	fi
-	
-	local PATTERN
-	local BUILD_NAME
+	local BUILD_NAME="$1"
 	local BUILD_DIR
 	local BUILD_DIST_DIR
 	local BUILD_PROJECT_NAME
 	local BUILD_COMMAND
+	info "Building \"${BUILD_NAME}\""
+	[ -n "${BUILD_DIRS["${BUILD_NAME}"]+x}" ] || bad "Build \"${BUILD_NAME}\" does not exist"
+	BUILD_DIR="${BUILD_DIRS["${BUILD_NAME}"]}"
+	mkdir -p "${BUILD_DIR}" || die "Can't create build directory \"${BUILD_DIR}\""
+	BUILD_PROJECT_NAME="${BUILD_PROJECT_NAMES["${BUILD_NAME}"]}"
+	BUILD_DIST_DIR="${BUILD_DIST_DIRS["${BUILD_NAME}"]}"
+	( dist "${BUILD_PROJECT_NAME}" "${BUILD_DIST_DIR}" ) || die "While Build \"${BUILD_NAME}\", distribution of Project \"${BUILD_PROJECT_NAME}\" failed"
+	pushd "${BUILD_DIR}" > /dev/null || die "Can't enter directory ${BUILD_DIR}"
+	BUILD_COMMAND="${BUILD_COMMANDS["${BUILD_NAME}"]}"
+	if [ -n "${BUILD_COMMAND}" ]; then
+		debug "Running: ${BUILD_COMMAND}"
+		"${SHELL}" -c "${BUILD_COMMAND}" || die "Build \"${BUILD_NAME}\" failed"
+	fi
+	popd > /dev/null
+	info "Done building \"${BUILD_NAME}\""
+}
+
+function do_clean()
+{
+	local BUILD_NAME="$1"
+	local BUILD_DIR
+	info "Cleaning \"${BUILD_NAME}\""
+	[ -n "${BUILD_DIRS["${BUILD_NAME}"]+x}" ] || bad "Build \"${BUILD_NAME}\" does not exist"
+	BUILD_DIR="${BUILD_DIRS["${BUILD_NAME}"]}"
+	[ ! -d "${BUILD_DIR}" ] || rm -rf "${BUILD_DIR}"
+	BUILD_DIST_DIR="${BUILD_DIST_DIRS["${BUILD_NAME}"]}"
+	[ ! -d "${BUILD_DIST_DIR}" ] || rm -rf "${BUILD_DIST_DIR}"
+	info "Done cleaning \"${BUILD_NAME}\""
+}
+
+function for_each_build()
+{
+	local FUNC="$1"
+	shift
+
+	if [ $# -eq 0 ]; then
+		warn "Nothing to do"
+		return
+	fi
+
+	local PATTERN
+	local BUILD_NAME
 	for PATTERN in "$@"; do
 		for BUILD_NAME in "${BUILD_NAMES[@]}"; do
 			if [[ "${BUILD_NAME}" = ${PATTERN} ]]; then
-				info "Building \"${BUILD_NAME}\""
-				[ -n "${BUILD_DIRS["${BUILD_NAME}"]+x}" ] || bad "Build \"${BUILD_NAME}\" does not exist"
-				BUILD_DIR="${BUILD_DIRS["${BUILD_NAME}"]}"
-				mkdir -p "${BUILD_DIR}" || die "Can't create build directory \"${BUILD_DIR}\""
-				BUILD_PROJECT_NAME="${BUILD_PROJECT_NAMES["${BUILD_NAME}"]}"
-				BUILD_DIST_DIR="${BUILD_DIST_DIRS["${BUILD_NAME}"]}"
-				( dist "${BUILD_PROJECT_NAME}" "${BUILD_DIST_DIR}" ) || die "While Build \"${BUILD_NAME}\", distribution of Project \"${BUILD_PROJECT_NAME}\" failed"
-				pushd "${BUILD_DIR}" > /dev/null || die "Can't enter directory ${BUILD_DIR}"
-				BUILD_COMMAND="${BUILD_COMMANDS["${BUILD_NAME}"]}"
-				if [ -n "${BUILD_COMMAND}" ]; then
-					debug "Running: ${BUILD_COMMAND}"
-					"${SHELL}" -c "${BUILD_COMMAND}" || die "Build \"${BUILD_NAME}\" failed"
-				fi
-				popd > /dev/null
-				info "Done building \"${BUILD_NAME}\""
+				"${FUNC}" "${BUILD_NAME}"
 			fi
 		done
 	done
+}
+
+function build()
+{
+	for_each_build do_build "$@"
+}
+
+function clean()
+{
+	for_each_build do_clean "$@"
 }
 
 #################################################### main ###########################################################
@@ -2466,7 +2502,7 @@ function main()
 	local CMD
 	local PROG_NAME="$(basename "${BASH_SOURCE}")"
 	case "${PROG_NAME}" in
-		gendeps|dist|shell|build)
+		gendeps|dist|shell|build|clean)
 			CMD="${PROG_NAME}"
 			;;
 		*)
@@ -2476,7 +2512,7 @@ function main()
 	esac
 
 	case "${CMD}" in
-		gendeps|dist|shell|build)
+		gendeps|dist|shell|build|clean)
 			"${CMD}" "$@"
 			;;
 		*)
