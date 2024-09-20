@@ -80,7 +80,7 @@ main( int argc, char** argv )
 {
   aarch64::Decoder decoder;
 
-  if (strcmp(argv[1], "file") == 0)
+  if (argc > 1 and strcmp(argv[1], "file") == 0)
     {
       if (argc < 3 or argc > 4)
         { std::cerr << Usage{argv[0]}; return 1; }
