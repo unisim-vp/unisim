@@ -708,7 +708,7 @@ namespace linux_os {
               strncpy(&value.nodename[0],   utsname.nodename.c_str(), sizeof(value.nodename) - 1);
               strncpy(&value.release[0],    utsname.release.c_str(), sizeof(value.release) - 1);
               strncpy(&value.version[0],    utsname.version.c_str(), sizeof(value.version) - 1);
-              strncpy(&value.machine[0],    utsname.machine.c_str(), sizeof(value.machine));
+              strncpy(&value.machine[0],    utsname.machine.c_str(), sizeof(value.machine) - 1);
               strncpy(&value.domainname[0], utsname.domainname.c_str(), sizeof(value.domainname) - 1);
               lin.WriteMemory( buf_addr, (uint8_t *)&value, sizeof(value) );
   
