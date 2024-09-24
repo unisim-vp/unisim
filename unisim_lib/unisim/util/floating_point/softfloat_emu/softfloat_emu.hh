@@ -550,7 +550,7 @@ static inline uint_fast8_t FromFlushToZero( uint_fast8_t ftz )
 	static bool f128_lt_quiet( float128_t a, float128_t b ) { return ARCH_NAME ## _f128_lt_quiet( a, b ); }                                                                                           \
 	static bool f128_isSignalingNaN( float128_t a ) { return ARCH_NAME ## _f128_isSignalingNaN( a ); }
 #else
-#define SOFTFLOAT_EMU_DEF_ARCH_IF_FUNCTIONS_FAST_INT64
+#define SOFTFLOAT_EMU_DEF_ARCH_IF_FUNCTIONS_FAST_INT64( ARCH_NAME )
 #endif
 
 #undef SOFTFLOAT_EMU_DEF_ARCH_IF

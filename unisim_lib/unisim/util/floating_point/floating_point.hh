@@ -275,8 +275,8 @@ inline _Float16 Zeroes( _Float16 a ) { return unisim::util::floating_point::_Zer
 
 inline std::ostream& operator << (std::ostream& stream, _Float16 const& f) { return stream << float(f); }
 inline std::wostream& operator << (std::wostream& stream, _Float16 const& f) { return stream << float(f); }
-inline std::istream& operator << (std::istream& stream, _Float16& f) { float _f; if(stream >> _f) { f = _f; } return stream; }
-inline std::wistream& operator << (std::wistream& stream, _Float16& f) { float _f; if(stream >> _f) { f = _f; } return stream; }
+inline std::istream& operator << (std::istream& stream, _Float16& f) { float _f; if(stream >> _f) { f = _Float16(_f); } return stream; }
+inline std::wistream& operator << (std::wistream& stream, _Float16& f) { float _f; if(stream >> _f) { f = _Float16(_f); } return stream; }
 
 #if !HAVE_STD_NUMERIC_LIMITS_FLOAT16
 // std::numeric_limits trait for _Float16
