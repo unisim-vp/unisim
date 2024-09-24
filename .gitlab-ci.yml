@@ -1,0 +1,217 @@
+image: ubuntu:24.04
+
+stages:
+- build
+
+# Notes:
+# - Variable GITLAB_REPO_ACCESS_TOKEN shall be defined
+
+before_script:
+    # Install build dependencies
+    - apt-get update && apt-get -y install make cmake g++ zlib1g-dev libxml2-dev libedit-dev libsdl1.2-dev libnode-dev gettext-base yq autoconf automake libtool pkg-config libpython3.12-dev python3-distutils-extra opam wget
+
+build_unisim:
+  stage: build
+  script: |
+    # Nodejs pkg-config file
+    cat << EOF > /usr/lib/x86_64-linux-gnu/pkgconfig/nodejs.pc
+    prefix=/usr
+    includedir=\${prefix}/include
+    libdir=\${prefix}/lib/x86_64-linux-gnu
+    
+    Name: nodejs
+    Description: JavaScript Runtime
+    Version: 18.19.1
+    Requires: libuv >= 1.48.0
+    Libs: -L\${libdir} -lnode
+    Cflags: -I\${includedir}/node
+    EOF
+  
+    # SystemC
+    tar xvf ./extra/systemc/systemc-2.3.3.tar.gz
+    pushd systemc-2.3.3
+    mkdir objdir
+    pushd objdir
+    ../configure --prefix="$(realpath "$(pwd)/../install")"
+    make -j $(nproc)
+    make install
+    popd
+    mkdir objdir-posix
+    pushd objdir-posix
+    ../configure --prefix="$(realpath "$(pwd)/../install-posix")" --enable-pthreads
+    make -j $(nproc)
+    make install
+    popd
+    popd
+    
+    # Scml2
+    tar xvf ./extra/systemc/scml-2.3-20151110.tgz
+    pushd scml-2.3
+    mkdir objdir
+    pushd objdir
+    mkdir ../install
+    ../configure --with-systemc="$(realpath "$(pwd)/../../systemc-2.3.3/install")" --prefix="$(realpath "$(pwd)/../install")"
+    pushd src/scml2
+    make scml2.h
+    popd
+    pushd src/scml2_logging
+    make scml2_logging.h
+    popd
+    make -j $(nproc)
+    make install
+    popd
+    mkdir objdir-posix
+    pushd objdir-posix
+    mkdir ../install-posix
+    ../configure --with-systemc="$(realpath "$(pwd)/../../systemc-2.3.3/install-posix")" --prefix="$(realpath "$(pwd)/../install-posix")"
+    pushd src/scml2
+    make scml2.h
+    popd
+    pushd src/scml2_logging
+    make scml2_logging.h
+    popd
+    make -j $(nproc)
+    make install
+    popd
+    popd
+    
+    # OpenRTI
+    wget -O OpenRTI-0.10.0.tar.bz2 https://sourceforge.net/projects/openrti/files/OpenRTI-0.10.0.tar.bz2/download
+    tar xvf OpenRTI-0.10.0.tar.bz2
+    pushd OpenRTI-0.10.0
+    mkdir build
+    pushd build
+    cmake -DCMAKE_INSTALL_PREFIX="$(realpath "$(pwd)/../install")" ..
+    cmake --build . --config Release --parallel $(nproc)
+    cmake --build . --config Release --target install
+    popd
+    popd
+    
+    # softfloat-emu
+    git clone "https://oauth2:${GITLAB_REPO_ACCESS_TOKEN}@git.frama-c.com/unisim-vp/softfloat-emu.git"
+    pushd softfloat-emu
+    ./bootstrap.sh
+    mkdir build
+    pushd build
+    ../configure --prefix="$(realpath "$(pwd)/../install")" --enable-builtin-clz --enable-round-odd --enable-fast-int64 --enable-fast-div32to16 --enable-fast-div64to32 --with-inline-level=5
+    make -j $(nproc)
+    make install
+    popd
+    popd
+    
+    # Opam & Dune
+    opam init --disable-sandboxing --compiler 4.14.1
+    eval $(opam env)
+    opam install -y dune
+    
+    # Create Unisimatic configuration file
+    (
+    cat << EOF
+    repositories:
+      - name: unisim_lib
+        directory: $(pwd)/unisim_lib
+        package_dir: ../package
+        enabled: true
+        default: true
+      - name: genisslib
+        directory: $(pwd)/unisim_tools/genisslib
+        package_dir: package
+        enabled: true
+      - name: aarch32dba
+        directory: $(pwd)/unisim_simulators/cxx/aarch32dba
+        package_dir: package
+        enabled: true
+      - name: aarch64dba
+        directory: $(pwd)/unisim_simulators/cxx/aarch64dba
+        package_dir: package
+        enabled: true
+      - name: ppc64dba
+        directory: $(pwd)/unisim_simulators/cxx/ppc64dba
+        package_dir: package
+        enabled: true
+      - name: amd64dba
+        directory: $(pwd)/unisim_simulators/cxx/amd64dba
+        package_dir: package
+        enabled: true
+    projects:
+    EOF
+    for FILE in $(find unisim_simulators -name "distrib.conf"); do
+      NAME="$(grep '^package ' "${FILE}" | cut -f 2 -d ' ')"
+    cat << EOF
+      - name: ${NAME}
+        directory: $(dirname "$(realpath "${FILE}")")
+        enabled: true
+    EOF
+    done
+    cat << EOF
+    builds:
+    EOF
+    for FILE in $(find unisim_simulators -name "distrib.conf"); do
+      if [[ "${FILE}" = */archisec/distrib.conf ]]; then
+        cat << EOF
+      - name: unisim_archisec
+        project: unisim_archisec
+        build_dir: $(pwd)/workspace/unisim_archisec
+        dist_dir: $(pwd)/workspace/unisim_archisec
+        enabled: true
+        command: |
+          dune build @install
+    EOF
+      else
+        for FLAVOR in debug release; do
+          NAME="$(grep '^package ' "${FILE}" | cut -f 2 -d ' ')"
+          OPTIONS=''
+          if [[ "${FILE}" = */tlm* ]]; then
+            case "${FLAVOR}" in
+              debug)
+                OPTIONS+=" --with-systemc=\"$(pwd)/systemc-2.3.3/install-posix\""
+                ;;
+              release)
+                OPTIONS+=" --with-systemc=\"$(pwd)/systemc-2.3.3/install\""
+                ;;
+            esac
+          fi
+          if grep -qs 'scml2' "${FILE}"; then
+            case "${FLAVOR}" in
+            debug)
+              OPTIONS+=" --with-scml2=\"$(pwd)/scml-2.3/install-posix\""
+              ;;
+            release)
+              OPTIONS+=" --with-scml2=\"$(pwd)/scml-2.3/install\""
+              ;;
+            esac
+          fi
+          if grep -qs 'hla' "${FILE}"; then
+            OPTIONS+=" --with-hla-rti1516e=\"$(pwd)/OpenRTI-0.10.0/install\""
+          fi
+          if [[ "${NAME}" = *-arm64vp ]] || [[ "${NAME}" = *-arm64emu ]]; then
+            OPTIONS+=" --with-softfloat-emu=\"$(pwd)/softfloat-emu/install\""
+          fi
+          case "${FLAVOR}" in
+            debug)
+              OPTIONS+=" 'CXXFLAGS=-O0 -g -Wall -Wno-deprecated -fdiagnostics-color=always'"
+              ;;
+            release)
+              OPTIONS+=" 'CXXFLAGS=-O3 -Wall -Wno-deprecated -fdiagnostics-color=always'"
+              ;;
+          esac
+          cat << EOF
+      - name: ${NAME}-${FLAVOR}
+        project: ${NAME}
+        build_dir: $(pwd)/workspace/${NAME}/build/${FLAVOR}
+        dist_dir: $(pwd)/workspace/${NAME}/source
+        enabled: true
+        command: |
+          INSTALL_DIR="\$(pwd)/../../install/${FLAVOR}" &&
+          mkdir -p "\${INSTALL_DIR}" &&
+          ../../source/configure --prefix="\${INSTALL_DIR}"${OPTIONS} &&
+          make -j \$(nproc) &&
+          make install
+    EOF
+        done
+      fi
+    done
+    ) > config.yaml
+    
+    # build everything with unisimatic
+    ./unisim_tools/unisimatic/unisimatic --config=config.yaml build '*'
