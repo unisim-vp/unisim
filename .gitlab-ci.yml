@@ -16,7 +16,12 @@ before_script:
 
 build_unisim:
   stage: build
+  artifacts:
+    expire_in: 2 day
+    paths:
+      - build.log
   script: |
+    (
     # Nodejs pkg-config file
     cat << EOF > /usr/lib/x86_64-linux-gnu/pkgconfig/nodejs.pc
     prefix=/usr
@@ -225,3 +230,4 @@ build_unisim:
     
     # clean everything with unisimatic
     ./unisim_tools/unisimatic/unisimatic --config=config.yaml clean '*'
+    ) 2>&1 | tee build.log
