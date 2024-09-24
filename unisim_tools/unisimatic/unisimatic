@@ -2387,7 +2387,7 @@ function do_build()
 	pushd "${BUILD_DIR}" > /dev/null || die "Can't enter directory ${BUILD_DIR}"
 	BUILD_COMMAND="${BUILD_COMMANDS["${BUILD_NAME}"]}"
 	if [ -n "${BUILD_COMMAND}" ]; then
-		debug "Running: ${BUILD_COMMAND}"
+		info "Running: ${BUILD_COMMAND}"
 		"${SHELL}" -c "${BUILD_COMMAND}" || die "Build \"${BUILD_NAME}\" failed"
 	fi
 	popd > /dev/null
