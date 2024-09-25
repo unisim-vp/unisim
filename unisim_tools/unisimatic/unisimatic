@@ -1105,7 +1105,6 @@ function resolve_pkg_dep_quirks()
 						## .isa -> .hh .tcc .cc
 						local ISA_FILE="$(sed -e 's/\.hh$/\.isa/g' -e 's/\.tcc/\.isa/g' <<< "${INCLUDE_DEP}")"
 						if resolve_file "${OWN_REPO_DIR}" "${ISA_FILE}" &> /dev/null; then
-							resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" 'am/isa_to_cpp' >> "${PKG_DEPS_TXT}"
 							local PKG_DEP="$(dirname "${INCLUDE_DEP}")"
 							local PKG_DEP_REPO_NAME
 							PKG_DEP_REPO_NAME="$(resolve_pkg_dep_repository "${OWN_REPO_NAME}" "${PKG_DEP}")"
@@ -1122,8 +1121,10 @@ function resolve_pkg_dep_quirks()
 									built "${PKG_DEP_REPO_NAME}" "${PKG_DEP}" 'header' "${BASENAME}.hh"
 								fi
 								if [ "${FOUND_TCC}" = 'yes' ]; then
+									resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" 'am/isa_to_hh_tcc' >> "${PKG_DEPS_TXT}"
 									built "${PKG_DEP_REPO_NAME}" "${PKG_DEP}" 'template' "${BASENAME}.tcc"
 								elif [ "${FOUND_HH}" = 'yes' ]; then
+									resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" 'am/isa_to_hh_cc' >> "${PKG_DEPS_TXT}"
 									built "${PKG_DEP_REPO_NAME}" "${PKG_DEP}" 'source' "${BASENAME}.cc"
 								fi
 								RESOLVED='yes'
@@ -1733,13 +1734,12 @@ function use()
 			USE_REPOSITORY_NAME="$1"
 			local REPO_DIST_SUBDIR
 			if [ $# -ge 2 ]; then
-				[ -n "${DIST_DIR+x}" ] || die "use: distribution directory is undefined"
 				local SUBDIR="$2"
-				pushd "${DIST_DIR}" > /dev/null || die "Can't enter directory ${DIST_DIR}"
-				REPO_DIST_SUBDIR="$(realpath --relative-to="${DIST_DIR}" "${SUBDIR}")"
+				REPO_DIST_SUBDIR="$(realpath -m --relative-to=. "${SUBDIR}")"
 				[ $? -eq 0 ] || die "${USE_SUBDIR} is invalid"
-				[[ "${REPO_DIST_SUBDIR}" != '../'* ]] || die "${SUBDIR} is not in distribution directory"
-				popd > /dev/null
+				if [[ "${REPO_DIST_SUBDIR}" = '../'* ]]; then
+					die "${SUBDIR} is not in distribution directory"
+				fi
 			else
 				REPO_DIST_SUBDIR='.'
 			fi
@@ -1870,7 +1870,7 @@ function list_pkg()
 						
 						if [ "${MODE}" = 'files' ] && [ -n "${REPOSITORY_DIST_SUBDIR["${REPO_NAME}"]+x}" ]; then
 							local REPO_DIST_SUBDIR="${REPOSITORY_DIST_SUBDIR["${REPO_NAME}"]}"
-							[[ "${REPO_DIST_SUBDIR}" != './'* ]] || ITEM="${REPO_DIST_SUBDIR}/${ITEM}"
+							[[ "${REPO_DIST_SUBDIR}" = '.' ]] || ITEM="${REPO_DIST_SUBDIR}/${ITEM}"
 						fi
 					fi
 					echo -n "${SEP}${ITEM}"
@@ -1934,7 +1934,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AM_INIT_AUTOMAKE([subdir-objects tar-pax no-dist-built-sources])
 AC_PATH_PROGS(SH, sh)
 AC_PROG_CXX
 AC_PROG_INSTALL
@@ -2247,7 +2247,7 @@ function build_configure()
 			CMD+=" && autoheader"
 		fi
 		CMD+=" && automake -ac"
-		debug "Running: ${CMD}"
+		info "Running: ${CMD}"
 		if ! ${SHELL} -c "${CMD}" 2>&1 | debug; then
 			rm -f "${PACKAGE_CONFIGURE}"
 			local ERR_MSG='Failed building configure.'
@@ -2348,7 +2348,7 @@ function shell()
 	local HISTORY_FILE="${HOME}/.config/${APP_NAME}/history"
 	history -r "${HISTORY_FILE}"
 	
-	project test_project
+	package test_project
 	version 1.0.0
 	full_name 'My test project'
 	author 'Foo Bar <foo.bar@example.com>'
@@ -2363,6 +2363,7 @@ EOF
 	while read -e -p "${APP_NAME}> " CMD; do
 		history -s "${CMD}"
 		eval "${CMD}"
+		echo
 	done
 	
 	history -w "${HISTORY_FILE}"
@@ -2412,20 +2413,22 @@ function for_each_build()
 	local FUNC="$1"
 	shift
 
-	if [ $# -eq 0 ]; then
-		warn "Nothing to do"
-		return
-	fi
+	local MATCH='no'
 
 	local PATTERN
 	local BUILD_NAME
 	for PATTERN in "$@"; do
 		for BUILD_NAME in "${BUILD_NAMES[@]}"; do
 			if [[ "${BUILD_NAME}" = ${PATTERN} ]]; then
+				MATCH='yes'
 				"${FUNC}" "${BUILD_NAME}"
 			fi
 		done
 	done
+	
+	if [ "${MATCH}" != 'yes' ]; then
+		warn "Nothing to do"
+	fi
 }
 
 function build()

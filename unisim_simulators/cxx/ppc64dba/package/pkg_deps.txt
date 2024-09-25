@@ -1,4 +1,4 @@
-unisim_lib am/isa_to_cpp
+unisim_lib am/isa_to_hh_cc
 unisim_lib libc/inttypes
 unisim_lib std/cstdlib
 unisim_lib std/iomanip

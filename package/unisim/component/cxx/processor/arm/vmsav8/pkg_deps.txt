@@ -1,4 +1,4 @@
-am/isa_to_cpp
+am/isa_to_hh_tcc
 libc/inttypes
 m4/float16
 std/iomanip

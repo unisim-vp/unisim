@@ -1,4 +1,4 @@
-am/isa_to_cpp
+am/isa_to_hh_tcc
 libc/stdio
 libc/stdlib
 std/iosfwd

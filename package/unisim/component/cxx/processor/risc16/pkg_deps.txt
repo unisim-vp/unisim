@@ -1,4 +1,4 @@
-am/isa_to_cpp
+am/isa_to_hh_cc
 libc/inttypes
 libc/stdio
 libc/stdlib

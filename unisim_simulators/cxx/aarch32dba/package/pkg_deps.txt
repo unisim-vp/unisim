@@ -1,4 +1,4 @@
-unisim_lib am/isa_to_cpp
+unisim_lib am/isa_to_hh_tcc
 unisim_lib libc/inttypes
 unisim_lib libc/stdint
 unisim_lib std/algorithm

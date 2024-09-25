@@ -12,7 +12,7 @@ before_script:
   - if [ -z "${GITLAB_REPO_ACCESS_TOKEN}" ]; then echo "ERROR! GITLAB_REPO_ACCESS_TOKEN is unset"; exit 1; fi
   - if [ -z "${NPROC}" ]; then echo "ERROR! NPROC is unset"; exit 1; fi
   # Install build dependencies
-  - apt-get update && apt-get -y install make cmake g++ zlib1g-dev libxml2-dev libedit-dev libsdl1.2-dev libnode-dev gettext-base yq autoconf automake libtool pkg-config libpython3.12-dev python3-distutils-extra opam wget
+  - apt-get update && apt-get -y install make cmake g++ zlib1g-dev libxml2-dev libedit-dev libsdl1.2-dev libnode-dev gettext-base yq autoconf automake libtool autoconf-archive pkg-config libpython3.12-dev python3-distutils-extra opam wget tar gzip
 
 build_unisim:
   stage: build
@@ -20,6 +20,7 @@ build_unisim:
     expire_in: 2 day
     paths:
       - build.log
+      - unisim-*.tar.gz
   script: |
     (
     # Nodejs pkg-config file
@@ -35,7 +36,7 @@ build_unisim:
     Libs: -L\${libdir} -lnode
     Cflags: -I\${includedir}/node
     EOF
-  
+    
     # SystemC
     tar xvf ./extra/systemc/systemc-2.3.3.tar.gz
     pushd systemc-2.3.3
@@ -171,6 +172,7 @@ build_unisim:
       else
         for FLAVOR in debug release; do
           NAME="$(grep '^package ' "${FILE}" | cut -f 2 -d ' ')"
+          VERSION="$(grep '^version ' "${FILE}" | cut -f 2 -d ' ')"
           OPTIONS=''
           if [[ "${FILE}" = */tlm* ]]; then
             case "${FLAVOR}" in
@@ -206,7 +208,8 @@ build_unisim:
               OPTIONS+=" 'CXXFLAGS=-O3 -Wall -Wno-deprecated -Woverloaded-virtual=0 -fdiagnostics-color=always'"
               ;;
           esac
-          cat << EOF
+          if [ "${FLAVOR}" = 'debug' ]; then
+            cat << EOF
       - name: ${NAME}-${FLAVOR}
         project: ${NAME}
         build_dir: $(pwd)/workspace/${NAME}/build/${FLAVOR}
@@ -216,10 +219,28 @@ build_unisim:
           INSTALL_DIR="\$(pwd)/../../install/${FLAVOR}" &&
           mkdir -p "\${INSTALL_DIR}" &&
           ../../source/configure --prefix="\${INSTALL_DIR}"${OPTIONS} &&
-          make -j \${NPROC} &&
+          make dist-gzip &&
+          mv ${NAME}-${VERSION}.tar.gz $(pwd)/. &&
+          make -j ${NPROC} &&
           make install &&
           make clean
     EOF
+          else
+            cat << EOF
+      - name: ${NAME}-${FLAVOR}
+        project: ${NAME}
+        build_dir: $(pwd)/workspace/${NAME}/build/${FLAVOR}
+        dist_dir: $(pwd)/workspace/${NAME}/source
+        enabled: true
+        command: |
+          INSTALL_DIR="\$(pwd)/../../install/${FLAVOR}" &&
+          mkdir -p "\${INSTALL_DIR}" &&
+          ../../source/configure --prefix="\${INSTALL_DIR}"${OPTIONS} &&
+          make -j ${NPROC} &&
+          make install &&
+          make clean
+    EOF
+          fi
         done
       fi
     done

@@ -1,9 +1,0 @@
-# Add rules and recipes for GenISSLib generated instruction set decoders
-%.hh %.cc: %.isa
-	$(mkdir_p) $(@D)
-	$(PYTHON_BIN) $(top_srcdir)/$(genisslib_SUBDIR)/genisslib.py -o $(basename $@) -w 8 -I $(top_srcdir) -I $(top_srcdir)/$(@D) -I $(top_builddir) -I $(top_builddir)/$(@D) $<
-
-%.hh %.tcc: %.isa
-	$(mkdir_p) $(@D)
-	$(PYTHON_BIN) $(top_srcdir)/$(genisslib_SUBDIR)/genisslib.py -o $(basename $@) -w 8 -I $(top_srcdir) -I $(top_srcdir)/$(@D) -I $(top_builddir) -I $(top_builddir)/$(@D) $<
-
