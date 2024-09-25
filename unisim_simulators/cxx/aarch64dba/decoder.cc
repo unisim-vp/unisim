@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2024,
+ *  Copyright (c) 2009,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -79,11 +79,12 @@ struct Processor
   : ProcTypes
   , unisim::component::cxx::processor::arm::regs64::CPU<Processor, ProcTypes>
 {
-
   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
   typedef unisim::util::symbolic::ValueType            ValueType;
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
+
+  struct CantDoThat {};
 
   struct NeonValue
   {
@@ -252,9 +253,8 @@ struct Processor
 
   //   void ClearHighV( unsigned reg, unsigned bytes ) { for (unsigned idx = bytes; idx < VUnion::BYTECOUNT; idx+=1 ) vector_data[reg][idx] = 0; }
 
-   U8 GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob)
+  U8 GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob)
   {
-    struct CantDoThat {};
     throw CantDoThat();
     return U8();
   }
@@ -268,48 +268,132 @@ struct Processor
 
   struct SysReg
   {
-    enum {
-      DCZID_EL0 = 0b1101100000000111
-    };
-
-    void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu, U64 value) const  { throw 0; }
-    U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu) const  {
-      uint16_t code =
-	((op0 << 14) | (op1 << 11) | (crn << 7) | (crm << 3) | (op2 << 0));
-      switch (code) {
-      case DCZID_EL0:
-	return U64(0b10000); /* DC ZVA instruction is prohibited */
-      default:
-	throw 0;
-      }
-      return U64();
-    }
-    void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const {
-      uint16_t code =
-	((op0 << 14) | (op1 << 11) | (crn << 7) | (crm << 3) | (op2 << 0));
-      switch (code) {
-      case DCZID_EL0:
-	sink << "mrs\t" << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(rt) << ", DCZID_EL0";
-	break;
-      default:
-	throw 0;
-      }
-    }
-    void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const { throw 0; }
+    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu, U64 value) const = 0;
+    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu) const = 0;
+    virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const = 0;
+    virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const = 0;
   };
+
+  static constexpr uint32_t sysencode(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2)
+  { return ((op0 << 16) | (op1 << 12) | (crn << 8) | (crm << 4) | (op2 << 0)); }
 
   static SysReg const* GetSystemRegister(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2)
   {
-    static SysReg sr; return &sr;
+    struct BaseSysReg : public SysReg
+    {
+      struct Encoding { unsigned op0 : 4; unsigned op1 : 4; unsigned crn : 4; unsigned crm : 4; unsigned op2 : 4; };
+      virtual void Name(Encoding, std::ostream& sink) const {}
+      virtual void Describe(Encoding, std::ostream& sink) const {}
+      virtual char const* ReadOperation() const { return "mrs"; }
+      virtual char const* WriteOperation() const { return "msr"; }
+      void Describe(Encoding e, char const* prefix, std::ostream& sink) const
+      {
+        std::ostringstream buf;
+        this->Describe(e, buf);
+        auto && s = buf.str();
+        if (not s.size())
+          return;
+        sink << prefix << s;
+      }
+
+      void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
+      {
+        Encoding e{op0, op1, crn, crm, op2};
+        sink << ReadOperation() << '\t' << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(rt) << ", ";
+        Name(e, sink);
+        Describe(e, "\t; ", sink);
+      }
+
+      void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
+      {
+        Encoding e{op0, op1, crn, crm, op2};
+        sink << WriteOperation() << '\t';
+        Name(e, sink);
+        sink << ", " << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(rt);
+        Describe(e, "\t; ", sink);
+      }
+
+      void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu, U64 value) const override
+      {
+        std::cerr << "error : undefined system register write in:\n" << std::hex << cpu.current_instruction_address << std::dec << ":\t";
+        DisasmWrite(op0, op1, crn, crm, op2, rt, std::cerr);
+        std::cerr << "\n";
+        throw Processor::CantDoThat();
+      }
+
+      U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu) const override
+      {
+        std::cerr << "error : undefined system register read in:\n" << std::hex << cpu.current_instruction_address << std::dec << ":\t";
+        DisasmRead(op0, op1, crn, crm, op2, rt, std::cerr);
+        std::cerr << "\n";
+        throw Processor::CantDoThat();
+        return U64();
+      }
+    };
+
+    switch (sysencode( op0, op1, crn, crm, op2 ))
+    {
+    case sysencode(0b11,0b011,0b0000,0b0000,0b111): // 2.23: DCZID_EL0, Data Cache Zero ID register
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "DCZID_EL0"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "Data Cache Zero ID register"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu) const override
+          {
+            // return U64((not unisim::component::cxx::processor::arm::vmsav8::sctlr::DZE.Get(cpu.el1.SCTLR)) << 4 | cpu.ZID);
+            return U64(0b10000); /* DC ZVA instruction is prohibited */
+          }
+        } x; return &x;
+      } break;
+
+    }
+
+    static struct UnknownSysReg : public BaseSysReg
+    {
+      void fields(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink) const
+      {
+        sink << "op0=" << unsigned(op0) << ", op1=" << unsigned(op1) << ", crn=" << unsigned(crn) << ", crm=" << unsigned(crm) << ", op2=" << unsigned(op2);
+      }
+      virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
+      {
+        sink << "sysl\t" << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(rt) << ", <unknown>\t; ";
+        fields(op0, op1, crn, crm, op2, sink);
+      }
+      virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
+      {
+        sink << "sys\t<unknown>, " << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(rt) << "\t; ";
+        fields(op0, op1, crn, crm, op2, sink);
+      }
+      virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu, U64 value) const override
+      {
+        fields(op0, op1, crn, crm, op2, std::cerr << std::hex << cpu.current_instruction_address << ": unimplemented, cannot write " << std::dec);
+        std::cerr << std::endl;
+        throw CantDoThat();
+      }
+      virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu) const override
+      {
+        fields(op0, op1, crn, crm, op2, std::cerr << std::hex << cpu.current_instruction_address << ": unimplemented, cannot read " << std::dec);
+        std::cerr << std::endl;
+        throw CantDoThat();
+        return U64();
+      }
+    } err;
+
+    err.fields(op0, op1, crn, crm, op2, std::cerr << "Unknown system register: ");
+    std::cerr << std::endl;
+    return &err;
   }
 
-  void        CheckSystemAccess( uint8_t op1 ) {
-    switch (op1) {
-    case 0b011:
-      break;
-    default:
-      throw 0;
-    }}
+  void CheckSystemAccess( uint8_t op1 )
+  {
+    switch (op1)
+      {
+      case 0b011:
+        break;
+      default:
+        throw CantDoThat();
+      }
+  }
 
   //   =====================================================================
   //   =                      Control Transfer methods                     =
@@ -322,10 +406,10 @@ struct Processor
     branch_type = bt;
   }
 
-  void CallSupervisor( uint32_t imm ) { throw 0; }
-  void CallHypervisor( uint32_t imm ) { throw 0; }
-  void SoftwareBreakpoint( uint32_t imm ) { throw 0; }
-  void ExceptionReturn() { throw 0; }
+  void CallSupervisor( uint32_t imm ) { throw CantDoThat(); }
+  void CallHypervisor( uint32_t imm ) { throw CantDoThat(); }
+  void SoftwareBreakpoint( uint32_t imm ) { throw CantDoThat(); }
+  void ExceptionReturn() { throw CantDoThat(); }
 
   //   =====================================================================
   //   =                       Memory access methods                       =
@@ -351,11 +435,11 @@ struct Processor
   void MemWriteUnprivileged16(U64 addr, U16 value) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, value.expr, 2, 0, false ) ); }
   void MemWriteUnprivileged8 (U64 addr, U8  value) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, value.expr, 1, 0, false ) ); }
 
-  void ClearExclusiveLocal() { throw 0; }
-  void SetExclusiveMonitors( U64, unsigned size ) { throw 0; }
-  bool ExclusiveMonitorsPass( U64 addr, unsigned size ) { throw 0; }
+  void ClearExclusiveLocal() { throw CantDoThat(); }
+  void SetExclusiveMonitors( U64, unsigned size ) { throw CantDoThat(); }
+  bool ExclusiveMonitorsPass( U64 addr, unsigned size ) { throw CantDoThat(); }
 
-  void PrefetchMemory(unsigned, U64) { throw 0; }
+  void PrefetchMemory(unsigned, U64) { throw CantDoThat(); }
   void CheckSPAlignment(U64) {}
 
   //   =====================================================================
