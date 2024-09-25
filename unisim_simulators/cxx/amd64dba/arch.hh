@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2023,
+ *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -538,26 +538,26 @@ struct Processor : public ProcessorBase
     virtual int GenCode(std::ostream& sink, unisim::util::symbolic::binsec::Variables& vars, unisim::util::symbolic::binsec::Point& head ) const override
     {
       for (int i = 0; i < elemcount - 1; i += 1) {
-	sink << "(if";
-	ASExprNode::GenerateCode( GetSub(elemcount), sink, vars, head );
-	sink << " = "
-	     << unisim::util::symbolic::binsec::dbx(traits::BITSIZE/8, i)
-	     << " then ";
-	ASExprNode::GenerateCode( GetSub(i), sink, vars, head );
-	sink << " else ";
+        sink << "(if";
+        ASExprNode::GenerateCode( GetSub(elemcount), sink, vars, head );
+        sink << " = "
+             << unisim::util::symbolic::binsec::dbx(traits::BITSIZE/8, i)
+             << " then ";
+        ASExprNode::GenerateCode( GetSub(i), sink, vars, head );
+        sink << " else ";
       }
       ASExprNode::GenerateCode( GetSub(elemcount - 1), sink, vars, head );
       for (int i = 0; i < elemcount - 1; i += 1) {
-	sink << ')';
+        sink << ')';
       }
       // sink << "((";
       // for (int i = elemcount - 1; 0 < i; i -= 1) {
-      // 	ASExprNode::GenerateCode( GetSub(i), vars, bloc, sink );
-      // 	sink << " :: ";
+      //         ASExprNode::GenerateCode( GetSub(i), vars, bloc, sink );
+      //         sink << " :: ";
       // }
       // ASExprNode::GenerateCode( GetSub(0), vars, bloc, sink );
       // sink << ") >>u (" << traits::BITSIZE
-      // 	   << '<' << GetVSize() << "> * (extu ";
+      //            << '<' << GetVSize() << "> * (extu ";
       // ASExprNode::GenerateCode( GetSub(elemcount), vars, bloc, sink );
       // sink << ' ' << GetVSize() << "))){0," << traits::BITSIZE - 1 << '}';
       return traits::BITSIZE;
@@ -665,43 +665,43 @@ public:
   void _DE()  { abort = true; }
 
   void xsave(unisim::component::cxx::processor::intel::XSaveMode mode,
-	     bool is64, u64_t bv, RMOp const& rmop) {
+             bool is64, u64_t bv, RMOp const& rmop) {
     switch (mode.code) {
     default:
       throw std::logic_error( "xsave unkwown save mode" );
     case unisim::component::cxx::processor::intel::XSaveMode::BASE:
     case unisim::component::cxx::processor::intel::XSaveMode::C:
       {
-	if (!rmop.ismem())
-	  throw std::logic_error( "xsave requires a memory operand" );
-	unsigned seg = rmop->segment;
-	addr_t area = rmop->effective_address( *this );
-	if (Test( area & addr_t( 0b111111 ) )) abort = true;
-	/* Static XCR0 version */
-	u32_t sse = u32_t( 0b00000010 );
-	u32_t avx = u32_t( MODE::is64() ? 0b00000100 : 0b00000000 );
-	u32_t request = regread( GOd(), 0 );
-	u64_t components = u64_t( request & ( sse | avx ) );
-	memwrite<64>( seg, area + addr_t( 512 ), components );
-	if (mode.code == unisim::component::cxx::processor::intel::XSaveMode::C)
-	  memwrite<64>( seg, area + addr_t( 520 ),
-			components | u64_t( 1L << 63 ) );
-	else
-	  memwrite<64>( seg, area + addr_t(520), u64_t( 0 ) );
-	unsigned sse_size = XMM::size(), avx_size = YMM::size();
-	if (Test( request & sse ) )
-	  for (unsigned r = 0; r < VREGCOUNT; r += 1)
-	    vmm_memwrite( seg,
-			  area + addr_t(160) + addr_t(r * sse_size / 8),
-			    MODE::is64() ?
-			    vmm_read( YMM(), r, 0, u128_t() ) :
-			    vmm_read( XMM(), r, 0, u128_t() ) );
-	if (Test( request & avx ))
-	  for (unsigned r = 0; r < VREGCOUNT; r += 1)
-	    vmm_memwrite( seg,
-			  area + addr_t(576) +
-			  addr_t(r * (avx_size - sse_size) / 8),
-			  vmm_read( YMM(), r, 1, u128_t() ) );
+        if (!rmop.ismem())
+          throw std::logic_error( "xsave requires a memory operand" );
+        unsigned seg = rmop->segment;
+        addr_t area = rmop->effective_address( *this );
+        if (Test( area & addr_t( 0b111111 ) )) abort = true;
+        /* Static XCR0 version */
+        u32_t sse = u32_t( 0b00000010 );
+        u32_t avx = u32_t( MODE::is64() ? 0b00000100 : 0b00000000 );
+        u32_t request = regread( GOd(), 0 );
+        u64_t components = u64_t( request & ( sse | avx ) );
+        memwrite<64>( seg, area + addr_t( 512 ), components );
+        if (mode.code == unisim::component::cxx::processor::intel::XSaveMode::C)
+          memwrite<64>( seg, area + addr_t( 520 ),
+                        components | u64_t( 1L << 63 ) );
+        else
+          memwrite<64>( seg, area + addr_t(520), u64_t( 0 ) );
+        unsigned sse_size = XMM::size(), avx_size = YMM::size();
+        if (Test( request & sse ) )
+          for (unsigned r = 0; r < VREGCOUNT; r += 1)
+            vmm_memwrite( seg,
+                          area + addr_t(160) + addr_t(r * sse_size / 8),
+                            MODE::is64() ?
+                            vmm_read( YMM(), r, 0, u128_t() ) :
+                            vmm_read( XMM(), r, 0, u128_t() ) );
+        if (Test( request & avx ))
+          for (unsigned r = 0; r < VREGCOUNT; r += 1)
+            vmm_memwrite( seg,
+                          area + addr_t(576) +
+                          addr_t(r * (avx_size - sse_size) / 8),
+                          vmm_read( YMM(), r, 1, u128_t() ) );
       }
       break;
     case unisim::component::cxx::processor::intel::XSaveMode::OPT:
@@ -710,39 +710,39 @@ public:
     }
   }
   void xrstor(unisim::component::cxx::processor::intel::XSaveMode mode,
-	      bool is64, u64_t bv, RMOp const& rmop) {
+              bool is64, u64_t bv, RMOp const& rmop) {
     switch (mode.code) {
     default:
       throw std::logic_error( "xrstor unkwown save mode" );
     case unisim::component::cxx::processor::intel::XSaveMode::BASE:
       {
-	if (!rmop.ismem())
-	  throw std::logic_error( "xrstor requires a memory operand" );
-	unsigned seg = rmop->segment;
-	addr_t area = rmop->effective_address( *this );
-	if (Test( area & addr_t( 0b111111 ) )) abort = true;
-	/* Static XCR0 version */
-	u32_t sse = u32_t( 0b00000010 );
-	u32_t avx = u32_t( MODE::is64() ? 0b00000100 : 0b00000000 );
-	u32_t request = regread( GOd(), 0 );
-	u32_t components = memread<32>( seg, area + addr_t( 512 ) );
-	unsigned sse_size = XMM::size(), avx_size = YMM::size();
-	if (Test( request & components & sse ) )
-	  for (unsigned r = 0; r < VREGCOUNT; r += 1) {
-	    u128_t data = vmm_memread( seg,
-				       area + addr_t(160) +
-				       addr_t(r * sse_size / 8),
-				       u128_t() );
-	    if (MODE::is64()) vmm_write( YMM(), r, 0, data );
-	    else vmm_write( XMM(), r, 0, data );
-	  }
-	if (Test( request & components & avx ))
-	  for (unsigned r = 0; r < VREGCOUNT; r += 1)
-	    vmm_write( YMM(), r, 1,
-		       vmm_memread( seg,
-				    area + addr_t(576) +
-				    addr_t(r * (avx_size - sse_size) / 8),
-				    u128_t()) );
+        if (!rmop.ismem())
+          throw std::logic_error( "xrstor requires a memory operand" );
+        unsigned seg = rmop->segment;
+        addr_t area = rmop->effective_address( *this );
+        if (Test( area & addr_t( 0b111111 ) )) abort = true;
+        /* Static XCR0 version */
+        u32_t sse = u32_t( 0b00000010 );
+        u32_t avx = u32_t( MODE::is64() ? 0b00000100 : 0b00000000 );
+        u32_t request = regread( GOd(), 0 );
+        u32_t components = memread<32>( seg, area + addr_t( 512 ) );
+        unsigned sse_size = XMM::size(), avx_size = YMM::size();
+        if (Test( request & components & sse ) )
+          for (unsigned r = 0; r < VREGCOUNT; r += 1) {
+            u128_t data = vmm_memread( seg,
+                                       area + addr_t(160) +
+                                       addr_t(r * sse_size / 8),
+                                       u128_t() );
+            if (MODE::is64()) vmm_write( YMM(), r, 0, data );
+            else vmm_write( XMM(), r, 0, data );
+          }
+        if (Test( request & components & avx ))
+          for (unsigned r = 0; r < VREGCOUNT; r += 1)
+            vmm_write( YMM(), r, 1,
+                       vmm_memread( seg,
+                                    area + addr_t(576) +
+                                    addr_t(r * (avx_size - sse_size) / 8),
+                                    u128_t()) );
       }
       break;
     case unisim::component::cxx::processor::intel::XSaveMode::S:
@@ -944,7 +944,7 @@ Processor<MODE>::close( Processor<MODE> const& ref )
   if (next_insn_mode == ipcall)
     path->add_sink( new unisim::util::symbolic::binsec::Call<nat_addr_t>( next_insn_addr.expr, return_address ) );
   else if (next_insn_mode == ipret)
-    path->add_sink( new unisim::util::symbolic::binsec::Ret<nat_addr_t>( next_insn_addr.expr ) );
+    path->add_sink( new unisim::util::symbolic::binsec::Ret( next_insn_addr.expr ) );
   else
     path->add_sink( new unisim::util::symbolic::binsec::Branch( next_insn_addr.expr ) );
 

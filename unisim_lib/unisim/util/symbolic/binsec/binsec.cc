@@ -364,30 +364,21 @@ namespace binsec {
 
         for (auto const& sink : action_tree->get_sinks())
           {
+            SideEffect const& side_effect = dynamic_cast<SideEffect const&>( *sink.node );
 
-	    if (AssertFalse const* abort = dynamic_cast<AssertFalse const*>( sink.node ))
-	      {
-		std::ostringstream buffer;
-                abort->GenCode(buffer, vars, tail);
-                tail.prepend( new Statement( buffer.str() ) );
-		continue;
-	      }
-
-            Assignment const& assignment = dynamic_cast<Assignment const&>( *sink.node );
-
-            for (unsigned idx = 0, end = assignment.SubCount(); idx < end; ++idx)
+            for (unsigned idx = 0, end = side_effect.SubCount(); idx < end; ++idx)
               {
-                Expr const& value = assignment.GetSub(idx);
+                Expr const& value = side_effect.GetSub(idx);
                 if (not value->AsConstNode() and not this->vars.count(value))
                   GenTempCode(value, head);
               }
 
-            if (Branch const* branch = dynamic_cast<Branch const*>( &assignment ))
+            if (Branch const* branch = dynamic_cast<Branch const*>( &side_effect ))
               nia = branch;
             else
               {
                 std::ostringstream buffer;
-                assignment.GenerateCode(buffer, vars);
+                side_effect.GenerateCode(buffer, vars);
                 tail.prepend( new Statement( buffer.str() ) );
               }
           }
@@ -961,6 +952,46 @@ namespace binsec {
   {
     struct ShouldNotBeHere {};
     throw ShouldNotBeHere ();
+  }
+
+  void
+  CallBase::Repr( std::ostream& sink ) const
+  {
+    sink << "Call(";
+    Branch::Repr(sink);
+    sink << ", " << PrintRA() << ")";
+  }
+
+  void
+  CallBase::annotate(std::ostream& sink) const
+  {
+    sink << " // call (" << PrintRA() << ",0)";
+  }
+
+  void
+  Ret::Repr(std::ostream& sink) const
+  {
+    sink << "Ret(";
+    Branch::Repr(sink);
+    sink << ")";
+  }
+
+  void
+  Ret::annotate(std::ostream& sink) const
+  {
+    sink << " // ret";
+  }
+
+  void
+  AssertFalse::Repr( std::ostream& sink ) const
+  {
+    sink << "AssertFalse()";
+  }
+
+  void
+  AssertFalse::GenerateCode( std::ostream& sink, Variables& vars ) const
+  {
+    sink << "assert (false)";
   }
 
   void
