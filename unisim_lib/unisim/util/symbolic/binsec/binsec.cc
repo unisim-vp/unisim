@@ -603,16 +603,16 @@ namespace binsec {
               case Op::BSF:
                 {
                   unsigned bitsize = node->GetType().bitsize;
-		  sink << "(";
-		  for (unsigned i = 0; i < bitsize - 1; i += 1) {
-		    sink << "if " << GetCode(node->GetSub(0), vars, head)
-		         << '{' << i << "} then "
-		         << i << '<' << bitsize << "> else (";
-		  }
-		  sink << bitsize - 1 << '<' << bitsize << '>';
-		  for (unsigned i = 0; i < bitsize; i += 1) {
-		    sink << ')';
-		  }
+                  sink << "(";
+                  for (unsigned i = 0; i < bitsize - 1; i += 1) {
+                    sink << "if " << GetCode(node->GetSub(0), vars, head)
+                         << '{' << i << "} then "
+                         << i << '<' << bitsize << "> else (";
+                  }
+                  sink << bitsize - 1 << '<' << bitsize << '>';
+                  for (unsigned i = 0; i < bitsize; i += 1) {
+                    sink << ')';
+                  }
 
                   // Point exit(new Nop());
 
@@ -648,18 +648,18 @@ namespace binsec {
               case Op::BSR:
                 {
                   unsigned bitsize = node->GetType().bitsize;
-		  sink << "(";
-		  for (unsigned i = bitsize - 1; i > 1; i -= 1) {
-		    sink << "if " << GetCode(node->GetSub(0), vars, head)
-		         << '{' << i << "} then "
-		         << i << '<' << bitsize << "> else (";
-		  }
-		  sink << "extu ("
-		       << GetCode(node->GetSub(0), vars, head)
-		       << "{1}) " << bitsize;
-		  for (unsigned i = bitsize; i > 1; i -= 1) {
-		    sink << ')';
-		  }
+                  sink << "(";
+                  for (unsigned i = bitsize - 1; i > 1; i -= 1) {
+                    sink << "if " << GetCode(node->GetSub(0), vars, head)
+                         << '{' << i << "} then "
+                         << i << '<' << bitsize << "> else (";
+                  }
+                  sink << "extu ("
+                       << GetCode(node->GetSub(0), vars, head)
+                       << "{1}) " << bitsize;
+                  for (unsigned i = bitsize; i > 1; i -= 1) {
+                    sink << ')';
+                  }
 
                   // Point exit(new Nop());
 
@@ -753,22 +753,18 @@ namespace binsec {
           sink << GetCode(vt->src, vars, head);
         return dstsize;
       }
-    else if (auto mix = dynamic_cast<vector::VMix const*>( expr.node ))
+    else if (auto vc = dynamic_cast<vector::VCatBase const*>( expr.node ))
       {
-        decltype(mix) prev;
         sink << "(";
-        int retsize = 0;
-        do
+        unsigned subsize = 8*vc->subsize;
+        char const* sep = "";
+        for (unsigned idx = vc->inputs.size(); idx-- > 0;)
           {
-            prev = mix;
-            retsize += GenerateCode( mix->l, sink, vars, head );
-            sink << " :: ";
-            mix = dynamic_cast<vector::VMix const*>( mix->r.node );
+            sink << sep << GetCode(vc->inputs[idx], vars, head, subsize);
+            sep = " :: ";
           }
-        while (mix);
-        retsize += GenerateCode( prev->r, sink, vars, head );
         sink << ")";
-        return retsize;
+        return subsize * vc->inputs.size();
       }
     else if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
       {

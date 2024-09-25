@@ -167,7 +167,7 @@ namespace binsec {
   struct GetCode
   {
     GetCode(Expr const& _expr, Variables& _vars, Point& _head, int _expected=-1)
-      : expr(_expr), vars(_vars), head(_head), expected(-1)
+      : expr(_expr), vars(_vars), head(_head), expected(_expected)
     {}
 
     friend std::ostream& operator << ( std::ostream& sink, GetCode const& gc )

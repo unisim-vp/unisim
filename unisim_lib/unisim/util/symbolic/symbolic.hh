@@ -39,7 +39,6 @@
 #include <unisim/util/arithmetic/integer.hh>
 #include <unisim/util/identifier/identifier.hh>
 #include <stdexcept>
-#include <map>
 #include <set>
 #include <limits>
 #include <typeinfo>
@@ -509,8 +508,8 @@ namespace symbolic {
         case Op::Divu:   return new this_type( value / GetValue( args[1] ) );
         case Op::Mod:
         case Op::Modu:   return new this_type( EvalMod( value, GetValue( args[1] ) ) );
-	case Op::Inc:    return new this_type( EvalInc( value ) );
-	case Op::Dec:    return new this_type( EvalDec( value ) );
+        case Op::Inc:    return new this_type( EvalInc( value ) );
+        case Op::Dec:    return new this_type( EvalDec( value ) );
 
         case Op::Tnzero: return new ConstNode   <bool>   ( value != VALUE_TYPE() );
         case Op::Tzero:  return new ConstNode   <bool>   ( value == VALUE_TYPE() );

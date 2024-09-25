@@ -410,18 +410,19 @@ struct Processor
 
     for (unsigned beg = 0; beg < vector_size; beg += elem_size)
       {
-	if (bytes[beg].is_source() != elem_size)
-	  throw VCorruption();
-	for (unsigned idx = 0; idx < elem_size; ++idx)
-	  {
-	    if (auto x = unisim::util::symbolic::vector::corresponding_origin(bytes[beg].get_node(), idx, beg+idx ))
-	      if (auto vr = dynamic_cast<unisim::util::symbolic::binsec::RegRead<VRegID> const*>( x ))
-		if (vr->id.reg == reg)
-		  continue;
-	    // Found one difference !
-	    path->add_sink( newPartialRegWrite( VRegID(reg), 8*beg, 8*elem_size, bytes[beg].get_node() ) );
-	    break;
-	  }
+        if (bytes[beg].is_source() != elem_size)
+          throw VCorruption();
+        auto node = bytes[beg].get_node();
+        for (unsigned idx = 0; idx < elem_size; ++idx)
+          {
+            if (auto x = unisim::util::symbolic::vector::corresponding_origin(node, idx, beg+idx ))
+              if (auto vr = dynamic_cast<unisim::util::symbolic::binsec::RegRead<VRegID> const*>( x ))
+                if (vr->id.reg == reg)
+                  continue;
+            // Found one difference !
+            path->add_sink( newPartialRegWrite( VRegID(reg), 8*beg, 8*elem_size, bytes[beg].get_node() ) );
+            break;
+          }
       }
   }
 
@@ -529,6 +530,4 @@ Decoder::process( std::ostream& sink, uint64_t addr, uint32_t code )
   translator.translate( sink );
 }
 
-
-  
 }

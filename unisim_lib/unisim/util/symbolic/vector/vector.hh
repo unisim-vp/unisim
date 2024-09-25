@@ -31,28 +31,25 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 #ifndef __UNISIM_UTIL_SYMBOLIC_VECTOR_VECTOR_HH__
 #define __UNISIM_UTIL_SYMBOLIC_VECTOR_VECTOR_HH__
 
 #include <unisim/util/symbolic/symbolic.hh>
+#include <vector>
 
 namespace unisim {
 namespace util {
 namespace symbolic {
 namespace vector {
 
-  struct VMix : public ExprNode
-  {
-    VMix( Expr const& _l, Expr const& _r ) : l(_l), r(_r) {}
-    virtual unsigned SubCount() const override { return 2; }
-    virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return l; case 1: return r; } return ExprNode::GetSub(idx); };
-    virtual void Repr( std::ostream& sink ) const override;
-    virtual int cmp( ExprNode const& brhs ) const override { return 0; }
-    virtual VMix* Mutate() const override { return new VMix( *this ); }
-    virtual ValueType GetType() const override { return l->GetType(); }
-    Expr l, r;
-  };
+  /* Vector manipulation may involve bit-level type
+   * reinterpretation. This are not casts where source type affects
+   * destination type transformation.  Two operation are considered:
+   * "VTrans" which reinterprets source bits (or a subset of) as a new
+   * type and "VCat" which concatenates source bits of multiple
+   * inputs and reinterprets the result as a new type.
+   */
 
   struct VTransBase : public ExprNode
   {
@@ -66,9 +63,9 @@ namespace vector {
       if (int delta = int(srcsize) - int(srcsize)) return delta;
       return srcpos - rhs.srcpos;
     }
-    Expr     src;
-    unsigned srcsize;
-    int      srcpos;
+    Expr     src;     /* source */
+    unsigned srcsize; /* size of source, in bytes */
+    int      srcpos;  /* start position from source, in bytes */
   };
 
   template <typename T>
@@ -76,6 +73,27 @@ namespace vector {
   {
     VTrans( Expr const& src, unsigned srcsize, int srcpos ) : VTransBase( src, srcsize, srcpos ) {}
     typedef VTrans<T> this_type;
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
+    virtual ValueType GetType() const override { return T::GetType(); }
+  };
+
+  struct VCatBase : public ExprNode
+  {
+    VCatBase( std::vector<Expr>&& _inputs, unsigned _subsize ) : inputs(std::move(_inputs)), subsize(_subsize) {}
+    virtual unsigned SubCount() const override { return inputs.size(); }
+    virtual Expr const& GetSub(unsigned idx) const override { if (idx < inputs.size()) return inputs[idx];  return ExprNode::GetSub(idx); };
+    virtual void Repr( std::ostream& sink ) const override;
+    int compare(VCatBase const& rhs) const { if (intptr_t delta = inputs.size() - rhs.inputs.size()) return delta > 0 ? +1 : -1; return 0; }
+    virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<VCatBase const&>(brhs) ); }
+    std::vector<Expr> inputs;
+    unsigned subsize;
+  };
+
+  template <typename T>
+  struct VCat : public VCatBase
+  {
+    VCat( std::vector<Expr>&& inputs, unsigned subsize ) : VCatBase(std::move(inputs), subsize) {}
+    typedef VCat<T> this_type;
     virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual ValueType GetType() const override { return T::GetType(); }
   };
@@ -113,6 +131,54 @@ namespace vector {
         for (unsigned idx = 1, end = bytecount; idx < end; ++idx)
           dst[idx].repeat(idx);
       }
+      static Expr mkVTrans( Expr const& src, unsigned srcsize, int srcpos )
+      {
+        return new VTrans<T>(src, srcsize, srcpos);
+      }
+      static Expr mkVCat( std::vector<Expr>&& inputs, unsigned subsize )
+      {
+        // // Try some recombinations
+        // struct Failed {};
+        // try
+        //   {
+        //     ExprNode const* head = inputs[0].node;
+        //     if (auto vt = dynamic_cast<VTransBase const*>( head ))
+        //       {
+        //         unsigned start = vt->srcpos, end = start;
+        //         for (auto const& input : inputs)
+        //           {
+        //             if (auto vti = dynamic_cast<VTransBase const*>( input.node ))
+        //               {
+        //                 if (vti->src != vt->src or vti->srcpos != end)
+        //                   throw Failed();
+        //               }
+        //             else throw Failed();
+        //             end += subsize;
+        //           }
+        //         return mkVTrans(vt->src, end - start, start);
+        //       }
+        //     if (auto vt = dynamic_cast<VCatBase const*>( head ))
+        //       {
+        //         std::vector<Expr> parts;
+        //         parts.reserve((inputs.size()*subsize)/vt->subsize);
+        //         for (auto const& input : inputs)
+        //           {
+        //             if (auto vti = dynamic_cast<VCatBase const*>( input.node ))
+        //               {
+        //                 if (vti->subsize != vt->subsize)
+        //                   throw Failed();
+        //                 for (auto const& part : vti->inputs)
+        //                   parts.push_back(part);
+        //               }
+        //             else throw Failed();
+        //           }
+        //         return mkVCat(std::move(parts),vt->subsize);
+        //       }
+        //   }
+        // catch (Failed const&) {}
+
+        return new VCat<T>(std::move(inputs), subsize);
+      }
       static void FromBytes( T& dst, Byte const* byte )
       {
         struct CorruptedSource {};
@@ -125,70 +191,31 @@ namespace vector {
         if (int pos = byte->is_repeat())
           {
             Byte const* base = byte - pos;
-            if (not base->is_source()) { struct Bad {}; throw Bad(); }
-            dst = T(Expr(new VTrans<T>(base->expr(), base->size(), pos)));
+            unsigned size = base->size();
+            if (unsigned(pos + bytecount) > size) throw CorruptedSource();
+            dst = mkVTrans(base->expr(), size, pos);
             return;
           }
 
         if (unsigned src_size = byte->is_source())
           {
-	    if (src_size > bytecount) {
-	      dst = T(new VTrans<T>(byte->expr(), byte->size(), 0));
-	      return;
-	    }
-
-	    if (auto vt = dynamic_cast<VTransBase const*>( byte->get_node() )) {
-	      ExprNode const* target = vt->src.node;
-	      unsigned pos = vt->srcpos;
-	      for (unsigned next = src_size, idx = 1; next < bytecount; ++idx) {
-		// Lookahead for recombination
-		for (;idx < next; ++idx)
-		  if (byte[idx].get_node()) throw CorruptedSource();
-		if (ExprNode const* node = byte[next].get_node()) {
-		  if (auto vti = dynamic_cast<VTransBase const*>( node )) {
-		    if (vti->srcpos == pos + src_size
-			&& target == vti->src.node) {
-		      pos = vti->srcpos;
-		    } else {
-		      target = 0;
-		      break;
-		    }
-		  } else {
-		    target = 0;
-		    break;
-		  }
-		} else
-		  throw CorruptedSource(); // missing value
-		if (unsigned span = byte[next].is_source())
-		  next = next + span;
-		else
-		  throw CorruptedSource();
-	      }
-	      if (target) {
-		if (vt->srcpos != 0
-		    || (vt->srcsize != (pos - vt->srcpos) / src_size) )
-		  target = new VTrans<T>(target, vt->srcsize, vt->srcpos);
-		dst = T(target);
-		return;
-	      }
-	    }
-
-            Expr res = byte[0].expr();
-            for (unsigned next = src_size, idx = 1; next < bytecount; ++idx)
+            if (src_size >= bytecount)
               {
-                // Requested read is a concatenation of multiple source values
-                for (;idx < next; ++idx)
-                  if (byte[idx].get_node()) throw CorruptedSource();
-                if (ExprNode const* node = byte[next].get_node())
-                  res = new VMix( byte[next].expr(), res );
-                else
-                  throw CorruptedSource(); // missing value
-                if (unsigned span = byte[next].is_source())
-                  next = next + span;
-                else
+                dst = mkVTrans(byte->expr(), byte->size(), 0);
+                return;
+            }
+
+            // Requested read is a concatenation of multiple source values
+            unsigned itemcount = bytecount / src_size;
+            std::vector<Expr> parts(itemcount);
+            for (unsigned idx = 0; idx < itemcount; ++idx)
+              {
+                unsigned start = idx*src_size;
+                if (byte[start].is_source() != src_size)
                   throw CorruptedSource();
+                parts[idx] = byte[start].get_node();
               }
-            dst = T(res);
+            dst = mkVCat(std::move(parts), src_size);
             return;
           }
 
@@ -201,8 +228,8 @@ namespace vector {
 
 
   ExprNode const* corresponding_origin( Expr const& dst, unsigned dpos, unsigned spos );
-  
-  
+
+
 } /* end of namespace vector */
 } /* end of namespace symbolic */
 } /* end of namespace util */
