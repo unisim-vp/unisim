@@ -73,4 +73,74 @@ impl {
 
 include "unisim/component/cxx/processor/arm/isa/arm64/base.isa"
 include "unisim/component/cxx/processor/arm/isa/arm64/simd.isa"
-//include "unisim/component/cxx/processor/arm/isa/arm64/floating-point.isa"
+include disasm "unisim/component/cxx/processor/arm/isa/arm64/floating-point.isa"
+
+/*******************************************************************
+ * FMOV (general)
+ *
+ * Floating-point move to or from general-purpose register without conversion
+ */
+
+fmov_hw.execute = {
+  typedef typename ARCH::U16 U16;
+  U16 data = U16(cpu.GetGZR(rn));
+  cpu.SetVU16(rd,data);
+};
+
+fmov_hx.execute = {
+  typedef typename ARCH::U16 U16;
+  U16 data = U16(cpu.GetGZR(rn));
+  cpu.SetVU16(rd,data);
+};
+
+fmov_wh.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 data = U32(cpu.GetVU16(rn,0));
+  cpu.SetGZR(rd,data);
+};
+
+fmov_sw.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 data = U32(cpu.GetGZR(rn));
+  cpu.SetVU32(rd,data);
+};
+
+fmov_ws.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 data = cpu.GetVU32(rn,0);
+  cpu.SetGZR(rd,data);
+};
+
+fmov_dx.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 data = cpu.GetGZR(rn);
+  cpu.SetVU64(rd,data);
+};
+
+fmov_dix.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 data = cpu.GetGZR(rn);
+  cpu.SetVU64(rd,1,data);
+};
+
+fmov_xh.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 data = U64(cpu.GetVU16(rn,0));
+  cpu.SetGZR(rd,data);
+};
+
+fmov_xd.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 data = cpu.GetVU64(rn,0);
+  cpu.SetGZR(rd,data);
+};
+
+fmov_xdi.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 data = cpu.GetVU64(rn,1);
+  cpu.SetGZR(rd,data);
+};
+
+/*
+ * end of FMOV (general)
+ *******************************************************************/
