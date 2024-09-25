@@ -73,7 +73,7 @@ impl {
 
 include "unisim/component/cxx/processor/arm/isa/arm64/base.isa"
 include "unisim/component/cxx/processor/arm/isa/arm64/simd.isa"
-include disasm "unisim/component/cxx/processor/arm/isa/arm64/floating-point.isa"
+include ^execute "unisim/component/cxx/processor/arm/isa/arm64/floating-point.isa"
 
 /*******************************************************************
  * FMOV (general)
