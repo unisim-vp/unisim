@@ -268,9 +268,33 @@ struct Processor
 
   struct SysReg
   {
+    enum {
+      DCZID_EL0 = 0b1101100000000111
+    };
+
     void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu, U64 value) const  { throw 0; }
-    U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu) const  { throw 0; return U64(); }
-    void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const { throw 0; }
+    U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu) const  {
+      uint16_t code =
+	((op0 << 14) | (op1 << 11) | (crn << 7) | (crm << 3) | (op2 << 0));
+      switch (code) {
+      case DCZID_EL0:
+	return U64(0b10000); /* DC ZVA instruction is prohibited */
+      default:
+	throw 0;
+      }
+      return U64();
+    }
+    void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const {
+      uint16_t code =
+	((op0 << 14) | (op1 << 11) | (crn << 7) | (crm << 3) | (op2 << 0));
+      switch (code) {
+      case DCZID_EL0:
+	sink << "mrs\t" << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(rt) << ", DCZID_EL0";
+	break;
+      default:
+	throw 0;
+      }
+    }
     void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const { throw 0; }
   };
 
@@ -279,7 +303,13 @@ struct Processor
     static SysReg sr; return &sr;
   }
 
-  void        CheckSystemAccess( uint8_t op1 ) { throw 0; }
+  void        CheckSystemAccess( uint8_t op1 ) {
+    switch (op1) {
+    case 0b011:
+      break;
+    default:
+      throw 0;
+    }}
 
   //   =====================================================================
   //   =                      Control Transfer methods                     =
