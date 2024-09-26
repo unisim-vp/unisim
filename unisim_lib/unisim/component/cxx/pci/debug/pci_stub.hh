@@ -86,6 +86,38 @@ using unisim::service::interfaces::Synchronizable;
 using unisim::service::interfaces::Registers;
 
 template <class ADDRESS>
+struct Breakpoint : unisim::util::debug::Breakpoint<ADDRESS>
+{
+	typedef unisim::util::debug::Breakpoint<ADDRESS> Super;
+	Breakpoint(unsigned int _front_end_num, unsigned int _prc_num, ADDRESS _addr, int _id = -1) : Super(_prc_num, _addr, _id), front_end_num(_front_end_num) {}
+	unsigned int GetFrontEndNumber() const { return front_end_num; }
+	using Super::SetId;
+private:
+	unsigned int front_end_num;
+};
+
+template <class ADDRESS>
+struct Watchpoint : unisim::util::debug::Watchpoint<ADDRESS>
+{
+	typedef unisim::util::debug::Watchpoint<ADDRESS> Super;
+	Watchpoint(unsigned int _front_end_num, unsigned int _prc_num, unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mt, ADDRESS _addr, uint32_t _size, bool _overlook, int _id = -1) : Super(_prc_num, _mat, _mt, _addr, _size, _overlook, _id), front_end_num(_front_end_num) {}
+	unsigned int GetFrontEndNumber() const { return front_end_num; }
+	using Super::SetId;
+private:
+	unsigned int front_end_num;
+};
+
+template <class _ADDRESS>
+struct RegistryConfig
+{
+	typedef _ADDRESS ADDRESS;
+	static const unsigned int MAX_FRONT_ENDS = 1;
+	static const unsigned int NUM_PROCESSORS = 1;
+	typedef Breakpoint<_ADDRESS> BREAKPOINT;
+	typedef Watchpoint<_ADDRESS> WATCHPOINT;
+};
+
+template <class ADDRESS>
 class PCIStub :
 	public NetStub<ADDRESS>,
 	public Service<Memory<ADDRESS> >,
@@ -147,8 +179,8 @@ public:
 	virtual void ReportFetchInstruction(ADDRESS next_addr);
 	virtual void Trap();
 private:
-	BreakpointRegistry<ADDRESS> breakpoint_registry;
-	WatchpointRegistry<ADDRESS> watchpoint_registry[3]; // one registry for each of the three address spaces
+	BreakpointRegistry<RegistryConfig<ADDRESS> > breakpoint_registry;
+	WatchpointRegistry<RegistryConfig<ADDRESS> > watchpoint_registry[3]; // one registry for each of the three address spaces
 
 	bool SetupMemory();
 	bool SetupMemoryAccessReporting();

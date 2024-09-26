@@ -35,7 +35,6 @@
 #ifndef __UNISIM_SERVICE_LOADER_MULTIFORMAT_LOADER_MULTIFORMAT_LOADER_TCC__
 #define __UNISIM_SERVICE_LOADER_MULTIFORMAT_LOADER_MULTIFORMAT_LOADER_TCC__
 
-#include <unisim/util/backtrace/backtrace.hh>
 #include <string.h>
 #include <limits>
 #include <algorithm>
@@ -117,7 +116,6 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 	, blob_export("blob-export", this)
 	, symbol_table_lookup_export("symbol-table-lookup-export", this)
 	, stmt_lookup_export("stmt-lookup-export", this)
-	, backtrace_export("backtrace-export", this)
 	, registers_import("registers-import", this)
 	, logger(*this)
 	, verbose(false)
@@ -125,7 +123,6 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 	, tee_loader(0)
 	, tee_blob(0)
 	, tee_symbol_table_lookup(0)
-	, tee_backtrace(0)
 	, memory_mapper(0)
 	, filename()
 	, positional_option_types()
@@ -153,7 +150,6 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 	tee_blob = new unisim::service::tee::blob::Tee<MEMORY_ADDR>("tee-blob", this);
 	tee_symbol_table_lookup = new unisim::service::tee::symbol_table_lookup::Tee<MEMORY_ADDR>("tee-symbol-table-lookup", this);
 	tee_stmt_lookup = new unisim::service::tee::stmt_lookup::Tee<MEMORY_ADDR>("tee-stmt-lookup", this);
-	tee_backtrace = new unisim::service::tee::backtrace::Tee<MEMORY_ADDR>("tee-backtrace", this);
 	
 	memory_mapper = new MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>("memory-mapper", this);
 	
@@ -293,7 +289,6 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 						*tee_blob->blob_import[stmt_idx] >> elf32_loader->blob_export;
 						*tee_symbol_table_lookup->symbol_table_lookup_import[stmt_idx] >> elf32_loader->symbol_table_lookup_export;
 						*tee_stmt_lookup->stmt_lookup_import[stmt_idx] >> elf32_loader->stmt_lookup_export;
-						*tee_backtrace->backtrace_import[stmt_idx] >> elf32_loader->backtrace_export;
 						elf32_loader->memory_import >> memory_mapper->memory_export;
 						elf32_loader->registers_import >> registers_import;
 					}
@@ -364,7 +359,6 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 	blob_export >> tee_blob->blob_export;
 	symbol_table_lookup_export >> tee_symbol_table_lookup->symbol_table_lookup_export;
 	stmt_lookup_export >> tee_stmt_lookup->stmt_lookup_export;
-	backtrace_export >> tee_backtrace->backtrace_export;
 	
 	for(i = 0; i < MAX_MEMORIES; i++)
 	{
@@ -411,7 +405,6 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::~MultiFormatLoader()
 	if(tee_blob) delete tee_blob;
 	if(tee_symbol_table_lookup) delete tee_symbol_table_lookup;
 	if(tee_stmt_lookup) delete tee_stmt_lookup;
-	if(tee_backtrace) delete tee_backtrace;
 	if(memory_mapper) delete memory_mapper;
 }
 
@@ -688,22 +681,7 @@ typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiFormatLoa
 	{
 		if((magic[0] == 'S') && (magic[1] == '0')) return FFMT_S19;
 		
-		if((magic[0] == 0xc1) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0xc2) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x92) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x93) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x95) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x98) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x99) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x9d) && (magic[1] == 0x00)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0xc1)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0xc2)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0x92)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0x93)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0x95)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0x98)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0x99)) return FFMT_COFF;
-		if((magic[0] == 0x00) && (magic[1] == 0x9d)) return FFMT_COFF;
+		if(unisim::util::loader::coff_loader::CoffLoader<MEMORY_ADDR>::Supports(unisim::util::endian::Host2LittleEndian(*(uint16_t *)(&magic[0])))) return FFMT_COFF;
 	}
 	
 	return FFMT_RAW;

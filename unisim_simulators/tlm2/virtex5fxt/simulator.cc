@@ -461,11 +461,10 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		inline_debugger->registers_import              >> *debugger->registers_export[0];
 		inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
 		inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
-		inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+		inline_debugger->stack_frame_import              >> *debugger->stack_frame_export[0];
 		inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
 		inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
 		inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
-		inline_debugger->stack_unwinding_import        >> *debugger->stack_unwinding_export[0];
 		inline_debugger->stubbing_import               >> *debugger->stubbing_export[0];
 		inline_debugger->hooking_import                >> *debugger->hooking_export[0];
 	}
@@ -493,7 +492,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		profiler->registers_import                >> *debugger->registers_export[2];
 		profiler->stmt_lookup_import              >> *debugger->stmt_lookup_export[2];
 		profiler->symbol_table_lookup_import      >> *debugger->symbol_table_lookup_export[2];
-		profiler->backtrace_import                >> *debugger->backtrace_export[2];
+		profiler->stack_frame_import                >> *debugger->stack_frame_export[2];
 		profiler->debug_info_loading_import       >> *debugger->debug_info_loading_export[2];
 		profiler->data_object_lookup_import       >> *debugger->data_object_lookup_export[2];
 		profiler->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[2];
@@ -512,7 +511,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		debug_ui->registers_import                >> *debugger->registers_export[3];
 		debug_ui->stmt_lookup_import              >> *debugger->stmt_lookup_export[3];
 		debug_ui->symbol_table_lookup_import      >> *debugger->symbol_table_lookup_export[3];
-		debug_ui->backtrace_import                >> *debugger->backtrace_export[3];
+		debug_ui->stack_frame_import                >> *debugger->stack_frame_export[3];
 		debug_ui->debug_info_loading_import       >> *debugger->debug_info_loading_export[3];
 		debug_ui->data_object_lookup_import       >> *debugger->data_object_lookup_export[3];
 		debug_ui->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[3];
@@ -936,12 +935,4 @@ bool Simulator::EndSetup()
 	}
 
   return true;
-}
-
-void Simulator::SigInt()
-{
-	if(!inline_debugger || !inline_debugger->IsStarted())
-	{
-		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-	}
 }

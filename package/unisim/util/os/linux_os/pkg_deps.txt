@@ -6,7 +6,10 @@ libc/stdlib
 libc/string
 libc/time
 libc/unistd
+m4/darwin_crt_externs
 m4/times
+m4/windows
+m4/windows_process
 std/cerrno
 std/cstdlib
 std/fstream

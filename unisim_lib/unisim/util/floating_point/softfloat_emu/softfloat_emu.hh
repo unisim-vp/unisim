@@ -243,6 +243,32 @@ static inline uint_fast8_t ToExceptionFlags( uint_fast8_t eflags )
 		   | ( ( ( eflags & softfloat_emu_flag_invalid   ) != 0 ) ? flag_invalid   : 0);
 }
 
+static inline uint_fast8_t ToFlushToZero( uint_fast8_t ftz )
+{
+	switch( ftz )
+	{
+		case softfloat_emu_ftz_never         : return ftz_never;
+		case softfloat_emu_ftz_beforeRounding: return ftz_beforeRounding;
+		case softfloat_emu_ftz_afterRounding : return ftz_afterRounding;
+	}
+	struct Bad {};
+	throw Bad();
+	return ftz_never;
+}
+
+static inline uint_fast8_t FromFlushToZero( uint_fast8_t ftz )
+{
+	switch( ftz )
+	{
+		case ftz_never         : return softfloat_emu_ftz_never;
+		case ftz_beforeRounding: return softfloat_emu_ftz_beforeRounding;
+		case ftz_afterRounding : return softfloat_emu_ftz_afterRounding;
+	}
+	struct Bad {};
+	throw Bad();
+	return softfloat_emu_ftz_never;
+}
+
 // Interfaces with softfloat-emu library functions
 
 #undef SOFTFLOAT_EMU_DEF_ARCH_IF_FUNCTIONS
@@ -524,7 +550,7 @@ static inline uint_fast8_t ToExceptionFlags( uint_fast8_t eflags )
 	static bool f128_lt_quiet( float128_t a, float128_t b ) { return ARCH_NAME ## _f128_lt_quiet( a, b ); }                                                                                           \
 	static bool f128_isSignalingNaN( float128_t a ) { return ARCH_NAME ## _f128_isSignalingNaN( a ); }
 #else
-#define SOFTFLOAT_EMU_DEF_ARCH_IF_FUNCTIONS_FAST_INT64
+#define SOFTFLOAT_EMU_DEF_ARCH_IF_FUNCTIONS_FAST_INT64( ARCH_NAME )
 #endif
 
 #undef SOFTFLOAT_EMU_DEF_ARCH_IF
@@ -560,6 +586,13 @@ struct IF_NAME                                                                  
 	                                                                                                                                                                                                  \
 	static void extF80_roundingPrecision( uint_fast8_t ext80_rp ) { ARCH_NAME ## _extF80_roundingPrecision = ext80_rp; }                                                                              \
 	static uint_fast8_t extF80_roundingPrecision() { return ARCH_NAME ## _extF80_roundingPrecision; }                                                                                                 \
+	                                                                                                                                                                                                  \
+	/*----------------------------------------------------------------------------                                                                                                                    \
+	| Software floating-point flush-to-zero mode.                                                                                                                                                     \
+	*----------------------------------------------------------------------------*/                                                                                                                   \
+	                                                                                                                                                                                                  \
+	static void flushToZero( uint_fast8_t ftz ) { softfloat_emu_ ## ARCH_NAME ## _flushToZero = FromFlushToZero( ftz ); }                                                                             \
+	static uint_fast8_t flushToZero() { return ToFlushToZero( softfloat_emu_ ## ARCH_NAME ## _flushToZero ); }                                                                                        \
 	                                                                                                                                                                                                  \
 	/*----------------------------------------------------------------------------                                                                                                                    \
 	| C++ friendly overloaded routines.                                                                                                                                                               \
@@ -785,6 +818,13 @@ struct DynamicDefaultNaNArchIf
 	
 	static void extF80_roundingPrecision( uint_fast8_t ext80_rp ) { if( default_nan ) IF2::extF80_roundingPrecision( ext80_rp ); else IF1::extF80_roundingPrecision( ext80_rp ); }
 	static uint_fast8_t extF80_roundingPrecision() { return default_nan ? IF2::extF80_roundingPrecision() : IF1::extF80_roundingPrecision(); }
+	
+	/*----------------------------------------------------------------------------
+	| Software floating-point flush-to-zero mode.
+	*----------------------------------------------------------------------------*/
+	
+	static void flushToZero( uint_fast8_t ftz ) { if( default_nan ) IF2::flushToZero( ftz ); else IF1::flushToZero( ftz ); }
+	static uint_fast8_t flushToZero() { return default_nan ? IF2::flushToZero() : IF1::flushToZero(); }
 	
 	/*----------------------------------------------------------------------------
 	| Default NaN switching
@@ -1293,6 +1333,8 @@ struct FloatingPointStatusAndControl<FLOAT>                                     
 	static uint_fast8_t exceptionFlags() { return FLOAT::interface_type::exceptionFlags(); }                                       \
 	static void extF80_roundingPrecision( uint_fast8_t ext80_rp ) { FLOAT::interface_type::extF80_roundingPrecision( ext80_rp ); } \
 	static uint_fast8_t extF80_roundingPrecision() { return FLOAT::interface_type::extF80_roundingPrecision(); }                   \
+	static void flushToZero( uint_fast8_t ftz ) { FLOAT::interface_type::flushToZero( ftz ); }                                     \
+	static uint_fast8_t flushToZero() { return FLOAT::interface_type::flushToZero(); }                                             \
 };
 
 SOFTFLOAT_EMU_DEF_FPSC( unisim::util::floating_point::softfloat_emu::x86          ::Half   )

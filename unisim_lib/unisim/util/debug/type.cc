@@ -37,14 +37,64 @@
 #include <sstream>
 #include <queue>
 #include <cassert>
+#include <cstring>
 
 namespace unisim {
 namespace util {
 namespace debug {
 
+enum
+{
+	T_BASE      = T_CHAR | T_INTEGER | T_FLOAT | T_BOOL,
+	T_COMPOSITE = T_STRUCT | T_UNION | T_CLASS | T_INTERFACE,
+	T_NAMED     = T_BASE | T_COMPOSITE | T_TYPEDEF | T_ENUM
+};
+
+// reorder_qualifiers: rewriting "const volatile" into "volatile const"
+std::string reorder_qualifiers(const std::string& s)
+{
+	std::string r(s);
+	std::size_t pos = 0;
+	do
+	{
+		std::size_t fpos = s.find("const volatile", pos);
+		if(fpos == std::string::npos) break;
+		r.replace(fpos, 14, "volatile const");
+		pos = fpos + 14;
+	}
+	while(pos < s.length());
+	return r;
+}
+
+// kill_array_subscript: rewriting without array subscripts
+std::string kill_array_subscripts(const std::string& s)
+{
+	std::string r;
+	std::size_t pos = 0;
+	std::size_t len = s.length();
+	while(pos < len)
+	{
+		char c = s[pos++];
+		if(c == '[')
+		{
+			r += "[]";
+			std::size_t right_bracket_pos = s.find_first_of(']', pos);
+			assert(right_bracket_pos != std::string::npos);
+			pos = right_bracket_pos + 1;
+		}
+		else
+		{
+			r += c;
+		}
+	}
+	
+	return r;
+}
+
 Type::Type()
 	: type_class(T_UNKNOWN)
 	, decl_location(0)
+	, c_decl()
 	, ref_count(0)
 {
 }
@@ -52,6 +102,7 @@ Type::Type()
 Type::Type(const DeclLocation *_decl_location)
 	: type_class(T_UNKNOWN)
 	, decl_location(_decl_location)
+	, c_decl()
 	, ref_count(0)
 {
 	if(decl_location) decl_location->Catch();
@@ -60,6 +111,7 @@ Type::Type(const DeclLocation *_decl_location)
 Type::Type(TYPE_CLASS _type_class)
 	: type_class(_type_class)
 	, decl_location(0)
+	, c_decl()
 	, ref_count(0)
 {
 }
@@ -67,6 +119,7 @@ Type::Type(TYPE_CLASS _type_class)
 Type::Type(TYPE_CLASS _type_class, const DeclLocation *_decl_location)
 	: type_class(_type_class)
 	, decl_location(_decl_location)
+	, c_decl()
 	, ref_count(0)
 {
 	if(decl_location) decl_location->Catch();
@@ -75,6 +128,7 @@ Type::Type(TYPE_CLASS _type_class, const DeclLocation *_decl_location)
 Type::~Type()
 {
 	if(decl_location) decl_location->Release();
+	for(int i = 0; i < 2; ++i) if(c_decl[i]) delete c_decl[i];
 }
 
 TYPE_CLASS Type::GetClass() const
@@ -84,18 +138,47 @@ TYPE_CLASS Type::GetClass() const
 
 bool Type::IsComposite() const
 {
-	return (type_class == unisim::util::debug::T_STRUCT) ||
-	       (type_class == unisim::util::debug::T_UNION) ||
-	       (type_class == unisim::util::debug::T_CLASS) ||
-	       (type_class == unisim::util::debug::T_INTERFACE);
+	return type_class & T_COMPOSITE; // IsStructure() || IsUnion() || IsClass() || IsInterface();
+}
+
+bool Type::IsStructure() const
+{
+	return type_class == unisim::util::debug::T_STRUCT;
+}
+
+bool Type::IsUnion() const
+{
+	return type_class == unisim::util::debug::T_UNION;
+}
+
+bool Type::IsClass() const
+{
+	return type_class == unisim::util::debug::T_CLASS;
+}
+
+bool Type::IsInterface() const
+{
+	return type_class == unisim::util::debug::T_INTERFACE;
 }
 
 bool Type::IsBase() const
 {
-	return (type_class == unisim::util::debug::T_INTEGER) ||
-	       (type_class == unisim::util::debug::T_CHAR) ||
-	       (type_class == unisim::util::debug::T_FLOAT) ||
-	       (type_class == unisim::util::debug::T_BOOL);
+	return type_class & T_BASE; // IsInteger() || IsChar() || IsFloat() || IsBoolean();
+}
+
+bool Type::IsChar() const
+{
+	return type_class == unisim::util::debug::T_CHAR;
+}
+
+bool Type::IsInteger() const
+{
+	return type_class == unisim::util::debug::T_INTEGER;
+}
+
+bool Type::IsBoolean() const
+{
+	return type_class == unisim::util::debug::T_BOOL;
 }
 
 bool Type::IsFloat() const
@@ -108,9 +191,29 @@ bool Type::IsPointer() const
 	return type_class == unisim::util::debug::T_POINTER;
 }
 
+bool Type::IsTypedef() const
+{
+	return type_class == unisim::util::debug::T_TYPEDEF;
+}
+
+bool Type::IsFunction() const
+{
+	return type_class == unisim::util::debug::T_FUNCTION;
+}
+
 bool Type::IsArray() const
 {
 	return type_class == unisim::util::debug::T_ARRAY;
+}
+
+bool Type::IsConst() const
+{
+	return type_class == unisim::util::debug::T_CONST;
+}
+
+bool Type::IsEnum() const
+{
+	return type_class == unisim::util::debug::T_ENUM;
 }
 
 bool Type::IsUnspecified() const
@@ -118,12 +221,14 @@ bool Type::IsUnspecified() const
 	return type_class == unisim::util::debug::T_VOID;
 }
 
+bool Type::IsVolatile() const
+{
+	return type_class == unisim::util::debug::T_VOLATILE;
+}
+
 bool Type::IsNamed() const
 {
-	return IsBase() ||
-	       IsComposite() ||
-	       (type_class == T_TYPEDEF) ||
-	       (type_class == T_ENUM);
+	return type_class & T_NAMED;// IsBase() || IsComposite() || IsTypedef() || IsEnum();
 }
 
 const DeclLocation *Type::GetDeclLocation() const
@@ -134,6 +239,12 @@ const DeclLocation *Type::GetDeclLocation() const
 std::string Type::BuildCDecl(char const **identifier, bool collapsed) const
 {
 	return std::string("void");
+}
+
+const std::string& Type::GetCDecl(bool collapsed) const
+{
+	std::string *_c_decl = c_decl[collapsed];
+	return *(_c_decl ? _c_decl : (c_decl[collapsed] = new std::string(reorder_qualifiers(BuildCDecl(0, collapsed)))));
 }
 
 void Type::Catch() const
@@ -152,9 +263,45 @@ void Type::Release() const
 	}
 }
 
+const CharType& Type::AsChar() const                   { assert(IsChar()); return *(const CharType *) this; }
+const IntegerType& Type::AsInteger() const             { assert(IsInteger()); return *(const IntegerType *) this; }
+const FloatingPointType& Type::AsFloat() const         { assert(IsFloat()); return *(const FloatingPointType *) this; }
+const BooleanType& Type::AsBoolean() const             { assert(IsBoolean()); return *(const BooleanType *) this; }
+const CompositeType& Type::AsComposite() const         { assert(IsComposite()); return *(const CompositeType *) this; }
+const StructureType& Type::AsStructure() const         { assert(IsStructure()); return *(const StructureType *) this; }
+const UnionType& Type::AsUnion() const                 { assert(IsUnion()); return *(const UnionType *) this; }
+const ClassType& Type::AsClass() const                 { assert(IsClass()); return *(const ClassType *) this; }
+const InterfaceType& Type::AsInterface() const         { assert(IsInterface()); return *(const InterfaceType *) this; }
+const PointerType& Type::AsPointer() const             { assert(IsPointer()); return *(const PointerType *) this; }
+const Typedef& Type::AsTypedef() const                 { assert(IsTypedef()); return *(const Typedef *) this; }
+const FunctionType& Type::AsFunction() const           { assert(IsFunction()); return *(const FunctionType *) this; }
+const ArrayType& Type::AsArray() const                 { assert(IsArray()); return *(const ArrayType *) this; }
+const EnumType& Type::AsEnum() const                   { assert(IsEnum()); return *(const EnumType *) this; }
+const UnspecifiedType& Type::AsUnspecifiedType() const { assert(IsUnspecified()); return *(const UnspecifiedType *) this; }
+const VolatileType& Type::AsVolatile() const           { assert(IsVolatile()); return *(const VolatileType *) this; }
+const ConstType& Type::AsConst() const                 { assert(IsConst()); return *(const ConstType *) this; }
+
+CharType& Type::AsChar()                   { assert(IsChar()); return *(CharType *) this; }
+IntegerType& Type::AsInteger()             { assert(IsInteger()); return *(IntegerType *) this; }
+FloatingPointType& Type::AsFloat()         { assert(IsFloat()); return *(FloatingPointType *) this; }
+BooleanType& Type::AsBoolean()             { assert(IsBoolean()); return *(BooleanType *) this; }
+CompositeType& Type::AsComposite()         { assert(IsComposite()); return *(CompositeType *) this; }
+StructureType& Type::AsStructure()         { assert(IsStructure()); return *(StructureType *) this; }
+UnionType& Type::AsUnion()                 { assert(IsUnion()); return *(UnionType *) this; }
+ClassType& Type::AsClass()                 { assert(IsClass()); return *(ClassType *) this; }
+InterfaceType& Type::AsInterface()         { assert(IsInterface()); return *(InterfaceType *) this; }
+PointerType& Type::AsPointer()             { assert(IsPointer()); return *(PointerType *) this; }
+Typedef& Type::AsTypedef()                 { assert(IsTypedef()); return *(Typedef *) this; }
+FunctionType& Type::AsFunction()           { assert(IsFunction()); return *(FunctionType *) this; }
+ArrayType& Type::AsArray()                 { assert(IsArray()); return *(ArrayType *) this; }
+EnumType& Type::AsEnum()                   { assert(IsEnum()); return *(EnumType *) this; }
+UnspecifiedType& Type::AsUnspecifiedType() { assert(IsUnspecified()); return *(UnspecifiedType *) this; }
+VolatileType& Type::AsVolatile()           { assert(IsVolatile()); return *(VolatileType *) this; }
+ConstType& Type::AsConst()                 { assert(IsConst()); return *(ConstType *) this; }
+
 std::ostream& operator << (std::ostream& os, const Type& type)
 {
-	return os << type.BuildCDecl();
+	return os << type.GetCDecl();
 }
 
 NamedType::NamedType(TYPE_CLASS _type_class, const char *_name)
@@ -458,6 +605,21 @@ const Member *CompositeType::GetMember(unsigned int _idx) const
 	return (_idx < member_count) ? members[_idx] : 0;
 }
 
+bool CompositeType::HasMember(const char *member_name) const
+{
+	unsigned int member_count = members.size();
+	unsigned int i;
+	for(i = 0; i < member_count; i++)
+	{
+		const Member *member = members[i];
+		if(member->HasName())
+		{
+			if(::strcmp(member_name, member->GetName()) == 0) return true;
+		}
+	}
+	return false;
+}
+
 std::string CompositeType::BuildCDecl(char const **identifier, bool collapsed) const
 {
 	std::stringstream sstr;
@@ -681,7 +843,7 @@ std::string PointerType::BuildCDecl(char const **identifier, bool collapsed) con
 	}
 	else
 	{
-		std::string s(type_of_dereferenced_object->BuildCDecl(0, true));
+		std::string s(type_of_dereferenced_object->GetCDecl(true));
 		sstr << s;
 		if(!s.empty() && (s.back() != '*') && (s.back() != ' ')) sstr << " ";
 		sstr << "*";
@@ -811,13 +973,18 @@ void FunctionType::Add(const FormalParameter *formal_param)
 	formal_params.push_back(formal_param);
 }
 
+const Type *FunctionType::GetReturnType() const
+{
+	return return_type;
+}
+
 std::string FunctionType::BuildCDecl(char const **identifier, bool collapsed) const
 {
 	std::stringstream sstr;
 	
 	if(return_type)
 	{
-		std::string s(return_type->BuildCDecl(0, true));
+		std::string s(return_type->GetCDecl(true));
 		sstr << s;
 		if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
 	}
@@ -837,7 +1004,7 @@ std::string FunctionType::BuildCDecl(char const **identifier, bool collapsed) co
 		unsigned int i;
 		for(i = 0; i < formal_param_count; i++)
 		{
-			sstr << formal_params[i]->GetType()->BuildCDecl(0, true);
+			sstr << formal_params[i]->GetType()->GetCDecl(true);
 			if(i != (formal_param_count - 1)) sstr << ", ";
 		}
 	}
@@ -898,7 +1065,7 @@ std::string ConstType::BuildCDecl(char const **identifier, bool collapsed) const
 		}
 		else
 		{
-			sstr << type->BuildCDecl(0, collapsed);
+			sstr << type->GetCDecl(collapsed);
 			sstr << " const";
 		}
 		return sstr.str();
@@ -924,6 +1091,26 @@ Enumerator::Enumerator(const char *_name, uint64_t _value)
 
 Enumerator::~Enumerator()
 {
+}
+
+const char *Enumerator::GetName() const
+{
+	return name.c_str();
+}
+
+bool Enumerator::IsSigned() const
+{
+	return sign;
+}
+
+int64_t Enumerator::GetSignedValue() const
+{
+	return sign ? -value : value;
+}
+
+uint64_t Enumerator::GetUnsignedValue() const
+{
+	return value;
 }
 
 std::ostream& operator << (std::ostream& os, const Enumerator& enumerator)
@@ -1064,7 +1251,7 @@ std::string VolatileType::BuildCDecl(char const **identifier, bool collapsed) co
 		}
 		else
 		{
-			sstr << type->BuildCDecl(0, collapsed);
+			sstr << type->GetCDecl(collapsed);
 			sstr << " volatile";
 		}
 		return sstr.str();
@@ -1076,133 +1263,84 @@ std::string VolatileType::BuildCDecl(char const **identifier, bool collapsed) co
 
 Type const *TypeResolver::Resolve(Type const *type)
 {
+	if(!type) return 0;
 	Visitor visitor;
-	type->Visit(visitor);
-	return visitor.resolved_type;
+	return type->Visit<Visitor, Type const *>(visitor);
 }
 
-TypeResolver::Visitor::Visitor()
-	: resolved_type(0)
+Type const *TypeResolver::Visitor::Visit(CharType const *type)
 {
+	return type;
 }
 
-bool TypeResolver::Visitor::Visit(CharType const *type)
+Type const *TypeResolver::Visitor::Visit(IntegerType const *type)
 {
-	resolved_type = type;
-	return false;
+	return type;
 }
 
-bool TypeResolver::Visitor::Visit(IntegerType const *type)
+Type const *TypeResolver::Visitor::Visit(FloatingPointType const *type)
 {
-	resolved_type = type;
-	return false;
+	return type;
 }
 
-bool TypeResolver::Visitor::Visit(FloatingPointType const *type)
+Type const *TypeResolver::Visitor::Visit(BooleanType const *type)
 {
-	resolved_type = type;
-	return false;
+	return type;
 }
 
-bool TypeResolver::Visitor::Visit(BooleanType const *type)
+Type const *TypeResolver::Visitor::Visit(CompositeType const *type)
 {
-	resolved_type = type;
-	return false;
+	return type;
 }
 
-bool TypeResolver::Visitor::Visit(CompositeType const *type)
+Type const *TypeResolver::Visitor::Visit(ArrayType const *type)
 {
-	resolved_type = type;
-	return false;
+	return type;
 }
 
-bool TypeResolver::Visitor::Visit(ArrayType const *type)
+Type const *TypeResolver::Visitor::Visit(PointerType const *type)
 {
-	resolved_type = type;
-	return false;
+	return type;
 }
 
-bool TypeResolver::Visitor::Visit(PointerType const *type)
+Type const *TypeResolver::Visitor::Visit(Typedef const *type)
 {
-	resolved_type = type;
-	return false;
+	return type->Scan<Visitor, Type const *>(*this);
 }
 
-bool TypeResolver::Visitor::Visit(Typedef const *type)
+Type const *TypeResolver::Visitor::Visit(FunctionType const *type)
 {
-	type->Scan(*this);
-	return true;
+	return type;
 }
 
-bool TypeResolver::Visitor::Visit(FunctionType const *type)
+Type const *TypeResolver::Visitor::Visit(ConstType const *type)
 {
-	resolved_type = type;
-	return false;
+	return type->Scan<Visitor, Type const *>(*this);
 }
 
-bool TypeResolver::Visitor::Visit(ConstType const *type)
+Type const *TypeResolver::Visitor::Visit(EnumType const *type)
 {
-	type->Scan(*this);
-	return true;
+	return type;
 }
 
-bool TypeResolver::Visitor::Visit(EnumType const *type)
+Type const *TypeResolver::Visitor::Visit(UnspecifiedType const *type)
 {
-	resolved_type = type;
-	return false;
+	return type;
 }
 
-bool TypeResolver::Visitor::Visit(UnspecifiedType const *type)
+Type const *TypeResolver::Visitor::Visit(VolatileType const *type)
 {
-	resolved_type = type;
-	return false;
+	return type->Scan<Visitor, Type const *>(*this);
 }
 
-bool TypeResolver::Visitor::Visit(VolatileType const *type)
+Type const *TypeResolver::Visitor::Visit(Member const *member)
 {
-	type->Scan(*this);
-	return true;
+	return 0;
 }
 
-bool TypeResolver::Visitor::Visit(Member const *member)
+Type const *TypeResolver::Visitor::Visit(FormalParameter const *formal_param)
 {
-	return false;
-}
-
-bool TypeResolver::Visitor::Visit(FormalParameter const *formal_param)
-{
-	return false;
-}
-
-
-bool TypeIsBase::Test(Type const *type)
-{
-	Type const *resolved_type = TypeResolver::Resolve(type);
-	return resolved_type && resolved_type->IsBase();
-}
-
-bool TypeIsFloat::Test(Type const *type)
-{
-	Type const *resolved_type = TypeResolver::Resolve(type);
-	return resolved_type && resolved_type->IsFloat();
-}
-
-bool TypeIsComposite::Test(Type const *type)
-{
-	Type const *resolved_type = TypeResolver::Resolve(type);
-	return resolved_type && resolved_type->IsComposite();
-}
-
-bool TypeIsPointer::Test(Type const *type)
-{
-	Type const *resolved_type = TypeResolver::Resolve(type);
-	return resolved_type && resolved_type->IsPointer();
-}
-
-bool TypeIsArray::Test(Type const *type)
-{
-	Type const *resolved_type = TypeResolver::Resolve(type);
-	return resolved_type && resolved_type->IsArray();
+	return 0;
 }
 
 TypeIsCharPointer::Visitor::Visitor()
@@ -1213,7 +1351,7 @@ TypeIsCharPointer::Visitor::Visitor()
 
 bool TypeIsCharPointer::Visitor::Visit(Type const *type)
 {
-	return false;
+	return true;
 }
 
 bool TypeIsCharPointer::Visitor::Visit(CharType const *type)
@@ -1222,7 +1360,7 @@ bool TypeIsCharPointer::Visitor::Visit(CharType const *type)
 	{
 		is_char_pointer = true;
 	}
-	return false;
+	return true;
 }
 
 bool TypeIsCharPointer::Visitor::Visit(PointerType const *type)
@@ -1232,42 +1370,72 @@ bool TypeIsCharPointer::Visitor::Visit(PointerType const *type)
 		state = 1;
 		type->Scan(*this);
 	}
-	return false;
+	return true;
 }
 
 bool TypeIsCharPointer::Visitor::Visit(Typedef const *type)
 {
 	type->Scan(*this);
-	return true;
+	return false;
 }
 
 bool TypeIsCharPointer::Visitor::Visit(ConstType const *type)
 {
 	type->Scan(*this);
-	return true;
+	return false;
 }
 
 bool TypeIsCharPointer::Visitor::Visit(VolatileType const *type)
 {
 	type->Scan(*this);
-	return true;
+	return false;
 }
 
 bool TypeIsCharPointer::Visitor::Visit(Member const *member)
 {
-	return false;
+	return true;
 }
 
 bool TypeIsCharPointer::Visitor::Visit(FormalParameter const *formal_param)
 {
-	return false;
+	return true;
 }
 
 bool TypeIsCharPointer::Test(Type const *type)
 {
+	if(!type) return false;
 	Visitor visitor;
 	type->Visit(visitor);
 	return visitor.is_char_pointer;
+}
+
+TypeIsSigned::Visitor::Visitor()
+	: is_signed(false)
+{
+}
+
+bool TypeIsSigned::Visitor::Visit(Type const *type)
+{
+	return true;
+}
+
+bool TypeIsSigned::Visitor::Visit(CharType const *type)
+{
+	is_signed = type->IsSigned();
+	return true;
+}
+
+bool TypeIsSigned::Visitor::Visit(IntegerType const *type)
+{
+	is_signed = type->IsSigned();
+	return true;
+}
+
+bool TypeIsSigned::Test(Type const *type)
+{
+	Visitor visitor;
+	type->Visit(visitor);
+	return visitor.is_signed;
 }
 
 } // end of namespace debug

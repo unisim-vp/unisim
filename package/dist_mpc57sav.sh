@@ -34,12 +34,12 @@ import std/vector || exit
 
 import m4/ax_cflags_warn_all || exit
 
-copy source isa isa_vle header template data
+copy source isa header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
-UNISIM_LIB_SIMULATOR_ISA_FILES="$(files isa) $(files isa_vle)"
+UNISIM_LIB_SIMULATOR_ISA_FILES="$(files isa)"
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="${UNISIM_LIB_SIMULATOR_ISA_FILES} $(files header) $(files template)"
 

@@ -104,6 +104,7 @@ struct Simulator : public unisim::kernel::Simulator
   struct DEBUGGER_CONFIG
   {
     typedef uint32_t ADDRESS;
+    typedef sc_core::sc_time TIME_TYPE;
     static const unsigned int NUM_PROCESSORS = 1;
     /* gdb_server, inline_debugger and/or monitor */
     static const unsigned int MAX_FRONT_ENDS = 3;
@@ -145,7 +146,6 @@ struct Simulator : public unisim::kernel::Simulator
   unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
 
   int exit_status;
-  virtual void SigInt();
 };
 
 #endif /* SIMULATOR_HH_ */

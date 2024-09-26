@@ -1,0 +1,17 @@
+unisim/service/debug/nodejs/breakpoint.tcc
+unisim/service/debug/nodejs/data_object.tcc
+unisim/service/debug/nodejs/debug_event.tcc
+unisim/service/debug/nodejs/debug_symbol.tcc
+unisim/service/debug/nodejs/executable_binary_file.tcc
+unisim/service/debug/nodejs/hook.tcc
+unisim/service/debug/nodejs/nodejs.tcc
+unisim/service/debug/nodejs/pointer.tcc
+unisim/service/debug/nodejs/processor.tcc
+unisim/service/debug/nodejs/register.tcc
+unisim/service/debug/nodejs/source_code_location.tcc
+unisim/service/debug/nodejs/stack_frame_info.tcc
+unisim/service/debug/nodejs/statement.tcc
+unisim/service/debug/nodejs/stub.tcc
+unisim/service/debug/nodejs/subprogram.tcc
+unisim/service/debug/nodejs/type.tcc
+unisim/service/debug/nodejs/watchpoint.tcc

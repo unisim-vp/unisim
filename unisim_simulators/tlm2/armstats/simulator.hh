@@ -154,7 +154,6 @@ class Simulator
   bool                                     enable_profiler;
   unisim::kernel::variable::Parameter<bool> param_enable_profiler;
 
-  virtual void SigInt();
   static bool enable_monitor;
 };
 

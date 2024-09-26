@@ -33,6 +33,7 @@
  */
  
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <unisim/util/locate/locate.hh>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <windows.h>
@@ -50,6 +51,7 @@ InlineDebuggerBase::InlineDebuggerBase(const char *_name, unisim::kernel::Object
 	: unisim::kernel::Object(_name, _parent)
 	, search_path()
 	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
+	, is_started(false)
 {
 }
 
@@ -57,132 +59,30 @@ InlineDebuggerBase::~InlineDebuggerBase()
 {
 }
 
-void InlineDebuggerBase::SigInt()
+bool InlineDebuggerBase::SigInt()
 {
+	if(!is_started) return false;
+	
 	Interrupt();
+	
+	return true; // handled
 }
 
-std::string InlineDebuggerBase::SearchFile(const char *filename)
+bool InlineDebuggerBase::LocateFile(const std::string& filename, std::string& match_file_path)
 {
-	if(access(filename, F_OK) == 0)
-	{
-		return std::string(filename);
-	}
-
-	std::string s;
-	const char *p;
-
-	p = search_path.c_str();
-	do
-	{
-		if(*p == 0 || *p == ';')
-		{
-			std::stringstream sstr;
-			sstr << s << "/" << filename;
-			std::string path(sstr.str());
-			if(access(path.c_str(), F_OK) == 0)
-			{
-				return path;
-			}
-			s.clear();
-		}
-		else
-		{
-			s += *p;
-		}
-	} while(*(p++));
-	
-	return unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(filename);
+	unisim::util::locate::LocateFileOptions options;
+	options.search_path = search_path;
+	options.shared_directory = unisim::kernel::Object::GetSimulator()->GetSharedDataDirectory();
+	return unisim::util::locate::LocateFile(filename, match_file_path, options);
 }
 
-bool InlineDebuggerBase::LocateFile(const char *filename, std::string& match_file_path)
+bool InlineDebuggerBase::LocateSourceFile(const std::string& filename, std::string& match_file_path)
 {
-	if(access(filename, R_OK) == 0)
-	{
-		match_file_path = filename;
-		return true;
-	}
-	
-	std::string s;
-	const char *p;
-
-	std::vector<std::string> search_paths;
-
-	for(int pass = 0; pass < 2; ++pass)
-	{
-		s.clear();
-		p = search_path.c_str();
-		do
-		{
-			if(*p == 0 || *p == ';')
-			{
-				if(pass) search_paths.push_back(unisim::kernel::Object::GetSimulator()->GetSharedDataDirectory() + '/' + s);
-				else search_paths.push_back(s);
-				
-				s.clear();
-			}
-			else
-			{
-				s += *p;
-			}
-		} while(*(p++));
-	}
-	
-	std::vector<std::string> hierarchical_path;
-	
-	s.clear();
-	p = filename;
-	do
-	{
-		if(*p == 0 || *p == '/' || *p == '\\')
-		{
-			hierarchical_path.push_back(s);
-			s.clear();
-		}
-		else
-		{
-			s += *p;
-		}
-	} while(*(p++));
-	
-	bool match = false;
-	
-	int hierarchical_path_depth = hierarchical_path.size();
-	
-	if(hierarchical_path_depth > 0)
-	{
-		int num_search_paths = search_paths.size();
-		int k;
-		
-		for(k = 0; k < num_search_paths; k++)
-		{
-			const std::string& search_path = search_paths[k];
-			int i;
-			for(i = 0; (!match) && (i < hierarchical_path_depth); i++)
-			{
-				std::string try_file_path = search_path;
-				int j;
-				for(j = i; j < hierarchical_path_depth; j++)
-				{
-					if(!try_file_path.empty()) try_file_path += '/';
-					try_file_path += hierarchical_path[j];
-				}
-// 				std::cerr << "try_file_path=\"" << try_file_path << "\":";
-				if(access(try_file_path.c_str(), R_OK) == 0)
-				{
-// 					std::cerr << "found" << std::endl;
-					match = true;
-					match_file_path = try_file_path;
-				}
-				else
-				{
-// 					std::cerr << "not found" << std::endl;
-				}
-			}
-		}
-	}
-	
-	return match;
+	unisim::util::locate::LocateFileOptions options;
+	options.search_path = search_path;
+	options.shared_directory = unisim::kernel::Object::GetSimulator()->GetSharedDataDirectory();
+	options.lazy_match = true;
+	return unisim::util::locate::LocateFile(filename, match_file_path, options);
 }
 
 } // end of namespace inline_debugger

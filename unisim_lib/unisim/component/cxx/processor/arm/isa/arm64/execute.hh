@@ -524,6 +524,20 @@ OUT PolyMod2(IN value, uint32_t _poly)
     }
   };
 
+  template <typename FLOAT>
+  struct FlushToZero
+  {
+    unsigned ftz;
+    
+     template <typename ARCH> FlushToZero( ARCH& arch )
+      : ftz( ( (  std::is_same<FLOAT, typename ARCH::F16>::value && arch.Test( FZ16.Get( arch.FPCR() ) != typename ARCH::U32(0) ) ) ||
+               ( !std::is_same<FLOAT, typename ARCH::F16>::value && arch.Test( FZ.Get  ( arch.FPCR() ) != typename ARCH::U32(0) ) ) ) ? ftz_beforeRounding : ftz_never )
+    {
+    }
+    
+    unsigned flushToZero() const { return ftz; }
+  };
+
   template <typename ARCH>
   void FPProcessExceptionFlags( ARCH& arch, unsigned eflags )
   {
@@ -643,13 +657,42 @@ OUT PolyMod2(IN value, uint32_t _poly)
       
     return op;
   }
+
+  template <typename FLOAT, typename ARCH>
+  void CheckAlternativeHalfFloatPrecision( ARCH& arch)
+  {
+    typedef typename ARCH::U32 U32;
+    if ( std::is_same<FLOAT, typename ARCH::F16>::value && arch.Test( AHP.Get( arch.FPCR() ) != U32(0) ) )
+      {
+        struct AlternativeHalfPrecisionFormatUnsupported : std::runtime_error
+        {
+          AlternativeHalfPrecisionFormatUnsupported() : std::runtime_error("Alternative half-precision format is unsupported") {}
+        };
+        
+        throw AlternativeHalfPrecisionFormatUnsupported();
+      }
+  }
   
+  template <typename ARCH, typename operT> operT FPRound( ARCH& arch, operT op )
+  {
+#if DEBUG_FP
+    std::cerr << "output: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+#endif
+    operT res = FPProcessDenormalOutput( arch, op );
+
+    FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<operT>::exceptionFlags() );
+    
+    return arch.Test( IsNaN( res ) ) ? FAbs( FPNaN( arch, res ) ) : res;
+  }
+
   template <typename ARCH, typename RMODE, typename FLOAT>
   FLOAT FPRoundInt(ARCH& arch, RMODE&& rmode, FLOAT op, bool exact)
   {
+    CheckAlternativeHalfFloatPrecision<FLOAT>( arch );
 #if DEBUG_FP
     std::cerr << "FPRoundInt" << std::endl;
     std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     FLOAT _op = FPProcessDenormalInput( arch, op );
     
@@ -670,9 +713,11 @@ OUT PolyMod2(IN value, uint32_t _poly)
   template <typename INTEGER, typename ARCH, typename RMODE, typename FLOAT>
   INTEGER FPToInt(ARCH& arch, RMODE&& rmode, FLOAT op, bool exact)
   {
+    CheckAlternativeHalfFloatPrecision<FLOAT>( arch );
 #if DEBUG_FP
     std::cerr << "FPToInt" << std::endl;
     std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     FLOAT _op = FPProcessDenormalInput( arch, op );
 
@@ -692,10 +737,12 @@ OUT PolyMod2(IN value, uint32_t _poly)
   template <typename INTEGER, typename ARCH, typename FLOAT>
   INTEGER FPToFixedRoundTowardZero(ARCH& arch, FLOAT op, unsigned fbits, bool exact)
   {
+    CheckAlternativeHalfFloatPrecision<FLOAT>( arch );
 #if DEBUG_FP
     std::cerr << "FPToFixedRoundTowardZero" << std::endl;
     std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
     std::cerr << "fbits: " << fbits << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
      FLOAT _op = FPProcessDenormalInput( arch, op );
 
@@ -736,9 +783,11 @@ OUT PolyMod2(IN value, uint32_t _poly)
   template <typename FLOAT, typename ARCH, typename INTEGER>
   FLOAT IntToFP(ARCH& arch, INTEGER op)
   {
+    CheckAlternativeHalfFloatPrecision<FLOAT>( arch );
 #if DEBUG_FP
     std::cerr << "IntToFP" << std::endl;
     std::cerr << "input: " << op << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<FLOAT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
@@ -758,10 +807,12 @@ OUT PolyMod2(IN value, uint32_t _poly)
   template <typename FLOAT, typename ARCH, typename INTEGER>
   FLOAT FixedToFP(ARCH& arch, INTEGER op, unsigned fbits)
   {
+    CheckAlternativeHalfFloatPrecision<FLOAT>( arch );
 #if DEBUG_FP
     std::cerr << "FixedToFP" << std::endl;
     std::cerr << "input: " << op << std::endl;
     std::cerr << "fbits:" << fbits << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     typedef typename ARCH::F64 F64;
     typedef typename ARCH::U32 U32;
@@ -769,106 +820,93 @@ OUT PolyMod2(IN value, uint32_t _poly)
     FloatingPointStatusAndControl<FLOAT>::exceptionFlags(0);
     FloatingPointStatusAndControl<FLOAT>::roundingMode( RoundingMode( arch ).roundingMode() );
     FloatingPointStatusAndControl<FLOAT>::detectTininess( tininess_beforeRounding );
+    FloatingPointStatusAndControl<FLOAT>::flushToZero( FlushToZero<FLOAT>( arch ).flushToZero() );
     F64 scale(uint64_t(1) << (fbits - 1));
     scale *= F64(2);
 #if DEBUG_FP
     std::cerr << "scale: " << scale << " (0x" << std::hex << ToPacked(scale) << std::dec << ")" << std::endl;
 #endif
     FLOAT res( F64(op) / scale );
-#if DEBUG_FP
-    std::cerr << "output: " << res << " (0x" << std::hex << ToPacked(res) << std::dec << ")" << std::endl;
-#endif
-
-    FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<FLOAT>::exceptionFlags() );
-
-    return res;
-  }
-  
-  template <typename ARCH, typename operT> operT FPRound( ARCH& arch, operT op )
-  {
-#if DEBUG_FP
-    std::cerr << "output: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
-#endif
-    operT res = FPProcessDenormalOutput( arch, op );
-
-    FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<operT>::exceptionFlags() );
-    
-    return arch.Test( IsNaN( res ) ) ? FAbs( FPNaN( arch, res ) ) : res;
+    return FPRound(arch, res);
   }
   
   template <typename DST, typename ARCH, typename SRC>
   DST FPConvert( ARCH& arch, SRC op )
   {
     typedef typename ARCH::U32 U32;
-    if ( ( std::is_same<SRC, typename ARCH::F16>::value || std::is_same<DST, typename ARCH::F16>::value ) && arch.Test( AHP.Get( arch.FPCR() ) != U32(0) ) )
-      {
-        struct AlternativeHalfPrecisionFormatUnsupported : std::runtime_error
-        {
-          AlternativeHalfPrecisionFormatUnsupported() : std::runtime_error("Alternative half-precision format is unsupported") {}
-        };
-        
-        throw AlternativeHalfPrecisionFormatUnsupported();
-      }
+    CheckAlternativeHalfFloatPrecision<SRC>( arch );
+    CheckAlternativeHalfFloatPrecision<DST>( arch );
 #if DEBUG_FP
     std::cerr << "FPConvert" << std::endl;
     std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
-    SRC _op = FPProcessDenormalInput( arch, op );
+    SRC _op = std::is_same<SRC, typename ARCH::F16>::value ? op : FPProcessDenormalInput( arch, op );
     
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<DST>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
     FloatingPointStatusAndControl<DST>::exceptionFlags(0);
     FloatingPointStatusAndControl<DST>::roundingMode( RoundingMode( arch ).roundingMode() );
     FloatingPointStatusAndControl<DST>::detectTininess( tininess_beforeRounding );
+    FloatingPointStatusAndControl<DST>::flushToZero( (std::is_same<SRC, typename ARCH::F16>::value or std::is_same<DST, typename ARCH::F16>::value) ? ftz_never : FlushToZero<DST>( arch ).flushToZero() );
     
     if (FPProcessNaNs(arch, {op}, /* fpexc */ true))
     {
       return FPNaN(arch, FConvert<DST>(op));
     }
     
-    return FPRound(arch, FConvert<DST>(_op));
+    DST _res = FConvert<DST>(_op);
+    DST res = (std::is_same<SRC, typename ARCH::F16>::value or std::is_same<DST, typename ARCH::F16>::value) ? _res : FPProcessDenormalOutput( arch, _res );
+#if DEBUG_FP
+    std::cerr << "output: " << res << " (0x" << std::hex << ToPacked(res) << std::dec << ")" << std::endl;
+#endif
+    FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<DST>::exceptionFlags() );
+    return arch.Test( IsNaN( res ) ) ? FAbs( FPNaN( arch, res ) ) : res;
   }
 
   template <typename DST, typename ARCH, typename SRC>
   DST FPConvertRoundOdd( ARCH& arch, SRC op )
   {
     typedef typename ARCH::U32 U32;
-    if ( ( std::is_same<SRC, typename ARCH::F16>::value || std::is_same<DST, typename ARCH::F16>::value ) && arch.Test( AHP.Get( arch.FPCR() ) != U32(0) ) )
-      {
-        struct AlternativeHalfPrecisionFormatUnsupported : std::runtime_error
-        {
-          AlternativeHalfPrecisionFormatUnsupported() : std::runtime_error("Alternative half-precision format is unsupported") {}
-        };
-        
-        throw AlternativeHalfPrecisionFormatUnsupported();
-      }
+    CheckAlternativeHalfFloatPrecision<SRC>( arch );
+    CheckAlternativeHalfFloatPrecision<DST>( arch );
 #if DEBUG_FP
     std::cerr << "FPConvertRoundOdd" << std::endl;
     std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
-    SRC _op = FPProcessDenormalInput( arch, op );
+    SRC _op = std::is_same<SRC, typename ARCH::F16>::value ? op : FPProcessDenormalInput( arch, op );
     
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<DST>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
     FloatingPointStatusAndControl<DST>::exceptionFlags(0);
     FloatingPointStatusAndControl<DST>::roundingMode( round_odd );
     FloatingPointStatusAndControl<DST>::detectTininess( tininess_beforeRounding );
+    FloatingPointStatusAndControl<DST>::flushToZero( (std::is_same<SRC, typename ARCH::F16>::value or std::is_same<DST, typename ARCH::F16>::value) ? ftz_never : FlushToZero<DST>( arch ).flushToZero() );
     
     if (FPProcessNaNs(arch, {op}, /* fpexc */ true))
     {
       return FPNaN(arch, FConvert<DST>(op));
     }
     
-    return FPRound(arch, FConvert<DST>(_op));
+    DST _res = FConvert<DST>(_op);
+    DST res = (std::is_same<SRC, typename ARCH::F16>::value or std::is_same<DST, typename ARCH::F16>::value) ? _res : FPProcessDenormalOutput( arch, _res);
+#if DEBUG_FP
+    std::cerr << "output: " << res << " (0x" << std::hex << ToPacked(res) << std::dec << ")" << std::endl;
+#endif
+    FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<DST>::exceptionFlags() );
+    return arch.Test( IsNaN( res ) ) ? FAbs( FPNaN( arch, res ) ) : res;
   }
   
   template <typename operT, typename ARCH>
   operT FPSub( ARCH& arch, operT op1, operT op2 )
   {
+    CheckAlternativeHalfFloatPrecision<operT>( arch );
 #if DEBUG_FP
     std::cerr << "FPSub" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
@@ -885,16 +923,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
     FloatingPointStatusAndControl<operT>::exceptionFlags(0);
     FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
     FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    FloatingPointStatusAndControl<operT>::flushToZero( FlushToZero<operT>( arch ).flushToZero() );
     return FPRound(arch, _op1 - _op2 );
   }
 
   template <typename operT, typename ARCH>
   operT FPAdd( ARCH& arch, operT op1, operT op2 )
   {
+    CheckAlternativeHalfFloatPrecision<operT>( arch );
 #if DEBUG_FP
     std::cerr << "FPAdd" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
@@ -911,16 +952,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
     FloatingPointStatusAndControl<operT>::exceptionFlags(0);
     FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
     FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    FloatingPointStatusAndControl<operT>::flushToZero( FlushToZero<operT>( arch ).flushToZero() );
     return FPRound(arch, _op1 + _op2 );
   }
 
   template <typename operT, typename ARCH>
   operT FPMul( ARCH& arch, operT op1, operT op2 )
   {
+    CheckAlternativeHalfFloatPrecision<operT>( arch );
 #if DEBUG_FP
     std::cerr << "FPMul" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
@@ -937,16 +981,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
     FloatingPointStatusAndControl<operT>::exceptionFlags(0);
     FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
     FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    FloatingPointStatusAndControl<operT>::flushToZero( FlushToZero<operT>( arch ).flushToZero() );
     return FPRound(arch, _op1 * _op2 );
   }
 
   template <typename operT, typename ARCH>
   operT FPMulX( ARCH& arch, operT op1, operT op2 )
   {
+    CheckAlternativeHalfFloatPrecision<operT>( arch );
 #if DEBUG_FP
     std::cerr << "FPMulX" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
@@ -963,6 +1010,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
     FloatingPointStatusAndControl<operT>::exceptionFlags(0);
     FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
     FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    FloatingPointStatusAndControl<operT>::flushToZero( FlushToZero<operT>( arch ).flushToZero() );
     
     operT res;
     
@@ -981,10 +1029,12 @@ OUT PolyMod2(IN value, uint32_t _poly)
   template <typename operT, typename ARCH>
   operT FPDiv( ARCH& arch, operT op1, operT op2 )
   {
+    CheckAlternativeHalfFloatPrecision<operT>( arch );
 #if DEBUG_FP
     std::cerr << "FPDiv" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
@@ -1001,17 +1051,20 @@ OUT PolyMod2(IN value, uint32_t _poly)
     FloatingPointStatusAndControl<operT>::exceptionFlags(0);
     FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
     FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    FloatingPointStatusAndControl<operT>::flushToZero( FlushToZero<operT>( arch ).flushToZero() );
     return FPRound(arch, _op1 / _op2 );
   }
   
   template <typename operT, typename ARCH>
   operT FPMulAdd( ARCH& arch, operT op1, operT op2, operT op3 )
   {
+    CheckAlternativeHalfFloatPrecision<operT>( arch );
 #if DEBUG_FP
     std::cerr << "FPMulAdd" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
     std::cerr << "input3: " << op3 << " (0x" << std::hex << ToPacked(op3) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
@@ -1044,6 +1097,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
     FloatingPointStatusAndControl<operT>::exceptionFlags(0);
     FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
     FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    FloatingPointStatusAndControl<operT>::flushToZero( FlushToZero<operT>( arch ).flushToZero() );
     return FPRound(arch, FMulAdd(_op2, _op3, _op1 ) ); // (op2 * op3) + op1
   }
   
@@ -1054,6 +1108,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
     std::cerr << "FPMin" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
@@ -1081,6 +1136,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
     std::cerr << "FPMinNumber" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
@@ -1108,6 +1164,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
     std::cerr << "FPMax" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
@@ -1135,6 +1192,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
     std::cerr << "FPMaxNumber" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
@@ -1287,9 +1345,11 @@ OUT PolyMod2(IN value, uint32_t _poly)
   template <typename operT, typename ARCH>
   operT FPSqrt( ARCH& arch, operT op )
   {
+    CheckAlternativeHalfFloatPrecision<operT>( arch );
 #if DEBUG_FP
     std::cerr << "FPSqrt" << std::endl;
     std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+    std::cerr << "FPCR=0x" << std::hex << arch.FPCR() << std::dec << std::endl;
 #endif
     operT _op = FPProcessDenormalInput( arch, op );
     if (auto nan = FPProcessNaNs(arch, {op}, /* fpexc */ true))
@@ -1305,6 +1365,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
     FloatingPointStatusAndControl<operT>::exceptionFlags(0);
     FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
     FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    FloatingPointStatusAndControl<operT>::flushToZero( FlushToZero<operT>( arch ).flushToZero() );
     return FPRound(arch, FSqrt(_op) );
   }
   

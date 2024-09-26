@@ -71,6 +71,8 @@
 #include "unisim/util/xml/xml.hh"
 #include "unisim/util/debug/memory_access_type.hh"
 
+
+
 namespace unisim {
 namespace service {
 namespace pim {
@@ -140,8 +142,6 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 
 	, watchpoint_hit(NULL)
 
-	, breakpoint_registry()
-	, watchpoint_registry()
 	, running_mode(GDBSERVER_MODE_WAITING_GDB_CLIENT)
 	, extended_mode(false)
 	, counter(0)
@@ -691,7 +691,20 @@ void PIMServer<ADDRESS>::DebugYield()
 					list<const Symbol<ADDRESS> *> symbol_registries;
 
 					if (symbol_table_lookup_import) {
-						symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+						struct SymbolTableScanner : unisim::service::interfaces::SymbolTableScanner<ADDRESS>
+						{
+							list<const Symbol<ADDRESS> *>& symbol_registries;
+
+							SymbolTableScanner(list<const Symbol<ADDRESS> *>& _symbol_registries) : symbol_registries(_symbol_registries) {}
+							virtual void Append(const Symbol<ADDRESS> *symbol)
+							{
+								symbol_registries.push_back(symbol);
+							}
+						};
+
+						SymbolTableScanner symbol_table_scanner(symbol_registries);
+						symbol_table_lookup_import->ScanSymbols(symbol_table_scanner, Symbol<ADDRESS>::SYM_OBJECT);
+
 					}
 					typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
 
@@ -732,7 +745,20 @@ void PIMServer<ADDRESS>::DebugYield()
 					list<const Symbol<ADDRESS> *> symbol_registries;
 
 					if (symbol_table_lookup_import) {
-						symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+						struct SymbolTableScanner : unisim::service::interfaces::SymbolTableScanner<ADDRESS>
+						{
+							list<const Symbol<ADDRESS> *>& symbol_registries;
+
+							SymbolTableScanner(list<const Symbol<ADDRESS> *>& _symbol_registries) : symbol_registries(_symbol_registries) {}
+							virtual void Append(const Symbol<ADDRESS> *symbol)
+							{
+								symbol_registries.push_back(symbol);
+							}
+						};
+
+						SymbolTableScanner symbol_table_scanner(symbol_registries);
+						symbol_table_lookup_import->ScanSymbols(symbol_table_scanner, Symbol<ADDRESS>::SYM_OBJECT);
+
 					}
 					typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
 
@@ -772,7 +798,20 @@ void PIMServer<ADDRESS>::DebugYield()
 					list<const Symbol<ADDRESS> *> symbol_registries;
 
 					if (symbol_table_lookup_import) {
-						symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+						struct SymbolTableScanner : unisim::service::interfaces::SymbolTableScanner<ADDRESS>
+						{
+							list<const Symbol<ADDRESS> *>& symbol_registries;
+
+							SymbolTableScanner(list<const Symbol<ADDRESS> *>& _symbol_registries) : symbol_registries(_symbol_registries) {}
+							virtual void Append(const Symbol<ADDRESS> *symbol)
+							{
+								symbol_registries.push_back(symbol);
+							}
+						};
+
+						SymbolTableScanner symbol_table_scanner(symbol_registries);
+						symbol_table_lookup_import->ScanSymbols(symbol_table_scanner, Symbol<ADDRESS>::SYM_OBJECT);
+
 					}
 					typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
 
@@ -1023,7 +1062,21 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 //		list<const Symbol<ADDRESS> *> symbol_registries;
 //
 //		if (symbol_table_lookup_import) {
-//			symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+//			struct SymbolTableScanner : unisim::service::interfaces::SymbolTableScanner<ADDRESS>
+//			{
+//				list<const Symbol<ADDRESS> *>& symbol_registries;
+//
+//				SymbolTableScanner(list<const Symbol<ADDRESS> *>& _symbol_registries) : symbol_registries(_symbol_registries) {}
+//				virtual void Append(const Symbol<ADDRESS> *symbol)
+//				{
+//					symbol_registries.push_back(symbol);
+//				}
+//			};
+//
+//			SymbolTableScanner symbol_table_scanner(symbol_registries);
+//			symbol_table_lookup_import->ScanSymbols(symbol_table_scanner, Symbol<ADDRESS>::SYM_OBJECT);
+//
+//		}
 //
 //		}
 //
@@ -1419,7 +1472,20 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 			list<const Symbol<ADDRESS> *> symbol_registries;
 
 			if (symbol_table_lookup_import) {
-				symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_FUNC);
+				struct SymbolTableScanner : unisim::service::interfaces::SymbolTableScanner<ADDRESS>
+				{
+					list<const Symbol<ADDRESS> *>& symbol_registries;
+
+					SymbolTableScanner(list<const Symbol<ADDRESS> *>& _symbol_registries) : symbol_registries(_symbol_registries) {}
+					virtual void Append(const Symbol<ADDRESS> *symbol)
+					{
+						symbol_registries.push_back(symbol);
+					}
+				};
+
+				SymbolTableScanner symbol_table_scanner(symbol_registries);
+				symbol_table_lookup_import->ScanSymbols(symbol_table_scanner, Symbol<ADDRESS>::SYM_FUNC);
+
 			}
 
 			typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
@@ -1445,7 +1511,22 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 			}
 
 			symbol_registries.clear();
-			symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+			if (symbol_table_lookup_import) {
+				struct SymbolTableScanner : unisim::service::interfaces::SymbolTableScanner<ADDRESS>
+				{
+					list<const Symbol<ADDRESS> *>& symbol_registries;
+
+					SymbolTableScanner(list<const Symbol<ADDRESS> *>& _symbol_registries) : symbol_registries(_symbol_registries) {}
+					virtual void Append(const Symbol<ADDRESS> *symbol)
+					{
+						symbol_registries.push_back(symbol);
+					}
+				};
+
+				SymbolTableScanner symbol_table_scanner(symbol_registries);
+				symbol_table_lookup_import->ScanSymbols(symbol_table_scanner, Symbol<ADDRESS>::SYM_OBJECT);
+
+			}
 
 			for(symbol_iter = symbol_registries.begin(); symbol_iter != symbol_registries.end(); symbol_iter++)
 			{

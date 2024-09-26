@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([span],, AC_MSG_ERROR([span is missing]))

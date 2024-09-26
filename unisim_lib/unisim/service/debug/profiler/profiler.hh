@@ -45,7 +45,7 @@
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
-#include <unisim/service/interfaces/backtrace.hh>
+#include <unisim/service/interfaces/stack_frame.hh>
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/profiling.hh>
 #include <unisim/service/interfaces/debug_info_loading.hh>
@@ -403,6 +403,9 @@ private:
 	std::map<ADDRESS, std::string> addr_to_func;
 	std::map<std::string, SLoc> func_to_sloc;
 	std::map<SLoc, std::string> sloc_to_func;
+	
+	void ProcessFunctionSymbol(const unisim::util::debug::Symbol<ADDRESS> *func_symbol, unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, std::ostream& warn_log);
+	void ProcessStatement(const unisim::util::debug::Statement<ADDRESS> *stmt, const char *func_name);
 };
 
 ////////////////////////// AddressProfileBase<> ///////////////////////////////
@@ -643,7 +646,7 @@ public:
 	const std::pair<T, T>& GetValueRange() const { return value_range; }
 private:
 
-	bool FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *>& stmts, ADDRESS addr);
+	void ProcessStatement(const unisim::util::debug::Statement<ADDRESS> *stmt, const T& value);
 	
 	std::ostream& warn_log;
 	const AddressProfile<ADDRESS, T> *addr_profile;
@@ -756,7 +759,7 @@ class Profiler
 	, public unisim::kernel::Client<unisim::service::interfaces::Registers>
 	, public unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >
-	, public unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::StackFrame<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::Profiling<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>
 	, public unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
@@ -778,7 +781,7 @@ public:
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>                    registers_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >  symbol_table_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::StatementLookup<ADDRESS> >    stmt_lookup_import;
-	unisim::kernel::ServiceImport<unisim::service::interfaces::BackTrace<ADDRESS> >          backtrace_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::StackFrame<ADDRESS> >          stack_frame_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Profiling<ADDRESS> >          profiling_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugInfoLoading>             debug_info_loading_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >   data_object_lookup_import;

@@ -35,8 +35,20 @@
 #ifndef __UNISIM_UTIL_DEBUG_EVENT_HH__
 #define __UNISIM_UTIL_DEBUG_EVENT_HH__
 
+#include <unisim/service/interfaces/debug_event.hh>
 #include <inttypes.h>
 #include <ostream>
+#include <set>
+
+namespace unisim {
+namespace service {
+namespace interfaces {
+
+template <class ADDRESS> class DebugEventListener;
+
+} // end of namespace interfaces
+} // end of namespace service
+} // end of namespace unisim
 
 namespace unisim {
 namespace util {
@@ -48,35 +60,44 @@ class Event
 public:
 	typedef unsigned int Type;
 	
-	Event(Type _type) : type(_type), ref(0), event_id(next_event_id++), prc_num(-1), front_end_num(-1), ref_count(0) {}
-	Event(Type _type, Event<ADDRESS> *_ref) : type(_type), ref(_ref), event_id(next_event_id++), prc_num(-1), front_end_num(-1), ref_count(0) {}
 	virtual ~Event() {}
 	Type GetType() const { return type; }
-	Event<ADDRESS> *GetReference() const { return ref; }
-	unsigned int GetEventId() const { return event_id; }
-	int GetProcessorNumber() const { return prc_num; }
-	int GetFrontEndNumber() const { return front_end_num; }
-	void SetProcessorNumber(int _prc_num) { if((prc_num >= 0) || (_prc_num < 0)) return; prc_num = _prc_num; }
-	void SetFrontEndNumber(int _front_end_num) { if((front_end_num >= 0) || (_front_end_num < 0)) return; front_end_num = _front_end_num; }
+	unsigned int GetProcessorNumber() const { return prc_num; }
+	void AddEventListener(unisim::service::interfaces::DebugEventListener<ADDRESS> *listener) { event_listeners.insert(listener); }
+	void RemoveEventListener(unisim::service::interfaces::DebugEventListener<ADDRESS> *listener) { event_listeners.erase(listener); }
+	bool HasEventListeners() const { return !event_listeners.empty(); }
+	inline void Trigger() const;
 	void Catch() const { ref_count++; }
 	void Release() const { if(ref_count && (--ref_count == 0)) delete this; }
 	
+protected:
+	Event(Type _type, unsigned int _prc_num) : type(_type), prc_num(_prc_num), event_listeners(), ref_count(0) {}
 private:
 	Type type;
-	Event<ADDRESS> *ref;
-	unsigned int event_id;
 	int prc_num;
-	int front_end_num;
+	typedef std::set<unisim::service::interfaces::DebugEventListener<ADDRESS> *> EventListeners;
+	EventListeners event_listeners;
 	mutable unsigned int ref_count;
-	
-	static unsigned int next_event_id;
 	
 protected:
 	static Type AllocateCustomEventType() { static Type next_event_type = 0; return next_event_type++; }
 };
 
 template <typename ADDRESS>
-unsigned int Event<ADDRESS>::next_event_id;
+inline void Event<ADDRESS>::Trigger() const
+{
+	typename EventListeners::size_type i = 0, n = event_listeners.size();
+	unisim::service::interfaces::DebugEventListener<ADDRESS> *_event_listeners[n];
+	for(typename EventListeners::const_iterator it = event_listeners.begin(); it != event_listeners.end(); ++i, ++it)
+	{
+		_event_listeners[i] = *it;
+	}
+	for(i = 0; i < n; ++i)
+	{
+		unisim::service::interfaces::DebugEventListener<ADDRESS> *event_listener = _event_listeners[i];
+		event_listener->OnDebugEvent(this);
+	}
+}
 
 template <typename ADDRESS, typename T>
 class CustomEvent : public Event<ADDRESS>
@@ -84,8 +105,10 @@ class CustomEvent : public Event<ADDRESS>
 public:
 	static const typename Event<ADDRESS>::Type TYPE;
 	
-	CustomEvent() : Event<ADDRESS>(TYPE) {}
-	CustomEvent(Event<ADDRESS> *ref) : Event<ADDRESS>(TYPE, ref) {}
+	static bool IsInstanceOf(const Event<ADDRESS> *event) { return event->GetType() == TYPE; }
+
+protected:
+	CustomEvent(unsigned int _prc_num) : Event<ADDRESS>(TYPE, _prc_num) {}
 };
 
 template <typename ADDRESS, typename T>

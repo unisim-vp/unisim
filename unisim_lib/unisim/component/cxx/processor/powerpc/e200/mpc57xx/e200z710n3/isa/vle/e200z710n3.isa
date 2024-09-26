@@ -83,6 +83,7 @@ namespace e200z710n3 {
 
 using unisim::util::arithmetic::BitScanReverse;
 using unisim::util::arithmetic::RotateLeft;
+using unisim::util::arithmetic::ConditionalMove;
 
 typedef CPU::ADDRESS ADDRESS;
 

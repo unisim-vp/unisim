@@ -207,7 +207,7 @@ template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>:: operator bool () const {
 //	return (*regHigh || *regLow);
 
-	REGISTER_TYPE tmp;
+	REGISTER_TYPE tmp = REGISTER_TYPE();
 	bool result = ReadBack(tmp);
 
 	return (result? (tmp? true : false) : ((*regHigh || *regLow) ? true : false));
@@ -226,7 +226,7 @@ ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator long long (
 
 //
 
-	REGISTER_TYPE tmp;
+	REGISTER_TYPE tmp = REGISTER_TYPE();
 	bool result = ReadBack(tmp);
 
 	switch(sizeof(SUB_REGISTER_TYPE))
@@ -252,7 +252,7 @@ ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator unsigned lo
 
 //
 
-	REGISTER_TYPE tmp;
+	REGISTER_TYPE tmp = REGISTER_TYPE();
 	bool result = ReadBack(tmp);
 
 	switch(sizeof(SUB_REGISTER_TYPE))
@@ -277,7 +277,7 @@ ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator double () c
 
 //
 
-	REGISTER_TYPE tmp;
+	REGISTER_TYPE tmp = REGISTER_TYPE();
 	bool result = ReadBack(tmp);
 
 	switch(sizeof(SUB_REGISTER_TYPE))
@@ -302,7 +302,7 @@ ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator std::string
 //	sstr << (uint64_t) *regLow;
 
 //
-	REGISTER_TYPE tmp;
+	REGISTER_TYPE tmp = REGISTER_TYPE();
 	bool result = ReadBack(tmp);
 	std::stringstream sstr;
 

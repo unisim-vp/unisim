@@ -40,8 +40,8 @@
 #include <unisim/component/cxx/processor/arm/memattrs.hh>
 using unisim::util::arithmetic::RotateRight;
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
-#include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
+#include <unisim/component/cxx/processor/arm/isa/arm32/arm32.tcc>
+#include <unisim/component/cxx/processor/arm/isa/thumb2/thumb.tcc>
 #include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>

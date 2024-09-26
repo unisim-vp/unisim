@@ -36,6 +36,8 @@
 #include "config.h"
 #endif
 
+#if HAVE_HLA_RTI1516E
+
 #include <unisim/util/hla/hla.hh>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -54,20 +56,14 @@ namespace hla {
 
 /////////////////////////// TimeImplementations<> /////////////////////////////
 
-#if defined(HAVE_HLA_RTI1516E)
-
 const wchar_t *TimeImplementations<uint64_t>::HLA_TIME_IMPL_NAME = L"HLAinteger64Time";
 const wchar_t *TimeImplementations<double>::HLA_TIME_IMPL_NAME = L"HLAfloat64Time";
-
-#endif
 
 //////////////////////////////// ObjectClass //////////////////////////////////
 
 ObjectClass::ObjectClass(FederateBase& _federate, const std::string& _name)
 	: federate(_federate)
-#if defined(HAVE_HLA_RTI1516E)
 	, handle()
-#endif
 	, name(unisim::util::unicode::utf8_string_to_unicode_wstring(_name))
 {
 	federate.object_classes[name] = this;
@@ -75,9 +71,7 @@ ObjectClass::ObjectClass(FederateBase& _federate, const std::string& _name)
 
 ObjectClass::ObjectClass(FederateBase& _federate, const std::wstring& _name)
 	: federate(_federate)
-#if defined(HAVE_HLA_RTI1516E)
 	, handle()
-#endif
 	, name(_name)
 {
 	federate.object_classes[name] = this;
@@ -158,17 +152,11 @@ void ObjectClass::DestroyAttributes()
 
 ObjectInstance::ObjectInstance(ObjectClass& _object_class, const std::string& _name)
 	: object_class(_object_class)
-#if defined(HAVE_HLA_RTI1516E)
 	, handle()
-#endif
 	, name(unisim::util::unicode::utf8_string_to_unicode_wstring(_name))
-#if defined(HAVE_HLA_RTI1516E)
 	, attr_values()
-#endif
 	, attr_values_per_name()
-#if defined(HAVE_HLA_RTI1516E)
 	, user_supplied_tag()
-#endif
 {
 	if(object_class.object_instances.find(name) != object_class.object_instances.end()) throw ObjectInstanceAlreadyExists(name);
 	object_class.object_instances[name] = this;
@@ -182,17 +170,11 @@ ObjectInstance::ObjectInstance(ObjectClass& _object_class, const std::string& _n
 
 ObjectInstance::ObjectInstance(ObjectClass& _object_class, const std::wstring& _name)
 	: object_class(_object_class)
-#if defined(HAVE_HLA_RTI1516E)
 	, handle()
-#endif
 	, name(_name)
-#if defined(HAVE_HLA_RTI1516E)
 	, attr_values()
-#endif
 	, attr_values_per_name()
-#if defined(HAVE_HLA_RTI1516E)
 	, user_supplied_tag()
-#endif
 {
 	if(object_class.object_instances.find(name) != object_class.object_instances.end()) throw ObjectInstanceAlreadyExists(name);
 	object_class.object_instances[name] = this;
@@ -247,9 +229,7 @@ AttributeValueBase& ObjectInstance::GetAttributeValue(const std::wstring& attr_n
 
 AttributeBase::AttributeBase(ObjectClass& _object_class, const std::string& _name, const std::string& _type_name)
 	: object_class(_object_class)
-#if defined(HAVE_HLA_RTI1516E)
 	, handle()
-#endif
 	, name(unisim::util::unicode::utf8_string_to_unicode_wstring(_name))
 	, type_name(unisim::util::unicode::utf8_string_to_unicode_wstring(_type_name))
 	, publish(false)
@@ -261,9 +241,7 @@ AttributeBase::AttributeBase(ObjectClass& _object_class, const std::string& _nam
 
 AttributeBase::AttributeBase(ObjectClass& _object_class, const std::wstring& _name, const std::wstring& _type_name)
 	: object_class(_object_class)
-#if defined(HAVE_HLA_RTI1516E)
 	, handle()
-#endif
 	, name(_name)
 	, type_name(_type_name)
 	, publish(false)
@@ -350,9 +328,7 @@ FederateBase::FederateBase()
 	, fom_module()
 	, federate_name()
 	, federate_type()
-#if defined(HAVE_HLA_RTI1516E)
 	, rti_ambassador()
-#endif
 	, object_classes()
 	, object_instances_per_name()
 	, joined()
@@ -379,9 +355,7 @@ FederateBase::FederateBase(
 	, fom_module(_fom_module)
 	, federate_name(_federate_name)
 	, federate_type(_federate_type)
-#if defined(HAVE_HLA_RTI1516E)
 	, rti_ambassador()
-#endif
 	, object_classes()
 	, object_instances_per_name()
 	, joined()
@@ -501,3 +475,5 @@ void FederateBase::WaitHostTime(unsigned int msec)
 } // end of namespace hla
 } // end of namespace util
 } // end of namespace unisim
+
+#endif // HAVE_HLA_RTI1516E

@@ -102,78 +102,94 @@ FunctionNameLocationConversion<ADDRESS>::FunctionNameLocationConversion(unisim::
 	, func_to_sloc()
 	, sloc_to_func()
 {
-	std::list<const unisim::util::debug::Symbol<ADDRESS> *> func_symbols;
-	
-	symbol_table_lookup_if->GetSymbols(func_symbols, unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC);
-	
-	typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>::const_iterator func_symbol_it;
-	
-	for(func_symbol_it = func_symbols.begin(); func_symbol_it != func_symbols.end(); func_symbol_it++)
+	struct SymbolTableScanner : unisim::service::interfaces::SymbolTableScanner<ADDRESS>
 	{
-		const unisim::util::debug::Symbol<ADDRESS> *func_symbol = *func_symbol_it;
+		FunctionNameLocationConversion<ADDRESS>& self;
+		unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if;
+		std::ostream& warn_log;
 		
-		const char *func_name = func_symbol->GetName();
+		SymbolTableScanner(FunctionNameLocationConversion<ADDRESS>& _self, unisim::service::interfaces::StatementLookup<ADDRESS> *_stmt_lookup_if, std::ostream& _warn_log) : self(_self), stmt_lookup_if(_stmt_lookup_if), warn_log(_warn_log) {}
 		
-		ADDRESS func_addr = func_symbol->GetAddress();
-		ADDRESS func_size = func_symbol->GetSize();
-		ADDRESS func_start_addr = func_addr;
-		ADDRESS func_end_addr = func_addr + func_size - 1;
+		virtual void Append(const unisim::util::debug::Symbol<ADDRESS> *symbol)
+		{
+			self.ProcessFunctionSymbol(symbol, stmt_lookup_if, warn_log);
+		}
+	};
+	
+	SymbolTableScanner symbol_table_scanner(*this, stmt_lookup_if, warn_log);
+	symbol_table_lookup_if->ScanSymbols(symbol_table_scanner, unisim::util::debug::SymbolBase::SYM_FUNC);
+}
 
-		typename std::map<std::string, ADDRESS>::iterator func_to_addr_it = func_to_addr.find(func_name);
+template <typename ADDRESS>
+void FunctionNameLocationConversion<ADDRESS>::ProcessFunctionSymbol(const unisim::util::debug::Symbol<ADDRESS> *func_symbol, unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, std::ostream& warn_log)
+{
+	const char *func_name = func_symbol->GetName();
+	
+	ADDRESS func_addr = func_symbol->GetAddress();
+	ADDRESS func_size = func_symbol->GetSize();
+	ADDRESS func_start_addr = func_addr;
+	ADDRESS func_end_addr = func_addr + func_size - 1;
+
+	typename std::map<std::string, ADDRESS>::iterator func_to_addr_it = func_to_addr.find(func_name);
+	
+	if(func_to_addr_it == func_to_addr.end())
+	{
+		func_to_addr[func_name] = func_start_addr;
+	}
+	else
+	{
+		warn_log << "Multiple definition of function \"" << func_name << "\"" << std::endl;
+	}
+	
+	ADDRESS addr;
+	for(addr = func_start_addr; addr <= func_end_addr; addr++)
+	{
+		addr_to_func[addr] = func_name;
 		
-		if(func_to_addr_it == func_to_addr.end())
+		struct StatementScanner : unisim::service::interfaces::StatementScanner<ADDRESS>
 		{
-			func_to_addr[func_name] = func_start_addr;
-		}
-		else
-		{
-			warn_log << "Multiple definition of function \"" << func_name << "\"" << std::endl;
-		}
-		
-		ADDRESS addr;
-		for(addr = func_start_addr; addr <= func_end_addr; addr++)
-		{
-			addr_to_func[addr] = func_name;
+			FunctionNameLocationConversion<ADDRESS>& self;
+			const char *func_name;
 			
-			//const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_if->FindStatement(addr, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);
+			StatementScanner(FunctionNameLocationConversion<ADDRESS>& _self, const char *_func_name) : self(_self), func_name(_func_name) {}
 			
-			std::vector<const unisim::util::debug::Statement<ADDRESS> *> stmts;
-			
-			if(stmt_lookup_if->FindStatements(stmts, addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT))
+			virtual void Append(const unisim::util::debug::Statement<ADDRESS> *stmt)
 			{
-				typename std::vector<const unisim::util::debug::Statement<ADDRESS> *>::const_iterator stmt_it;
-				
-				for(stmt_it = stmts.begin(); stmt_it != stmts.end(); stmt_it++)
-				{
-					const unisim::util::debug::Statement<ADDRESS> *stmt = *stmt_it;
-				
-					const char *source_filename = stmt->GetSourceFilename();
-					
-					if(source_filename)
-					{
-						unsigned int lineno = stmt->GetLineNo();
-					
-						std::string source_path;
-						const char *source_dirname = stmt->GetSourceDirname();
-						if(source_dirname)
-						{
-							source_path += source_dirname;
-							source_path += '/';
-						}
-						source_path += source_filename;
-						
-						SLoc sloc = SLoc(source_path.c_str(), lineno);
-				
-						sloc_to_func[sloc] = func_name;
-						
-						if(func_to_sloc.find(func_name) == func_to_sloc.end())
-						{
-							// temporary heuristic: associate first sloc (in address order) to function
-							func_to_sloc[func_name] = sloc;
-						}
-					}
-				}
+				self.ProcessStatement(stmt, func_name);
 			}
+		};
+		
+		StatementScanner stmt_scanner(*this, func_name);
+		stmt_lookup_if->FindStatements(stmt_scanner, addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_EXACT_STMT);
+	}
+}
+
+template <typename ADDRESS>
+void FunctionNameLocationConversion<ADDRESS>::ProcessStatement(const unisim::util::debug::Statement<ADDRESS> *stmt, const char *func_name)
+{
+	const char *source_filename = stmt->GetSourceFilename();
+	
+	if(source_filename)
+	{
+		unsigned int lineno = stmt->GetLineNo();
+
+		std::string source_path;
+		const char *source_dirname = stmt->GetSourceDirname();
+		if(source_dirname)
+		{
+			source_path += source_dirname;
+			source_path += '/';
+		}
+		source_path += source_filename;
+
+		SLoc sloc = SLoc(source_path.c_str(), lineno);
+
+		sloc_to_func[sloc] = func_name;
+
+		if(func_to_sloc.find(func_name) == func_to_sloc.end())
+		{
+			// temporary heuristic: associate first sloc (in address order) to function
+			func_to_sloc[func_name] = sloc;
 		}
 	}
 }
@@ -1293,7 +1309,7 @@ void FunctionInstructionProfile<ADDRESS, T>::Init()
 		ADDRESS addr = (*value_per_addr_map_it).first;
 		const T& value = (*value_per_addr_map_it).second;
 		
-		const unisim::util::debug::Symbol<ADDRESS> *func_symbol = symbol_table_lookup_if->FindSymbolByAddr(addr, unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC);
+		const unisim::util::debug::Symbol<ADDRESS> *func_symbol = symbol_table_lookup_if->FindSymbolByAddr(addr, unisim::util::debug::SymbolBase::SYM_FUNC);
 		
 		if(func_symbol)
 		{
@@ -1425,54 +1441,28 @@ void SourceCodeProfile<ADDRESS, T>::Print(std::ostream& os, Visitor& visitor) co
 }
 
 template <typename ADDRESS, typename T>
-bool SourceCodeProfile<ADDRESS, T>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *>& stmts, ADDRESS addr)
+void SourceCodeProfile<ADDRESS, T>::ProcessStatement(const unisim::util::debug::Statement<ADDRESS> *stmt, const T& value)
 {
-	const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_if->FindStatements(stmts, addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);
-	
-	if(stmt) return stmt;
-	
-	const unisim::util::debug::Symbol<ADDRESS> *func_symbol = symbol_table_lookup_if->FindSymbolByAddr(addr, unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC);
-	
-	ADDRESS func_start_addr = addr;
-	ADDRESS func_end_addr = addr;
-	if(func_symbol)
+	const char *source_filename = stmt->GetSourceFilename();
+	if(source_filename)
 	{
-		ADDRESS func_addr = func_symbol->GetAddress();
-		ADDRESS func_size = func_symbol->GetSize();
-		if(func_size != 0)
+		unsigned int lineno = stmt->GetLineNo();
+		//unsigned int colno = stmt->GetColNo();
+		std::string source_path;
+		const char *source_dirname = stmt->GetSourceDirname();
+		if(source_dirname)
 		{
-			func_start_addr = func_addr;
-			func_end_addr = func_addr + func_size - 1;
+			source_path += source_dirname;
+			source_path += '/';
 		}
-	}
-
-	// could not find exact statemement, try to find nearest statements
-	stmts.clear();
-	stmt = stmt_lookup_if->FindStatements(stmts, addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT);
-	
-	// filter statements outside from the function scope
-	if(stmt && (stmt->GetAddress() >= func_start_addr) && (stmt->GetAddress() <= func_end_addr))
-	{
-		typename std::vector<const unisim::util::debug::Statement<ADDRESS> *>::iterator stmt_it = stmts.begin();
+		source_path += source_filename;
 		
-		do
-		{
-			stmt = *stmt_it;
-			if((stmt->GetAddress() < func_start_addr) || (stmt->GetAddress() > func_end_addr))
-			{
-				stmt_it = stmts.erase(stmt_it);
-			}
-			else
-			{
-				stmt_it++;
-			}
-		}
-		while(stmt_it != stmts.end());
+		SLoc sloc = SLoc(source_path.c_str(), lineno);
 		
-		return !stmts.empty();
+		sloc_profile[sloc] += value;
+		
+		source_filename_set.insert(source_path);
 	}
-	
-	return false;
 }
 
 template <typename ADDRESS, typename T>
@@ -1490,37 +1480,20 @@ void SourceCodeProfile<ADDRESS, T>::Update()
 		ADDRESS addr = (*value_per_addr_map_it).first;
 		const T& value = (*value_per_addr_map_it).second;
 		
-		std::vector<const unisim::util::debug::Statement<ADDRESS> *> stmts;
-		if(FindStatements(stmts, addr))
+		struct StatementScanner : unisim::service::interfaces::StatementScanner<ADDRESS>
 		{
-			typename std::vector<const unisim::util::debug::Statement<ADDRESS> *>::iterator stmt_it;
-			for(stmt_it = stmts.begin(); stmt_it != stmts.end(); stmt_it++)
+			SourceCodeProfile<ADDRESS, T>& source_code_profile;
+			const T& value;
+			
+			StatementScanner(SourceCodeProfile<ADDRESS, T>& _source_code_profile, const T& _value) : source_code_profile(_source_code_profile), value(_value) {}
+			virtual void Append(const unisim::util::debug::Statement<ADDRESS> *stmt)
 			{
-				const unisim::util::debug::Statement<ADDRESS> *stmt = *stmt_it;
-		
-				const char *source_filename = stmt->GetSourceFilename();
-				if(source_filename)
-				{
-					unsigned int lineno = stmt->GetLineNo();
-					//unsigned int colno = stmt->GetColNo();
-					std::string source_path;
-					const char *source_dirname = stmt->GetSourceDirname();
-					if(source_dirname)
-					{
-						source_path += source_dirname;
-						source_path += '/';
-					}
-					source_path += source_filename;
-					
-					SLoc sloc = SLoc(source_path.c_str(), lineno);
-					
-					sloc_profile[sloc] += value;
-					
-					source_filename_set.insert(source_path);
-				}
+				source_code_profile.ProcessStatement(stmt, value);
 			}
-		}
-		else
+		};
+		
+		StatementScanner stmt_scanner(*this, value);
+		if(!stmt_lookup_if->FindStatements(stmt_scanner, addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION))
 		{
 			other_profile[addr] += value;
 		}
@@ -2032,7 +2005,7 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Registers>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::StackFrame<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Profiling<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
@@ -2047,7 +2020,7 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, registers_import("registers-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, stmt_lookup_import("stmt-lookup-import", this)
-	, backtrace_import("backtrace-import", this)
+	, stack_frame_import("backtrace-import", this)
 	, profiling_import("profiling-import", this)
 	, debug_info_loading_import("debug-info-loading-import", this)
 	, data_object_lookup_import("data-object-lookup-import", this)
@@ -2094,9 +2067,6 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, mutex()
 {
 	pthread_mutex_init(&mutex, NULL);
-	
-	commit_insn_event = new unisim::util::debug::CommitInsnEvent<ADDRESS>();
-	commit_insn_event->Catch();
 }
 
 template <typename ADDRESS>
@@ -2223,6 +2193,9 @@ bool Profiler<ADDRESS>::EndSetup()
 			}
 		}
 	}
+	
+	commit_insn_event = debug_event_trigger_import->CreateCommitInsnEvent();
+	commit_insn_event->Catch();
 	
 	listening_commit = false;
 	pc = 0;
@@ -2580,17 +2553,16 @@ void Profiler<ADDRESS>::LoadDebugInfo()
 {
 	// Disable all binaries for debugging
 	
-	std::list<std::string> binaries;
-	
-	debug_info_loading_import->EnumerateBinaries(binaries);
-	
-	std::list<std::string>::iterator binary_it;
-	for(binary_it = binaries.begin(); binary_it != binaries.end(); binary_it++)
+	struct ExecutableBinaryFileDisabler : unisim::service::interfaces::ExecutableBinaryFileScanner
 	{
-		const std::string& binary = *binary_it;
-		
-		debug_info_loading_import->EnableBinary(binary.c_str(), false);
-	}
+		virtual void Append(unisim::service::interfaces::ExecutableBinaryFile *exec_bin_file)
+		{
+			exec_bin_file->Enable(false);
+		}
+	};
+	
+	ExecutableBinaryFileDisabler exec_bin_file_disabler;
+	debug_info_loading_import->ScanExecutableBinaryFiles(exec_bin_file_disabler);
 	
 	// Selectively load/reenable debug information from binaries
 	if(filename.empty())
@@ -2608,21 +2580,38 @@ void Profiler<ADDRESS>::LoadDebugInfo()
 			
 			std::string _filename = (delim_pos != std::string::npos) ? filename.substr(pos, delim_pos - pos) : filename.substr(pos);
 			
-			std::string real_filename = unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(_filename.c_str());
-			
-			if(debug_info_loading_import->EnableBinary(real_filename.c_str(), true))
+			struct ExecutableBinaryFileEnabler : unisim::service::interfaces::ExecutableBinaryFileScanner
 			{
-				logger << DebugInfo << "Debugging information from \"" << real_filename << "\" previously loaded" << EndDebugInfo;
+				std::string real_filename;
+				bool found;
+				
+				virtual void Append(unisim::service::interfaces::ExecutableBinaryFile *exec_bin_file)
+				{
+					if(exec_bin_file->GetFilename() == real_filename)
+					{
+						exec_bin_file->Enable();
+						found = true;
+					}
+				}
+			};
+			
+			ExecutableBinaryFileEnabler exec_bin_file_enabler;
+			exec_bin_file_enabler.real_filename = unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(_filename.c_str());
+			exec_bin_file_enabler.found = false;
+			debug_info_loading_import->ScanExecutableBinaryFiles(exec_bin_file_enabler);
+			if(exec_bin_file_enabler.found)
+			{
+				logger << DebugInfo << "Debugging information from \"" << exec_bin_file_enabler.real_filename << "\" previously loaded" << EndDebugInfo;
 			}
 			else
 			{
-				if(debug_info_loading_import->LoadDebugInfo(real_filename.c_str()))
+				if(debug_info_loading_import->LoadDebugInfo(exec_bin_file_enabler.real_filename.c_str()))
 				{
-					logger << DebugInfo << "Debugging information from \"" << real_filename << "\" loaded" << EndDebugInfo;
+					logger << DebugInfo << "Debugging information from \"" << exec_bin_file_enabler.real_filename << "\" loaded" << EndDebugInfo;
 				}
 				else
 				{
-					logger << DebugInfo << "No debugging information loaded from \"" << real_filename << "\"" << EndDebugInfo;
+					logger << DebugInfo << "No debugging information loaded from \"" << exec_bin_file_enabler.real_filename << "\"" << EndDebugInfo;
 				}
 			}
 			pos = (delim_pos != std::string::npos) ? delim_pos + 1 : std::string::npos;

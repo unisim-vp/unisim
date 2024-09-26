@@ -97,7 +97,6 @@ public:
 	void Run();
 	virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
-	virtual void SigInt();
 protected:
 private:
 	//=========================================================================
@@ -606,7 +605,7 @@ Simulator::Simulator(int argc, char **argv)
 			inline_debugger->registers_import              >> *debugger->registers_export[0];
 			inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
 			inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
-			inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+			inline_debugger->stack_frame_import              >> *debugger->stack_frame_export[0];
 			inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
 			inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
 			inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
@@ -635,7 +634,7 @@ Simulator::Simulator(int argc, char **argv)
 			profiler->registers_import                >> *debugger->registers_export[2];
 			profiler->stmt_lookup_import              >> *debugger->stmt_lookup_export[2];
 			profiler->symbol_table_lookup_import      >> *debugger->symbol_table_lookup_export[2];
-			profiler->backtrace_import                >> *debugger->backtrace_export[2];
+			profiler->stack_frame_import                >> *debugger->stack_frame_export[2];
 			profiler->debug_info_loading_import       >> *debugger->debug_info_loading_export[2];
 			profiler->data_object_lookup_import       >> *debugger->data_object_lookup_export[2];
 			profiler->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[2];
@@ -860,6 +859,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	//  - Debugger run-time configuration
 	simulator->SetVariable("debugger.parse-dwarf", false);
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", dwarf_register_number_mapping_filename);
+	simulator->SetVariable("debugger.architecture[0]", "powerpc");
 
 	// - Loader memory mapper
 	simulator->SetVariable("loader.memory-mapper.mapping", "mpc107:0x00000000-0xffffffff"); // whole linear address space
@@ -975,14 +975,6 @@ void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asyn
 int Simulator::GetExitStatus() const
 {
 	return exit_status;
-}
-
-void Simulator::SigInt()
-{
-	if(!inline_debugger || !inline_debugger->IsStarted())
-	{
-		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-	}
 }
 
 int sc_main(int argc, char *argv[])

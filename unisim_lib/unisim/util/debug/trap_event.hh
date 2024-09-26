@@ -49,31 +49,24 @@ template <class ADDRESS>
 std::ostream& operator << (std::ostream& os, const TrapEvent<ADDRESS>& te);
 
 template <class ADDRESS>
-// class TrapEvent : public Event<ADDRESS>
 class TrapEvent : public CustomEvent<ADDRESS, TrapEvent<ADDRESS> >
 {
 public:
-// 	TrapEvent()
-// 		: Event<ADDRESS>(Event<ADDRESS>::EV_TRAP)
-// 		, obj(0)
-// 		, msg()
-// 	{
-// 	}
-	TrapEvent()
-		: CustomEvent<ADDRESS, TrapEvent<ADDRESS> >()
+	inline const unisim::kernel::Object *GetTrapObject() const { return obj; }
+	inline const std::string& GetTrapMessage() const { return msg; }
+	
+protected:
+	TrapEvent(unsigned int _prc_num)
+		: CustomEvent<ADDRESS, TrapEvent<ADDRESS> >(_prc_num)
 		, obj(0)
 		, msg()
 	{
 	}
-
+	
 	inline void SetTrapObject(const unisim::kernel::Object *_obj) { obj = _obj; }
 	inline void SetTrapMessage(const std::string& _msg) { msg = _msg; }
 	inline void SetTrapMessage(const char * _msg) { msg = _msg; }
 	
-	inline const unisim::kernel::Object *GetTrapObject() const { return obj; }
-	inline const std::string& GetTrapMessage() const { return msg; }
-	
-	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const TrapEvent<ADDRESS>& te);
 protected:
 	const unisim::kernel::Object *obj;
 	std::string msg;
@@ -83,9 +76,9 @@ template <class ADDRESS>
 inline std::ostream& operator << (std::ostream& os, const TrapEvent<ADDRESS>& te)
 {
 	os << "trap";
-	if(te.obj) os << " from " << te.obj->GetName();
-	if(!te.msg.empty()) os << " with message \"" << te.msg << "\"";
-	os << " for processor #" << te.GetProcessorNumber() << " and front-end #" << te.GetFrontEndNumber();
+	if(te.GetTrapObject()) os << " from " << te.GetTrapObject()->GetName();
+	if(!te.GetTrapMessage().empty()) os << " with message \"" << te.GetTrapMessage() << "\"";
+	os << " for processor #" << te.GetProcessorNumber();
 	
 	return os;
 }

@@ -138,7 +138,7 @@ unsigned int DWARF_Pub<MEMORY_ADDR>::GetId() const
 }
 
 template <class MEMORY_ADDR>
-void DWARF_Pub<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& name_set) const
+void DWARF_Pub<MEMORY_ADDR>::ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner) const
 {
 	if(dw_die)
 	{
@@ -151,7 +151,7 @@ void DWARF_Pub<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& nam
 					const char *name = dw_die->GetName();
 					if(name)
 					{
-						name_set.insert(std::string(name));
+						scanner.Append(name);
 					}
 				}
 				break;
@@ -242,7 +242,7 @@ const DWARF_Pub<MEMORY_ADDR> *DWARF_Pubs<MEMORY_ADDR>::FindPub(const char *name)
 }
 
 template <class MEMORY_ADDR>
-void DWARF_Pubs<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& name_set) const
+void DWARF_Pubs<MEMORY_ADDR>::ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner) const
 {
 	typename std::map<std::string, DWARF_Pub<MEMORY_ADDR> *>::const_iterator dw_pub_iter;
 	
@@ -250,7 +250,7 @@ void DWARF_Pubs<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& na
 	{
 		const DWARF_Pub<MEMORY_ADDR> *dw_pub = (*dw_pub_iter).second;
 		
-		dw_pub->EnumerateDataObjectNames(name_set);
+		dw_pub->ScanDataObjectNames(scanner);
 	}
 }
 

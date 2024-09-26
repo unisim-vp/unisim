@@ -44,6 +44,119 @@ namespace util {
 namespace debug {
 
 template <class ADDRESS>
+template <typename VISITOR, typename T> T DataObject<ADDRESS>::ScanProperties(VISITOR& visitor) const
+{
+	if(IsComposite())
+	{
+		struct CompositeVisitor
+		{
+			CompositeVisitor(const DataObject<ADDRESS>& _data_object, VISITOR& _visitor)
+				: data_object(_data_object)
+				, visitor(_visitor)
+			{
+			}
+			
+			T Visit(Member const *member)
+			{
+				return member->HasName() ? visitor.Visit(member->GetName(), data_object[member->GetName()]) : T();
+			}
+		private:
+			const DataObject<ADDRESS>& data_object;
+			VISITOR& visitor;
+		};
+		
+		CompositeVisitor composite_visitor(*this, visitor);
+		
+		return GetCVUnqualifiedType()->AsComposite().template Scan<CompositeVisitor, T>(composite_visitor);
+	}
+	
+	return T();
+}
+
+template <class ADDRESS>
+template <typename VISITOR, typename T> T DataObject<ADDRESS>::ScanProperties(VISITOR& visitor)
+{
+	if(IsComposite())
+	{
+		struct CompositeVisitor
+		{
+			CompositeVisitor(DataObject<ADDRESS>& _data_object, VISITOR& _visitor)
+				: data_object(_data_object)
+				, visitor(_visitor)
+			{
+			}
+			
+			T Visit(Member const *member)
+			{
+				return member->HasName() ? visitor.Visit(member->GetName(), data_object[member->GetName()]) : T();
+			}
+		private:
+			DataObject<ADDRESS>& data_object;
+			VISITOR& visitor;
+		};
+		
+		CompositeVisitor composite_visitor(*this, visitor);
+		
+		return GetCVUnqualifiedType()->AsComposite().template Scan<CompositeVisitor, T>(composite_visitor);
+	}
+	
+	return T();
+}
+
+template <class ADDRESS>
+void DataObjectRef<ADDRESS>::Write(const DataObjectRef<ADDRESS>& src_data_object)
+{
+	Check();
+	src_data_object.Check();
+	if(*GetCVUnqualifiedType() != *src_data_object.GetCVUnqualifiedType()) throw typename DataObject<ADDRESS>::TypeError(GetName(), std::string("Can't convert '" + src_data_object.GetCVUnqualifiedType()->GetCDecl(true) + "' to '" + GetCVUnqualifiedType()->GetCDecl(true) + "'"));
+	ADDRESS dst_bit_size = GetBitSize();
+	ADDRESS src_bit_size = src_data_object.GetBitSize();
+	ADDRESS bit_size = (dst_bit_size < src_bit_size) ? dst_bit_size : src_bit_size;
+	std::vector<uint8_t> buffer((bit_size + 7) / 8);
+	if(!src_data_object.Read(0, &buffer[0], 0, bit_size)) throw typename DataObject<ADDRESS>::ReadError(std::string("Can't read ") + src_data_object.GetName());
+	if(!Write(0, &buffer[0], 0, bit_size)) throw typename DataObject<ADDRESS>::ReadError(std::string("Can't write ") + GetName());
+}
+
+
+template <class ADDRESS>
+template <typename VISITOR, typename T> T DataObject<ADDRESS>::ScanItems(VISITOR& visitor) const
+{
+	if(IsArray())
+	{
+		const ArrayType& array_type = GetCVUnqualifiedType()->AsArray();
+		
+		int64_t lower_bound = array_type.GetLowerBound();
+		int64_t upper_bound = array_type.GetUpperBound();
+		for(int64_t subscript = lower_bound; subscript <= upper_bound; ++subscript)
+		{
+			T ret = visitor.Visit(subscript, (*this)[subscript]);
+			if(ret) return ret;
+		}
+	}
+	
+	return T();
+}
+
+template <class ADDRESS>
+template <typename VISITOR, typename T> T DataObject<ADDRESS>::ScanItems(VISITOR& visitor)
+{
+	if(IsArray())
+	{
+		const ArrayType& array_type = GetCVUnqualifiedType()->AsArray();
+		
+		int64_t lower_bound = array_type.GetLowerBound();
+		int64_t upper_bound = array_type.GetUpperBound();
+		for(int64_t subscript = lower_bound; subscript <= upper_bound; ++subscript)
+		{
+			T ret = visitor.Visit(subscript, (*this)[subscript]);
+			if(ret) return ret;
+		}
+	}
+	
+	return T();
+}
+
+template <class ADDRESS>
 DataObject2JSON<ADDRESS>::DataObject2JSON(const unisim::service::interfaces::DataObjectLookup<ADDRESS> *_data_object_lookup_if, Mode _mode)
 	: data_object_lookup_if(_data_object_lookup_if)
 	, mode(_mode)
@@ -56,7 +169,7 @@ typename DataObject2JSON<ADDRESS>::Status DataObject2JSON<ADDRESS>::Do(const Dat
 	const Type *data_object_type = data_object.GetType();
 	
 	std::string data_object_name = std::string(data_object.GetName());
-	typename DataObject2JSON<ADDRESS>::ContextStack ctx_stack(*this, data_object);
+	ContextStack ctx_stack(*this, data_object);
 	ctx_stack.PushContext(data_object_name);
 	data_object_type->Visit(ctx_stack);
 	json_value = ctx_stack.json_value;
@@ -76,15 +189,15 @@ DataObject2JSON<ADDRESS>::ContextStack::ContextStack(const DataObject2JSON<ADDRE
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(Type const *type)
 {
-	if((data_object_to_json.mode == LAZY) && (status != OK)) return false;
+	if((data_object_to_json.mode == LAZY) && (status != OK)) return true;
 	type->Scan(*this);
-	return true;
+	return false;
 }
 
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(CharType const *type)
 {
-	if((data_object_to_json.mode == LAZY) && (status != OK)) return false;
+	if((data_object_to_json.mode == LAZY) && (status != OK)) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_to_json.data_object_lookup_if->FindDataObject(data_object_name.c_str());
 	try
@@ -106,16 +219,17 @@ bool DataObject2JSON<ADDRESS>::ContextStack::Visit(CharType const *type)
 		SetValue(json_string);
 	}
 	catch(typename DataObject<ADDRESS>::UndefinedReferenceError&) { status |= NOT_FOUND; }
+	catch(typename DataObject<ADDRESS>::DoesNotExistError&) { status |= DOES_NOT_EXIST; }
 	catch(typename DataObject<ADDRESS>::OptimizedOutError&) { status |= OPTIMIZED_OUT; }
 	catch(typename DataObject<ADDRESS>::ReadError&) { status |= READ_ERROR; }
 	
-	return (data_object_to_json.mode == LAZY) || (status == OK);
+	return (data_object_to_json.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(IntegerType const *type)
 {
-	if((data_object_to_json.mode == LAZY) && (status != OK)) return false;
+	if((data_object_to_json.mode == LAZY) && (status != OK)) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_to_json.data_object_lookup_if->FindDataObject(data_object_name.c_str());
 	try
@@ -124,16 +238,17 @@ bool DataObject2JSON<ADDRESS>::ContextStack::Visit(IntegerType const *type)
 		SetValue(json_integer);
 	}
 	catch(typename DataObject<ADDRESS>::UndefinedReferenceError&) { status |= NOT_FOUND; }
+	catch(typename DataObject<ADDRESS>::DoesNotExistError&) { status |= DOES_NOT_EXIST; }
 	catch(typename DataObject<ADDRESS>::OptimizedOutError&) { status |= OPTIMIZED_OUT; }
 	catch(typename DataObject<ADDRESS>::ReadError&) { status |= READ_ERROR; }
 	
-	return (data_object_to_json.mode == LAZY) || (status == OK);
+	return (data_object_to_json.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(FloatingPointType const *type)
 {
-	if((data_object_to_json.mode == LAZY) && (status != OK)) return false;
+	if((data_object_to_json.mode == LAZY) && (status != OK)) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_to_json.data_object_lookup_if->FindDataObject(data_object_name.c_str());
 	try
@@ -144,17 +259,18 @@ bool DataObject2JSON<ADDRESS>::ContextStack::Visit(FloatingPointType const *type
 		SetValue(json_float);
 	}
 	catch(typename DataObject<ADDRESS>::UndefinedReferenceError&) { status |= NOT_FOUND; }
+	catch(typename DataObject<ADDRESS>::DoesNotExistError&) { status |= DOES_NOT_EXIST; }
 	catch(typename DataObject<ADDRESS>::OptimizedOutError&) { status |= OPTIMIZED_OUT; }
 	catch(typename DataObject<ADDRESS>::ReadError&) { status |= READ_ERROR; }
 	catch(typename DataObject<ADDRESS>::TypeError&) { status |= UNSUPPORTED_FLOAT_FORMAT; }
 	
-	return (data_object_to_json.mode == LAZY) || (status == OK);
+	return (data_object_to_json.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(BooleanType const *type)
 {
-	if((data_object_to_json.mode == LAZY) && (status != OK)) return false;
+	if((data_object_to_json.mode == LAZY) && (status != OK)) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_to_json.data_object_lookup_if->FindDataObject(data_object_name.c_str());
 	try
@@ -163,26 +279,27 @@ bool DataObject2JSON<ADDRESS>::ContextStack::Visit(BooleanType const *type)
 		SetValue(json_boolean);
 	}
 	catch(typename DataObject<ADDRESS>::UndefinedReferenceError&) { status |= NOT_FOUND; }
+	catch(typename DataObject<ADDRESS>::DoesNotExistError&) { status |= DOES_NOT_EXIST; }
 	catch(typename DataObject<ADDRESS>::OptimizedOutError&) { status |= OPTIMIZED_OUT; }
 	catch(typename DataObject<ADDRESS>::ReadError&) { status |= READ_ERROR; }
 	
-	return (data_object_to_json.mode == LAZY) || (status == OK);
+	return (data_object_to_json.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(CompositeType const *type)
 {
-	if((data_object_to_json.mode == LAZY) && (status != OK)) return false;
+	if((data_object_to_json.mode == LAZY) && (status != OK)) return true;
 	unisim::util::json::JSON_Object *json_object = new unisim::util::json::JSON_Object();
 	SetValue(json_object);
 	type->Scan(*this);
-	return (data_object_to_json.mode == LAZY) || (status == OK);
+	return (data_object_to_json.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(ArrayType const *array_type)
 {
-	if((data_object_to_json.mode == LAZY) && (status != OK)) return false;
+	if((data_object_to_json.mode == LAZY) && (status != OK)) return true;
 	
 	unisim::util::json::JSON_Array *json_array = new unisim::util::json::JSON_Array();
 	SetValue(json_array);
@@ -201,13 +318,13 @@ bool DataObject2JSON<ADDRESS>::ContextStack::Visit(ArrayType const *array_type)
 		PopContext();
 	}
 	
-	return (data_object_to_json.mode == LAZY) || (status == OK);
+	return (data_object_to_json.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(PointerType const *type)
 {
-	if((data_object_to_json.mode == LAZY) && (status != OK)) return false;
+	if((data_object_to_json.mode == LAZY) && (status != OK)) return true;
 	
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_to_json.data_object_lookup_if->FindDataObject(data_object_name.c_str());
@@ -238,22 +355,23 @@ bool DataObject2JSON<ADDRESS>::ContextStack::Visit(PointerType const *type)
 		}
 	}
 	catch(typename DataObject<ADDRESS>::UndefinedReferenceError&) { status |= NOT_FOUND; }
+	catch(typename DataObject<ADDRESS>::DoesNotExistError&) { status |= DOES_NOT_EXIST; }
 	catch(typename DataObject<ADDRESS>::OptimizedOutError&) { status |= OPTIMIZED_OUT; }
 	catch(typename DataObject<ADDRESS>::ReadError&) { status |= READ_ERROR; }
 	
-	return (data_object_to_json.mode == LAZY) || (status == OK);
+	return (data_object_to_json.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(FunctionType const *type)
 {
-	return true;
+	return false;
 }
 
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(EnumType const *type)
 {
-	if((data_object_to_json.mode == LAZY) && (status != OK)) return false;
+	if((data_object_to_json.mode == LAZY) && (status != OK)) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_to_json.data_object_lookup_if->FindDataObject(data_object_name.c_str());
 	try
@@ -264,19 +382,19 @@ bool DataObject2JSON<ADDRESS>::ContextStack::Visit(EnumType const *type)
 	catch(typename DataObject<ADDRESS>::UndefinedReferenceError&) { status |= NOT_FOUND; }
 	catch(typename DataObject<ADDRESS>::ReadError&) { status |= READ_ERROR; }
 	
-	return (data_object_to_json.mode == LAZY) || (status == OK);
+	return (data_object_to_json.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(UnspecifiedType const *type)
 {
-	return (data_object_to_json.mode == LAZY) || (status == OK);
+	return (data_object_to_json.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(Member const *member)
 {
-	if((data_object_to_json.mode == LAZY) && (status != OK)) return false;
+	if((data_object_to_json.mode == LAZY) && (status != OK)) return true;
 	if(member->HasName())
 	{
 		std::string member_name = member->GetName();
@@ -293,13 +411,13 @@ bool DataObject2JSON<ADDRESS>::ContextStack::Visit(Member const *member)
 		member->Scan(*this);
 	}
 	
-	return (data_object_to_json.mode == LAZY) || (status == OK);
+	return (data_object_to_json.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObject2JSON<ADDRESS>::ContextStack::Visit(FormalParameter const *formal_param)
 {
-	return (data_object_to_json.mode == LAZY) || (status == OK);
+	return (data_object_to_json.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
@@ -362,7 +480,7 @@ JSON2DataObject<ADDRESS>::JSON2DataObject(const unisim::service::interfaces::Dat
 template <class ADDRESS>
 typename JSON2DataObject<ADDRESS>::Status JSON2DataObject<ADDRESS>::Do(const unisim::util::json::JSON_Value *json_value, DataObjectRef<ADDRESS>& data_object) const
 {
-	typename JSON2DataObject<ADDRESS>::ContextStack ctx_stack(*this, data_object);
+	ContextStack ctx_stack(*this, data_object);
 	json_value->Visit(ctx_stack);
 	
 	return ctx_stack.status;
@@ -379,7 +497,7 @@ JSON2DataObject<ADDRESS>::ContextStack::ContextStack(const JSON2DataObject<ADDRE
 template <class ADDRESS>
 bool JSON2DataObject<ADDRESS>::ContextStack::Visit(const unisim::util::json::JSON_Value& json_value)
 {
-	if((json_to_data_object.mode == LAZY) && (status != OK)) return false;
+	if((json_to_data_object.mode == LAZY) && (status != OK)) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = json_to_data_object.data_object_lookup_if->FindDataObject(data_object_name.c_str());
 	try
@@ -414,18 +532,19 @@ bool JSON2DataObject<ADDRESS>::ContextStack::Visit(const unisim::util::json::JSO
 		}
 	}
 	catch(typename DataObject<ADDRESS>::UndefinedReferenceError&) { status |= NOT_FOUND; }
+	catch(typename DataObject<ADDRESS>::DoesNotExistError&) { status |= DOES_NOT_EXIST; }
 	catch(typename DataObject<ADDRESS>::OptimizedOutError&) { status |= OPTIMIZED_OUT; }
 	catch(typename DataObject<ADDRESS>::ReadError&) { status |= READ_ERROR; }
 	catch(typename DataObject<ADDRESS>::WriteError&) { status |= WRITE_ERROR; }
 	
 	if(InArray()) NextIndex();
-	return (json_to_data_object.mode == LAZY) || (status == OK);
+	return (json_to_data_object.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool JSON2DataObject<ADDRESS>::ContextStack::Visit(const unisim::util::json::JSON_String& value)
 {
-	if((json_to_data_object.mode == LAZY) && (status != OK)) return false;
+	if((json_to_data_object.mode == LAZY) && (status != OK)) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = json_to_data_object.data_object_lookup_if->FindDataObject(data_object_name.c_str());
 	try
@@ -442,43 +561,44 @@ bool JSON2DataObject<ADDRESS>::ContextStack::Visit(const unisim::util::json::JSO
 		}
 	}
 	catch(typename DataObject<ADDRESS>::UndefinedReferenceError&) { status |= NOT_FOUND; }
-	catch(typename DataObject<ADDRESS>::TypeError&) { status |= TYPE_ERROR; }
+	catch(typename DataObject<ADDRESS>::DoesNotExistError&) { status |= DOES_NOT_EXIST; }
 	catch(typename DataObject<ADDRESS>::OptimizedOutError&) { status |= OPTIMIZED_OUT; }
+	catch(typename DataObject<ADDRESS>::TypeError&) { status |= TYPE_ERROR; }
 	catch(typename DataObject<ADDRESS>::ReadError&) { status |= READ_ERROR; }
 	catch(typename DataObject<ADDRESS>::WriteError&) { status |= WRITE_ERROR; }
 	
 	if(InArray()) NextIndex();
-	return (json_to_data_object.mode == LAZY) || (status == OK);
+	return (json_to_data_object.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool JSON2DataObject<ADDRESS>::ContextStack::Visit(const unisim::util::json::JSON_Object& object)
 {
-	if((json_to_data_object.mode == LAZY) && (status != OK)) return false;
+	if((json_to_data_object.mode == LAZY) && (status != OK)) return true;
 	object.Scan(*this);
 	if(InArray()) NextIndex();
-	return (json_to_data_object.mode == LAZY) || (status == OK);
+	return (json_to_data_object.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool JSON2DataObject<ADDRESS>::ContextStack::Visit(const unisim::util::json::JSON_Member& member)
 {
-	if((json_to_data_object.mode == LAZY) && (status != OK)) return false;
+	if((json_to_data_object.mode == LAZY) && (status != OK)) return true;
 	PushMemberContext(member.GetName());
 	member.Scan(*this);
 	PopContext();
-	return (json_to_data_object.mode == LAZY) || (status == OK);
+	return (json_to_data_object.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool JSON2DataObject<ADDRESS>::ContextStack::Visit(const unisim::util::json::JSON_Array& array)
 {
-	if((json_to_data_object.mode == LAZY) && (status != OK)) return false;
+	if((json_to_data_object.mode == LAZY) && (status != OK)) return true;
 	PushArrayContext();
 	array.Scan(*this);
 	PopContext();
 	if(InArray()) NextIndex();
-	return (json_to_data_object.mode == LAZY) || (status == OK);
+	return (json_to_data_object.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>

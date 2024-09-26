@@ -39,7 +39,7 @@
 #include "unisim/component/cxx/processor/tms320c3x/cpu.hh"
 #include "unisim/component/cxx/processor/tms320c3x/config.hh"
 
-#include "unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.tcc"
+#include "unisim/component/cxx/processor/tms320c3x/isa/tms320c3x.tcc"
 #include "unisim/util/arithmetic/arithmetic.hh"
 
 #include "unisim/util/debug/simple_register.hh"

@@ -91,7 +91,7 @@ void Tee<ADDRESS, MAX_IMPORTS>::ScanStatements(unisim::service::interfaces::Stat
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatement(ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
+const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatement(ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const
 {
 	const unisim::util::debug::Statement<ADDRESS> *ret_stmt = 0;
 	unsigned int i;
@@ -101,24 +101,26 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 		{
 			if(*stmt_lookup_import[i])
 			{
-				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatement(addr, filename, opt);
+				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatement(addr, filename, scope);
 				if(stmt)
 				{
-					switch(opt)
+					switch(scope)
 					{
-						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION:
 							if(stmt->GetAddress() <= addr)
 							{
 								if(!ret_stmt || ((addr - stmt->GetAddress()) < (addr - ret_stmt->GetAddress()))) ret_stmt = stmt;
 							}
 							break;
-						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEXT_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEXT_STMT_WITHIN_FUNCTION:
 							if(stmt->GetAddress() > addr)
 							{
 								if(!ret_stmt || ((stmt->GetAddress() - addr) < (ret_stmt->GetAddress() - addr))) ret_stmt = stmt;
 							}
 							break;
-						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_EXACT_STMT:
 							return stmt;
 							break;
 					}
@@ -131,7 +133,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
+const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const
 {
 	const unisim::util::debug::Statement<ADDRESS> *ret_stmt = 0;
 	unsigned int i;
@@ -141,24 +143,26 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 		{
 			if(*stmt_lookup_import[i])
 			{
-				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatements(stmts, addr, filename, opt);
+				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatements(scanner, addr, filename, scope);
 				if(stmt)
 				{
-					switch(opt)
+					switch(scope)
 					{
-						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION:
 							if(stmt->GetAddress() <= addr)
 							{
 								if(!ret_stmt || ((addr - stmt->GetAddress()) < (addr - ret_stmt->GetAddress()))) ret_stmt = stmt;
 							}
 							break;
-						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEXT_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_NEXT_STMT_WITHIN_FUNCTION:
 							if(stmt->GetAddress() > addr)
 							{
 								if(!ret_stmt || ((stmt->GetAddress() - addr) < (ret_stmt->GetAddress() - addr))) ret_stmt = stmt;
 							}
 							break;
-						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_EXACT_STMT:
 							return stmt;
 							break;
 					}
@@ -190,7 +194,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const
+const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const
 {
 	const unisim::util::debug::Statement<ADDRESS> *ret = 0;
 	unsigned int i;
@@ -200,7 +204,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 		{
 			if(*stmt_lookup_import[i])
 			{
-				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatements(stmts, source_code_location, filename);
+				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatements(scanner, source_code_location, filename);
 				if(!ret) ret = stmt;
 			}
 		}

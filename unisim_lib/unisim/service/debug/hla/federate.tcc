@@ -35,6 +35,12 @@
 #ifndef __UNISIM_SERVICE_DEBUG_HLA_FEDERATE_TCC__
 #define __UNISIM_SERVICE_DEBUG_HLA_FEDERATE_TCC__
 
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
+#if HAVE_HLA_RTI1516E
+
 #include <unisim/service/debug/hla/federate.hh>
 #include <unisim/util/debug/data_object.tcc>
 #include <unisim/util/hla/hla.tcc>
@@ -66,12 +72,11 @@ Federate<CONFIG>::Federate(const char *_name, unisim::kernel::Object *_parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Registers>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::StackFrame<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Profiling<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::Client<unisim::service::interfaces::StackUnwinding>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Stubbing<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Hooking<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugTiming<sc_core::sc_time> >(_name, _parent)
@@ -85,12 +90,11 @@ Federate<CONFIG>::Federate(const char *_name, unisim::kernel::Object *_parent)
 	, registers_import("registers-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, stmt_lookup_import("stmt-lookup-import", this)
-	, backtrace_import("backtrace-import", this)
+	, stack_frame_import("backtrace-import", this)
 	, profiling_import("profiling-import", this)
 	, debug_info_loading_import("debug-info-loading-import", this)
 	, data_object_lookup_import("data-object-lookup-import", this)
 	, subprogram_lookup_import("subprogram-lookup-import", this)
-	, stack_unwinding_import("stack-unwinding-import", this)
 	, stubbing_import("stubbing-import", this)
 	, hooking_import("hooking-import", this)
 	, debug_timing_import("debug-timing-import", this)
@@ -138,6 +142,18 @@ Federate<CONFIG>::~Federate()
 		{
 			logger << DebugWarning << "Can't remove stub at " << federate_stub->GetSubProgram()->GetName() << EndDebugWarning;
 		}
+	}
+	
+	for(typename ObjectInstances::const_iterator it = object_instances.begin(); it != object_instances.end(); ++it)
+	{
+		unisim::util::hla::ObjectInstance *object_instance = *it;
+		delete object_instance;
+	}
+	
+	for(typename ObjectClasses::const_iterator it = object_classes.begin(); it != object_classes.end(); ++it)
+	{
+		ObjectClass *object_class = *it;
+		delete object_class;
 	}
 	
 	if(p_config) delete p_config;
@@ -201,14 +217,14 @@ bool Federate<CONFIG>::EndSetup()
 		if(config.HasProperty("processor"))
 		{
 			prc_num = config["processor"].AsInteger();
-			int sel_prc_num = debug_selecting_import->DebugGetSelected();
+			int sel_prc_num = debug_selecting_import->GetSelectedProcessor();
 			if(sel_prc_num != prc_num)
 			{
 				if(this->verbose)
 				{
 					logger << DebugInfo << "Selecting processor #" << prc_num << " instead of processor #" << sel_prc_num << EndDebugInfo;
 				}
-				if(!debug_selecting_import->DebugSelect(prc_num))
+				if(!debug_selecting_import->SelectProcessor(prc_num))
 				{
 					logger << DebugWarning << "Can't select processor #" << prc_num << EndDebugWarning;
 					return false;
@@ -217,7 +233,7 @@ bool Federate<CONFIG>::EndSetup()
 		}
 		else
 		{
-			prc_num = debug_selecting_import->DebugGetSelected();
+			prc_num = debug_selecting_import->GetSelectedProcessor();
 		}
 		
 		std::wstring url = config["url"].AsString();
@@ -723,6 +739,16 @@ FederateHookStub<CONFIG>::FederateHookStub(Federate<CONFIG>& _federate, const st
 }
 
 template <typename CONFIG>
+FederateHookStub<CONFIG>::~FederateHookStub()
+{
+	for(Instruments::iterator it = instruments.begin(); it != instruments.end(); ++it)
+	{
+		InstrumentBase *instrument = *it;
+		delete instrument;
+	}
+}
+
+template <typename CONFIG>
 const std::string& FederateHookStub<CONFIG>::GetName() const
 {
 	return name;
@@ -757,7 +783,7 @@ FederateHook<CONFIG>::FederateHook(Federate<CONFIG>& _federate, const std::strin
 }
 
 template <typename CONFIG>
-bool FederateHook<CONFIG>::Run(typename unisim::util::debug::Hook<ADDRESS>::ReturnValue& return_value)
+void FederateHook<CONFIG>::Run()
 {
 	if(this->federate.debug)
 	{
@@ -775,7 +801,7 @@ bool FederateHook<CONFIG>::Run(typename unisim::util::debug::Hook<ADDRESS>::Retu
 	{
 		this->federate.logger << DebugError << e.what() << EndDebugError;
 		this->federate.Stop(-1);
-		return false;
+		return;
 	}
 	
 	// program variables <- attribute values
@@ -786,12 +812,11 @@ bool FederateHook<CONFIG>::Run(typename unisim::util::debug::Hook<ADDRESS>::Retu
 		if(this->json_return_value->IsNull())
 		{
 			unisim::util::debug::JSON2DataObject<ADDRESS> json_to_data_object(this->federate.data_object_lookup_import);
+			unisim::util::debug::DataObjectRef<ADDRESS> return_value = this->federate.data_object_lookup_import->GetReturnValue();
 			json_to_data_object.Do(this->json_return_value, return_value);
 		}
-		return true;
+		this->federate.stack_frame_import->UnwindStack();
 	}
-	
-	return false;
 }
 
 ////////////////////////////// FederateStub<> /////////////////////////////////
@@ -804,7 +829,7 @@ FederateStub<CONFIG>::FederateStub(Federate<CONFIG>& _federate, const std::strin
 }
 
 template <typename CONFIG>
-bool FederateStub<CONFIG>::Run(typename unisim::util::debug::Stub<ADDRESS>::Parameters& parameters, typename unisim::util::debug::Stub<ADDRESS>::ReturnValue& return_value)
+void FederateStub<CONFIG>::Run(typename unisim::util::debug::Stub<ADDRESS>::Parameters& parameters)
 {
 	if(this->federate.debug)
 	{
@@ -824,17 +849,16 @@ bool FederateStub<CONFIG>::Run(typename unisim::util::debug::Stub<ADDRESS>::Para
 		if(this->json_return_value->IsNull())
 		{
 			unisim::util::debug::JSON2DataObject<ADDRESS> json_to_data_object(this->federate.data_object_lookup_import);
-			json_to_data_object.Do(this->json_return_value, return_value);
+			json_to_data_object.Do(this->json_return_value, parameters.GetReturnValue());
 		}
-		return true;
 	}
-	
-	return false;
 }
 
 } // end of namespace hla
 } // end of namespace debug
 } // end of namespace service
 } // end of namespace unisim
+
+#endif // HAVE_HLA_RTI1516E
 
 #endif // __UNISIM_SERVICE_DEBUG_HLA_FEDERATE_TCC__

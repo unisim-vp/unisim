@@ -37,6 +37,7 @@
 
 #include <unisim/util/debug/data_object_serializer.hh>
 #include <unisim/util/json/json.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
 
 namespace unisim {
 namespace util {
@@ -57,7 +58,7 @@ unsigned int DataObjectSerializer<ADDRESS>::Serialize(std::ostream& stream) cons
 	const Type *data_object_type = data_object.GetType();
 	
 	std::string data_object_name = std::string(data_object.GetName());
-	typename DataObjectSerializer<ADDRESS>::ContextStack ctx_stack(*this, stream);
+	ContextStack ctx_stack(*this, stream);
 	ctx_stack.PushContext(data_object_name);
 	data_object_type->Visit(ctx_stack);
 	return ctx_stack.status;
@@ -82,15 +83,15 @@ DataObjectSerializer<ADDRESS>::ContextStack::ContextStack(const DataObjectSerial
 template <class ADDRESS>
 bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(Type const *type)
 {
-	if((data_object_serializer.mode == LAZY) && (status != OK)) return false;
+	if((data_object_serializer.mode == LAZY) && (status != OK)) return true;
 	type->Scan(*this);
-	return true;
+	return false;
 }
 
 template <class ADDRESS>
 bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(CharType const *type)
 {
-	if((data_object_serializer.mode == LAZY) && (status != OK)) return false;
+	if((data_object_serializer.mode == LAZY) && (status != OK)) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_serializer.data_object_lookup_if->FindDataObject(data_object_name.c_str());
 	
@@ -166,13 +167,13 @@ bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(CharType const *type)
 		}
 	}
 	
-	return (data_object_serializer.mode == LAZY) || (status == OK);
+	return (data_object_serializer.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(IntegerType const *type)
 {
-	if((data_object_serializer.mode == LAZY) && (status != OK)) return false;
+	if((data_object_serializer.mode == LAZY) && (status != OK)) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_serializer.data_object_lookup_if->FindDataObject(data_object_name.c_str());
 	
@@ -226,13 +227,13 @@ bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(IntegerType const *type)
 		}
 	}
 	
-	return (data_object_serializer.mode == LAZY) || (status == OK);
+	return (data_object_serializer.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(FloatingPointType const *type)
 {
-	if((data_object_serializer.mode == LAZY) && (status != OK)) return false;
+	if((data_object_serializer.mode == LAZY) && (status != OK)) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_serializer.data_object_lookup_if->FindDataObject(data_object_name.c_str());
 	
@@ -302,13 +303,13 @@ bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(FloatingPointType const 
 		}
 	}
 	
-	return (data_object_serializer.mode == LAZY) || (status == OK);
+	return (data_object_serializer.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(BooleanType const *type)
 {
-	if((data_object_serializer.mode == LAZY) && (status != OK)) return false;
+	if((data_object_serializer.mode == LAZY) && (status != OK)) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_serializer.data_object_lookup_if->FindDataObject(data_object_name.c_str());
 	if(data_object != DataObjectRef<ADDRESS>::Undefined)
@@ -354,23 +355,23 @@ bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(BooleanType const *type)
 		}
 	}
 	
-	return (data_object_serializer.mode == LAZY) || (status == OK);
+	return (data_object_serializer.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(CompositeType const *type)
 {
-	if((data_object_serializer.mode == LAZY) && (status != OK)) return false;
+	if((data_object_serializer.mode == LAZY) && (status != OK)) return true;
 	stream << "{ ";
 	type->Scan(*this);
 	stream << " }";
-	return (data_object_serializer.mode == LAZY) || (status == OK);
+	return (data_object_serializer.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(ArrayType const *array_type)
 {
-	if((data_object_serializer.mode == LAZY) && (status != OK)) return false;
+	if((data_object_serializer.mode == LAZY) && (status != OK)) return true;
 	switch(data_object_serializer.style)
 	{
 		case C_LANG:
@@ -403,13 +404,13 @@ bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(ArrayType const *array_t
 			break;
 	}
 	
-	return (data_object_serializer.mode == LAZY) || (status == OK);
+	return (data_object_serializer.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(PointerType const *type)
 {
-	if((data_object_serializer.mode == LAZY) && (status != OK)) return false;
+	if((data_object_serializer.mode == LAZY) && (status != OK)) return true;
 	
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_serializer.data_object_lookup_if->FindDataObject(data_object_name.c_str());
@@ -531,7 +532,7 @@ bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(PointerType const *type)
 		NotFound();
 	}
 	
-	return (data_object_serializer.mode == LAZY) || (status == OK);
+	return (data_object_serializer.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
@@ -553,7 +554,7 @@ bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(FunctionType const *type
 template <class ADDRESS>
 bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(EnumType const *type)
 {
-	if((data_object_serializer.mode == LAZY) && (status != OK)) return false;
+	if((data_object_serializer.mode == LAZY) && (status != OK)) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_serializer.data_object_lookup_if->FindDataObject(data_object_name.c_str());
 	if(data_object != DataObjectRef<ADDRESS>::Undefined)
@@ -581,13 +582,13 @@ bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(EnumType const *type)
 		NotFound();
 	}
 	
-	return (data_object_serializer.mode == LAZY) || (status == OK);
+	return (data_object_serializer.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(UnspecifiedType const *type)
 {
-	if((data_object_serializer.mode == LAZY) && (status != OK)) return false;
+	if((data_object_serializer.mode == LAZY) && (status != OK)) return true;
 	switch(data_object_serializer.style)
 	{
 		case C_LANG:
@@ -597,13 +598,13 @@ bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(UnspecifiedType const *t
 			stream << "\"<void>\"";
 			break;
 	}
-	return (data_object_serializer.mode == LAZY) || (status == OK);
+	return (data_object_serializer.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(Member const *member)
 {
-	if((data_object_serializer.mode == LAZY) && (status != OK)) return false;
+	if((data_object_serializer.mode == LAZY) && (status != OK)) return true;
 	if(GetIndex()) stream << ", ";
 	if(member->HasName())
 	{
@@ -627,13 +628,13 @@ bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(Member const *member)
 	}
 	NextIndex();
 	
-	return (data_object_serializer.mode == LAZY) || (status == OK);
+	return (data_object_serializer.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>
 bool DataObjectSerializer<ADDRESS>::ContextStack::Visit(FormalParameter const *formal_param)
 {
-	return (data_object_serializer.mode == LAZY) || (status == OK);
+	return (data_object_serializer.mode != LAZY) && (status != OK);
 }
 
 template <class ADDRESS>

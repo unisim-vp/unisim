@@ -49,7 +49,7 @@
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
 #include "unisim/service/interfaces/ti_c_io.hh"
 #include "unisim/service/interfaces/loader.hh"
-#include "unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.hh"
+#include "unisim/component/cxx/processor/tms320c3x/isa/tms320c3x.hh"
 #include "unisim/component/cxx/processor/tms320c3x/register.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"

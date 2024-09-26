@@ -57,7 +57,8 @@ typedef enum
 	OP_STRUCT_REF,      // s.x
 	OP_STRUCT_DEREF,    // s->x
 	OP_ARRAY_SUBSCRIPT, // a[]
-	OP_RETURN_VALUE     // return value of function
+	OP_RETURN_VALUE,    // $return_value: return value of function
+	OP_ARG              // $0, $1, ...: function arguments
 } CLocOpcode;
 
 std::ostream& operator << (std::ostream& os, const CLocOperation& op);
@@ -107,10 +108,12 @@ typedef enum
 class CLocOperationStream
 {
 public:
+	CLocOperationStream();
 	CLocOperationStream(Notation notation);
 	CLocOperationStream(const CLocOperationStream& c_loc_operation_stream);
 	virtual ~CLocOperationStream();
-	void Push(const CLocOperation *op);
+	CLocOperationStream& operator = (const CLocOperationStream& c_loc_operation_stream);
+	CLocOperationStream& Push(const CLocOperation *op);
 	const CLocOperation *Pop();
 	const CLocOperation *PopBack();
 	unsigned int Size() const;
@@ -121,7 +124,9 @@ public:
 	friend std::ostream& operator << (std::ostream& os, const CLocOperationStream& c_loc_operation_stream);
 private:
 	Notation notation;
-	std::deque<const CLocOperation *> storage;
+	typedef std::deque<const CLocOperation *> Storage;
+	Storage storage;
+	void PushFrom(const CLocOperationStream& c_loc_operation_stream);
 };
 
 typedef enum
@@ -131,20 +136,19 @@ typedef enum
 	C_LOC_EXPR
 } CLocType;
 
-class CLocExprParser : public unisim::util::parser::Parser<CLocType>, public unisim::util::parser::Visitor<CLocType>
+class CLocExprParser : public unisim::util::parser::Parser<CLocType>
 {
 public:
-	CLocExprParser(std::istream *stream, std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, bool debug = false);
+	CLocExprParser();
 	virtual ~CLocExprParser();
 
-	bool Parse(CLocOperationStream& c_loc_operation_stream);
+	bool Parse(std::istream& stream, CLocOperationStream& c_loc_operation_stream);
 
 	virtual unisim::util::parser::Token<CLocType> *CreateToken(const char *text, unsigned int id, const unisim::util::lexer::Location& loc);
-	virtual void Visit(unisim::util::parser::AST<CLocType> *ast);
 	
-	virtual bool Check(unisim::util::parser::Token<CLocType> *token, unisim::util::parser::AST<CLocType> *left, unisim::util::parser::AST<CLocType> *right);
-	virtual bool Check(unisim::util::parser::Token<CLocType> *token, unisim::util::parser::AST<CLocType> *child);
-	virtual bool Check(unisim::util::parser::Token<CLocType> *token);
+	virtual bool Check(std::istream& stream, unisim::util::parser::Token<CLocType> *token, unisim::util::parser::AST<CLocType> *left, unisim::util::parser::AST<CLocType> *right);
+	virtual bool Check(std::istream& stream, unisim::util::parser::Token<CLocType> *token, unisim::util::parser::AST<CLocType> *child);
+	virtual bool Check(std::istream& stream, unisim::util::parser::Token<CLocType> *token);
 private:
 	enum
 	{
@@ -153,11 +157,6 @@ private:
 		TOK_ARROW,
 		TOK_RETURN_VALUE
 	};
-	
-	std::ostream& debug_info_stream;
-	std::ostream& debug_warning_stream;
-	std::ostream& debug_error_stream;
-	CLocOperationStream *c_loc_operation_stream;
 };
 
 } // end of namespace dwarf

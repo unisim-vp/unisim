@@ -69,10 +69,14 @@ public:
 	WatchpointMapPage *next;	/*< next watchpoint map page with the same hash index */
 };
 
-template <typename ADDRESS, unsigned int NUM_PROCESSORS = 1, unsigned int MAX_FRONT_ENDS = 1>
+template <typename CONFIG>
 class WatchpointRegistry
 {
 public:
+	typedef typename CONFIG::ADDRESS ADDRESS;
+	typedef typename CONFIG::WATCHPOINT WATCHPOINT;
+	static const unsigned int NUM_PROCESSORS = CONFIG::NUM_PROCESSORS;
+	static const unsigned int MAX_FRONT_ENDS = CONFIG::MAX_FRONT_ENDS;
 	static const uint32_t NUM_HASH_TABLE_ENTRIES = 32;//4096; // MUST BE a power of two !
 
 	WatchpointRegistry();
@@ -80,25 +84,26 @@ public:
 
 	void Reset();
 	void Clear(unsigned int front_end_num);
-	Watchpoint<ADDRESS> *SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook = true, unsigned int prc_num = 0, unsigned int front_end_num = 0);
+	WATCHPOINT *SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook = true, unsigned int prc_num = 0, unsigned int front_end_num = 0);
 	bool RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num = 0, unsigned int front_end_num = 0);
-	bool SetWatchpoint(Watchpoint<ADDRESS> *wp);
-	bool RemoveWatchpoint(Watchpoint<ADDRESS> *wp);
-	bool HasWatchpoint(Watchpoint<ADDRESS> *wp) const;
+	bool SetWatchpoint(WATCHPOINT *wp);
+	bool RemoveWatchpoint(WATCHPOINT *wp);
+	bool HasWatchpoint(WATCHPOINT *wp) const;
 	bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num = 0) const;
 	bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num) const;
 	bool HasWatchpoints(unsigned int prc_num) const;
 	bool HasWatchpoints() const;
 	
-	/* struct Visitor { void Visit(Watchpoint<ADDRESS> *) {} }; */
+	/* struct Visitor { void Visit(WATCHPOINT *) {} }; */
 	template <class VISITOR> bool FindWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num, VISITOR& visitor) const;
 	
-	void ScanWatchpoints(unsigned int prc_num, unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const;
-	void ScanWatchpoints(unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const;
-	void ScanWatchpoints(unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const;
+	template <typename SCANNER> void ScanWatchpoints(unsigned int prc_num, unsigned int front_end_num, SCANNER& scanner) const;
+	template <typename SCANNER> void ScanWatchpoints(unsigned int front_end_num, SCANNER& scanner) const;
+	template <typename SCANNER> void ScanWatchpoints(SCANNER& scanner) const;
 
 private:
-	std::multimap<ADDRESS, Watchpoint<ADDRESS> *> watchpoints[NUM_PROCESSORS][MAX_FRONT_ENDS];
+	typedef std::multimap<ADDRESS, WATCHPOINT *> Watchpoints;
+	Watchpoints watchpoints[NUM_PROCESSORS][MAX_FRONT_ENDS];
 	unsigned int watchpoint_count[NUM_PROCESSORS];
 	mutable WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS> *mru_page[2][NUM_PROCESSORS];
 	mutable WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS> *hash_table[2][NUM_PROCESSORS][NUM_HASH_TABLE_ENTRIES];
@@ -106,7 +111,7 @@ private:
 	bool SetWatchpointIntoMap(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num);
 	bool RemoveWatchpointFromMap(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num);
 	void AllocatePage(unisim::util::debug::MemoryType mt, ADDRESS addr, unsigned int prc_num);
-	WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS> *GetPage(unisim::util::debug::MemoryType mt, ADDRESS addr, unsigned int prc_num) const;
+	WatchpointMapPage<typename CONFIG::ADDRESS, CONFIG::MAX_FRONT_ENDS> *GetPage(unisim::util::debug::MemoryType mt, ADDRESS addr, unsigned int prc_num) const;
 };
 
 } // end of namespace debug

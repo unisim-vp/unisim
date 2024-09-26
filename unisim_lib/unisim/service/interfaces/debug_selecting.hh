@@ -41,13 +41,20 @@ namespace unisim {
 namespace service {
 namespace interfaces {
 
-class DebugSelecting : public ServiceInterface
+struct DebugSelecting : ServiceInterface
 {
 public:
-	virtual bool DebugSelect(unsigned int prc_num) = 0;
-	virtual unsigned int DebugGetSelected() const = 0;
-	virtual bool DebugFrameSelect(unsigned int frame_num) = 0;
-	virtual unsigned int DebugFrameGetSelected() const = 0;
+	struct ProcessorScope
+	{
+		ProcessorScope(DebugSelecting *_debug_selecting_if) : debug_selecting_if(_debug_selecting_if), save_prc_num(debug_selecting_if->GetSelectedProcessor()) {}
+		~ProcessorScope() { debug_selecting_if->SelectProcessor(save_prc_num); }
+	private:
+		DebugSelecting *debug_selecting_if;
+		unsigned int save_prc_num;
+	};
+	
+	virtual bool SelectProcessor(unsigned int prc_num) = 0;
+	virtual unsigned int GetSelectedProcessor() const = 0;
 };
 
 } // end of namespace interfaces

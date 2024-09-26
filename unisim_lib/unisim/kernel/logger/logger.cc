@@ -317,44 +317,38 @@ void Logger::PrintMode()
 void Logger::DebugInfo()
 {
 	if (mode != NO_MODE) return;
-	mode = INFO_MODE;
-	buffer.clear();
-	buffer.str("");
+	Begin(INFO_MODE);
 }
 
 void Logger::EndDebugInfo() {
 	if (mode != INFO_MODE) return;
-	mode = NO_MODE;
+	End();
 	server->DebugInfo(name.c_str(), buffer.str().c_str());
 }
 
 void Logger::DebugWarning()
 {
 	if (mode != NO_MODE) return;
-	mode = WARNING_MODE;
-	buffer.clear();
-	buffer.str("");
+	Begin(WARNING_MODE);
 }
 
 void Logger::EndDebugWarning()
 {
 	if (mode != WARNING_MODE) return;
-	mode = NO_MODE;
+	End();
 	server->DebugWarning(name.c_str(), buffer.str().c_str());
 }
 
 void Logger::DebugError()
 {
 	if (mode != NO_MODE) return;
-	mode = ERROR_MODE;
-	buffer.clear();
-	buffer.str("");
+	Begin(ERROR_MODE);
 }
 
 void Logger::EndDebugError()
 {
 	if (mode != ERROR_MODE) return;
-	mode = NO_MODE;
+	End();
 	server->DebugError(name.c_str(), buffer.str().c_str());
 }
 
@@ -375,6 +369,26 @@ void Logger::EndDebug()
 			EndDebugError();
 			break;
 	}
+}
+
+void Logger::Begin(mode_t _mode)
+{
+	mode = _mode;
+	buffer.clear();
+	buffer.str("");
+	width = buffer.width();
+	fill = buffer.fill();
+	precision = buffer.precision();
+	flags = buffer.flags();
+}
+
+void Logger::End()
+{
+	mode = NO_MODE;
+	buffer.width(width);
+	buffer.fill(fill);
+	buffer.precision(precision);
+	buffer.flags(flags);
 }
 
 Logger& DebugInfo(Logger &l)

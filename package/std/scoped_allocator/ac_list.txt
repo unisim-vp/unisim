@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([scoped_allocator],, AC_MSG_ERROR([scoped_allocator is missing]))

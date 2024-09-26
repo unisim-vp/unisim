@@ -1,3 +1,4 @@
+libc/assert
 libc/fcntl
 libc/stdio
 libc/stdlib

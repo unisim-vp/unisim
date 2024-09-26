@@ -70,7 +70,7 @@ std::ostream& operator << (std::ostream& os, const Token& token)
 		case TOK_ERROR        : os << "an error"; break;
 		case TOK_VOID         : os << "nothing"; break;
 		case TOK_STRING       : os << "a string"; break;
-		case TOK_INT          : os << "a signed integer number"; break;
+		case TOK_INT          : os << "an integer number"; break;
 		case TOK_FLOAT        : os << "a floating point number"; break;
 		case TOK_TRUE         : os << "'true'"; break;
 		case TOK_FALSE        : os << "'false'"; break;
@@ -267,7 +267,7 @@ bool JSON_AST_Printer::Visitor::Visit(const JSON_Value& value)
 	if(GetIndex() != 0) stream << ",";
 	stream << value;
 	NextIndex();
-	return true;
+	return false;
 }
 
 bool JSON_AST_Printer::Visitor::Visit(const JSON_Object& object)
@@ -279,7 +279,7 @@ bool JSON_AST_Printer::Visitor::Visit(const JSON_Object& object)
 	Pop();
 	stream << '}';
 	NextIndex();
-	return true;
+	return false;
 }
 
 bool JSON_AST_Printer::Visitor::Visit(const JSON_Member& member)
@@ -290,7 +290,7 @@ bool JSON_AST_Printer::Visitor::Visit(const JSON_Member& member)
 	member.Scan(*this);
 	Pop();
 	NextIndex();
-	return true;
+	return false;
 }
 
 bool JSON_AST_Printer::Visitor::Visit(const JSON_Array& array)
@@ -302,7 +302,7 @@ bool JSON_AST_Printer::Visitor::Visit(const JSON_Array& array)
 	Pop();
 	std::cout << ']';
 	NextIndex();
-	return true;
+	return false;
 }
 
 void JSON_AST_Printer::Visitor::Push()

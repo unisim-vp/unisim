@@ -1,2 +1,0 @@
-unisim/component/clm/interfaces
-unisim/component/clm/processor/ooosim

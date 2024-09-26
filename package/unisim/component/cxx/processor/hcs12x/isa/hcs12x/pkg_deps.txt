@@ -1,0 +1,6 @@
+am/isa_to_hh_cc
+libc/stdlib
+std/iosfwd
+std/iostream
+unisim/component/cxx/processor/hcs12x
+unisim/component/cxx/processor/hcs12x/isa/xb

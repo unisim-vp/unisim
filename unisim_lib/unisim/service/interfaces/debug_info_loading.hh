@@ -36,18 +36,30 @@
 #define __UNISIM_SERVICE_INTERFACES_DEBUG_INFO_LOADING_HH__
 
 #include <unisim/service/interfaces/interface.hh>
+#include <unisim/util/blob/blob.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
+struct ExecutableBinaryFile : ServiceInterface
+{
+	virtual const char *GetFilename() const = 0;                      // absolute path of executable binary file
+	virtual unisim::util::blob::FileFormat GetFileFormat() const = 0; // file format
+	virtual bool IsEnabled() const = 0;                               // whether this executable binary file is considered when searching in debug infos
+	virtual void Enable(bool enable = true) = 0;                      // enable/disable whether this executable binary file is considered when searching in debug infos
+};
+
+struct ExecutableBinaryFileScanner : ServiceInterface
+{
+  virtual void Append(unisim::service::interfaces::ExecutableBinaryFile *exec_bin_file) = 0;
+};
+
 class DebugInfoLoading : public ServiceInterface
 {
 public:
 	virtual bool LoadDebugInfo(const char *filename) = 0;
-	virtual bool EnableBinary(const char *filename, bool enable) = 0;
-	virtual void EnumerateBinaries(std::list<std::string>& lst) const = 0;
-	virtual bool IsBinaryEnabled(const char *filename) const = 0;
+	virtual void ScanExecutableBinaryFiles(ExecutableBinaryFileScanner& scanner) const = 0;
 };
 
 } // end of namespace interfaces

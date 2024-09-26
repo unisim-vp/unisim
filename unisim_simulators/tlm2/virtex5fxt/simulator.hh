@@ -292,7 +292,6 @@ private:
 	unisim::kernel::variable::Parameter<bool> param_enable_debug_ui;
 
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
-	virtual void SigInt();
 };
 
 #endif // __VIRTEX5FXT_SIMULATOR_HH__

@@ -45,7 +45,7 @@
 #include "transfer.hh"
 #include "debug.hh"
 #include "snapshot.hh"
-#include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm64/arm64.hh>
 #include <unisim/component/cxx/processor/arm/vmsav8/system.hh>
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>

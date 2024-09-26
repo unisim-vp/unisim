@@ -52,25 +52,24 @@ template <class ADDRESS>
 class FetchInsnEvent : public CustomEvent<ADDRESS, FetchInsnEvent<ADDRESS> >
 {
 public:
-	FetchInsnEvent()
-		: CustomEvent<ADDRESS, FetchInsnEvent<ADDRESS> >()
+	ADDRESS GetAddress() const { return addr; }
+	
+protected:
+	FetchInsnEvent(unsigned int _prc_num)
+		: CustomEvent<ADDRESS, FetchInsnEvent<ADDRESS> >(_prc_num)
 		, addr(0)
 	{
 	}
 	
 	void SetAddress(ADDRESS _addr) { addr = _addr; }
-
-	inline ADDRESS GetAddress() const { return addr; }
-	
-	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const FetchInsnEvent<ADDRESS>& fie);
-protected:
+private:
 	ADDRESS addr;
 };
 
 template <class ADDRESS>
 inline std::ostream& operator << (std::ostream& os, const FetchInsnEvent<ADDRESS>& fie)
 {
-	os << "Instruction fetch at 0x" << std::hex << fie.addr << std::dec << " for processor #" << fie.GetProcessorNumber() << " and front-end #" << fie.GetFrontEndNumber();
+	os << "Instruction fetch at 0x" << std::hex << fie.GetAddress() << std::dec << " for processor #" << fie.GetProcessorNumber();
 	
 	return os;
 }

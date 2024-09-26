@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_COFF_SYMTAB_COFF_SYMTAB_TCC__
 
 #include <sstream>
+#include <unisim/util/debug/simple_symbol_table.tcc>
 
 namespace unisim {
 namespace util {
@@ -143,7 +144,7 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 					debug_info_stream << "size=" << unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_fsize) << ",linenoptr=" << unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_lnnoptr) << ", nextentry_index=" << unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_endndx);
 				}
 
-				symbol_table->AddSymbol(sym_name, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_fsize) * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FUNC, memory_atom_size);
+				symbol_table->AddSymbol(sym_name, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_fsize) * memory_atom_size, unisim::util::debug::SymbolBase::SYM_FUNC, memory_atom_size);
 			}
 			else if(sclass == C_STAT && derived_type1 == DT_NON && basic_type == T_NULL)
 			{
@@ -155,7 +156,7 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 					debug_info_stream << "length=" << unisim::util::endian::Target2Host(file_endianness, scn_aux->x_scnlen);
 				}
 
-				symbol_table->AddSymbol(sym_name, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, unisim::util::endian::Target2Host(file_endianness, scn_aux->x_scnlen) * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_SECTION, memory_atom_size);
+				symbol_table->AddSymbol(sym_name, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, unisim::util::endian::Target2Host(file_endianness, scn_aux->x_scnlen) * memory_atom_size, unisim::util::debug::SymbolBase::SYM_SECTION, memory_atom_size);
 			}
 			else if(sclass == C_FILE && derived_type1 == DT_NON && basic_type == T_NULL)
 			{
@@ -183,7 +184,7 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 					debug_info_stream << "filename=" << filename;
 				}
 
-				symbol_table->AddSymbol(filename, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, 0, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FILE, memory_atom_size);
+				symbol_table->AddSymbol(filename, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, 0, unisim::util::debug::SymbolBase::SYM_FILE, memory_atom_size);
 			}
 			else if((sclass == C_EXT || sclass == C_STAT) && derived_type1 == DT_ARY)
 			{
@@ -195,7 +196,7 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 					debug_info_stream << "length=" << unisim::util::endian::Target2Host(file_endianness, ary_aux->x_arylen) << ", dim1=" << unisim::util::endian::Target2Host(file_endianness, ary_aux->x_dim[0]);
 				}
 
-				symbol_table->AddSymbol(sym_name, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, basic_type_sizes[basic_type] * unisim::util::endian::Target2Host(file_endianness, ary_aux->x_arylen) * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_OBJECT, memory_atom_size);
+				symbol_table->AddSymbol(sym_name, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, basic_type_sizes[basic_type] * unisim::util::endian::Target2Host(file_endianness, ary_aux->x_arylen) * memory_atom_size, unisim::util::debug::SymbolBase::SYM_OBJECT, memory_atom_size);
 			}
 			else
 			{
@@ -245,11 +246,11 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 
 			if(sclass == C_EXT && derived_type1 == DT_NON)
 			{
-				symbol_table->AddSymbol(sym_name, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, basic_type_sizes[basic_type] * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_OBJECT, memory_atom_size);
+				symbol_table->AddSymbol(sym_name, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, basic_type_sizes[basic_type] * memory_atom_size, unisim::util::debug::SymbolBase::SYM_OBJECT, memory_atom_size);
 			}
 			else if(sclass == C_FILE && !numaux)
 			{
-				symbol_table->AddSymbol(sym_name, 0, 0, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FILE, memory_atom_size);
+				symbol_table->AddSymbol(sym_name, 0, 0, unisim::util::debug::SymbolBase::SYM_FILE, memory_atom_size);
 			}
 		}
 
@@ -261,18 +262,21 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 }
 
 template <class MEMORY_ADDR>
-void Coff_SymtabHandler<MEMORY_ADDR>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+void Coff_SymtabHandler<MEMORY_ADDR>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner) const
 {
 	if(symbol_table)
 	{
-		symbol_table->GetSymbols(lst, type);
+		symbol_table->ScanSymbols(scanner);
 	}
 }
 
 template <class MEMORY_ADDR>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *Coff_SymtabHandler<MEMORY_ADDR>::FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+void Coff_SymtabHandler<MEMORY_ADDR>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner, typename unisim::util::debug::SymbolBase::Type type) const
 {
-	return symbol_table ? symbol_table->FindSymbol(name, addr, type) : 0;
+	if(symbol_table)
+	{
+		symbol_table->ScanSymbols(scanner, type);
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -288,13 +292,13 @@ const typename unisim::util::debug::Symbol<MEMORY_ADDR> *Coff_SymtabHandler<MEMO
 }
 
 template <class MEMORY_ADDR>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *Coff_SymtabHandler<MEMORY_ADDR>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *Coff_SymtabHandler<MEMORY_ADDR>::FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	return symbol_table ? symbol_table->FindSymbolByName(name, type) : 0;
 }
 
 template <class MEMORY_ADDR>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *Coff_SymtabHandler<MEMORY_ADDR>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *Coff_SymtabHandler<MEMORY_ADDR>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	return symbol_table ? symbol_table->FindSymbolByAddr(addr, type) : 0;
 }

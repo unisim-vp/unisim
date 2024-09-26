@@ -279,9 +279,7 @@ public:
 	void DumpParameters(std::ostream& os);
 	void DumpRegisters(std::ostream& os);
 
-	bool GetExecutablePath(const char *argv0, std::string& out_execute_path) const;
-	bool GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const;
-	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
+	const std::string& GetExecutablePath() const;
 	const std::string& GetSharedDataDirectory() const;
 	std::string SearchSharedDataFile(const char *filename) const;
 	std::vector<std::string> const& GetCmdArgs() const;
@@ -320,9 +318,11 @@ private:
 	bool enable_warning;
 	bool enable_version;
 	bool enable_help;
-	bool warn_get_bin_path;
-	bool warn_get_share_path;
+	bool warn_resolve_executable_path;
+	bool warn_resolve_bin_path;
+	bool warn_resolve_share_path;
 	bool enable_press_enter_at_exit;
+	std::string executable_path;
 	std::string bin_dir;
 	std::string program_binary;
 	std::string program_name;
@@ -341,6 +341,10 @@ private:
 	variable::Parameter<std::string> *var_schematic;
 	variable::Parameter<bool> *param_enable_press_enter_at_exit;
 	variable::Parameter<std::string> *param_default_config_file_format;
+	
+	bool ResolveExecutablePath(const char *argv0, std::string& out_execute_path) const;
+	bool ResolveBinPath(const std::string& executable_path, std::string& out_bin_dir, std::string& out_bin_program) const;
+	bool ResolveSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
 	
 	void Version(std::ostream& os) const;
 	void Help(std::ostream& os) const;
@@ -413,7 +417,7 @@ public:
 	void SetVariable(const char *variable_name, float variable_value);
 	void SetVariable(const char *variable_name, double variable_value);
 	
-	virtual void SigInt();
+	virtual bool SigInt();
 	virtual void Kill();
 private:
 	pthread_mutex_t mutex;
@@ -460,7 +464,7 @@ public:
 	 * setup, id can call any import. */
 	virtual bool EndSetup();
 	
-	virtual void SigInt();
+	virtual bool SigInt();
 	virtual void Kill();
 	bool Killed() const { return killed; }
 

@@ -3,6 +3,8 @@ libc/stdio
 libc/stdlib
 libc/unistd
 m4/libedit
+m4/windows
+m4/windows_io
 std/fstream
 std/iostream
 std/list
@@ -16,7 +18,6 @@ std/vector
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/variable
-unisim/service/interfaces/backtrace
 unisim/service/interfaces/data_object_lookup
 unisim/service/interfaces/debug_event
 unisim/service/interfaces/debug_info_loading
@@ -28,7 +29,7 @@ unisim/service/interfaces/loader
 unisim/service/interfaces/memory
 unisim/service/interfaces/profiling
 unisim/service/interfaces/registers
-unisim/service/interfaces/stack_unwinding
+unisim/service/interfaces/stack_frame
 unisim/service/interfaces/stmt_lookup
 unisim/service/interfaces/stubbing
 unisim/service/interfaces/subprogram_lookup
@@ -39,3 +40,4 @@ unisim/util/debug
 unisim/util/endian
 unisim/util/ieee754
 unisim/util/likely
+unisim/util/locate

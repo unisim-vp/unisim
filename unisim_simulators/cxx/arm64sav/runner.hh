@@ -39,6 +39,7 @@
 #include <arm64sav.hh>
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
 #include <unisim/util/arithmetic/bitfield.hh>
+#include <unisim/util/inlining/inlining.hh>
 #include <iosfwd>
 #include <cstdlib>
 #include <cassert>
@@ -77,7 +78,7 @@ struct Runner
   enum AccessReport { report_none = 0, report_simd_access = report_none, report_gzr_access = report_none, report_gsr_access = report_none };
   void report(AccessReport, unsigned, bool) {}
 
-  void step_instruction();
+  void step_instruction() NEVER_INLINE;
   std::unique_ptr<Operation> decode(uint64_t insn_addr, uint32_t code);
   void run(Interface::testcode_t testcode, uint64_t* data);
   static void dont(char const*);

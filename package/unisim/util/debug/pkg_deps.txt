@@ -6,6 +6,7 @@ std/cstdint
 std/cstring
 std/iosfwd
 std/iostream
+std/limits
 std/list
 std/map
 std/ostream
@@ -19,6 +20,8 @@ unisim/service/interfaces/data_object_lookup
 unisim/service/interfaces/debug_event
 unisim/service/interfaces/register
 unisim/service/interfaces/registers
+unisim/service/interfaces/symbol_table_lookup
+unisim/util/arithmetic
 unisim/util/endian
 unisim/util/hash_table
 unisim/util/json

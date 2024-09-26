@@ -78,6 +78,12 @@ function discover_file_deps
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<softfloat_emu/.*\.h>' "${FILEPATH}"; then
 				echo "m4/softfloat_emu" >> "${PKG_DEPS_TXT}"
 			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<v8\.h>' "${FILEPATH}"; then
+				echo "m4/v8js" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<node\.h>' "${FILEPATH}"; then
+				echo "m4/nodejs" >> "${PKG_DEPS_TXT}"
+			fi
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<editline/.*\.h>' "${FILEPATH}"; then
 				echo "m4/libedit" >> "${PKG_DEPS_TXT}"
 			fi
@@ -231,6 +237,9 @@ function discover_file_deps
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<set>' "${FILEPATH}"; then
 				echo "std/set" >> "${PKG_DEPS_TXT}"
 			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<unordered_set>' "${FILEPATH}"; then
+				echo "std/unordered_set" >> "${PKG_DEPS_TXT}"
+			fi
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<algorithm>' "${FILEPATH}"; then
 				echo "std/algorithm" >> "${PKG_DEPS_TXT}"
 			fi
@@ -245,6 +254,9 @@ function discover_file_deps
 			fi
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cstdint>' "${FILEPATH}"; then
 				echo "std/cstdint" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<limits>' "${FILEPATH}"; then
+				echo "std/limits" >> "${PKG_DEPS_TXT}"
 			fi
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<limits>' "${FILEPATH}"; then
 				echo "std/limits" >> "${PKG_DEPS_TXT}"
@@ -366,7 +378,7 @@ function crawl_directory
 		list_files "${BASE}" template "${TEMPLATE_LIST[@]}"
 		local ISA_LIST=(*.isa)
 		list_files "${BASE}" isa "${ISA_LIST[@]}"
-		local DATA_LIST=(*.xml *.svg *.css *.js *.json *.ini *.ico *.png)
+		local DATA_LIST=(*.xml *.svg *.css *.js *.json *.ini *.ico *.png *.md)
 		list_files "${BASE}" data "${DATA_LIST[@]}"
 
 		local FILENAME
@@ -478,21 +490,38 @@ echo "UNISIM_CHECK_FLOAT16" > "${PACKAGE_DIR}/m4/float16/ac_list.txt"
 rm -rf "${PACKAGE_DIR}/unisim"
 crawl_directory "unisim"
 
-echo "unisim/component/cxx/processor/arm/isa/arm32" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav7/pkg_deps.txt"
-echo "unisim/component/cxx/processor/arm/isa/thumb" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav7/pkg_deps.txt"
-echo "unisim/component/cxx/processor/arm/isa/thumb2" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav7/pkg_deps.txt"
+# echo "unisim/component/cxx/processor/arm/isa/arm32" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav7/pkg_deps.txt"
+# echo "unisim/component/cxx/processor/arm/isa/thumb" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav7/pkg_deps.txt"
+# echo "unisim/component/cxx/processor/arm/isa/thumb2" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav7/pkg_deps.txt"
 
-echo "unisim/component/cxx/processor/arm/isa/arm64" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav8/pkg_deps.txt"
+# echo "unisim/component/cxx/processor/arm/isa/arm64" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav8/pkg_deps.txt"
 
 echo "m4/endian" >> "${PACKAGE_DIR}/unisim/util/endian/pkg_deps.txt"
 echo "m4/real_path" >> "${PACKAGE_DIR}/unisim/kernel/pkg_deps.txt"
+echo "m4/real_path" >> "${PACKAGE_DIR}/unisim/util/locate/pkg_deps.txt"
 
-mv "${PACKAGE_DIR}/unisim/component/cxx/processor/powerpc/isa/book_vle/isa_list.txt" "${PACKAGE_DIR}/unisim/component/cxx/processor/powerpc/isa/book_vle/isa_vle_list.txt"
-
-sed -i '/unisim\/component\/cxx\/processor\/hcs12x\/xb\.isa/d' "${PACKAGE_DIR}/unisim/component/cxx/processor/hcs12x/isa_list.txt"
-sed -i '/unisim\/component\/cxx\/processor\/hcs12x\/s12xgate\.isa/d' "${PACKAGE_DIR}/unisim/component/cxx/processor/hcs12x/isa_list.txt"
-
-echo "unisim/component/cxx/processor/hcs12x/xb.isa" >  "${PACKAGE_DIR}/unisim/component/cxx/processor/hcs12x/isa_xb_list.txt"
-echo "unisim/component/cxx/processor/hcs12x/s12xgate.isa" >  "${PACKAGE_DIR}/unisim/component/cxx/processor/hcs12x/isa_s12xgate_list.txt"
+# mv "${PACKAGE_DIR}/unisim/component/cxx/processor/powerpc/isa/book_vle/isa_list.txt" "${PACKAGE_DIR}/unisim/component/cxx/processor/powerpc/isa/book_vle/isa_vle_list.txt"
 
 echo "m4/float16" >> "${PACKAGE_DIR}/unisim/util/floating_point/pkg_deps.txt"
+
+function gen_doc_md_to_h()
+{
+	local MODULE="$1"
+	(
+		cd "${UNISIM_LIB_DIR}"
+		H_FILES=""
+		while IFS= read -r MD_FILE; do
+			H_FILE="$(echo "${MD_FILE}" | sed -e 's/\.md$/\.h/g')"
+			H_FILES+=" ${H_FILE}"
+		done < <(find "${MODULE}" -type f -name "*.md")
+		cat << EOF > "${PACKAGE_DIR}/${MODULE}/am_list.txt"
+# Add generated .h files from markdown files to automake lists
+noinst_HEADERS+=${H_FILES}
+BUILT_SOURCES+=${H_FILES}
+CLEANFILES+=${H_FILES}
+EOF
+		echo "am/md_to_h" >> "${PACKAGE_DIR}/${MODULE}/pkg_deps.txt"
+	)
+}
+
+gen_doc_md_to_h unisim/service/debug/nodejs/doc

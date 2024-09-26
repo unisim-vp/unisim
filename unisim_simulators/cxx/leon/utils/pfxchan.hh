@@ -37,6 +37,7 @@
 
 #include <iosfwd>
 #include <streambuf>
+#include <cstdint>
 
 namespace SSv8 {
   

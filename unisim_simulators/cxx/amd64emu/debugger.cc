@@ -76,11 +76,10 @@ Debugger::Debugger(char const* name, unisim::kernel::Object* parent, Arch& arch,
       inline_debugger->registers_import              >> *debug_hub.registers_export             [i];
       inline_debugger->stmt_lookup_import            >> *debug_hub.stmt_lookup_export           [i];
       inline_debugger->symbol_table_lookup_import    >> *debug_hub.symbol_table_lookup_export   [i];
-      inline_debugger->backtrace_import              >> *debug_hub.backtrace_export             [i];
+      inline_debugger->stack_frame_import              >> *debug_hub.stack_frame_export             [i];
       inline_debugger->debug_info_loading_import     >> *debug_hub.debug_info_loading_export    [i];
       inline_debugger->data_object_lookup_import     >> *debug_hub.data_object_lookup_export    [i];
       inline_debugger->subprogram_lookup_import      >> *debug_hub.subprogram_lookup_export     [i];
-      inline_debugger->stack_unwinding_import        >> *debug_hub.stack_unwinding_export       [i];
     }
   else
     {

@@ -45,25 +45,12 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-
 template <typename ADDRESS> class Watchpoint;
 
 template <typename ADDRESS>
 class Watchpoint : public CustomEvent<ADDRESS, Watchpoint<ADDRESS> >
 {
 public:
-
-	Watchpoint(unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mt, ADDRESS _addr, uint32_t _size, bool _overlook)
-		: CustomEvent<ADDRESS, Watchpoint<ADDRESS> >()
-		, mat(_mat)
-		, mt(_mt)
-		, addr(_addr)
-		, size(_size)
-		, overlook(_overlook)
-		, id(-1)
-	{
-	}
-
 	inline int GetId() const { return id; }
 	inline typename unisim::util::debug::MemoryAccessType GetMemoryAccessType() const { return mat; }
 	inline typename unisim::util::debug::MemoryType GetMemoryType() const { return mt; }
@@ -92,8 +79,19 @@ public:
 		return (mat == _mat) && (mt == _mt) && (addr = _addr) && (size = _size) && (overlook == _overlook);
 	}
 	
-	inline void SetId(int _id) { id = _id; }
+protected:
+	Watchpoint(unsigned int _prc_num, unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mt, ADDRESS _addr, uint32_t _size, bool _overlook, int _id = -1)
+		: CustomEvent<ADDRESS, Watchpoint<ADDRESS> >(_prc_num)
+		, mat(_mat)
+		, mt(_mt)
+		, addr(_addr)
+		, size(_size)
+		, overlook(_overlook)
+		, id(_id)
+	{
+	}
 	
+	void SetId(int _id) { id = _id; }
 private:
 	typename unisim::util::debug::MemoryAccessType mat;
 	typename unisim::util::debug::MemoryType mt;
@@ -128,7 +126,7 @@ inline std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& w
 	{
 		os << "read";
 	}
-	os << " at 0x" << std::hex << wp.GetAddress() << std::dec << " (" << wp.GetSize() << " bytes) watchpoint #" << wp.GetId() << " for processor #" << wp.GetProcessorNumber() << " and front-end #" << wp.GetFrontEndNumber() << " (" << (wp.Overlooks() ? "with" : "without") << " overlook)";
+	os << " at 0x" << std::hex << wp.GetAddress() << std::dec << " (" << wp.GetSize() << " bytes) watchpoint #" << wp.GetId() << " for processor #" << wp.GetProcessorNumber() << " (" << (wp.Overlooks() ? "with" : "without") << " overlook)";
 	
 	return os;
 }

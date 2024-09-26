@@ -1,0 +1,5 @@
+This package contains:
+  - amd64sav: an AMD64 user level simulator
+
+See INSTALL for installation instructions.
+ 

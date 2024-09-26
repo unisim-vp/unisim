@@ -163,18 +163,21 @@ const unisim::util::blob::Blob<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::GetBlob() 
 }
 
 template <class MEMORY_ADDR>
-void CoffLoader<MEMORY_ADDR>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+void CoffLoader<MEMORY_ADDR>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner) const
 {
 	if(coff_loader)
 	{
-		coff_loader->GetSymbols(lst, type);
+		coff_loader->ScanSymbols(scanner);
 	}
 }
 
 template <class MEMORY_ADDR>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+void CoffLoader<MEMORY_ADDR>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner, typename unisim::util::debug::SymbolBase::Type type) const
 {
-	return coff_loader ? coff_loader->FindSymbol(name, addr, type) : 0;
+	if(coff_loader)
+	{
+		coff_loader->ScanSymbols(scanner, type);
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -190,13 +193,13 @@ const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>
 }
 
 template <class MEMORY_ADDR>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	return coff_loader ? coff_loader->FindSymbolByName(name, type) : 0;
 }
 
 template <class MEMORY_ADDR>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	return coff_loader ? coff_loader->FindSymbolByAddr(addr, type) : 0;
 }

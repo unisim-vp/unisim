@@ -44,22 +44,22 @@ namespace debug {
 namespace dwarf {
 
 template <class MEMORY_ADDR>
-DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, const DWARF_MachineState<MEMORY_ADDR> *_dw_mach_state, unsigned int _prc_num, const char *_data_object_name, const CLocOperationStream& _c_loc_operation_stream, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const unisim::util::debug::Type *_dw_data_object_type)
+DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, const DWARF_MachineState<MEMORY_ADDR> *_dw_mach_state, unsigned int _prc_num, const char *_data_object_name, const CLocOperationStream *_c_loc_operation_stream, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const DWARF_DIE<MEMORY_ADDR> *_dw_die_type, unsigned int _dim, const unisim::util::debug::Type *_dw_data_object_type)
 	: dw_handler(_dw_handler)
 	, dw_mach_state(_dw_mach_state)
 	, prc_num(_prc_num)
 	, data_object_name(_data_object_name)
 	, c_loc_operation_stream(_c_loc_operation_stream)
 	, dw_data_object_loc(_dw_data_object_loc)
+	, dw_die_type(_dw_die_type)
+	, dim(_dim)
 	, dw_data_object_type(_dw_data_object_type)
 	, arch_endianness(dw_handler->GetArchEndianness())
 	, arch_address_size(dw_handler->GetArchAddressSize())
 	, mem_if(dw_mach_state->GetMemoryInterface(prc_num))
 	, bv(arch_endianness)
+	, hold(false)
 	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
-	, debug_info_stream(dw_handler->GetDebugInfoStream())
-	, debug_warning_stream(dw_handler->GetDebugWarningStream())
-	, debug_error_stream(dw_handler->GetDebugErrorStream())
 {
 	if(dw_data_object_type)
 	{
@@ -70,6 +70,7 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 template <class MEMORY_ADDR>
 DWARF_DataObject<MEMORY_ADDR>::~DWARF_DataObject()
 {
+	if(c_loc_operation_stream) delete c_loc_operation_stream;
 	if(dw_data_object_loc) delete dw_data_object_loc;
 	if(dw_data_object_type)
 	{
@@ -81,6 +82,12 @@ template <class MEMORY_ADDR>
 const char *DWARF_DataObject<MEMORY_ADDR>::GetName() const
 {
 	return data_object_name.c_str();
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_DataObject<MEMORY_ADDR>::GetProcessorNumber() const
+{
+	return prc_num;
 }
 
 template <class MEMORY_ADDR>
@@ -121,6 +128,8 @@ bool DWARF_DataObject<MEMORY_ADDR>::GetAddress(MEMORY_ADDR& addr) const
 template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Seek() const
 {
+	if(hold) return true;
+	
 	if(dw_data_object_loc)
 	{
 		delete dw_data_object_loc;
@@ -131,9 +140,17 @@ bool DWARF_DataObject<MEMORY_ADDR>::Seek() const
 		dw_data_object_type->Release();
 		dw_data_object_type = 0;
 	}
-	std::string matched_data_object_name;
-	if(dw_handler->FindDataObject(c_loc_operation_stream, dw_mach_state, prc_num, matched_data_object_name, dw_data_object_loc, dw_data_object_type))
+	
+	typename DWARF_Handler<MEMORY_ADDR>::FindDataObjectArguments args;
+	args.c_loc_operation_stream = *c_loc_operation_stream;
+	args.dim = dim;
+
+	if(dw_handler->FindDataObject(dw_mach_state, prc_num, args))
 	{
+		dw_data_object_loc = args.dw_data_object_loc;
+		dw_data_object_type = args.dw_data_object_type;
+		dw_die_type = args.dw_die_type;
+		dim = args.dim;
 		if(dw_data_object_type)
 		{
 			dw_data_object_type->Catch();
@@ -151,7 +168,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 	{
 		const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges = dw_data_object_loc->GetRanges();
 		
-		debug_info_stream << "PC ranges for which data object location is valid are ";
+		std::ostream& debug_info_stream = dw_handler->GetDebugInfoStream() << "PC ranges for which data object location is valid are ";
 		typename std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >::const_iterator it;
 		for(it = ranges.begin(); it != ranges.end(); it++)
 		{
@@ -174,7 +191,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
+					dw_handler->GetDebugInfoStream() << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
 				}
 				uint8_t buffer[dw_byte_size];
 				memset(buffer, 0, dw_byte_size);
@@ -183,7 +200,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 					MEMORY_ADDR addr = dw_addr + (dw_data_object_bit_offset / 8);
 					if(!mem_if->ReadMemory(addr, buffer, dw_byte_size))
 					{
-						debug_error_stream << "Can't read memory at 0x" << std::hex << addr << std::dec << " (" << dw_byte_size << " bytes)" << std::endl;
+						dw_handler->GetGeneralDebugErrorStream() << "Can't read memory at 0x" << std::hex << addr << std::dec << " (" << dw_byte_size << " bytes)" << std::endl;
 						return false;
 					}
 					
@@ -191,9 +208,14 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 				}
 				else
 				{
-					if(!mem_if->ReadMemory(dw_addr + (dw_data_object_bit_offset / 8) - 1, buffer, dw_byte_size)) return false;
+					MEMORY_ADDR addr = dw_addr + ((dw_data_object_bit_offset - 7) / 8);
+					if(!mem_if->ReadMemory(addr, buffer, dw_byte_size))
+					{
+						dw_handler->GetGeneralDebugErrorStream() << "Can't read memory at 0x" << addr << std::dec << " (" << dw_byte_size << " bytes)" << std::endl;
+						return false;
+					}
 
-					bv.Append(buffer, 8 + (dw_data_object_bit_offset % 8), dw_data_object_bit_size);
+					bv.Append(buffer, (dw_data_object_bit_offset % 8) ? (8 + (dw_data_object_bit_offset % 8)) : (dw_data_object_bit_offset % 8), dw_data_object_bit_size);
 				}
 			}
 			return true;
@@ -207,7 +229,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 				const DWARF_Register<MEMORY_ADDR> *dw_reg = dw_curr_frame->GetRegister(dw_reg_num);
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << " (" << (dw_reg ? dw_reg->GetName() : "?") << ")" << std::endl;
+					dw_handler->GetDebugInfoStream() << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << " (" << (dw_reg ? dw_reg->GetName() : "?") << ")" << std::endl;
 				}
 				if(!dw_reg) return false;
 				
@@ -271,7 +293,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 								
 								if(debug)
 								{
-									debug_info_stream << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << " (" << (dw_reg ? dw_reg->GetName() : "?") << "), dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+									dw_handler->GetDebugInfoStream() << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << " (" << (dw_reg ? dw_reg->GetName() : "?") << "), dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
 								if(!dw_reg) return false;
@@ -322,7 +344,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 								unsigned int dw_bit_size = dw_mem_loc_piece->GetBitSize();
 								if(debug)
 								{
-									debug_info_stream << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+									dw_handler->GetDebugInfoStream() << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
 								MEMORY_ADDR dw_byte_size = dw_bit_size ? (dw_bit_size + dw_bit_offset + 7) / 8 : arch_address_size;
@@ -348,7 +370,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 				
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_IMPLICIT_SIMPLE_VALUE: dw_implicit_simple_value=0x" << std::hex << dw_implicit_simple_value << std::dec << std::endl;
+					dw_handler->GetDebugInfoStream() << "DW_LOC_IMPLICIT_SIMPLE_VALUE: dw_implicit_simple_value=0x" << std::hex << dw_implicit_simple_value << std::dec << std::endl;
 				}
 				
 				bv.Append(dw_implicit_simple_value, dw_data_object_bit_offset, dw_data_object_bit_size);
@@ -369,7 +391,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 				
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_IMPLICIT_BLOCK_VALUE: dw_implicit_block_value=" << (*dw_implicit_block_value) << std::endl;
+					dw_handler->GetDebugInfoStream() << "DW_LOC_IMPLICIT_BLOCK_VALUE: dw_implicit_block_value=" << (*dw_implicit_block_value) << std::endl;
 				}
 				
 				bv.Append(dw_implicit_block_value->GetValue(), dw_data_object_bit_offset, dw_data_object_bit_size);
@@ -402,7 +424,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
+					dw_handler->GetDebugInfoStream() << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
 				}
 				uint8_t buffer[dw_byte_size];
 				memset(buffer, 0, dw_byte_size);
@@ -430,7 +452,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 				DWARF_Register<MEMORY_ADDR> *dw_reg = dw_curr_frame->GetRegister(dw_reg_num);
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << std::endl;
+					dw_handler->GetDebugInfoStream() << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << std::endl;
 				}
 				if(!dw_reg) return false;
 				
@@ -498,7 +520,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 								unsigned int dw_bit_size = dw_reg_loc_piece->GetBitSize();
 								if(debug)
 								{
-									debug_info_stream << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+									dw_handler->GetDebugInfoStream() << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
 								DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_mach_state->GetCurrentFrame(prc_num);
@@ -571,7 +593,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 								unsigned int dw_bit_size = dw_mem_loc_piece->GetBitSize();
 								if(debug)
 								{
-									debug_info_stream << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+									dw_handler->GetDebugInfoStream() << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
 								MEMORY_ADDR dw_byte_size = dw_bit_size ? (dw_bit_size + dw_bit_offset + 7) / 8 : arch_address_size;
@@ -644,7 +666,7 @@ T DWARF_DataObject<MEMORY_ADDR>::ToBaseType() const
 {
 	const unisim::util::debug::Type *resolved_type = unisim::util::debug::TypeResolver::Resolve(dw_data_object_type);
 	
-	if(!resolved_type || !resolved_type->IsBase()) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+	if(!resolved_type || (!resolved_type->IsBase() && !resolved_type->IsPointer())) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str(), "Can't convert because data object type is neither a base type nor a pointer type");
 	
 	T ret_value = T();
 	
@@ -679,7 +701,7 @@ T DWARF_DataObject<MEMORY_ADDR>::ToBaseType() const
 				}
 				break;
 			default:
-				throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+				throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str(), "Can't convert because data object floating-point format is unsupported (neither 32-bit nor 64-bit long)");
 				break;
 		}
 	}
@@ -687,7 +709,7 @@ T DWARF_DataObject<MEMORY_ADDR>::ToBaseType() const
 	{
 		uint64_t uint_value;
 		if(!Read(0, uint_value, GetBitSize())) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::ReadError(data_object_name.c_str());
-		if(std::numeric_limits<T>::is_signed)
+		if(!resolved_type->IsPointer() && std::numeric_limits<T>::is_signed)
 		{
 			int64_t int_value = unisim::util::arithmetic::SignExtend(uint_value, GetBitSize());
 			ret_value = (T) int_value;
@@ -706,7 +728,7 @@ std::string DWARF_DataObject<MEMORY_ADDR>::ToString() const
 {
 	std::string ret_value;
 	
-	if(!unisim::util::debug::TypeIsCharPointer::Test(dw_data_object_type)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+	if(!unisim::util::debug::TypeIsCharPointer::Test(dw_data_object_type)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str(), "Can't convert to string because data object type is not char pointer");
 	
 	MEMORY_ADDR pointer_bit_size = GetBitSize();
 	
@@ -740,7 +762,7 @@ DWARF_DataObject<MEMORY_ADDR>& DWARF_DataObject<MEMORY_ADDR>::AssignBaseType(T v
 {
 	const unisim::util::debug::Type *resolved_type = unisim::util::debug::TypeResolver::Resolve(dw_data_object_type);
 	
-	if(!resolved_type || !resolved_type->IsBase()) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+	if(!resolved_type || (!resolved_type->IsBase() && !resolved_type->IsPointer())) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str(), "Can't assign because data object type is neither a base type nor a pointer type");
 
 	if(resolved_type->IsFloat())
 	{
@@ -776,7 +798,7 @@ DWARF_DataObject<MEMORY_ADDR>& DWARF_DataObject<MEMORY_ADDR>::AssignBaseType(T v
 			}
 			else
 			{
-				throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+				throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str(), "Can't assign because data object floating-point format is unsupported (neither 32-bit nor 64-bit long)");
 			}
 		}
 		else
@@ -829,17 +851,20 @@ DWARF_DataObject<MEMORY_ADDR>& DWARF_DataObject<MEMORY_ADDR>::AssignString(const
 template <class MEMORY_ADDR>
 DWARF_DataObject<MEMORY_ADDR> *DWARF_DataObject<MEMORY_ADDR>::Dereference()
 {
-	if(!unisim::util::debug::TypeIsPointer::Test(dw_data_object_type)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+	if(!unisim::util::debug::TypeIsPointer::Test(dw_data_object_type)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str(), "Can't dereference because data object is not a pointer");
 	
-	CLocOperationStream deref_c_loc_operation_stream(c_loc_operation_stream);
-	deref_c_loc_operation_stream.Push(new CLocOperation(OP_DEREF));
+	CLocOperationStream *deref_c_loc_operation_stream = new CLocOperationStream(*c_loc_operation_stream);
+	deref_c_loc_operation_stream->Push(new CLocOperation(OP_DEREF));
 	
-	std::string deref_matched_data_object_name;
-	const DWARF_Location<MEMORY_ADDR> *dw_deref_data_object_loc;
-	const unisim::util::debug::Type *dw_deref_data_object_type;
-	if(dw_handler->FindDataObject(deref_c_loc_operation_stream, dw_mach_state, prc_num, deref_matched_data_object_name, dw_deref_data_object_loc, dw_deref_data_object_type))
+	typename DWARF_Handler<MEMORY_ADDR>::FindDataObjectArguments args;
+	args.c_loc_operation_stream.Push(new CLocOperation(OP_DEREF));
+	args.dw_die_type = dw_die_type;
+	args.matched_data_object_name = data_object_name;
+	args.dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>(*dw_data_object_loc);
+	
+	if(dw_handler->FindDataObjectEpilog(dw_mach_state, prc_num, args))
 	{
-		return new DWARF_DataObject(dw_handler, dw_mach_state, prc_num, deref_matched_data_object_name.c_str(), deref_c_loc_operation_stream, dw_deref_data_object_loc, dw_deref_data_object_type);
+		return new DWARF_DataObject(dw_handler, dw_mach_state, prc_num, args.matched_data_object_name.c_str(), deref_c_loc_operation_stream, args.dw_data_object_loc, args.dw_die_type, args.dim, args.dw_data_object_type);
 	}
 	
 	return 0;
@@ -848,18 +873,22 @@ DWARF_DataObject<MEMORY_ADDR> *DWARF_DataObject<MEMORY_ADDR>::Dereference()
 template <class MEMORY_ADDR>
 DWARF_DataObject<MEMORY_ADDR> *DWARF_DataObject<MEMORY_ADDR>::GetProperty(const char *property_name)
 {
-	if(!unisim::util::debug::TypeIsComposite::Test(dw_data_object_type)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+	if(!unisim::util::debug::TypeIsComposite::Test(dw_data_object_type)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str(), "Data object is not an object");
 	
-	CLocOperationStream property_c_loc_operation_stream(c_loc_operation_stream);
-	property_c_loc_operation_stream.Push(new CLocOperation(OP_STRUCT_REF));
-	property_c_loc_operation_stream.Push(new CLocOpLiteralIdentifier(property_name));
+	CLocOperationStream *property_c_loc_operation_stream = new CLocOperationStream(*c_loc_operation_stream);
+	property_c_loc_operation_stream->Push(new CLocOperation(OP_STRUCT_REF));
+	property_c_loc_operation_stream->Push(new CLocOpLiteralIdentifier(property_name));
 	
-	std::string property_matched_data_object_name;
-	const DWARF_Location<MEMORY_ADDR> *dw_property_data_object_loc;
-	const unisim::util::debug::Type *dw_property_data_object_type;
-	if(dw_handler->FindDataObject(property_c_loc_operation_stream, dw_mach_state, prc_num, property_matched_data_object_name, dw_property_data_object_loc, dw_property_data_object_type))
+	typename DWARF_Handler<MEMORY_ADDR>::FindDataObjectArguments args;
+	args.c_loc_operation_stream.Push(new CLocOperation(OP_STRUCT_REF));
+	args.c_loc_operation_stream.Push(new CLocOpLiteralIdentifier(property_name));
+	args.dw_die_type = dw_die_type;
+	args.matched_data_object_name = data_object_name;
+	args.dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>(*dw_data_object_loc);
+	
+	if(dw_handler->FindDataObjectEpilog(dw_mach_state, prc_num, args))
 	{
-		return new DWARF_DataObject(dw_handler, dw_mach_state, prc_num, property_matched_data_object_name.c_str(), property_c_loc_operation_stream, dw_property_data_object_loc, dw_property_data_object_type);
+		return new DWARF_DataObject(dw_handler, dw_mach_state, prc_num, args.matched_data_object_name.c_str(), property_c_loc_operation_stream, args.dw_data_object_loc, args.dw_die_type, args.dim, args.dw_data_object_type);
 	}
 	
 	return 0;
@@ -868,18 +897,26 @@ DWARF_DataObject<MEMORY_ADDR> *DWARF_DataObject<MEMORY_ADDR>::GetProperty(const 
 template <class MEMORY_ADDR>
 DWARF_DataObject<MEMORY_ADDR> *DWARF_DataObject<MEMORY_ADDR>::GetItem(int64_t subscript)
 {
-	if(!unisim::util::debug::TypeIsArray::Test(dw_data_object_type)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
-	
-	CLocOperationStream item_c_loc_operation_stream(c_loc_operation_stream);
-	item_c_loc_operation_stream.Push(new CLocOperation(OP_ARRAY_SUBSCRIPT));
-	item_c_loc_operation_stream.Push(new CLocOpLiteralInteger(subscript));
-	
-	std::string item_matched_data_object_name;
-	const DWARF_Location<MEMORY_ADDR> *dw_item_data_object_loc;
-	const unisim::util::debug::Type *dw_item_data_object_type;
-	if(dw_handler->FindDataObject(item_c_loc_operation_stream, dw_mach_state, prc_num, item_matched_data_object_name, dw_item_data_object_loc, dw_item_data_object_type))
+	const unisim::util::debug::Type *resolved_type = unisim::util::debug::TypeResolver::Resolve(dw_data_object_type);
+	if(!resolved_type->IsArray() && (!resolved_type->IsPointer() || resolved_type->AsPointer().GetTypeOfDereferencedObject()->IsUnspecified()))
 	{
-		return new DWARF_DataObject(dw_handler, dw_mach_state, prc_num, item_matched_data_object_name.c_str(), item_c_loc_operation_stream, dw_item_data_object_loc, dw_item_data_object_type);
+		throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str(), "Data object is neither an array nor a non-void pointer");
+	}
+	
+	CLocOperationStream *item_c_loc_operation_stream = new CLocOperationStream(*c_loc_operation_stream);
+	item_c_loc_operation_stream->Push(new CLocOperation(OP_ARRAY_SUBSCRIPT));
+	item_c_loc_operation_stream->Push(new CLocOpLiteralInteger(subscript));
+	
+	typename DWARF_Handler<MEMORY_ADDR>::FindDataObjectArguments args;
+	args.c_loc_operation_stream.Push(new CLocOperation(OP_ARRAY_SUBSCRIPT));
+	args.c_loc_operation_stream.Push(new CLocOpLiteralInteger(subscript));
+	args.dw_die_type = dw_die_type;
+	args.matched_data_object_name = data_object_name;
+	args.dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>(*dw_data_object_loc);
+	
+	if(dw_handler->FindDataObjectEpilog(dw_mach_state, prc_num, args))
+	{
+		return new DWARF_DataObject(dw_handler, dw_mach_state, prc_num, args.matched_data_object_name.c_str(), item_c_loc_operation_stream, args.dw_data_object_loc, args.dw_die_type, args.dim, args.dw_data_object_type);
 	}
 	
 	return 0;
@@ -889,6 +926,7 @@ template <class ADDRESS>
 DWARF_DataObjectProxy<ADDRESS>::DWARF_DataObjectProxy(DWARF_DataObject<ADDRESS> *_dw_data_object)
 	: dw_data_object(_dw_data_object)
 {
+	assert(dw_data_object);
 }
 
 template <class ADDRESS>
@@ -901,6 +939,12 @@ template <class ADDRESS>
 const char *DWARF_DataObjectProxy<ADDRESS>::GetName() const
 {
 	return dw_data_object->GetName();
+}
+
+template <class ADDRESS>
+unsigned int DWARF_DataObjectProxy<ADDRESS>::GetProcessorNumber() const
+{
+	return dw_data_object->GetProcessorNumber();
 }
 
 template <class ADDRESS>
@@ -967,6 +1011,7 @@ template <class ADDRESS>
 template <typename T>
 T DWARF_DataObjectProxy<ADDRESS>::ToBaseType() const
 {
+	if(!Exists()) throw typename unisim::util::debug::DataObject<ADDRESS>::DoesNotExistError(dw_data_object->GetName());
 	if(dw_data_object->IsOptimizedOut()) throw typename unisim::util::debug::DataObject<ADDRESS>::OptimizedOutError(dw_data_object->GetName());
 	if(!dw_data_object->Fetch()) throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(dw_data_object->GetName());
 	return dw_data_object->template ToBaseType<T>();
@@ -975,6 +1020,7 @@ T DWARF_DataObjectProxy<ADDRESS>::ToBaseType() const
 template <class ADDRESS>
 std::string DWARF_DataObjectProxy<ADDRESS>::ToString() const
 {
+	if(!Exists()) throw typename unisim::util::debug::DataObject<ADDRESS>::DoesNotExistError(dw_data_object->GetName());
 	if(dw_data_object->IsOptimizedOut()) throw typename unisim::util::debug::DataObject<ADDRESS>::OptimizedOutError(dw_data_object->GetName());
 	if(!dw_data_object->Fetch()) throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(dw_data_object->GetName());
 	return dw_data_object->ToString();
@@ -984,6 +1030,7 @@ template <class ADDRESS>
 template <typename T>
 DWARF_DataObjectProxy<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::AssignBaseType(T value)
 {
+	if(!Exists()) throw typename unisim::util::debug::DataObject<ADDRESS>::DoesNotExistError(dw_data_object->GetName());
 	if(dw_data_object->IsOptimizedOut()) throw typename unisim::util::debug::DataObject<ADDRESS>::OptimizedOutError(dw_data_object->GetName());
 	if(!dw_data_object->Fetch()) throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(dw_data_object->GetName());
 	dw_data_object->template AssignBaseType<T>(value);
@@ -994,6 +1041,7 @@ DWARF_DataObjectProxy<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::AssignBaseType(T
 template <class ADDRESS>
 DWARF_DataObjectProxy<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::AssignString(const std::string& value)
 {
+	if(!Exists()) throw typename unisim::util::debug::DataObject<ADDRESS>::DoesNotExistError(dw_data_object->GetName());
 	if(dw_data_object->IsOptimizedOut()) throw typename unisim::util::debug::DataObject<ADDRESS>::OptimizedOutError(dw_data_object->GetName());
 	if(!dw_data_object->Fetch()) throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(dw_data_object->GetName());
 	dw_data_object->AssignString(value);
@@ -1178,42 +1226,42 @@ template <class ADDRESS>
 unisim::util::debug::DataObjectRef<ADDRESS> DWARF_DataObjectProxy<ADDRESS>::operator * ()
 {
 	DWARF_DataObject<ADDRESS> *derefenced_object = dw_data_object->Dereference();
-	return unisim::util::debug::DataObjectRef<ADDRESS>(new DWARF_DataObjectProxy<ADDRESS>(derefenced_object));
+	return unisim::util::debug::DataObjectRef<ADDRESS>(derefenced_object ? new DWARF_DataObjectProxy<ADDRESS>(derefenced_object) : 0);
 }
 
 template <class ADDRESS>
 const unisim::util::debug::DataObjectRef<ADDRESS> DWARF_DataObjectProxy<ADDRESS>::operator * () const
 {
 	DWARF_DataObject<ADDRESS> *derefenced_object = dw_data_object->Dereference();
-	return unisim::util::debug::DataObjectRef<ADDRESS>(new DWARF_DataObjectProxy<ADDRESS>(derefenced_object));
+	return unisim::util::debug::DataObjectRef<ADDRESS>(derefenced_object ? new DWARF_DataObjectProxy<ADDRESS>(derefenced_object) : 0);
 }
 
 template <class ADDRESS>
 unisim::util::debug::DataObjectRef<ADDRESS> DWARF_DataObjectProxy<ADDRESS>::operator [] (const char *property_name)
 {
 	DWARF_DataObject<ADDRESS> *property_object = dw_data_object->GetProperty(property_name);
-	return unisim::util::debug::DataObjectRef<ADDRESS>(new DWARF_DataObjectProxy<ADDRESS>(property_object));
+	return unisim::util::debug::DataObjectRef<ADDRESS>(property_object ? new DWARF_DataObjectProxy<ADDRESS>(property_object) : 0);
 }
 
 template <class ADDRESS>
 const unisim::util::debug::DataObjectRef<ADDRESS> DWARF_DataObjectProxy<ADDRESS>::operator [] (const char *property_name) const
 {
 	DWARF_DataObject<ADDRESS> *property_object = dw_data_object->GetProperty(property_name);
-	return unisim::util::debug::DataObjectRef<ADDRESS>(new DWARF_DataObjectProxy<ADDRESS>(property_object));
+	return unisim::util::debug::DataObjectRef<ADDRESS>(property_object ? new DWARF_DataObjectProxy<ADDRESS>(property_object) : 0);
 }
 
 template <class ADDRESS>
 unisim::util::debug::DataObjectRef<ADDRESS> DWARF_DataObjectProxy<ADDRESS>::operator [] (int64_t subscript)
 {
 	DWARF_DataObject<ADDRESS> *array_element_object = dw_data_object->GetItem(subscript);
-	return unisim::util::debug::DataObjectRef<ADDRESS>(new DWARF_DataObjectProxy<ADDRESS>(array_element_object));
+	return unisim::util::debug::DataObjectRef<ADDRESS>(array_element_object ? new DWARF_DataObjectProxy<ADDRESS>(array_element_object) : 0);
 }
 
 template <class ADDRESS>
 const unisim::util::debug::DataObjectRef<ADDRESS> DWARF_DataObjectProxy<ADDRESS>::operator [] (int64_t subscript) const
 {
 	DWARF_DataObject<ADDRESS> *array_element_object = dw_data_object->GetItem(subscript);
-	return unisim::util::debug::DataObjectRef<ADDRESS>(new DWARF_DataObjectProxy<ADDRESS>(array_element_object));
+	return unisim::util::debug::DataObjectRef<ADDRESS>(array_element_object ? new DWARF_DataObjectProxy<ADDRESS>(array_element_object) : 0);
 }
 
 } // end of namespace dwarf

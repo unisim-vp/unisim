@@ -44,8 +44,8 @@ namespace unisim {
 namespace util {
 namespace json {
 
-template <typename VISITOR>
-void JSON_Value::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T>
+T JSON_Value::Scan(VISITOR& visitor) const
 {
 	switch(type)
 	{
@@ -53,15 +53,16 @@ void JSON_Value::Scan(VISITOR& visitor) const
 		case JSON_STRING   : break;
 		case JSON_INT      : break;
 		case JSON_FLOAT    : break;
-		case JSON_OBJECT   : dynamic_cast<JSON_Object const *>(this)->Scan(visitor); break;
-		case JSON_ARRAY    : dynamic_cast<JSON_Array const *>(this)->Scan(visitor); break;
+		case JSON_OBJECT   : return dynamic_cast<JSON_Object const *>(this)->Scan<VISITOR, T>(visitor);
+		case JSON_ARRAY    : return dynamic_cast<JSON_Array const *>(this)->Scan<VISITOR, T>(visitor);
 		case JSON_BOOLEAN  : break;
 		case JSON_NULL     : break;
 	}
+	return T();
 }
 
-template <typename VISITOR>
-bool JSON_Value::Visit(VISITOR& visitor) const
+template <typename VISITOR, typename T>
+T JSON_Value::Visit(VISITOR& visitor) const
 {
 	switch(type)
 	{
@@ -75,25 +76,29 @@ bool JSON_Value::Visit(VISITOR& visitor) const
 		case JSON_NULL     : return visitor.Visit(*static_cast<JSON_Null const *>(this));
 	}
 	
-	return false;
+	return T();
 }
 
-template <typename VISITOR> void JSON_Object::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T JSON_Object::Scan(VISITOR& visitor) const
 {
 	for(typename Members::const_iterator it = members.begin(); it != members.end(); ++it)
 	{
 		const JSON_Member& member = (*it).second;
-		if(!visitor.Visit(member)) break;
+		T ret = visitor.Visit(member);
+		if(ret) return ret;
 	}
+	return T();
 }
 
-template <typename VISITOR> void JSON_Array::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T JSON_Array::Scan(VISITOR& visitor) const
 {
 	for(typename Elements::const_iterator it = elements.begin(); it != elements.end(); ++it)
 	{
 		const JSON_Value& element = *it;
-		if(!element.Visit(visitor)) break;
+		T ret = element.Visit<VISITOR, T>(visitor);
+		if(ret) return ret;
 	}
+	return T();
 }
 
 template <typename VISITOR>
@@ -111,7 +116,7 @@ JSON_Lexer<VISITOR>::JSON_Lexer()
 	, float_value(0.0)
 	, loc(1, 1)
 	, token_loc(1, 1)
-	, token_dictionary(std::cout, std::cerr, std::cerr)
+	, token_dictionary()
 {
 	token_dictionary.Add("true", TOK_TRUE);
 	token_dictionary.Add("false", TOK_FALSE);
@@ -138,8 +143,7 @@ void JSON_Lexer<VISITOR>::Reset()
 	line.clear();
 	text.clear();
 	str_value.clear();
-	int_value.sign = false;
-	int_value.abs_value = 0;
+	int_value = IntValue();
 	float_value = 0.0;
 	loc.lineno = 1;
 	loc.colno = 1;
@@ -230,7 +234,7 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 		{
 			case 0:
 			{
-				unisim::util::dictionary::DictionaryEntry<Token> *entry = token_dictionary.FindDictionaryEntry(&stream, text);
+				unisim::util::dictionary::DictionaryEntry<Token> *entry = token_dictionary.FindDictionaryEntry(stream, text);
 				if(entry)
 				{
 					token_loc = loc;
@@ -591,17 +595,16 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 				}
 				
 				{
-					int_value.sign = sign;
 					const char *nptr = text.c_str();
 					char *endptr = 0;
 					
 					if(sign)
 					{
-						int_value.abs_value = -::strtoll(nptr, &endptr, 10);
+						int_value = IntValue(sign, -::strtoll(nptr, &endptr, 10));
 					}
 					else
 					{
-						int_value.abs_value = ::strtoull(nptr, &endptr, 10);
+						int_value = IntValue(sign, ::strtoull(nptr, &endptr, 10));
 					}
 					
 					assert((uintptr_t)(endptr - nptr) == text.length());
@@ -623,8 +626,7 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 					stream.putback(c);
 				}
 				
-				int_value.sign = sign;
-				int_value.abs_value = 0;
+				int_value = IntValue(sign, 0);
 				token = TOK_INT;
 				break;
 			

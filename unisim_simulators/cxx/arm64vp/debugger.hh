@@ -34,9 +34,17 @@
 
 #ifndef __ARM64VP_DEBUGGER_HH__
 #define __ARM64VP_DEBUGGER_HH__
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
+#if HAVE_NODEJS
+#include <unisim/service/debug/nodejs/nodejs.hh>
+#endif
 #include <iosfwd>
 #include <memory>
 #include <inttypes.h>
@@ -51,14 +59,28 @@ struct Debugger
     typedef uint64_t ADDRESS;
     typedef uint64_t TIME_TYPE;
     static const unsigned int NUM_PROCESSORS = 1;
+#if HAVE_NODEJS
+    /* gdb_server, inline_debugger, or nodejs */
+    static const unsigned int MAX_FRONT_ENDS = 3;
+#else
     /* gdb_server or inline_debugger */
     static const unsigned int MAX_FRONT_ENDS = 2;
+#endif
   };
 
+#if HAVE_NODEJS
+  struct NODEJS_CONFIG
+  {
+    typedef uint64_t ADDRESS;
+    typedef uint64_t TIME_TYPE;
+  };
+#endif
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebugHub;
   typedef unisim::service::debug::gdb_server::GDBServer<typename DEBUGGER_CONFIG::ADDRESS> GDBServer;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<typename DEBUGGER_CONFIG::ADDRESS> InlineDebugger;
-
+#if HAVE_NODEJS
+  typedef unisim::service::debug::nodejs::NodeJS<NODEJS_CONFIG> NodeJS;
+#endif
 
   Debugger(char const* name, AArch64&, std::ifstream&);
   ~Debugger();
@@ -68,10 +90,19 @@ struct Debugger
   DebugHub debug_hub;
   std::unique_ptr<GDBServer> gdb_server;
   std::unique_ptr<InlineDebugger> inline_debugger;
+#if HAVE_NODEJS
+  std::unique_ptr<NodeJS> nodejs;
+#endif
   bool enable_gdb_server;
   bool enable_inline_debugger;
+#if HAVE_NODEJS
+  bool enable_nodejs;
+#endif
   unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
   unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
+#if HAVE_NODEJS
+  unisim::kernel::variable::Parameter<bool> param_enable_nodejs;
+#endif
   unisim::util::blob::Blob<uint64_t> const* blob;
 };
 

@@ -282,9 +282,6 @@ public:
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	const bool& debug;
-	std::ostream& debug_info_stream;
-	std::ostream& debug_warning_stream;
-	std::ostream& debug_error_stream;
 	
 	bool RememberState(DWARF_CFI<MEMORY_ADDR> *cfi, MEMORY_ADDR loc);
 	bool RestoreState(DWARF_CFI<MEMORY_ADDR> *cfi, MEMORY_ADDR loc);

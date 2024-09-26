@@ -1,6 +1,8 @@
 std/cassert
 std/cmath
+std/functional
 std/limits
+std/utility
 std/vector
 unisim/util/arithmetic
 unisim/util/endian

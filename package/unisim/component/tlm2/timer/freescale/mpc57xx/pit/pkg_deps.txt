@@ -1,3 +1,4 @@
+m4/systemc
 std/stack
 unisim/kernel
 unisim/kernel/logger

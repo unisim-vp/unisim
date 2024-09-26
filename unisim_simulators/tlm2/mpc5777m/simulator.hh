@@ -35,9 +35,8 @@
 #ifndef __MPC5777M_SIMULATOR_HH__
 #define __MPC5777M_SIMULATOR_HH__
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+// Compile time configuration
+#include <config.hh>
 
 // Class definition of components
 #include <unisim/component/tlm2/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.hh>
@@ -75,8 +74,13 @@
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/profiler/profiler.hh>
+#if HAVE_HLA_RTI1516E
 #include <unisim/service/debug/hla/federate.hh>
 #include <unisim/util/hla/sc_time/sc_time.hh>
+#endif
+#if HAVE_NODEJS
+#include <unisim/service/debug/nodejs/nodejs.hh>
+#endif
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -86,9 +90,6 @@
 #include <unisim/service/tee/char_io/tee.hh>
 #include <unisim/service/web_terminal/web_terminal.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
-
-// Compile time configuration
-#include <config.hh>
 
 #if HAVE_TVS
 // Timed Value Streams
@@ -258,7 +259,12 @@ private:
 	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_ADDRESS_TYPE> INLINE_DEBUGGER;
 	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
 	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
+#if HAVE_HLA_RTI1516E
 	typedef unisim::service::debug::hla::Federate<HLA_FEDERATE_CONFIG> HLA_FEDERATE;
+#endif
+#if HAVE_NODEJS
+	typedef unisim::service::debug::nodejs::NodeJS<NODEJS_CONFIG> NODEJS;
+#endif
 	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
 	typedef unisim::service::netstreamer::NetStreamer NETSTREAMER;
 	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
@@ -453,8 +459,14 @@ private:
 	INLINE_DEBUGGER *inline_debugger[NUM_PROCESSORS];
 	//  - profiler
 	PROFILER *profiler[NUM_PROCESSORS];
+#if HAVE_HLA_RTI1516E
 	//  - HLA federate
 	HLA_FEDERATE *hla_federate;
+#endif
+#if HAVE_NODEJS
+	//  - Node.js JavaScript runtime environment debugging front-end
+	NODEJS *nodejs;
+#endif
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
@@ -506,7 +518,12 @@ private:
 	bool enable_profiler0;
 	bool enable_profiler1;
 	bool enable_profiler2;
+#if HAVE_HLA_RTI1516E
 	bool enable_hla_federate;
+#endif
+#if HAVE_NODEJS
+	bool enable_nodejs;
+#endif
 	bool enable_serial_terminal0;
 	bool enable_serial_terminal1;
 	bool enable_serial_terminal2;
@@ -556,7 +573,12 @@ private:
 	unisim::kernel::variable::Parameter<bool> param_enable_profiler0;
 	unisim::kernel::variable::Parameter<bool> param_enable_profiler1;
 	unisim::kernel::variable::Parameter<bool> param_enable_profiler2;
+#if HAVE_HLA_RTI1516E
 	unisim::kernel::variable::Parameter<bool> param_enable_hla_federate;
+#endif
+#if HAVE_NODEJS
+	unisim::kernel::variable::Parameter<bool> param_enable_nodejs;
+#endif
 	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal0;
 	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal1;
 	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal2;
@@ -617,8 +639,6 @@ private:
 	void DMASource(const std::string& source_req, const std::string& source_ack, unsigned int dmamux_num, unsigned int dma_source_num);
 	void DMASource(const std::string& source_req, const std::string& source_ack, unsigned int dmamux_num0, unsigned int dma_source_num0, unsigned int dmamux_num1, unsigned int dma_source_num1);
 	void DMASource(const std::string& source_req, const std::string& source_ack, unsigned int dmamux_num0, unsigned int dma_source_num0, unsigned int dmamux_num1, unsigned int dma_source_num1, unsigned int dmamux_num2, unsigned int dma_source_num2);
-	
-	virtual void SigInt();
 };
 
 #endif // __MPC5777M_SIMULATOR_HH__

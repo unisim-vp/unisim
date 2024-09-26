@@ -40,15 +40,19 @@
 #include <set>
 #include <string>
 #include <stdexcept>
+#include <iostream>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-template <class ADDRESS>
-class DataObjectLookup : public ServiceInterface
+struct DataObjectNameScanner : ServiceInterface
 {
-public:
+	virtual void Append(const char *data_object_name) = 0;
+};
+
+struct DataObjectLookupBase : ServiceInterface
+{
 	typedef enum
 	{
 		SCOPE_GLOBAL_ONLY = 1,
@@ -56,23 +60,56 @@ public:
 		SCOPE_BOTH_GLOBAL_AND_LOCAL = 3
 	} Scope;
 	
-	virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, Scope scope = SCOPE_BOTH_GLOBAL_AND_LOCAL) const = 0;
-	virtual unisim::util::debug::DataObjectRef<ADDRESS> FindDataObject(const char *data_object_name) const = 0;
+	static constexpr Scope Scopes[] = { SCOPE_GLOBAL_ONLY, SCOPE_LOCAL_ONLY, SCOPE_BOTH_GLOBAL_AND_LOCAL };
 	
+	virtual void ScanDataObjectNames(DataObjectNameScanner& scanner, Scope scope = SCOPE_BOTH_GLOBAL_AND_LOCAL) const = 0;
+};
+
+template <typename ADDRESS>
+struct DataObjectLookup : DataObjectLookupBase
+{
+	virtual unisim::util::debug::DataObjectRef<ADDRESS> FindDataObject(const char *data_object_name) const = 0;
+	virtual unisim::util::debug::DataObjectRef<ADDRESS> GetReturnValue() const = 0;
+	virtual unisim::util::debug::DataObjectRef<ADDRESS> GetSubProgramParameter(unsigned int index) const = 0;
+
 	inline unisim::util::debug::DataObjectRef<ADDRESS> operator [] (const char *data_object_name) const;
 	inline unisim::util::debug::DataObjectRef<ADDRESS> operator [] (const std::string& data_object_name) const;
 };
 
-template <class ADDRESS>
+template <typename ADDRESS>
 inline unisim::util::debug::DataObjectRef<ADDRESS> DataObjectLookup<ADDRESS>::operator [] (const char *data_object_name) const
 {
 	return FindDataObject(data_object_name);
 }
 
-template <class ADDRESS>
+template <typename ADDRESS>
 inline unisim::util::debug::DataObjectRef<ADDRESS> DataObjectLookup<ADDRESS>::operator [] (const std::string& data_object_name) const
 {
 	return FindDataObject(data_object_name.c_str());
+}
+
+inline std::ostream& operator << (std::ostream& stream, const typename DataObjectLookupBase::Scope scope)
+{
+	switch(scope)
+	{
+		case DataObjectLookupBase::SCOPE_GLOBAL_ONLY          : stream << "global-only"; break;
+		case DataObjectLookupBase::SCOPE_LOCAL_ONLY           : stream << "local-only"; break;
+		case DataObjectLookupBase::SCOPE_BOTH_GLOBAL_AND_LOCAL: stream << "both-global-and-local"; break;
+	}
+	return stream;
+}
+
+inline std::istream& operator >> (std::istream& stream, typename DataObjectLookupBase::Scope& scope)
+{
+	std::string str;
+	if(stream >> str)
+	{
+		if(str == "global-only") scope = DataObjectLookupBase::SCOPE_GLOBAL_ONLY;
+		else if(str == "local-only") scope = DataObjectLookupBase::SCOPE_LOCAL_ONLY;
+		else if(str == "both-global-and-local") scope = DataObjectLookupBase::SCOPE_BOTH_GLOBAL_AND_LOCAL;
+		else stream.setstate(std::ios::failbit);
+	}
+	return stream;
 }
 
 } // end of namespace interfaces

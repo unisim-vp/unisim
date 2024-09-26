@@ -55,7 +55,7 @@
 
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/debug/simple_register_registry.hh>
-#include <unisim/component/cxx/processor/risc16/isa.hh>
+#include <unisim/component/cxx/processor/risc16/risc16.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
 
 namespace unisim {

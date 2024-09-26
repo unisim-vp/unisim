@@ -43,52 +43,57 @@ namespace unisim {
 namespace util {
 namespace debug {
 
+template <class ADDRESS> bool operator <  (SubProgram<ADDRESS> const& sp1, SubProgram<ADDRESS> const& sp2) { return sp1.GetCDecl(true) <  sp2.GetCDecl(true); }
+template <class ADDRESS> bool operator <= (SubProgram<ADDRESS> const& sp1, SubProgram<ADDRESS> const& sp2) { return sp1.GetCDecl(true) <= sp2.GetCDecl(true); }
+template <class ADDRESS> bool operator == (SubProgram<ADDRESS> const& sp1, SubProgram<ADDRESS> const& sp2) { return sp1.GetCDecl(true) == sp2.GetCDecl(true); }
+template <class ADDRESS> bool operator != (SubProgram<ADDRESS> const& sp1, SubProgram<ADDRESS> const& sp2) { return sp1.GetCDecl(true) != sp2.GetCDecl(true); }
+template <class ADDRESS> bool operator >= (SubProgram<ADDRESS> const& sp1, SubProgram<ADDRESS> const& sp2) { return sp1.GetCDecl(true) >= sp2.GetCDecl(true); }
+template <class ADDRESS> bool operator >  (SubProgram<ADDRESS> const& sp1, SubProgram<ADDRESS> const& sp2) { return sp1.GetCDecl(true) <  sp2.GetCDecl(true); }
+
 template <class ADDRESS>
 SubProgram<ADDRESS>::SubProgram()
 	: ref_count(0)
-	, cdecl(0)
+	, c_decl()
 {
 }
 
 template <class ADDRESS>
 SubProgram<ADDRESS>::~SubProgram()
 {
-	if(cdecl) delete cdecl;
+	for(int i = 0; i < 2; ++i) if(c_decl[i]) delete c_decl[i];
 }
 
 template <class ADDRESS>
-const std::string& SubProgram<ADDRESS>::BuildCDecl() const
+const std::string& SubProgram<ADDRESS>::GetCDecl(bool no_array_subscripts) const
 {
-	if(!cdecl)
-	{
-		std::stringstream sstr;
-		Type const *return_type = GetReturnType();
-		std::string s(return_type->BuildCDecl(0, true));
-		sstr << s;
-		if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
-		sstr << GetName() << "(";
-		unsigned int arity = GetArity();
-		for(unsigned int i = 0; i < arity; ++i)
-		{
-			if(i != 0) sstr << ", ";
-			FormalParameter const *formal_param = GetFormalParameter(i);
-			
-			Type const *formal_param_type = formal_param->GetType();
-			std::string formal_param_name = formal_param->GetName();
-			char const *formal_param_name_cstr = formal_param_name.c_str();
-			std::string s(formal_param_type->BuildCDecl(&formal_param_name_cstr, true));
-			sstr << s;
-			if(formal_param_name_cstr)
-			{
-				if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
-				sstr << formal_param_name_cstr;
-			}
-		}
-		sstr << ")";
-		cdecl = new std::string(sstr.str());
-	}
+	std::string *_c_decl = c_decl[no_array_subscripts];
+	if(_c_decl) return (*_c_decl);
 	
-	return *cdecl;
+	std::stringstream sstr;
+	Type const *return_type = GetReturnType();
+	std::string s(return_type->GetCDecl(true));
+	sstr << s;
+	if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
+	sstr << GetName() << "(";
+	unsigned int arity = GetArity();
+	for(unsigned int i = 0; i < arity; ++i)
+	{
+		if(i != 0) sstr << ", ";
+		FormalParameter const *formal_param = GetFormalParameter(i);
+		
+		Type const *formal_param_type = formal_param->GetType();
+		std::string formal_param_name = formal_param->GetName();
+		char const *formal_param_name_cstr = formal_param_name.c_str();
+		std::string s(formal_param_type->BuildCDecl(&formal_param_name_cstr, true));
+		sstr << s;
+		if(formal_param_name_cstr)
+		{
+			if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
+			sstr << formal_param_name_cstr;
+		}
+	}
+	sstr << ")";
+	return *(c_decl[no_array_subscripts] = new std::string(no_array_subscripts ? kill_array_subscripts(reorder_qualifiers(sstr.str())) : reorder_qualifiers(sstr.str())));
 }
 
 template <class ADDRESS>
@@ -110,16 +115,20 @@ void SubProgram<ADDRESS>::Release() const
 }
 
 template <class ADDRESS>
-template <typename VISITOR> void SubProgram<ADDRESS>::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T SubProgram<ADDRESS>::Scan(VISITOR& visitor) const
 {
 	Type const *return_type = GetReturnType();
-	if(!return_type->Visit(visitor)) return;
+	T ret = return_type->Visit(visitor);
+	if(ret) return ret;
 	unsigned int arity = GetArity();
 	for(unsigned int i = 0; i < arity; ++i)
 	{
 		FormalParameter const *formal_param = GetFormalParameter(i);
-		if(!visitor.Visit(formal_param)) break;
+		T ret = visitor.Visit(formal_param);
+		if(ret) return ret;
 	}
+	
+	return T();
 }
 
 } // end of namespace debug

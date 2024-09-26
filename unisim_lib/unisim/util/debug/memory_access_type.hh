@@ -36,15 +36,38 @@
 #ifndef __UNISIM_UTIL_DEBUG_MEMORY_ACCESS_TYPE_HH__
 #define __UNISIM_UTIL_DEBUG_MEMORY_ACCESS_TYPE_HH__
 
+#include <iostream>
+
 namespace unisim {
 namespace util {
 namespace debug {
 
-typedef enum { MAT_NONE = 0, MAT_READ = 1, MAT_WRITE = 2 } MemoryAccessType;
+typedef enum { MAT_READ = 1, MAT_WRITE = 2, MAT_READ_WRITE = MAT_READ | MAT_WRITE } MemoryAccessType;
 typedef enum { MT_DATA = 0, MT_INSN = 1 } MemoryType;
 
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
+
+inline std::ostream& operator << (std::ostream& stream, unisim::util::debug::MemoryAccessType mat)
+{
+	switch(mat)
+	{
+		case unisim::util::debug::MAT_READ: stream << "read"; break;
+		case unisim::util::debug::MAT_WRITE: stream << "write"; break;
+		case unisim::util::debug::MAT_READ_WRITE: stream << "read-write"; break;
+	}
+	return stream;
+}
+
+inline std::ostream& operator << (std::ostream& stream, unisim::util::debug::MemoryType mt)
+{
+	switch(mt)
+	{
+		case unisim::util::debug::MT_DATA: stream << "data"; break;
+		case unisim::util::debug::MT_INSN: stream << "insn"; break;
+	}
+	return stream;
+}
 
 #endif // __UNISIM_UTIL_DEBUG_MEMORY_ACCESS_TYPE_HH__

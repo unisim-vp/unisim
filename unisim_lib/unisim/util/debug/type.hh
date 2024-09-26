@@ -48,23 +48,23 @@ namespace debug {
 
 typedef enum
 {
-	T_UNKNOWN = 0,
-	T_CHAR = 1,
-	T_INTEGER = 2,
-	T_FLOAT = 3,
-	T_BOOL = 4,
-	T_STRUCT = 5,
-	T_UNION = 6,
-	T_CLASS = 7,
-	T_INTERFACE = 8,
-	T_ARRAY = 9,
-	T_POINTER = 10,
-	T_TYPEDEF = 11,
-	T_FUNCTION = 12,
-	T_CONST = 13,
-	T_ENUM = 14,
-	T_VOID = 15,
-	T_VOLATILE = 16
+	T_UNKNOWN   = 0,
+	T_CHAR      = 1 << 0,
+	T_INTEGER   = 1 << 1,
+	T_FLOAT     = 1 << 2,
+	T_BOOL      = 1 << 3,
+	T_STRUCT    = 1 << 4,
+	T_UNION     = 1 << 5,
+	T_CLASS     = 1 << 6,
+	T_INTERFACE = 1 << 7,
+	T_ARRAY     = 1 << 8,
+	T_POINTER   = 1 << 9,
+	T_TYPEDEF   = 1 << 10,
+	T_FUNCTION  = 1 << 11,
+	T_CONST     = 1 << 12,
+	T_ENUM      = 1 << 13,
+	T_VOID      = 1 << 14,
+	T_VOLATILE  = 1 << 15
 } TYPE_CLASS;
 
 typedef enum
@@ -105,6 +105,16 @@ class TypeVisitor;
 std::ostream& operator << (std::ostream& os, const Type& type);
 std::ostream& operator << (std::ostream& os, const Enumerator& enumerator);
 
+std::string reorder_qualifiers(const std::string& s);
+std::string kill_array_subscripts(const std::string& s);
+
+inline bool operator <  (Type const& t1, Type const& t2);
+inline bool operator <= (Type const& t1, Type const& t2);
+inline bool operator == (Type const& t1, Type const& t2);
+inline bool operator != (Type const& t1, Type const& t2);
+inline bool operator >= (Type const& t1, Type const& t2);
+inline bool operator >  (Type const& t1, Type const& t2);
+
 class Type
 {
 public:
@@ -116,21 +126,72 @@ public:
 	
 	TYPE_CLASS GetClass() const;
 	bool IsComposite() const;
+	bool IsStructure() const;
+	bool IsUnion() const;
+	bool IsClass() const;
+	bool IsInterface() const;
 	bool IsBase() const;
+	bool IsChar() const;
+	bool IsInteger() const;
+	bool IsBoolean() const;
 	bool IsFloat() const;
 	bool IsPointer() const;
+	bool IsTypedef() const;
+	bool IsFunction() const;
 	bool IsArray() const;
+	bool IsConst() const;
+	bool IsEnum() const;
 	bool IsUnspecified() const;
+	bool IsVolatile() const;
 	bool IsNamed() const;
 	const DeclLocation *GetDeclLocation() const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
+	const std::string& GetCDecl(bool collapsed = false) const;
 	void Catch() const;
 	void Release() const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
-	template <typename VISITOR> bool Visit(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Visit(VISITOR& visitor) const;
+	
+	const CharType& AsChar() const;
+	const IntegerType& AsInteger() const;
+	const FloatingPointType& AsFloat() const;
+	const BooleanType& AsBoolean() const;
+	const CompositeType& AsComposite() const;
+	const StructureType& AsStructure() const;
+	const UnionType& AsUnion() const;
+	const ClassType& AsClass() const;
+	const InterfaceType& AsInterface() const;
+	const PointerType& AsPointer() const;
+	const Typedef& AsTypedef() const;
+	const FunctionType& AsFunction() const;
+	const ArrayType& AsArray() const;
+	const EnumType& AsEnum() const;
+	const UnspecifiedType& AsUnspecifiedType() const;
+	const VolatileType& AsVolatile() const;
+	const ConstType& AsConst() const;
+	
+	CharType& AsChar();
+	IntegerType& AsInteger();
+	FloatingPointType& AsFloat();
+	BooleanType& AsBoolean();
+	CompositeType& AsComposite();
+	StructureType& AsStructure();
+	UnionType& AsUnion();
+	ClassType& AsClass();
+	InterfaceType& AsInterface();
+	PointerType& AsPointer();
+	Typedef& AsTypedef();
+	FunctionType& AsFunction();
+	ArrayType& AsArray();
+	EnumType& AsEnum();
+	UnspecifiedType& AsUnspecifiedType();
+	VolatileType& AsVolatile();
+	ConstType& AsConst();
+	
 private:
 	TYPE_CLASS type_class;
 	const DeclLocation *decl_location;
+	mutable std::string *c_decl[2];
 	mutable unsigned int ref_count;
 	
 	friend std::ostream& operator << (std::ostream& os, const Type& type);
@@ -215,7 +276,7 @@ public:
 	const Type *GetType() const;
 	uint64_t GetBitSize() const;
 	std::string BuildCDecl() const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 private:
 	std::string name;
 	bool has_name;
@@ -234,8 +295,9 @@ public:
 	bool IsIncomplete() const;
 	unsigned int GetMemberCount() const;
 	const Member *GetMember(unsigned int idx) const;
+	bool HasMember(const char *member_name) const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 private:
 	bool incomplete;
 	std::vector<const Member *> members;
@@ -281,7 +343,7 @@ public:
 	int64_t GetUpperBound() const;
 	int64_t GetCount() const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 private:
 	const Type *type_of_element;
 	unsigned int order;
@@ -297,7 +359,7 @@ public:
 	virtual ~PointerType();
 	const Type *GetTypeOfDereferencedObject() const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 private:
 	const Type *type_of_dereferenced_object;
 };
@@ -310,7 +372,7 @@ public:
 	virtual ~Typedef();
 	const Type *GetType() const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 private:
 	const Type *type;
 };
@@ -322,7 +384,7 @@ public:
 	virtual ~FormalParameter();
 	const char *GetName() const;
 	const Type *GetType() const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 private:
 	std::string name;
 	const Type *type;
@@ -336,8 +398,9 @@ public:
 	virtual ~FunctionType();
 	
 	void Add(const FormalParameter *formal_param);
+	const Type *GetReturnType() const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 	
 private:
 	const Type *return_type;
@@ -352,7 +415,7 @@ public:
 	virtual ~ConstType();
 	const Type *GetType() const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 private:
 	const Type *type;
 };
@@ -364,6 +427,9 @@ public:
 	Enumerator(const char *name, uint64_t value);
 	virtual ~Enumerator();
 	const char *GetName() const;
+	bool IsSigned() const;
+	int64_t GetSignedValue() const;
+	uint64_t GetUnsignedValue() const;
 private:
 	std::string name;
 	bool sign;
@@ -380,7 +446,7 @@ public:
 	virtual ~EnumType();
 	void Add(const Enumerator *enumerator);
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 private:
 	std::vector<const Enumerator *> enumerators;
 };
@@ -403,11 +469,12 @@ public:
 	virtual ~VolatileType();
 	const Type *GetType() const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 private:
 	const Type *type;
 };
 
+// Resolve cv-unqualified type from any type
 class TypeResolver
 {
 public:
@@ -415,56 +482,55 @@ public:
 private:
 	struct Visitor
 	{
-		Visitor();
-		bool Visit(CharType const *type);
-		bool Visit(IntegerType const *type);
-		bool Visit(FloatingPointType const *type);
-		bool Visit(BooleanType const *type);
-		bool Visit(CompositeType const *type);
-		bool Visit(ArrayType const *type);
-		bool Visit(PointerType const *type);
-		bool Visit(Typedef const *type);
-		bool Visit(FunctionType const *type);
-		bool Visit(ConstType const *type);
-		bool Visit(EnumType const *type);
-		bool Visit(UnspecifiedType const *type);
-		bool Visit(VolatileType const *type);
-		bool Visit(Member const *member);
-		bool Visit(FormalParameter const *formal_param);
-		
-		Type const *resolved_type;
+		Type const *Visit(CharType const *type);
+		Type const *Visit(IntegerType const *type);
+		Type const *Visit(FloatingPointType const *type);
+		Type const *Visit(BooleanType const *type);
+		Type const *Visit(CompositeType const *type);
+		Type const *Visit(ArrayType const *type);
+		Type const *Visit(PointerType const *type);
+		Type const *Visit(Typedef const *type);
+		Type const *Visit(FunctionType const *type);
+		Type const *Visit(ConstType const *type);
+		Type const *Visit(EnumType const *type);
+		Type const *Visit(UnspecifiedType const *type);
+		Type const *Visit(VolatileType const *type);
+		Type const *Visit(Member const *member);
+		Type const *Visit(FormalParameter const *formal_param);
 	};
 };
 
-class TypeIsBase
+// Type tester that accepts any type (either cv-qualified or cv-unqualified)
+template <bool (Type::*MEMBER_METHOD)() const>
+class TypeTester
 {
 public:
-	static bool Test(Type const *type);
+	static bool Test(Type const *type)
+	{
+		Type const *resolved_type = TypeResolver::Resolve(type);
+		return resolved_type && (resolved_type->*MEMBER_METHOD)();
+	}
 };
 
-class TypeIsFloat
-{
-public:
-	static bool Test(Type const *type);
-};
-
-class TypeIsComposite
-{
-public:
-	static bool Test(Type const *type);
-};
-
-class TypeIsPointer
-{
-public:
-	static bool Test(Type const *type);
-};
-
-class TypeIsArray
-{
-public:
-	static bool Test(Type const *type);
-};
+typedef TypeTester<&Type::IsBase> TypeIsBase;
+typedef TypeTester<&Type::IsChar> TypeIsChar;
+typedef TypeTester<&Type::IsInteger> TypeIsInteger;
+typedef TypeTester<&Type::IsBoolean> TypeIsBoolean;
+typedef TypeTester<&Type::IsFloat> TypeIsFloat;
+typedef TypeTester<&Type::IsComposite> TypeIsComposite;
+typedef TypeTester<&Type::IsStructure> TypeIsStructure;
+typedef TypeTester<&Type::IsUnion> TypeIsUnion;
+typedef TypeTester<&Type::IsClass> TypeIsClass;
+typedef TypeTester<&Type::IsInterface> TypeIsInterface;
+typedef TypeTester<&Type::IsPointer> TypeIsPointer;
+typedef TypeTester<&Type::IsTypedef> TypeIsTypedef;
+typedef TypeTester<&Type::IsFunction> TypeIsFunction;
+typedef TypeTester<&Type::IsArray> TypeIsArray;
+typedef TypeTester<&Type::IsConst> TypeIsConst;
+typedef TypeTester<&Type::IsEnum> TypeIsEnum;
+typedef TypeTester<&Type::IsUnspecified> TypeIsUnspecified;
+typedef TypeTester<&Type::IsVolatile> TypeIsVolatile;
+typedef TypeTester<&Type::IsNamed> TypeIsNamed;
 
 class TypeIsCharPointer
 {
@@ -487,7 +553,31 @@ private:
 	};
 };
 
-template <typename VISITOR> void Type::Scan(VISITOR& visitor) const
+class TypeIsSigned
+{
+public:
+	static bool Test(Type const *type);
+private:
+	
+	struct Visitor
+	{
+		Visitor();
+		bool Visit(Type const *type);
+		bool Visit(CharType const *type);
+		bool Visit(IntegerType const *type);
+		
+		bool is_signed;
+	};
+};
+
+inline bool operator <  (Type const& t1, Type const& t2) { return t1.GetCDecl() < t2.GetCDecl(); }
+inline bool operator <= (Type const& t1, Type const& t2) { return t1.GetCDecl() <= t2.GetCDecl(); }
+inline bool operator == (Type const& t1, Type const& t2) { return t1.GetCDecl() == t2.GetCDecl(); }
+inline bool operator != (Type const& t1, Type const& t2) { return t1.GetCDecl() != t2.GetCDecl(); }
+inline bool operator >= (Type const& t1, Type const& t2) { return t1.GetCDecl() >= t2.GetCDecl(); }
+inline bool operator >  (Type const& t1, Type const& t2) { return t1.GetCDecl() > t2.GetCDecl(); }
+
+template <typename VISITOR, typename T> T Type::Scan(VISITOR& visitor) const
 {
 	switch(type_class)
 	{
@@ -496,26 +586,27 @@ template <typename VISITOR> void Type::Scan(VISITOR& visitor) const
 		case T_INTEGER  : break;
 		case T_FLOAT    : break;
 		case T_BOOL     : break;
-		case T_STRUCT   : dynamic_cast<StructureType     const *>(this)->Scan(visitor); break;
-		case T_UNION    : dynamic_cast<UnionType         const *>(this)->Scan(visitor); break;
-		case T_CLASS    : dynamic_cast<ClassType         const *>(this)->Scan(visitor); break;
-		case T_INTERFACE: dynamic_cast<InterfaceType     const *>(this)->Scan(visitor); break;
-		case T_ARRAY    : dynamic_cast<ArrayType         const *>(this)->Scan(visitor); break;
-		case T_POINTER  : dynamic_cast<PointerType       const *>(this)->Scan(visitor); break;
-		case T_TYPEDEF  : dynamic_cast<Typedef           const *>(this)->Scan(visitor); break;
-		case T_FUNCTION : dynamic_cast<FunctionType      const *>(this)->Scan(visitor); break;
-		case T_CONST    : dynamic_cast<ConstType         const *>(this)->Scan(visitor); break;
+		case T_STRUCT   : return dynamic_cast<StructureType     const *>(this)->template Scan<VISITOR, T>(visitor);
+		case T_UNION    : return dynamic_cast<UnionType         const *>(this)->template Scan<VISITOR, T>(visitor);
+		case T_CLASS    : return dynamic_cast<ClassType         const *>(this)->template Scan<VISITOR, T>(visitor);
+		case T_INTERFACE: return dynamic_cast<InterfaceType     const *>(this)->template Scan<VISITOR, T>(visitor);
+		case T_ARRAY    : return dynamic_cast<ArrayType         const *>(this)->template Scan<VISITOR, T>(visitor);
+		case T_POINTER  : return dynamic_cast<PointerType       const *>(this)->template Scan<VISITOR, T>(visitor);
+		case T_TYPEDEF  : return dynamic_cast<Typedef           const *>(this)->template Scan<VISITOR, T>(visitor);
+		case T_FUNCTION : return dynamic_cast<FunctionType      const *>(this)->template Scan<VISITOR, T>(visitor);
+		case T_CONST    : return dynamic_cast<ConstType         const *>(this)->template Scan<VISITOR, T>(visitor);
 		case T_ENUM     : break;
 		case T_VOID     : break;
-		case T_VOLATILE : dynamic_cast<VolatileType      const *>(this)->Scan(visitor); break;
+		case T_VOLATILE : return dynamic_cast<VolatileType      const *>(this)->template Scan<VISITOR, T>(visitor);
 	}
+	return T();
 }
 
-template <typename VISITOR> bool Type::Visit(VISITOR& visitor) const
+template <typename VISITOR, typename T> T Type::Visit(VISITOR& visitor) const
 {
 	switch(type_class)
 	{
-		case T_UNKNOWN  : return false;
+		case T_UNKNOWN  : break;
 		case T_CHAR     : return visitor.Visit(dynamic_cast<CharType          const *>(this));
 		case T_INTEGER  : return visitor.Visit(dynamic_cast<IntegerType       const *>(this));
 		case T_FLOAT    : return visitor.Visit(dynamic_cast<FloatingPointType const *>(this));
@@ -533,74 +624,82 @@ template <typename VISITOR> bool Type::Visit(VISITOR& visitor) const
 		case T_VOID     : return visitor.Visit(dynamic_cast<UnspecifiedType   const *>(this));
 		case T_VOLATILE : return visitor.Visit(dynamic_cast<VolatileType      const *>(this));
 	}
-	return false;
+	return T();
 }
 
-template <typename VISITOR> void Member::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T Member::Scan(VISITOR& visitor) const
 {
-	type->Visit(visitor);
+	return type->template Visit<VISITOR, T>(visitor);
 }
 
-template <typename VISITOR> void CompositeType::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T CompositeType::Scan(VISITOR& visitor) const
 {
 	unsigned int member_count = members.size();
 	for(unsigned int i = 0; i < member_count; i++)
 	{
 		Member const *member = members[i];
-		if(!visitor.Visit(member)) break;
+		T ret = visitor.Visit(member);
+		if(ret) return ret;
 	}
+	return T();
 }
 
-template <typename VISITOR> void ArrayType::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T ArrayType::Scan(VISITOR& visitor) const
 {
-	type_of_element->Visit(visitor);
+	return type_of_element->template Visit<VISITOR, T>(visitor);
 }
 
-template <typename VISITOR> void PointerType::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T PointerType::Scan(VISITOR& visitor) const
 {
-	type_of_dereferenced_object->Visit(visitor);
+	return type_of_dereferenced_object->template Visit<VISITOR, T>(visitor);
 }
 
-template <typename VISITOR> void Typedef::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T Typedef::Scan(VISITOR& visitor) const
 {
-	type->Visit(visitor);
+	return type->template Visit<VISITOR, T>(visitor);
 }
 
-template <typename VISITOR> void FormalParameter::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T FormalParameter::Scan(VISITOR& visitor) const
 {
-	type->Visit(visitor);
+	return type->template Visit<VISITOR, T>(visitor);
 }
 
-template <typename VISITOR> void FunctionType::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T FunctionType::Scan(VISITOR& visitor) const
 {
-	if(!return_type->Visit(visitor)) return;
+	T ret = return_type->template Visit<VISITOR, T>(visitor);
+	if(ret) return ret;
 	
 	unsigned int formal_param_count = formal_params.size();
 	for(unsigned int i = 0; i < formal_param_count; i++)
 	{
 		FormalParameter const *formal_param = formal_params[i];
-		if(!visitor.Visit(formal_param)) break;
+		T ret = visitor.Visit(formal_param);
+		if(ret) return ret;
 	}
+	
+	return T();
 }
 
-template <typename VISITOR> void ConstType::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T ConstType::Scan(VISITOR& visitor) const
 {
-	type->Visit(visitor);
+	return type->template Visit<VISITOR, T>(visitor);
 }
 
-template <typename VISITOR> void EnumType::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T EnumType::Scan(VISITOR& visitor) const
 {
 	unsigned int enumerator_count = enumerators.size();
 	for(unsigned int i = 0; i < enumerator_count; i++)
 	{
 		Enumerator const *enumerator = enumerators[i];
-		if(!visitor.Visit(enumerator)) break;
+		T ret = visitor.Visit(enumerator);
+		if(ret) return ret;
 	}
+	return T();
 }
 
-template <typename VISITOR> void VolatileType::Scan(VISITOR& visitor) const
+template <typename VISITOR, typename T> T VolatileType::Scan(VISITOR& visitor) const
 {
-	type->Visit(visitor);
+	return type->template Visit<VISITOR, T>(visitor);
 }
 
 } // end of namespace debug

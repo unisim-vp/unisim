@@ -240,7 +240,6 @@ void signal_handler(int signum)
       core_instance(0)->suspend = true;
       break;
     case SIGUSR2:
-    case SIGINT:
       core_instance(0)->terminate = true;
       break;
     }
@@ -356,7 +355,7 @@ main(int argc, char *argv[])
       , param_enable_linux_os("enable-linux-os", 0, enable_linux_os, "enable Linux OS emulation")
     {
     }
-
+    
     virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false) override
     {
       AArch64 *arch = core_instance(0);
@@ -451,9 +450,6 @@ main(int argc, char *argv[])
 
   signal(SIGUSR2, signal_handler);
 
-  if (not dbg->enable_inline_debugger)
-    signal(SIGINT, signal_handler);
-
   core_instance(&arch);
   arch.silence( &AArch64::handle_suspend );
   arch.notify( 0, &AArch64::handle_suspend );
@@ -487,7 +483,7 @@ main(int argc, char *argv[])
             unisim::util::debug::Statement<uint64_t> const* stmt = dbg->debug_hub.FindStatement(
               last_insn.addr,
               /* any filename */ 0,
-              unisim::service::interfaces::StatementLookup<uint64_t>::OPT_FIND_EXACT_STMT
+              unisim::service::interfaces::StatementLookup<uint64_t>::SCOPE_EXACT_STMT
             );
             if (stmt)
               {

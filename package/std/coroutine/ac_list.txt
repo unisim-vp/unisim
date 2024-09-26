@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([coroutine],, AC_MSG_ERROR([coroutine is missing]))

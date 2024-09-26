@@ -52,11 +52,11 @@ copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
-UNISIM_LIB_SIMULATOR_ISA_FILES="$(files isa)"
+UNISIM_LIB_SIMULATOR_ISA_FILES="$(files isa:unisim/component/cxx/processor/hcs12x/isa/hcs12x)"
 
-UNISIM_LIB_SIMULATOR_ISA_XB_FILES="$(files isa_xb)"
+UNISIM_LIB_SIMULATOR_ISA_XB_FILES="$(files isa:unisim/component/cxx/processor/hcs12x/isa/xb)"
 
-UNISIM_LIB_SIMULATOR_ISA_S12XGATE_FILES="$(files isa_s12xgate)"
+UNISIM_LIB_SIMULATOR_ISA_S12XGATE_FILES="$(files isa:unisim/component/cxx/processor/hcs12x/isa/s12xgate)"
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_FILES} \
@@ -179,7 +179,7 @@ libunisim_${AM_SIMPKG}_simulator_${AM_SIMULATOR_VERSION}_la_LIBADD = libunisim-$
 noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_CXXFLAGS =
 libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -no-undefined
-nodist_libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc unisim/component/cxx/processor/hcs12x/s12xgate.cc
+nodist_libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = unisim/component/cxx/processor/hcs12x/isa/xb/xb.cc unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x.cc unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate.cc
 
 # -------------------------
 libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
@@ -197,35 +197,38 @@ nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_D
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 
 BUILT_SOURCES=\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb.cc\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate.cc\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/xb/xb.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/xb/xb.cc\
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x.cc\
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate.cc\
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x/isa/xb/xb_sub.isa
 
 CLEANFILES=\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb.cc\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate.cc\
-	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/xb/xb.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/xb/xb.cc\
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x.cc\
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate.cc\
+	\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x/isa/xb/xb_sub.isa
 	
-\$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb.cc: \$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb.hh
-\$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa: \$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb.hh
-\$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb.hh: ${UNISIM_LIB_SIMULATOR_ISA_XB_FILES}
-	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x -I \$(top_builddir)/unisim/component/cxx/processor/hcs12x \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.isa
+\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/xb/xb.cc: \$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/xb/xb.hh
+\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x/isa/xb/xb_sub.isa: \$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/xb/xb.hh
+\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/xb/xb.hh: ${UNISIM_LIB_SIMULATOR_ISA_XB_FILES}
+	\$(mkdir_p) \$(@D)
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/xb/xb -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x -I \$(top_builddir)/unisim/component/cxx/processor/hcs12x \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/isa/xb/xb.isa
 	 
-\$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc: \$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh
-\$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES} \$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa
-	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.isa
+\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x.cc: \$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x.hh
+\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES} \$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/xb/xb_sub.isa
+	\$(mkdir_p) \$(@D)
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x.isa
 	 
-\$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate.cc: \$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh
-\$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh: ${UNISIM_LIB_SIMULATOR_ISA_S12XGATE_FILES}
-	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.isa
+\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate.cc: \$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate.hh
+\$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate.hh: ${UNISIM_LIB_SIMULATOR_ISA_S12XGATE_FILES}
+	\$(mkdir_p) \$(@D)
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate.isa
 
 EOF
 )

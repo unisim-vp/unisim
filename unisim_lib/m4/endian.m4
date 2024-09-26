@@ -10,7 +10,7 @@ AC_DEFUN([UNISIM_CHECK_ENDIAN], [
 
 		
 		*) # other hosts (linux and un*x)
-			AC_CHECK_HEADER([endian.h],, AC_MSG_ERROR([endian.h is missing.]))
+			AC_CHECK_HEADER([sys/param.h],, AC_MSG_ERROR([sys/param.h is missing.]))
 			;;
 	esac
 

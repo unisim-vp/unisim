@@ -36,12 +36,14 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_MACHINE_STATE_HH__
 
 #include <vector>
-#include <unisim/util/nat_sort/nat_sort.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/dwarf/option.hh>
+#include <unisim/util/blob/blob.hh>
 #include <unisim/service/interfaces/data_object_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/stack_frame.hh>
 
 namespace unisim {
 namespace util {
@@ -76,12 +78,15 @@ public:
 	// Option management
 	bool SetOption(Option opt, const char *s);
 	bool SetOption(Option opt, bool flag);
+	bool SetOption(Option opt, int value);
 
 	bool GetOption(Option opt, std::string& s) const;
 	bool GetOption(Option opt, bool& flag) const;
+	bool GetOption(Option opt, int& value) const;
 	
 	const bool& GetOptionFlag(Option opt) const;
 	const std::string& GetOptionString(Option opt) const;
+	const int& GetOptionInt(Option opt) const;
 	
 	// Initialization
 	void Initialize();
@@ -90,16 +95,24 @@ public:
 	std::vector<MEMORY_ADDR> *GetBackTrace(unsigned int prc_num) const;
 	bool GetReturnAddress(unsigned int prc_num, MEMORY_ADDR& ret_addr) const;
 	void InvalidateFrames(unsigned int prc_num);
-	bool SelectFrame(unsigned int prc_num, unsigned int frame_num);
+	void InvalidateDirtyFrames();
+	bool DirtyFrames(unsigned int prc_num) const;
+	bool DirtyFrames() const;
+	bool SelectStackFrame(unsigned int prc_num, unsigned int frame_num);
 	unsigned int GetSelectedFrame(unsigned int prc_num) const;
 	bool ComputeCFA(const DWARF_Frame<MEMORY_ADDR> *dw_frame, MEMORY_ADDR& cfa) const;
-	bool EnableBinary(const char *filename, bool enable);
+	bool EnableBinary(const unisim::util::blob::Blob<MEMORY_ADDR> *blob, bool enable);
 	unisim::util::debug::DataObjectRef<MEMORY_ADDR> FindDataObject(unsigned int prc_num, const char *data_object_name) const;
-	void EnumerateDataObjectNames(unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope) const;
+	unisim::util::debug::DataObjectRef<MEMORY_ADDR> GetReturnValue(unsigned int prc_num) const;
+	unisim::util::debug::DataObjectRef<MEMORY_ADDR> GetSubProgramParameter(unsigned int prc_num, unsigned int index) const;
+	void ScanDataObjectNames(unsigned int prc_num, unisim::service::interfaces::DataObjectNameScanner& scanner, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope) const;
 	bool UnwindStack(unsigned int prc_num, unsigned int frame_num);
 	unisim::service::interfaces::Register *GetRegister(unsigned int prc_num, unsigned int dw_reg_num);
 	unisim::service::interfaces::Register *GetRegister(unsigned int prc_num, const char *name);
+	bool ReadProgramCounterRegister(unsigned int prc_num, MEMORY_ADDR& pc) const;
 	void ScanRegisters(unsigned int prc_num, unisim::service::interfaces::RegisterScanner& scanner);
+	void ScanStackFrameInfos(unsigned int prc_num, unisim::service::interfaces::StackFrameInfoScanner<MEMORY_ADDR>& scanner, unsigned int max_stack_frames) const;
+	unsigned int GetStackFrameInfos(unsigned int prc_num, unisim::service::interfaces::StackFrameInfo<MEMORY_ADDR> *stack_frame_infos, unsigned int max_stack_frames) const;
 private:
 	friend class DWARF_Handler<MEMORY_ADDR>;
 	friend class DWARF_Frame<MEMORY_ADDR>;
@@ -131,6 +144,7 @@ private:
 	std::ostream *debug_error_stream;
 	bool verbose;
 	bool debug;
+	int max_stack_frames;
 	
 	// DWARF Register number mapping
 	std::string reg_num_mapping_filename;
@@ -145,12 +159,23 @@ private:
 		DWARF_RegisterNumberMapping *dw_reg_num_mapping;
 		unisim::service::interfaces::Registers *regs_if;
 		unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
-		typedef std::map<std::string, unisim::service::interfaces::Register *, unisim::util::nat_sort::nat_ltstr> RegistersRegistry;
+		typedef unisim::util::debug::SimpleRegisterRegistry RegistersRegistry;
 		RegistersRegistry registers_registry;
-		typedef std::vector<unisim::service::interfaces::Register *> Registers;
-		Registers dw_regs;
 		Frames frames;
+		bool dirty_frames;
 		unsigned int sel;
+		
+		Architecture()
+			: architecture()
+			, dw_reg_num_mapping(0)
+			, regs_if(0)
+			, mem_if(0)
+			, registers_registry()
+			, frames()
+			, dirty_frames(false)
+			, sel(0)
+		{
+		}
 	};
 	typedef std::vector<Architecture> Architectures;
 	mutable Architectures architectures;

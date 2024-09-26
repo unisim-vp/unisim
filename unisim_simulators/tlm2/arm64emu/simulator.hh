@@ -121,8 +121,6 @@ struct Simulator
   unisim::kernel::variable::Parameter<bool>   param_enable_inline_debugger;
   bool                                       enable_profiler;
   unisim::kernel::variable::Parameter<bool>   param_enable_profiler;
-  
-  virtual void SigInt();
 };
 
 #endif /* SIMULATOR_HH_ */

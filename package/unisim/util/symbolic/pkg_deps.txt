@@ -9,6 +9,7 @@ std/map
 std/set
 std/sstream
 std/stdexcept
+std/typeinfo
 std/vector
 unisim/util/arithmetic
 unisim/util/endian

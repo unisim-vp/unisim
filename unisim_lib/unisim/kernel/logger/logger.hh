@@ -49,6 +49,10 @@ namespace unisim {
 namespace kernel {
 namespace logger {
 
+struct LoggerStreamBuffer;
+struct LoggerStream;
+struct LoggerWStreamBuffer;
+struct LoggerWStream;
 struct LoggerServer;
 struct Logger;
 
@@ -56,9 +60,8 @@ enum mode_t { NO_MODE = 0, INFO_MODE, WARNING_MODE, ERROR_MODE };
 
 typedef void (LoggerServer::*LoggerServerOutputMethodPtr)(const char *, const char *);
 
-class LoggerStreamBuffer : public std::streambuf
+struct LoggerStreamBuffer : public std::streambuf
 {
-public:
 	LoggerStreamBuffer(Logger& owner, LoggerServerOutputMethodPtr logger_server_output_method_ptr);
 	~LoggerStreamBuffer();
 	
@@ -76,9 +79,8 @@ private:
 	pthread_mutex_t mutex;
 };
 
-class LoggerStream : public std::ostream
+struct LoggerStream : public std::ostream
 {
-public:
 	LoggerStream(Logger& owner, LoggerServerOutputMethodPtr logger_server_output_method_ptr);
 	~LoggerStream();
 	
@@ -86,7 +88,7 @@ private:
 	LoggerStreamBuffer logger_stream_buffer;
 };
 
-class LoggerWStreamBuffer : public std::wstreambuf
+struct LoggerWStreamBuffer : public std::wstreambuf
 {
 public:
 	LoggerWStreamBuffer(Logger& owner, LoggerServerOutputMethodPtr logger_server_output_method_ptr);
@@ -106,7 +108,7 @@ private:
 	pthread_mutex_t mutex;
 };
 
-class LoggerWStream : public std::wostream
+struct LoggerWStream : public std::wostream
 {
 public:
 	LoggerWStream(Logger& owner, LoggerServerOutputMethodPtr logger_server_output_method_ptr);
@@ -177,8 +179,8 @@ struct Logger
 	
 	const char *GetName() const { return name.c_str(); }
 private:
-	friend class LoggerStreamBuffer;
-	friend class LoggerWStreamBuffer;
+	friend struct LoggerStreamBuffer;
+	friend struct LoggerWStreamBuffer;
 	friend class unisim::kernel::Simulator;
 	
 	unisim::kernel::logger::LoggerServer* GetServerInstance();
@@ -187,9 +189,15 @@ public:
 private:
 	static void ReleaseStaticServiceInstance();
 	void PrintMode();
+	void Begin(mode_t mode);
+	void End();
 
 	std::string name;
 	std::stringstream buffer;
+	std::streamsize width;
+	std::stringstream::char_type fill;
+	std::streamsize precision;
+	std::ios_base::fmtflags flags;
 	mode_t mode;
 	unisim::kernel::logger::LoggerServer *server;
 	LoggerStream null_stream;

@@ -154,7 +154,7 @@ Simulator::Simulator(int argc, char **argv)
       inline_debugger->registers_import              >> *debugger->registers_export[0];
       inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
       inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
-      inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+      inline_debugger->stack_frame_import              >> *debugger->stack_frame_export[0];
       inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
       inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
       inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
@@ -206,9 +206,6 @@ Simulator::Run()
 
   cerr << "Simulation run-time parameters:" << endl;
   DumpParameters(cerr);
-  cerr << endl;
-  cerr << "Simulation formulas:" << endl;
-  DumpFormulas(cerr);
   cerr << endl;
   cerr << "Simulation statistics:" << endl;
   DumpStatistics(cerr);
@@ -378,15 +375,8 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable( "gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_arm_with_neon.xml" );
   sim->SetVariable( "debugger.parse-dwarf", false );
   sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml" );
+  sim->SetVariable( "debugger.architecture[0]", "arm" );
 
   sim->SetVariable( "inline-debugger.num-loaders", 1 );
   sim->SetVariable( "inline-debugger.search-path", "" );
-}
-
-void Simulator::SigInt()
-{
-	if(!inline_debugger || !inline_debugger->IsStarted())
-	{
-		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-	}
 }

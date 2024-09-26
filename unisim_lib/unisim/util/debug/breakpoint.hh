@@ -49,13 +49,12 @@ template <typename ADDRESS>
 class Breakpoint : public CustomEvent<ADDRESS, Breakpoint<ADDRESS> >
 {
 public:
-	Breakpoint(ADDRESS _addr) : CustomEvent<ADDRESS, Breakpoint<ADDRESS> >(), addr(_addr), id(-1) {}
-	Breakpoint(ADDRESS _addr, Event<ADDRESS> *_ref) : CustomEvent<ADDRESS, Breakpoint<ADDRESS> >(_ref) , addr(_addr), id(-1) {}
-	
 	inline int GetId() const { return id; }
 	inline ADDRESS GetAddress() const { return addr; }
-	inline void SetId(unsigned int _id) { id = _id; }
-	
+
+protected:
+	Breakpoint(unsigned int _prc_num, ADDRESS _addr, int _id = -1) : CustomEvent<ADDRESS, Breakpoint<ADDRESS> >(_prc_num), addr(_addr), id(_id) {}
+	void SetId(int _id) { id = _id; }
 private:
 	ADDRESS addr;
 	int id;
@@ -64,7 +63,7 @@ private:
 template <typename ADDRESS>
 inline std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brkp)
 {
-	os << "breakpoint #" << brkp.GetId() << " at 0x" << std::hex << brkp.GetAddress() << std::dec << " for processor #" << brkp.GetProcessorNumber() << " and front-end #" << brkp.GetFrontEndNumber();
+	os << "breakpoint #" << brkp.GetId() << " at 0x" << std::hex << brkp.GetAddress() << std::dec << " for processor #" << brkp.GetProcessorNumber();
 	
 	return os;
 }

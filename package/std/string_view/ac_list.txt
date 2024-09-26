@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([string_view],, AC_MSG_ERROR([string_view is missing]))

@@ -41,7 +41,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
-#include <unisim/service/interfaces/backtrace.hh>
+#include <unisim/service/interfaces/stack_frame.hh>
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/debug_info_loading.hh>
 #include <unisim/service/interfaces/data_object_lookup.hh>
@@ -62,34 +62,61 @@ namespace debug {
 namespace monitor {
 
 template <typename ADDRESS>
-HardwareWatchpoint<ADDRESS>::HardwareWatchpoint(unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mt, ADDRESS _addr, uint32_t _size, int _handle, void (*_callback)(int))
-  : unisim::util::debug::Watchpoint<ADDRESS>(_mat, _mt, _addr, _size, true)
+SourceCodeBreakpoint<ADDRESS>::SourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& _source_code_location, typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *_debug_event_trigger_if, int _handle, void (*_callback)(int))
+	: debug_event_trigger_if(_debug_event_trigger_if)
+	, source_code_breakpoint(_debug_event_trigger_if->CreateSourceCodeBreakpoint(_source_code_location))
+	, source_code_breakpoint_set(false)
 	, handle(_handle)
 	, callback(_callback)
 {
+	if(source_code_breakpoint)
+	{
+		source_code_breakpoint->Catch();
+		source_code_breakpoint->AddEventListener(this);
+	}
 }
 
 template <typename ADDRESS>
-HardwareWatchpoint<ADDRESS>::~HardwareWatchpoint()
+SourceCodeBreakpoint<ADDRESS>::~SourceCodeBreakpoint()
 {
+	if(source_code_breakpoint)
+	{
+		Unset();
+		source_code_breakpoint->Release();
+	}
 }
 
 template <typename ADDRESS>
-void HardwareWatchpoint<ADDRESS>::Report() const
+bool SourceCodeBreakpoint<ADDRESS>::Set()
 {
-	(*callback)(handle);
+	return Update(true);
 }
 
 template <typename ADDRESS>
-SourceCodeBreakpoint<ADDRESS>::SourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& _source_code_location, int _handle, void (*_callback)(int))
-	: unisim::util::debug::SourceCodeBreakpoint<ADDRESS>(_source_code_location)
-	, handle(_handle)
-	, callback(_callback)
+bool SourceCodeBreakpoint<ADDRESS>::Unset()
 {
+	return Update(false);
 }
 
 template <typename ADDRESS>
-void SourceCodeBreakpoint<ADDRESS>::Report() const
+bool SourceCodeBreakpoint<ADDRESS>::Update(bool set)
+{
+	if(!source_code_breakpoint) return false;
+	
+	if(set && !source_code_breakpoint_set)
+	{
+		if(!debug_event_trigger_if->Listen(source_code_breakpoint)) return false;
+	}
+	else if(!set && source_code_breakpoint_set)
+	{
+		if(!debug_event_trigger_if->Unlisten(source_code_breakpoint)) return false;
+	}
+	source_code_breakpoint_set = set;
+	return true;
+}
+
+template <typename ADDRESS>
+void SourceCodeBreakpoint<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
 {
 	(*callback)(handle);
 }
@@ -101,45 +128,34 @@ int SourceCodeBreakpoint<ADDRESS>::GetHandle() const
 }
 
 template <typename ADDRESS>
-DataObjectWatchpoint<ADDRESS>::DataObjectWatchpoint(const char *data_location, typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *_debug_event_trigger_if, typename unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if, int _handle, void (*callback)(int))
+DataObjectWatchpoint<ADDRESS>::DataObjectWatchpoint(const char *data_location, typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *_debug_event_trigger_if, typename unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if, int _handle, void (*_callback)(int))
 	: handle(_handle)
+	, callback(_callback)
 	, debug_event_trigger_if(_debug_event_trigger_if)
-	, hw_watchpoint(0)
+	, watchpoint(0)
+	, watchpoint_set(false)
 {
-	const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_if->FindSymbolByName(data_location, unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT);
+	const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_if->FindSymbolByName(data_location, unisim::util::debug::SymbolBase::SYM_OBJECT);
 	
 	if(symbol)
 	{
-		ADDRESS hw_watchpoint_addr = symbol->GetAddress();
-		ADDRESS hw_watchpoint_size = symbol->GetSize();
+		ADDRESS watchpoint_addr = symbol->GetAddress();
+		ADDRESS watchpoint_size = symbol->GetSize();
 		
-		HardwareWatchpoint<ADDRESS> *hw_wp = new HardwareWatchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, hw_watchpoint_addr, hw_watchpoint_size, handle, callback);
-		hw_wp->Catch();
-		
-		if(debug_event_trigger_if->Listen(hw_wp))
-		{
-			hw_watchpoint = hw_wp;
-		}
-		else
-		{
-			hw_wp->Release();
-		}
+		watchpoint = debug_event_trigger_if->CreateWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, watchpoint_addr, watchpoint_size, /* overlook */ true);
+		watchpoint->Catch();
+		watchpoint->AddEventListener(this);
 	}
 }
 
 template <typename ADDRESS>
 DataObjectWatchpoint<ADDRESS>::~DataObjectWatchpoint()
 {
-	if(hw_watchpoint)
+	if(watchpoint)
 	{
-		debug_event_trigger_if->Unlisten(hw_watchpoint);
+		Unset();
+		watchpoint->Release();
 	}
-}
-
-template <typename ADDRESS>
-bool DataObjectWatchpoint<ADDRESS>::Exists() const
-{
-	return hw_watchpoint != 0;
 }
 
 template <typename ADDRESS>
@@ -149,9 +165,38 @@ int DataObjectWatchpoint<ADDRESS>::GetHandle() const
 }
 
 template <typename ADDRESS>
-void DataObjectWatchpoint<ADDRESS>::Invalidate()
+bool DataObjectWatchpoint<ADDRESS>::Set()
 {
-	hw_watchpoint = 0;
+	return Update(true);
+}
+
+template <typename ADDRESS>
+bool DataObjectWatchpoint<ADDRESS>::Unset()
+{
+	return Update(false);
+}
+
+template <typename ADDRESS>
+bool DataObjectWatchpoint<ADDRESS>::Update(bool set)
+{
+	if(!watchpoint) return false;
+	
+	if(set && !watchpoint_set)
+	{
+		if(!debug_event_trigger_if->Listen(watchpoint)) return false;
+	}
+	else if(!set && watchpoint_set)
+	{
+		if(!debug_event_trigger_if->Unlisten(watchpoint)) return false;
+	}
+	watchpoint_set = set;
+	return true;
+}
+
+template <typename ADDRESS>
+void DataObjectWatchpoint<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+{
+	(*callback)(handle);
 }
 
 template <typename ADDRESS>
@@ -221,7 +266,7 @@ Monitor<ADDRESS>::Monitor(const char *name, unisim::kernel::Object *parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Registers>(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(name, parent)
-	, unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::StackFrame<ADDRESS> >(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(name, parent)
@@ -231,7 +276,7 @@ Monitor<ADDRESS>::Monitor(const char *name, unisim::kernel::Object *parent)
 	, registers_import("registers-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, stmt_lookup_import("stmt-lookup-import", this)
-	, backtrace_import("backtrace-import", this)
+	, stack_frame_import("backtrace-import", this)
 	, debug_info_loading_import("debug-info-loading-import", this)
 	, data_object_lookup_import("data-object-lookup-import", this)
 	, subprogram_lookup_import("subprogram-lookup-import", this)
@@ -254,7 +299,7 @@ Monitor<ADDRESS>::~Monitor()
 		
 		if(source_code_breakpoint)
 		{
-			source_code_breakpoint->Release();
+			delete source_code_breakpoint;
 		}
 	}
 
@@ -267,7 +312,6 @@ Monitor<ADDRESS>::~Monitor()
 		
 		if(data_object_watchpoint)
 		{
-			data_object_watchpoint->Invalidate();
 			delete data_object_watchpoint;
 		}
 	}
@@ -296,10 +340,9 @@ int Monitor<ADDRESS>::SetBreakpoint(const char *info, void (*callback)(int))
 	unisim::util::debug::SourceCodeLocation source_code_location;
 	if(source_code_location.Parse(info))
 	{
-		SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = new SourceCodeBreakpoint<ADDRESS>(source_code_location, handle, callback);
-		if(debug_event_trigger_import->Listen(source_code_breakpoint))
+		SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = new SourceCodeBreakpoint<ADDRESS>(source_code_location, debug_event_trigger_import, handle, callback);
+		if(source_code_breakpoint->Set())
 		{
-			source_code_breakpoint->Catch();
 			source_code_breakpoints.push_back(source_code_breakpoint);
 			return handle;
 		}
@@ -318,7 +361,7 @@ int Monitor<ADDRESS>::SetWatchpoint(const char *info, void (*callback)(int))
 	
 	if(data_object_watchpoint)
 	{
-		if(data_object_watchpoint->Exists())
+		if(data_object_watchpoint->Set())
 		{
 			data_object_watchpoints.push_back(data_object_watchpoint);
 			return handle;
@@ -341,14 +384,11 @@ int Monitor<ADDRESS>::DeleteBreakpoint(int handle)
 		{
 			SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = source_code_breakpoints[idx];
 			
-			if(source_code_breakpoint)
+			if(source_code_breakpoint && source_code_breakpoint->Unset())
 			{
-				if(debug_event_trigger_import->Unlisten(source_code_breakpoint))
-				{
-					source_code_breakpoint->Release();
-					source_code_breakpoints[idx] = 0;
-					return 0;
-				}
+				delete source_code_breakpoint;
+				source_code_breakpoints[idx] = 0;
+				return 0;
 			}
 		}
 	}
@@ -367,7 +407,7 @@ int Monitor<ADDRESS>::DeleteWatchpoint(int handle)
 		{
 			DataObjectWatchpoint<ADDRESS> *data_object_watchpoint = data_object_watchpoints[idx];
 			
-			if(data_object_watchpoint)
+			if(data_object_watchpoint && data_object_watchpoint->Unset())
 			{
 				delete data_object_watchpoint;
 				data_object_watchpoints[idx] = 0;
@@ -439,25 +479,8 @@ int Monitor<ADDRESS>::StopMe(int exit_status)
 template <typename ADDRESS>
 void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
 {
-	const SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = dynamic_cast<const SourceCodeBreakpoint<ADDRESS> *>(event);
-		
-	if(source_code_breakpoint)
-	{
-		source_code_breakpoint->Report();
-	}
-	else
-	{
-		const HardwareWatchpoint<ADDRESS> *hw_watchpoint = dynamic_cast<const HardwareWatchpoint<ADDRESS> *>(event);
-		
-		if(hw_watchpoint)
-		{
-			hw_watchpoint->Report();
-		}
-		else
-		{
-			logger << unisim::kernel::logger::DebugWarning << "Ignoring an event" << unisim::kernel::logger::EndDebugWarning;
-		}
-	}
+	struct Bad {};
+	throw Bad();
 }
 
 } // end of namespace monitor

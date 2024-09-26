@@ -36,24 +36,17 @@
 #define __UNISIM_UTIL_DEBUG_SYMBOL_TABLE_HH__
 
 #include <unisim/util/debug/symbol.hh>
-#include <list>
+#include <unisim/service/interfaces/symbol_table_lookup.hh>
 
 namespace unisim {
 namespace util {
 namespace debug {
 
-template <class T>
-class SymbolTable
+template <typename ADDRESS>
+struct SymbolTable : public unisim::service::interfaces::SymbolTableLookup<ADDRESS>
 {
 public:
-	virtual ~SymbolTable() {}
-	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<T> *>& lst, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr) const = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name) const = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
-	virtual void AddSymbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type, T memory_atom_size = 1) = 0;
+	virtual void AddSymbol(const char *name, ADDRESS addr, ADDRESS size, typename unisim::util::debug::SymbolBase::Type type, ADDRESS memory_atom_size = 1) = 0;
 };
 
 } // end of namespace debug

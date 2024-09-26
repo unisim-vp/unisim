@@ -1,3 +1,4 @@
+am/isa_to_hh_tcc
 libc/stdio
 libc/stdlib
 std/iosfwd
@@ -6,6 +7,7 @@ std/map
 std/sstream
 std/stdexcept
 unisim/component/cxx/processor/avr32/avr32a
+unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa
 unisim/component/cxx/processor/opcache
 unisim/kernel
 unisim/kernel/logger

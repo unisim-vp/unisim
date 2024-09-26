@@ -1,3 +1,4 @@
+m4/float16
 m4/softfloat_emu
 std/cstring
 std/iostream

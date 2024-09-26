@@ -234,7 +234,7 @@ Simulator::Simulator(int argc, char **argv)
 			inline_debugger->registers_import              >> *debugger->registers_export[0];
 			inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
 			inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
-			inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+			inline_debugger->stack_frame_import              >> *debugger->stack_frame_export[0];
 			inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
 			inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
 		}
@@ -327,9 +327,6 @@ void Simulator::Run()
 
 	cerr << "Simulation run-time parameters:" << endl;
 	DumpParameters(cerr);
-	cerr << endl;
-	cerr << "Simulation formulas:" << endl;
-	DumpFormulas(cerr);
 	cerr << endl;
 	cerr << "Simulation statistics:" << endl;
 	DumpStatistics(cerr);

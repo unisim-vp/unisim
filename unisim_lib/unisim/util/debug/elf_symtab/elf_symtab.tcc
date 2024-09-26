@@ -39,6 +39,7 @@
 #include <unisim/util/loader/elf_loader/elf32.h>
 #include <unisim/util/loader/elf_loader/elf64.h>
 #include <unisim/util/endian/endian.hh>
+#include <unisim/util/debug/simple_symbol_table.tcc>
 
 namespace unisim {
 namespace util {
@@ -97,21 +98,30 @@ void ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::Parse()
 			{
 				typename Symbol<MEMORY_ADDR>::Type type;
 
-				switch(ELF32_ST_TYPE(unisim::util::endian::Target2Host(endian, sym->st_info)))
+				unsigned st_type = ELF32_ST_TYPE(unisim::util::endian::Target2Host(endian, sym->st_info));
+
+				switch(st_type)
 				{
-					case STT_NOTYPE: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_NOTYPE; break;
-					case STT_OBJECT: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_OBJECT; break;
-					case STT_FUNC: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FUNC; break;
-					case STT_SECTION: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_SECTION; break;
-					case STT_FILE: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FILE; break;
-					case STT_COMMON: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_COMMON; break;
-					case STT_TLS: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_TLS; break;
-					case STT_NUM: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_NUM; break;
-					case STT_LOOS: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_LOOS; break;
-					case STT_HIOS: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_HIOS; break;
-					case STT_LOPROC: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_LOPROC; break;
-					case STT_HIPROC: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_HIPROC; break;
-					default: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_NOTYPE; break;
+					case STT_NOTYPE: type = unisim::util::debug::SymbolBase::SYM_NOTYPE; break;
+					case STT_OBJECT: type = unisim::util::debug::SymbolBase::SYM_OBJECT; break;
+					case STT_FUNC: type = unisim::util::debug::SymbolBase::SYM_FUNC; break;
+					case STT_SECTION: type = unisim::util::debug::SymbolBase::SYM_SECTION; break;
+					case STT_FILE: type = unisim::util::debug::SymbolBase::SYM_FILE; break;
+					case STT_COMMON: type = unisim::util::debug::SymbolBase::SYM_COMMON; break;
+					case STT_TLS: type = unisim::util::debug::SymbolBase::SYM_TLS; break;
+					default:
+						if((st_type >= STT_LOOS) && (st_type <= STT_HIOS))
+						{
+							type = unisim::util::debug::SymbolBase::SYM_OS;
+							break;
+						}
+						if((st_type >= STT_LOPROC) && (st_type <= STT_HIPROC))
+						{
+							type = unisim::util::debug::SymbolBase::SYM_PROC;
+							break;
+						}
+						type = unisim::util::debug::SymbolBase::SYM_NOTYPE;
+						break;
 				}
 
 				std::string symbol_name(string_table + unisim::util::endian::Target2Host(endian, sym->st_name));
@@ -123,19 +133,23 @@ void ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::Parse()
 	//symbol_table->Dump(cerr);
 }
 
+
 template <class MEMORY_ADDR, class Elf_Sym>
-void ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+void ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner) const
 {
 	if(symbol_table)
 	{
-		symbol_table->GetSymbols(lst, type);
+		symbol_table->ScanSymbols(scanner);
 	}
 }
 
 template <class MEMORY_ADDR, class Elf_Sym>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+void ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner, typename unisim::util::debug::SymbolBase::Type type) const
 {
-	return symbol_table ? symbol_table->FindSymbol(name, addr, type) : 0;
+	if(symbol_table)
+	{
+		symbol_table->ScanSymbols(scanner, type);
+	}
 }
 
 template <class MEMORY_ADDR, class Elf_Sym>
@@ -151,13 +165,13 @@ const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ELF_SymtabHandler<MEMOR
 }
 
 template <class MEMORY_ADDR, class Elf_Sym>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	return symbol_table ? symbol_table->FindSymbolByName(name, type) : 0;
 }
 
 template <class MEMORY_ADDR, class Elf_Sym>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	return symbol_table ? symbol_table->FindSymbolByAddr(addr, type) : 0;
 }

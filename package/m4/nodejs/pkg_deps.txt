@@ -1,0 +1,2 @@
+m4/check_lib
+m4/pthread

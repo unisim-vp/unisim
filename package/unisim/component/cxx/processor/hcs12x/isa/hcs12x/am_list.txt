@@ -1,0 +1,1 @@
+unisim/component/cxx/processor/hcs12x/isa/hcs12x/hcs12x.hh: unisim/component/cxx/processor/hcs12x/isa/xb/xb_sub.isa

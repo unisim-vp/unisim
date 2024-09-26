@@ -239,7 +239,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(!registers_import) return false;
 	if(!debug_selecting_import) return false;
 	
-	c_prc_num = g_prc_num = debug_selecting_import->DebugGetSelected();
+	c_prc_num = g_prc_num = debug_selecting_import->GetSelectedProcessor();
 	
 	if(debug)
 	{
@@ -247,20 +247,21 @@ bool GDBServer<ADDRESS>::EndSetup()
 	}
 	
 	unsigned int prc_num;
-	for(prc_num = 0; debug_selecting_import->DebugSelect(prc_num); prc_num++)
+	for(prc_num = 0; debug_selecting_import->SelectProcessor(prc_num); prc_num++)
 	{
-		unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = new unisim::util::debug::FetchInsnEvent<ADDRESS>();
-		fetch_insn_event->SetProcessorNumber(prc_num);
+		debug_selecting_import->SelectProcessor(prc_num);
+		unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = debug_event_trigger_import->CreateFetchInsnEvent();
 		fetch_insn_event->Catch();
 		
 		fetch_insn_events.push_back(fetch_insn_event);
 	}
+	debug_selecting_import->SelectProcessor(g_prc_num);
 	
 	num_processors = prc_num;
 	prc_actions.resize(num_processors);
 	listening_fetch.resize(num_processors);
 	prc_trap.resize(num_processors);
-	debug_selecting_import->DebugSelect(g_prc_num);
+	debug_selecting_import->SelectProcessor(g_prc_num);
 
 	if(!GDBServerBase::EndSetup()) return false;
 
@@ -346,7 +347,7 @@ bool GDBServer<ADDRESS>::StartServer()
 	
 	GDBServerBase::StartServer();
 
-	c_prc_num = g_prc_num = debug_selecting_import->DebugGetSelected();
+	c_prc_num = g_prc_num = debug_selecting_import->GetSelectedProcessor();
 	ClearStopEvents();
 	
 	gdb_client_feature_multiprocess = false;
@@ -1480,14 +1481,14 @@ bool GDBServer<ADDRESS>::VisitRegister(unisim::util::xml::Node *xml_node, GDBFea
 				bool cpu_has_reg = true;
 				bool cpu_has_right_reg_bitsize = true;
 				
-				unsigned int save_cur_prc_num = debug_selecting_import->DebugGetSelected();
+				unsigned int save_cur_prc_num = debug_selecting_import->GetSelectedProcessor();
 				
 				unisim::service::interfaces::Register *reg = 0;
 				
-				if(debug_selecting_import->DebugSelect(prc_num))
+				if(debug_selecting_import->SelectProcessor(prc_num))
 				{
 					reg = registers_import->GetRegister(reg_name.c_str());
-					debug_selecting_import->DebugSelect(save_cur_prc_num);
+					debug_selecting_import->SelectProcessor(save_cur_prc_num);
 				}
 				
 				if(!reg)
@@ -2096,7 +2097,7 @@ bool GDBServer<ADDRESS>::SetGThread(long thread_id)
 		return PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID);
 	}
 
-	if(!debug_selecting_import->DebugSelect(g_prc_num))
+	if(!debug_selecting_import->SelectProcessor(g_prc_num))
 	{
 		return PutErrorReply(GDB_SERVER_ERROR_CANT_DEBUG_PROCESSOR);
 	}
@@ -2684,7 +2685,7 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 	uint32_t i;
 	unsigned int prc_num;
 	bool status = true;
-	unsigned int save_cur_prc_num = debug_selecting_import->DebugGetSelected();
+	unsigned int save_cur_prc_num = debug_selecting_import->GetSelectedProcessor();
 	
 	typename std::map<uint32_t, uint32_t>::const_iterator arch_specific_breakpoint_kind = arch_specific_breakpoint_kinds.find(kind);
 	
@@ -2718,7 +2719,7 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 					case GDB_MODE_MULTI_THREAD:
 						for(prc_num = 0; prc_num < num_processors; prc_num++)
 						{
-							debug_selecting_import->DebugSelect(prc_num);
+							debug_selecting_import->SelectProcessor(prc_num);
 							if(!debug_event_trigger_import->SetBreakpoint(addr + i))
 							{
 								logger << DebugWarning << "Can't listen breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << " and processor #" << prc_num << EndDebugWarning;
@@ -2744,7 +2745,7 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 				case GDB_MODE_MULTI_THREAD:
 					for(prc_num = 0; prc_num < num_processors; prc_num++)
 					{
-						debug_selecting_import->DebugSelect(prc_num);
+						debug_selecting_import->SelectProcessor(prc_num);
 						if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size, false))
 						{
 							logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
@@ -2769,7 +2770,7 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 				case GDB_MODE_MULTI_THREAD:
 					for(prc_num = 0; prc_num < num_processors; prc_num++)
 					{
-						debug_selecting_import->DebugSelect(prc_num);
+						debug_selecting_import->SelectProcessor(prc_num);
 						if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size, false))
 						{
 							logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
@@ -2800,7 +2801,7 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 				case GDB_MODE_MULTI_THREAD:
 					for(prc_num = 0; prc_num < num_processors; prc_num++)
 					{
-						debug_selecting_import->DebugSelect(prc_num);
+						debug_selecting_import->SelectProcessor(prc_num);
 						
 						if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size, false))
 						{
@@ -2819,7 +2820,7 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			break;
 	}
 	
-	debug_selecting_import->DebugSelect(save_cur_prc_num);
+	debug_selecting_import->SelectProcessor(save_cur_prc_num);
 	
 	return status ? PutReply("OK") : PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
 }
@@ -2833,7 +2834,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 	uint32_t i;
 	unsigned int prc_num;
 	bool status = true;
-	unsigned int save_cur_prc_num = debug_selecting_import->DebugGetSelected();
+	unsigned int save_cur_prc_num = debug_selecting_import->GetSelectedProcessor();
 	
 	typename std::map<uint32_t, uint32_t>::const_iterator arch_specific_breakpoint_kind = arch_specific_breakpoint_kinds.find(kind);
 	
@@ -2867,7 +2868,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 					case GDB_MODE_MULTI_THREAD:
 						for(prc_num = 0; prc_num < num_processors; prc_num++)
 						{
-							debug_selecting_import->DebugSelect(prc_num);
+							debug_selecting_import->SelectProcessor(prc_num);
 							if(!debug_event_trigger_import->RemoveBreakpoint(addr + i))
 							{
 								logger << DebugWarning << "Can't listen breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << " and processor #" << prc_num << EndDebugWarning;
@@ -2893,7 +2894,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 				case GDB_MODE_MULTI_THREAD:
 					for(prc_num = 0; prc_num < num_processors; prc_num++)
 					{
-						debug_selecting_import->DebugSelect(prc_num);
+						debug_selecting_import->SelectProcessor(prc_num);
 						if(!debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
 						{
 							logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
@@ -2918,7 +2919,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 				case GDB_MODE_MULTI_THREAD:
 					for(prc_num = 0; prc_num < num_processors; prc_num++)
 					{
-						debug_selecting_import->DebugSelect(prc_num);
+						debug_selecting_import->SelectProcessor(prc_num);
 						if(!debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
 						{
 							logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
@@ -2949,7 +2950,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 				case GDB_MODE_MULTI_THREAD:
 					for(prc_num = 0; prc_num < num_processors; prc_num++)
 					{
-						debug_selecting_import->DebugSelect(prc_num);
+						debug_selecting_import->SelectProcessor(prc_num);
 						
 						if(!debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
 						{
@@ -2968,7 +2969,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			break;
 	}
 	
-	debug_selecting_import->DebugSelect(save_cur_prc_num);
+	debug_selecting_import->SelectProcessor(save_cur_prc_num);
 	
 	return status ? PutReply("OK") : PutErrorReply(GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT);
 }

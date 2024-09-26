@@ -1,0 +1,2 @@
+unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate.cc
+unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate.hh

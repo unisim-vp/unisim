@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([forward_list],, AC_MSG_ERROR([forward_list is missing]))

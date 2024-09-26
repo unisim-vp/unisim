@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([mutex],, AC_MSG_ERROR([mutex is missing]))

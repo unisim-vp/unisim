@@ -36,8 +36,8 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/cpu.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm32.hh>
-#include <unisim/component/cxx/processor/arm/isa_thumb.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm32/arm32.hh>
+#include <unisim/component/cxx/processor/arm/isa/thumb2/thumb.hh>
 #include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
@@ -164,6 +164,9 @@ struct CPU
     AddressDescriptor( uint32_t addr ) : address(addr), attributes(0) {}
   };
 
+  enum ReportAccess { report_vde_access=0, report_gpr_access=0, report_nzcv_access=0 };
+
+  void report(ReportAccess report_access, unsigned reg, bool write) const {}
 
   //=====================================================================
   //=                  public service imports/exports                   =

@@ -46,6 +46,9 @@ namespace util {
 namespace parser {
 
 template <class ABSTRACT_VALUE>
+unsigned int AST<ABSTRACT_VALUE>::num_asts = 0;
+
+template <class ABSTRACT_VALUE>
 Token<ABSTRACT_VALUE>::Token(const unisim::util::lexer::Location& _loc)
 	: text("")
 	, id(0)
@@ -117,7 +120,7 @@ ABSTRACT_VALUE Token<ABSTRACT_VALUE>::GetValue() const
 }
 
 template <class ABSTRACT_VALUE>
-AST<ABSTRACT_VALUE> *Token<ABSTRACT_VALUE>::led(Parser<ABSTRACT_VALUE> *parser, AST<ABSTRACT_VALUE> *left)
+AST<ABSTRACT_VALUE> *Token<ABSTRACT_VALUE>::led(Parser<ABSTRACT_VALUE> *parser, std::istream& stream, AST<ABSTRACT_VALUE> *left)
 {
 	if(parser->IsDebugging())
 	{
@@ -126,20 +129,20 @@ AST<ABSTRACT_VALUE> *Token<ABSTRACT_VALUE>::led(Parser<ABSTRACT_VALUE> *parser, 
 		if(left) debug_info_stream << *left; else debug_info_stream << "null";
 		debug_info_stream << ") returns null" << std::endl;
 	}
-	parser->ErrorUnexpectedToken(this);
+	parser->ErrorUnexpectedToken(stream, this);
 	delete left;
 	return 0;
 }
 
 template <class ABSTRACT_VALUE>
-AST<ABSTRACT_VALUE> *Token<ABSTRACT_VALUE>::nud(Parser<ABSTRACT_VALUE> *parser)
+AST<ABSTRACT_VALUE> *Token<ABSTRACT_VALUE>::nud(Parser<ABSTRACT_VALUE> *parser, std::istream& stream)
 {
 	if(parser->IsDebugging())
 	{
 		std::ostream& debug_info_stream = parser->GetDebugInfoStream();
 		debug_info_stream << *this << "->Token::nud() returns null" << std::endl;
 	}
-	parser->ErrorUnexpectedToken(this);
+	parser->ErrorUnexpectedToken(stream, this);
 	return 0;
 }
 
@@ -402,13 +405,9 @@ unsigned int AST<ABSTRACT_VALUE>::GetArity() const
 }
 
 template <class ABSTRACT_VALUE>
-Parser<ABSTRACT_VALUE>::Parser(std::istream *_stream, std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, bool _debug)
-	: unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >(_stream, _debug_info_stream, _debug_warning_stream, _debug_error_stream, _debug)
+Parser<ABSTRACT_VALUE>::Parser()
+	: unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >()
 	, parser_error(false)
-	, debug_info_stream(_debug_info_stream)
-	, debug_warning_stream(_debug_warning_stream)
-	, debug_error_stream(_debug_error_stream)
-	, debug(_debug)
 	, token(0)
 {
 }
@@ -416,40 +415,52 @@ Parser<ABSTRACT_VALUE>::Parser(std::istream *_stream, std::ostream& _debug_info_
 template <class ABSTRACT_VALUE>
 Parser<ABSTRACT_VALUE>::~Parser()
 {
-	if(token) delete token;
+	Reset();
 }
 
 template <class ABSTRACT_VALUE>
-AST<ABSTRACT_VALUE> *Parser<ABSTRACT_VALUE>::ParseExpression(unsigned int rbp)
+void Parser<ABSTRACT_VALUE>::Reset()
+{
+	Super::Reset();
+	parser_error = false;
+	if(token)
+	{
+		delete token;
+		token = 0;
+	}
+}
+
+template <class ABSTRACT_VALUE>
+AST<ABSTRACT_VALUE> *Parser<ABSTRACT_VALUE>::ParseExpression(std::istream& stream, unsigned int rbp)
 {
 	if(!token)
 	{
 		// no more token
-		ErrorExpectedExpression();
-		if(debug)
+		ErrorExpectedExpression(stream);
+		if(this->IsDebugging())
 		{
-			debug_info_stream << "Parser::ParseExpression returns null" << std::endl;
+			this->GetDebugInfoStream() << "Parser::ParseExpression returns null" << std::endl;
 		}
 		return 0;
 	}
 	if(token->IsEndOfFile())
 	{
-		ErrorUnexpectedToken(token);
-		if(debug)
+		ErrorUnexpectedToken(stream, token);
+		if(this->IsDebugging())
 		{
-			debug_info_stream << "Parser::ParseExpression returns null" << std::endl;
+			this->GetDebugInfoStream() << "Parser::ParseExpression returns null" << std::endl;
 		}
 		return 0;
 	}
 	Token<ABSTRACT_VALUE> *t = token;
-	Advance();
-	AST<ABSTRACT_VALUE> *left = t->nud(this);
+	Advance(stream);
+	AST<ABSTRACT_VALUE> *left = t->nud(this, stream);
 	if(!left)
 	{
 		delete t;
-		if(debug)
+		if(this->IsDebugging())
 		{
-			debug_info_stream << "Parser::ParseExpression returns null" << std::endl;
+			this->GetDebugInfoStream() << "Parser::ParseExpression returns null" << std::endl;
 		}
 		return 0;
 	}
@@ -458,23 +469,23 @@ AST<ABSTRACT_VALUE> *Parser<ABSTRACT_VALUE>::ParseExpression(unsigned int rbp)
 		// no more token, we should have stopped right before this point (no end of file token with lbp=0 ?)
 		InternalError();
 		delete left;
-		if(debug)
+		if(this->IsDebugging())
 		{
-			debug_info_stream << "Parser::ParseExpression returns null" << std::endl;
+			this->GetDebugInfoStream() << "Parser::ParseExpression returns null" << std::endl;
 		}
 		return 0;
 	}
 	while(left && token && !token->IsEndOfFile() && (rbp < token->GetLBP()))
 	{
 		t = token;
-		Advance();
-		AST<ABSTRACT_VALUE> *ast = t->led(this, left);
+		Advance(stream);
+		AST<ABSTRACT_VALUE> *ast = t->led(this, stream, left);
 		if(!ast)
 		{
 			delete t;
-			if(debug)
+			if(this->IsDebugging())
 			{
-				debug_info_stream << "Parser::ParseExpression returns null" << std::endl;
+				this->GetDebugInfoStream() << "Parser::ParseExpression returns null" << std::endl;
 			}
 			return 0;
 		}
@@ -487,17 +498,17 @@ AST<ABSTRACT_VALUE> *Parser<ABSTRACT_VALUE>::ParseExpression(unsigned int rbp)
 		left = 0;
 	}
 	
-	if(debug)
+	if(this->IsDebugging())
 	{
-		debug_info_stream << "Parser::ParseExpression() returns ";
-		if(left) debug_info_stream << *left; else debug_info_stream << "null";
-		debug_info_stream << std::endl;
+		this->GetDebugInfoStream() << "Parser::ParseExpression() returns ";
+		if(left) this->GetDebugInfoStream() << *left; else this->GetDebugInfoStream() << "null";
+		this->GetDebugInfoStream() << std::endl;
 	}
 	return left;
 }
 
 template <class ABSTRACT_VALUE>
-bool Parser<ABSTRACT_VALUE>::Advance(unsigned int token_id)
+bool Parser<ABSTRACT_VALUE>::Advance(std::istream& stream, unsigned int token_id)
 {
 	if(token_id)
 	{
@@ -505,80 +516,56 @@ bool Parser<ABSTRACT_VALUE>::Advance(unsigned int token_id)
 		{
 			if(token->GetId() != token_id)
 			{
-				ErrorExpectedToken(token_id, token);
+				ErrorExpectedToken(stream, token_id, token);
 				return false;
 			}
 			delete token;
 		}
 		else
 		{
-			ErrorExpectedToken(token_id);
+			ErrorExpectedToken(stream, token_id);
 			return false;
 		}
 	}
-	token = unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::Next();
+	token = unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::Next(stream);
 	if(unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::lexer_error) parser_error = true;
 	return true;
 }
 
 template <class ABSTRACT_VALUE>
-void Parser<ABSTRACT_VALUE>::ErrorExpectedToken(unsigned int expected_token_id, const Token<ABSTRACT_VALUE> *token)
+void Parser<ABSTRACT_VALUE>::ErrorExpectedToken(std::istream& stream, unsigned int expected_token_id, const Token<ABSTRACT_VALUE> *token)
 {
-	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::FinishScanningLine();
+	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::FinishScanningLine(stream);
 	parser_error = true;
 	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::PrintFriendlyLocation(token->GetLocation());
-	debug_error_stream << token->GetLocation() << ", expected '" << unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetTokenText(expected_token_id) << "'";
-	if(token) debug_error_stream << " before '" << token->GetText() << "'";
-	debug_error_stream << std::endl;
+	this->GetDebugErrorStream() << token->GetLocation() << ", expected '" << unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetTokenText(expected_token_id) << "'";
+	if(token) this->GetDebugErrorStream() << " before '" << token->GetText() << "'";
+	this->GetDebugErrorStream() << std::endl;
 }
 
 template <class ABSTRACT_VALUE>
-void Parser<ABSTRACT_VALUE>::ErrorUnexpectedToken(const Token<ABSTRACT_VALUE> *token)
+void Parser<ABSTRACT_VALUE>::ErrorUnexpectedToken(std::istream& stream, const Token<ABSTRACT_VALUE> *token)
 {
-	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::FinishScanningLine();
+	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::FinishScanningLine(stream);
 	parser_error = true;
 	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::PrintFriendlyLocation(token->GetLocation());
-	debug_error_stream << token->GetLocation() << ", unexpected '" << token->GetText() << "'" << std::endl;
+	this->GetDebugErrorStream() << token->GetLocation() << ", unexpected '" << token->GetText() << "'" << std::endl;
 }
 
 template <class ABSTRACT_VALUE>
-void Parser<ABSTRACT_VALUE>::ErrorExpectedExpression()
+void Parser<ABSTRACT_VALUE>::ErrorExpectedExpression(std::istream& stream)
 {
-	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::FinishScanningLine();
+	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::FinishScanningLine(stream);
 	parser_error = true;
 	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::PrintFriendlyLocation(unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetLocation());
-	debug_error_stream << unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetLocation() << ", expected expression" << std::endl;
+	this->GetDebugErrorStream() << unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetLocation() << ", expected expression" << std::endl;
 }
 
 template <class ABSTRACT_VALUE>
 void Parser<ABSTRACT_VALUE>::InternalError()
 {
 	parser_error = true;
-	debug_error_stream << "Internal parser error!" << std::endl;
-}
-
-template <class ABSTRACT_VALUE>
-std::ostream& Parser<ABSTRACT_VALUE>::GetDebugInfoStream()
-{
-	return debug_info_stream;
-}
-
-template <class ABSTRACT_VALUE>
-std::ostream& Parser<ABSTRACT_VALUE>::GetDebugWarningStream()
-{
-	return debug_warning_stream;
-}
-
-template <class ABSTRACT_VALUE>
-std::ostream& Parser<ABSTRACT_VALUE>::GetDebugErrorStream()
-{
-	return debug_error_stream;
-}
-
-template <class ABSTRACT_VALUE>
-bool Parser<ABSTRACT_VALUE>::IsDebugging() const
-{
-	return debug;
+	this->GetDebugErrorStream() << "Internal parser error!" << std::endl;
 }
 
 template <class ABSTRACT_VALUE>
@@ -588,9 +575,9 @@ Literal<ABSTRACT_VALUE>::Literal(const char *_text, unsigned int _id, const unis
 }
 
 template <class ABSTRACT_VALUE>
-AST<ABSTRACT_VALUE> *Literal<ABSTRACT_VALUE>::nud(Parser<ABSTRACT_VALUE> *parser)
+AST<ABSTRACT_VALUE> *Literal<ABSTRACT_VALUE>::nud(Parser<ABSTRACT_VALUE> *parser, std::istream& stream)
 {
-	AST<ABSTRACT_VALUE> *ast = parser->Check(this) ? new AST<ABSTRACT_VALUE>(this) : 0;
+	AST<ABSTRACT_VALUE> *ast = parser->Check(stream, this) ? new AST<ABSTRACT_VALUE>(this) : 0;
 	if(parser->IsDebugging())
 	{
 		std::ostream& debug_info_stream = parser->GetDebugInfoStream();
@@ -636,16 +623,16 @@ InfixOperator<ABSTRACT_VALUE>::InfixOperator(const char *_text, unsigned int _id
 }
 
 template <class ABSTRACT_VALUE>
-AST<ABSTRACT_VALUE> *InfixOperator<ABSTRACT_VALUE>::led(Parser<ABSTRACT_VALUE> *parser, AST<ABSTRACT_VALUE> *left)
+AST<ABSTRACT_VALUE> *InfixOperator<ABSTRACT_VALUE>::led(Parser<ABSTRACT_VALUE> *parser, std::istream& stream, AST<ABSTRACT_VALUE> *left)
 {
 	AST<ABSTRACT_VALUE> *ast = 0;
-	AST<ABSTRACT_VALUE> *right = parser->ParseExpression((assoc == LEFT_TO_RIGHT) ? bp : bp - 1);
+	AST<ABSTRACT_VALUE> *right = parser->ParseExpression(stream, (assoc == LEFT_TO_RIGHT) ? bp : bp - 1);
 	
 	if(right)
 	{
-		if(!end_of_subscript_id || parser->Advance(end_of_subscript_id))
+		if(!end_of_subscript_id || parser->Advance(stream, end_of_subscript_id))
 		{
-			ast = (left && right && parser->Check(this, left, right)) ? new AST<ABSTRACT_VALUE>(this, left, right) : 0;
+			ast = (left && right && parser->Check(stream, this, left, right)) ? new AST<ABSTRACT_VALUE>(this, left, right) : 0;
 		}
 	}
 	
@@ -697,16 +684,16 @@ PrefixOperator<ABSTRACT_VALUE>::PrefixOperator(const char *_text, unsigned int _
 }
 
 template <class ABSTRACT_VALUE>
-AST<ABSTRACT_VALUE> *PrefixOperator<ABSTRACT_VALUE>::nud(Parser<ABSTRACT_VALUE> *parser)
+AST<ABSTRACT_VALUE> *PrefixOperator<ABSTRACT_VALUE>::nud(Parser<ABSTRACT_VALUE> *parser, std::istream& stream)
 {
 	AST<ABSTRACT_VALUE> *ast = 0;
-	AST<ABSTRACT_VALUE> *right = parser->ParseExpression(bp);
+	AST<ABSTRACT_VALUE> *right = parser->ParseExpression(stream, bp);
 	if(closing_id)
 	{
 		if(right)
 		{
 			// grouping operator
-			if(!parser->Advance(closing_id))
+			if(!parser->Advance(stream, closing_id))
 			{
 				delete right;
 				right = 0;
@@ -716,7 +703,7 @@ AST<ABSTRACT_VALUE> *PrefixOperator<ABSTRACT_VALUE>::nud(Parser<ABSTRACT_VALUE> 
 	}
 	else
 	{
-		ast = (right && parser->Check(this, right)) ? new AST<ABSTRACT_VALUE>(this, right) : 0;
+		ast = (right && parser->Check(stream, this, right)) ? new AST<ABSTRACT_VALUE>(this, right) : 0;
 	}
 	
 	if(parser->IsDebugging())
@@ -760,9 +747,9 @@ SuffixOperator<ABSTRACT_VALUE>::SuffixOperator(const char *_text, unsigned int _
 }
 
 template <class ABSTRACT_VALUE>
-AST<ABSTRACT_VALUE> *SuffixOperator<ABSTRACT_VALUE>::led(Parser<ABSTRACT_VALUE> *parser, AST<ABSTRACT_VALUE> *left)
+AST<ABSTRACT_VALUE> *SuffixOperator<ABSTRACT_VALUE>::led(Parser<ABSTRACT_VALUE> *parser, std::istream& stream, AST<ABSTRACT_VALUE> *left)
 {
-	AST<ABSTRACT_VALUE> *ast = (left && parser->Check(this, left)) ? new AST<ABSTRACT_VALUE>(this, left) : 0;
+	AST<ABSTRACT_VALUE> *ast = (left && parser->Check(stream, this, left)) ? new AST<ABSTRACT_VALUE>(this, left) : 0;
 	
 	if(parser->IsDebugging())
 	{

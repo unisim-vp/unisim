@@ -83,6 +83,7 @@ namespace e200z425bn3 {
 
 using unisim::util::arithmetic::BitScanReverse;
 using unisim::util::arithmetic::RotateRight;
+using unisim::util::arithmetic::ConditionalMove;
 
 typedef CPU::ADDRESS ADDRESS;
 

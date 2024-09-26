@@ -158,7 +158,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, std::ostream& wcache_l
       inline_debugger->registers_import              >> *debugger->registers_export[0];
       inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
       inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
-      inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+      inline_debugger->stack_frame_import              >> *debugger->stack_frame_export[0];
       inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
       inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
       inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
@@ -184,7 +184,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, std::ostream& wcache_l
       monitor->registers_import                 >> *debugger->registers_export[2];
       monitor->stmt_lookup_import               >> *debugger->stmt_lookup_export[2];
       monitor->symbol_table_lookup_import       >> *debugger->symbol_table_lookup_export[2];
-      monitor->backtrace_import                 >> *debugger->backtrace_export[2];
+      monitor->stack_frame_import                 >> *debugger->stack_frame_export[2];
       monitor->debug_info_loading_import        >> *debugger->debug_info_loading_export[2];
       monitor->data_object_lookup_import        >> *debugger->data_object_lookup_export[2];
       monitor->subprogram_lookup_import         >> *debugger->subprogram_lookup_export[2];
@@ -201,7 +201,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, std::ostream& wcache_l
       profiler->registers_import                >> *debugger->registers_export[3];
       profiler->stmt_lookup_import              >> *debugger->stmt_lookup_export[3];
       profiler->symbol_table_lookup_import      >> *debugger->symbol_table_lookup_export[3];
-      profiler->backtrace_import                >> *debugger->backtrace_export[3];
+      profiler->stack_frame_import                >> *debugger->stack_frame_export[3];
       profiler->debug_info_loading_import       >> *debugger->debug_info_loading_export[3];
       profiler->data_object_lookup_import       >> *debugger->data_object_lookup_export[3];
       profiler->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[3];
@@ -347,6 +347,7 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_arm_with_neon.xml");
   sim->SetVariable("debugger.parse-dwarf", false);
   sim->SetVariable("debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml");
+  sim->SetVariable("debugger.architecture[0]", "arm");
 
   sim->SetVariable("inline-debugger.num-loaders", 1);
   sim->SetVariable("inline-debugger.search-path", "");
@@ -379,14 +380,6 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("dl1-power-estimator.verbose", false);
   
   sim->SetVariable("http-server.http-port", 12360);
-}
-
-void Simulator::SigInt()
-{
-  if(!inline_debugger || !inline_debugger->IsStarted())
-  {
-    unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-  }
 }
 
 void Simulator::EnableMonitor(int (*_monitor_callback)(void))

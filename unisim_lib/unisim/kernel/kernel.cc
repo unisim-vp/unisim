@@ -49,6 +49,7 @@
 #include "unisim/kernel/logger/logger_server.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/hypapp/hypapp.hh"
+#include "unisim/util/locate/locate.hh"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -489,29 +490,7 @@ bool ResolvePath(const std::string& prefix_dir,
 	std::string unresolved_dir = prefix_dir;
 	unresolved_dir += '/';
 	unresolved_dir += suffix_dir;
-//	char resolved_dir_buf[PATH_MAX + 1];
-	char resolved_dir_buf[FILENAME_MAX + 1];
-
-#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
-	if ( realpath(unresolved_dir.c_str(), 
-				resolved_dir_buf) )
-	{
-		out_dir = resolved_dir_buf;
-		return true;
-	}
-#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	DWORD length = GetFullPathName(unresolved_dir.c_str(), 
-			PATH_MAX + 1, 
-			resolved_dir_buf, 
-			0);
-	if(length > 0)
-	{
-		resolved_dir_buf[length] = 0;
-		out_dir = resolved_dir_buf;
-		return true;
-	}
-#endif
-	return false;
+	return unisim::util::locate::ResolvePath(unresolved_dir, out_dir);
 }
 
 //=============================================================================
@@ -1118,8 +1097,9 @@ bool Object::EndSetup()
 	return true;
 }
 
-void Object::SigInt()
+bool Object::SigInt()
 {
+	return false; // not handled
 }
 
 void Object::Kill()
@@ -1285,7 +1265,7 @@ void ServicePortBase::Connect(ServicePortBase* fwd)
 		return;
 	}
 #ifdef DEBUG_KERNEL
-	std::cerr << GetName() << " -> " << srv_export.GetName() << std::endl;
+	std::cerr << GetName() << " -> " << fwd->GetName() << std::endl;
 #endif
 	fwd_port = fwd;
 	fwd->bwd_ports.push_back(this);
@@ -1416,9 +1396,10 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, enable_warning(false)
 	, enable_version(false)
 	, enable_help(false)
-	, warn_get_bin_path(false)
-	, warn_get_share_path(false)
+	, warn_resolve_bin_path(false)
+	, warn_resolve_share_path(false)
 	, enable_press_enter_at_exit(false)
+	, executable_path()
 	, bin_dir()
 	, program_binary()
 	, program_name()
@@ -1660,28 +1641,36 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		}
 	}
 
-	if ( !has_share_data_dir_hint )
+	if(ResolveExecutablePath(argv ? argv[0] : 0, executable_path))
 	{
-		if(GetBinPath(argv ? argv[0] : 0, bin_dir, program_binary))
+// 		std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
+		if(ResolveBinPath(executable_path, bin_dir, program_binary))
 		{
 // 			 std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
 // 			 std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
-
-			if ( GetSharePath(bin_dir, shared_data_dir) )
-			{
-// 				std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
-			}
-			else
-			{
-// 				std::cerr << "Could not resolve share data dir path" << std::endl;
-				warn_get_share_path = true;
-			}
 		}
 		else
 		{
-// 			std::cerr << "Could not resolve bin and share data dir paths" << std::endl;
-			warn_get_bin_path = true;
-			warn_get_share_path = true;
+// 			std::cerr << "Could not resolve bin dir path and program binary" << std::endl;
+			warn_resolve_bin_path = true;
+		}
+	}
+	else
+	{
+// 		std::cerr << "Could not resolve executable path, bin dir, and program binary" << std::endl;
+		warn_resolve_bin_path = true;
+	}
+
+	if ( !has_share_data_dir_hint )
+	{
+		if ( ResolveSharePath(bin_dir, shared_data_dir) )
+		{
+// 			std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+		}
+		else
+		{
+// 			std::cerr << "Could not resolve share data dir path" << std::endl;
+			warn_resolve_share_path = true;
 		}
 	}
 	else
@@ -1689,7 +1678,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		if ( !ResolvePath(shared_data_dir_hint, std::string(), shared_data_dir) )
 		{
 // 			std::cerr << "Could not resolve share data dir path" << std::endl;
-			warn_get_share_path = true;
+			warn_resolve_share_path = true;
 		}
 		else
 		{
@@ -1758,11 +1747,11 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 									{
 										std::cerr << "WARNING! No built-in parameters set loaded" << std::endl;
 									}
-									if(warn_get_bin_path)
+									if(warn_resolve_bin_path)
 									{
-										std::cerr << "WARNING! Can't determine binary directory" << std::endl;
+										std::cerr << "WARNING! Can't determine binary directory and program binary" << std::endl;
 									}
-									if(warn_get_share_path)
+									if(warn_resolve_share_path)
 									{
 										std::cerr << "WARNING! Can't determine share directory" << std::endl;
 										std::cerr << "         Program binary is '" << program_binary << "'" << std::endl;
@@ -2637,7 +2626,7 @@ void FindMyself()
 }
 #endif
 
-bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable_path) const
+bool Simulator::ResolveExecutablePath(const char *argv0, std::string& out_executable_path) const
 {
 #if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	Dl_info info;
@@ -2708,11 +2697,8 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 	return false;
 }
 
-bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const
+bool Simulator::ResolveBinPath(const std::string& executable_path, std::string& out_bin_dir, std::string& out_bin_program) const
 {
-	std::string executable_path;
-	
-	if(!GetExecutablePath(argv0, executable_path)) return false;
 	//std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
 	// compute bin dirname
 	const char *start = executable_path.c_str();
@@ -2744,9 +2730,14 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 
 //#define DEBUG_SEARCH_SHARED_DATA_FILE
 
-bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const
+bool Simulator::ResolveSharePath(const std::string& bin_dir, std::string& out_share_dir) const
 {
 	return ResolvePath(bin_dir, std::string(BIN_TO_SHARED_DATA_PATH), out_share_dir);
+}
+
+const std::string& Simulator::GetExecutablePath() const
+{
+	return executable_path;
 }
 
 const std::string& Simulator::GetSharedDataDirectory() const
@@ -3081,8 +3072,9 @@ bool Simulator::IsWarningEnabled() const
 	return enable_warning;
 }
 
-void Simulator::SigInt()
+bool Simulator::SigInt()
 {
+	return false; // not handled
 }
 
 void Simulator::Kill()
@@ -3245,15 +3237,23 @@ void Simulator::MTSigInt()
 
 void Simulator::BroadcastSigInt()
 {
-	this->SigInt();
 	Lock();
+	bool handled = false;
 	std::map<std::string, Object *>::iterator object_iter;
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
 		Object *object = (*object_iter).second;
-		object->SigInt();
+		if(object->SigInt()) handled = true;
 	}
 	Unlock();
+	if(!handled)
+	{
+		handled = this->SigInt();
+	}
+	if(!handled)
+	{
+		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
+	}
 }
 
 void Simulator::Lock()

@@ -5,6 +5,7 @@ std/cassert
 std/cstdlib
 std/iostream
 std/stdexcept
+std/typeinfo
 unisim/component/cxx/memory/sparse
 unisim/util/inlining
 unisim/util/likely

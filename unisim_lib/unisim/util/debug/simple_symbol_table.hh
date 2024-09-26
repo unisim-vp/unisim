@@ -47,39 +47,41 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <class T>
-class SimpleSymbolTable : public SymbolTable<T>
+template <typename ADDRESS>
+struct SimpleSymbolTable : SymbolTable<ADDRESS>
 {
-public:
 	SimpleSymbolTable();
 	virtual ~SimpleSymbolTable();
 	void Reset();
-	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<T> *>& lst, typename unisim::util::debug::Symbol<T>::Type type) const;
-	const typename unisim::util::debug::Symbol<T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const;
-	const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr) const;
-	const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name) const;
-	const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<T>::Type type) const;
-	const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr, typename unisim::util::debug::Symbol<T>::Type type) const ;
-	void AddSymbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type, T memory_atom_size = 1);
+	virtual void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner) const;
+	virtual void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner, typename unisim::util::debug::SymbolBase::Type type) const;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr) const;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name) const;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::SymbolBase::Type type) const ;
+	virtual void AddSymbol(const char *name, ADDRESS addr, ADDRESS size, typename unisim::util::debug::SymbolBase::Type type, ADDRESS memory_atom_size = 1);
 	void Dump(std::ostream& os) const;
-	void Dump(std::ostream& os, typename unisim::util::debug::Symbol<T>::Type type) const;
+	void Dump(std::ostream& os, typename unisim::util::debug::SymbolBase::Type type) const;
 private:
-	std::list<Symbol<T> *> symbol_registries[unisim::util::debug::Symbol<T>::SYM_HIPROC + 1];
+	typedef std::list<Symbol<ADDRESS> *> SymbolRegistry;
+	SymbolRegistry symbol_registries[unisim::util::debug::SymbolBase::SYM_PROC + 1];
 	
 	struct LookupTableByAddrEntry
 	{
-		LookupTableByAddrEntry(T _key, Symbol<T> *_symbol) : key(_key), symbol(_symbol), next(0) {}
+		LookupTableByAddrEntry(ADDRESS _key, Symbol<ADDRESS> *_symbol) : key(_key), symbol(_symbol), next(0) {}
 		
-		T key;
-		Symbol<T> *symbol;
+		ADDRESS key;
+		Symbol<ADDRESS> *symbol;
 		LookupTableByAddrEntry *next;
 	};
 	
-	mutable std::vector<typename unisim::util::debug::Symbol<T>::Type> types;
-	unisim::util::hash_table::HashTable<T, LookupTableByAddrEntry> lookup_table_by_addr[unisim::util::debug::Symbol<T>::SYM_HIPROC + 1];
-	std::map<std::string, Symbol<T> *> lookup_table_by_name[unisim::util::debug::Symbol<T>::SYM_HIPROC + 1];
+	typedef std::vector<typename unisim::util::debug::SymbolBase::Type> Types;
+	mutable Types types;
+	unisim::util::hash_table::HashTable<ADDRESS, LookupTableByAddrEntry> lookup_table_by_addr[unisim::util::debug::SymbolBase::SYM_PROC + 1];
+	typedef std::map<std::string, Symbol<ADDRESS> *> LookupTableByName;
+	LookupTableByName lookup_table_by_name[unisim::util::debug::SymbolBase::SYM_PROC + 1];
 	
-	void Use(typename unisim::util::debug::Symbol<T>::Type type) const;
+	void Use(typename unisim::util::debug::SymbolBase::Type type) const;
 };
 
 } // end of namespace debug

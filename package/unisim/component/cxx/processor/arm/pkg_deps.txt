@@ -1,8 +1,10 @@
 libc/inttypes
 libc/stdlib
+m4/libc_ieee754
 std/cmath
 std/cstring
 std/iosfwd
+std/iostream
 std/limits
 std/map
 std/set
@@ -19,6 +21,7 @@ unisim/util/arithmetic
 unisim/util/backtrace
 unisim/util/debug
 unisim/util/endian
+unisim/util/identifier
 unisim/util/inlining
 unisim/util/likely
 unisim/util/simfloat

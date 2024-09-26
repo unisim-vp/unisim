@@ -50,22 +50,38 @@ class Stub
 {
 public:
 	typedef unisim::util::debug::DataObjectRef<ADDRESS> Parameter;
-	typedef std::map<std::string, Parameter> Parameters;
 	typedef unisim::util::debug::DataObjectRef<ADDRESS> ReturnValue;
 	
-	Stub(const SubProgram<ADDRESS> *_subprogram) : subprogram(_subprogram), prc_num(-1) {}
-	virtual ~Stub() {}
+	class Parameters
+	{
+	public:
+		Parameter& operator [] (unsigned int index) const { return GetParameter(index); }
+		
+		virtual unsigned int Length() const = 0;
+		virtual Parameter& GetParameter(unsigned int index) const = 0;
+		virtual ReturnValue& GetReturnValue() const = 0;
+	private:
+	};
+	
+	Stub(const SubProgram<ADDRESS> *_subprogram) : subprogram(_subprogram), ref_count(0) { subprogram->Catch(); }
+	virtual ~Stub() { subprogram->Release(); }
 	
 	const SubProgram<ADDRESS> *GetSubProgram() const { return subprogram; }
-	int GetProcessorNumber() const { return prc_num; }
-	void SetProcessorNumber(int _prc_num) { if((prc_num >= 0) || (_prc_num < 0)) return; prc_num = _prc_num; }
 	
-	virtual bool Run(Parameters& parameters, ReturnValue& return_value) = 0;
+	virtual void Run(Parameters& parameters) = 0;
 
+	void Catch() const { ref_count++; }
+	void Release() const { if(ref_count && (--ref_count == 0)) delete this; }
 private:
 	const SubProgram<ADDRESS> *subprogram;
-	int prc_num;
+	mutable unsigned int ref_count;
 };
+
+template <typename ADDRESS>
+std::ostream& operator << (std::ostream& stream, const Stub<ADDRESS>& stub)
+{
+	return stream << "Stub at " << stub.GetSubProgram()->GetName() << " in File \"" << stub.GetSubProgram()->GetFilename() << "\"";
+}
 
 } // end of namespace debug
 } // end of namespace util

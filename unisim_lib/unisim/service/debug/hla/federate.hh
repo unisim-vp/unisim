@@ -35,6 +35,12 @@
 #ifndef __UNISIM_SERVICE_DEBUG_HLA_FEDERATE_HH__
 #define __UNISIM_SERVICE_DEBUG_HLA_FEDERATE_HH__
 
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
+#if HAVE_HLA_RTI1516E
+
 #include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
@@ -43,13 +49,12 @@
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
-#include <unisim/service/interfaces/backtrace.hh>
+#include <unisim/service/interfaces/stack_frame.hh>
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/profiling.hh>
 #include <unisim/service/interfaces/debug_info_loading.hh>
 #include <unisim/service/interfaces/data_object_lookup.hh>
 #include <unisim/service/interfaces/subprogram_lookup.hh>
-#include <unisim/service/interfaces/stack_unwinding.hh>
 #include <unisim/service/interfaces/stubbing.hh>
 #include <unisim/service/interfaces/hooking.hh>
 #include <unisim/service/interfaces/debug_selecting.hh>
@@ -114,12 +119,11 @@ struct Federate
 	, unisim::kernel::Client<unisim::service::interfaces::Registers>
 	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<typename CONFIG::ADDRESS> >
 	, unisim::kernel::Client<unisim::service::interfaces::StatementLookup<typename CONFIG::ADDRESS> >
-	, unisim::kernel::Client<unisim::service::interfaces::BackTrace<typename CONFIG::ADDRESS> >
+	, unisim::kernel::Client<unisim::service::interfaces::StackFrame<typename CONFIG::ADDRESS> >
 	, unisim::kernel::Client<unisim::service::interfaces::Profiling<typename CONFIG::ADDRESS> >
 	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>
 	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<typename CONFIG::ADDRESS> >
 	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<typename CONFIG::ADDRESS> >
-	, unisim::kernel::Client<unisim::service::interfaces::StackUnwinding>
 	, unisim::kernel::Client<unisim::service::interfaces::Stubbing<typename CONFIG::ADDRESS> >
 	, unisim::kernel::Client<unisim::service::interfaces::Hooking<typename CONFIG::ADDRESS> >
 	, unisim::kernel::Client<unisim::service::interfaces::DebugTiming<typename CONFIG::TIME_TRAIT::TIME_TYPE> >
@@ -138,12 +142,11 @@ struct Federate
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>                      registers_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >    symbol_table_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::StatementLookup<ADDRESS> >      stmt_lookup_import;
-	unisim::kernel::ServiceImport<unisim::service::interfaces::BackTrace<ADDRESS> >            backtrace_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::StackFrame<ADDRESS> >            stack_frame_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Profiling<ADDRESS> >            profiling_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugInfoLoading>               debug_info_loading_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >     data_object_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >     subprogram_lookup_import;
-	unisim::kernel::ServiceImport<unisim::service::interfaces::StackUnwinding>                 stack_unwinding_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Stubbing<ADDRESS> >             stubbing_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Hooking<ADDRESS> >              hooking_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugTiming<typename CONFIG::TIME_TRAIT::TIME_TYPE> > debug_timing_import;
@@ -258,6 +261,8 @@ struct FederateHookStub
 	typedef typename CONFIG::ADDRESS ADDRESS;
 	
 	FederateHookStub(Federate<CONFIG>& federate, const std::string& name, const unisim::util::json::JSON_Value *json_return_value);
+	virtual ~FederateHookStub();
+	
 	const std::string& GetName() const;
 	
 	void AddInstrument(InstrumentBase *Instrument);
@@ -282,7 +287,7 @@ struct FederateHook
 	typedef typename CONFIG::ADDRESS ADDRESS;
 	
 	FederateHook(Federate<CONFIG>& _federate, const std::string& _name, const std::string& _file, const unisim::util::debug::SourceCodeLocation& _source_code_location, const unisim::util::json::JSON_Value *_json_return_value);
-	virtual bool Run(typename unisim::util::debug::Hook<typename CONFIG::ADDRESS>::ReturnValue& return_value);
+	virtual void Run();
 };
 
 ////////////////////////////// FederateStub<> /////////////////////////////////
@@ -295,13 +300,15 @@ struct FederateStub
 	typedef typename CONFIG::ADDRESS ADDRESS;
 	
 	FederateStub(Federate<CONFIG>& _federate, const std::string& _name, const typename unisim::util::debug::SubProgram<typename CONFIG::ADDRESS> *_subprogram, const unisim::util::json::JSON_Value *_json_return_value);
-	virtual bool Run(typename unisim::util::debug::Stub<typename CONFIG::ADDRESS>::Parameters& parameters, typename unisim::util::debug::Stub<typename CONFIG::ADDRESS>::ReturnValue& return_value);
+	virtual void Run(typename unisim::util::debug::Stub<typename CONFIG::ADDRESS>::Parameters& parameters);
 };
 
 } // end of namespace hla
 } // end of namespace debug
 } // end of namespace service
 } // end of namespace unisim
+
+#endif // HAVE_HLA_RTI1516E
 
 #endif // __UNISIM_SERVICE_DEBUG_HLA_FEDERATE_HH__
 

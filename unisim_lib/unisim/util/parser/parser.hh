@@ -72,8 +72,8 @@ public:
 	
 	friend std::ostream& operator << <ABSTRACT_VALUE>(std::ostream& os, const Token<ABSTRACT_VALUE>& token);
 	
-	virtual AST<ABSTRACT_VALUE> *led(Parser<ABSTRACT_VALUE> *parser, AST<ABSTRACT_VALUE> *left);
-	virtual AST<ABSTRACT_VALUE> *nud(Parser<ABSTRACT_VALUE> *parser);
+	virtual AST<ABSTRACT_VALUE> *led(Parser<ABSTRACT_VALUE> *parser, std::istream& stream, AST<ABSTRACT_VALUE> *left);
+	virtual AST<ABSTRACT_VALUE> *nud(Parser<ABSTRACT_VALUE> *parser, std::istream& stream);
 protected:
 	std::string text;
 	unsigned int id;
@@ -130,32 +130,28 @@ template <class ABSTRACT_VALUE>
 class Parser : public unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >
 {
 public:
-	Parser(std::istream *stream, std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, bool debug = false);
+	typedef unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> > Super;
+	
+	Parser();
 	virtual ~Parser();
 	
-	AST<ABSTRACT_VALUE> *ParseExpression(unsigned int rbp = 0);
+	void Reset();
 	
-	bool Advance(unsigned int token_id = 0);
+	AST<ABSTRACT_VALUE> *ParseExpression(std::istream& stream, unsigned int rbp = 0);
 	
-	void ErrorUnexpectedToken(const Token<ABSTRACT_VALUE> *token);
-	void ErrorExpectedToken(unsigned int expected_token_id, const Token<ABSTRACT_VALUE> *token = 0);
-	void ErrorExpectedExpression();
+	bool Advance(std::istream& stream, unsigned int token_id = 0);
+	
+	void ErrorUnexpectedToken(std::istream& stream, const Token<ABSTRACT_VALUE> *token);
+	void ErrorExpectedToken(std::istream& stream, unsigned int expected_token_id, const Token<ABSTRACT_VALUE> *token = 0);
+	void ErrorExpectedExpression(std::istream& stream);
 	void InternalError();
-	std::ostream& GetDebugInfoStream();
-	std::ostream& GetDebugWarningStream();
-	std::ostream& GetDebugErrorStream();
 
-	virtual bool Check(Token<ABSTRACT_VALUE> *token, AST<ABSTRACT_VALUE> *left, AST<ABSTRACT_VALUE> *right) = 0;
-	virtual bool Check(Token<ABSTRACT_VALUE> *token, AST<ABSTRACT_VALUE> *child) = 0;
-	virtual bool Check(Token<ABSTRACT_VALUE> *token) = 0;
+	virtual bool Check(std::istream& stream, Token<ABSTRACT_VALUE> *token, AST<ABSTRACT_VALUE> *left, AST<ABSTRACT_VALUE> *right) = 0;
+	virtual bool Check(std::istream& stream, Token<ABSTRACT_VALUE> *token, AST<ABSTRACT_VALUE> *child) = 0;
+	virtual bool Check(std::istream& stream, Token<ABSTRACT_VALUE> *token) = 0;
 
-	bool IsDebugging() const;
 protected:
 	bool parser_error;
-	std::ostream& debug_info_stream;
-	std::ostream& debug_warning_stream;
-	std::ostream& debug_error_stream;
-	bool debug;
 	Token<ABSTRACT_VALUE> *token;
 };
 
@@ -166,7 +162,7 @@ public:
 	Literal(const char *text, unsigned int id, const unisim::util::lexer::Location& loc);
 	virtual ~Literal() {}
 	
-	virtual AST<ABSTRACT_VALUE> *nud(Parser<ABSTRACT_VALUE> *parser);
+	virtual AST<ABSTRACT_VALUE> *nud(Parser<ABSTRACT_VALUE> *parser, std::istream& stream);
 private:
 };
 
@@ -190,7 +186,7 @@ public:
 
 	virtual ~InfixOperator() {}
 
-	virtual AST<ABSTRACT_VALUE> *led(Parser<ABSTRACT_VALUE> *parser, AST<ABSTRACT_VALUE> *left);
+	virtual AST<ABSTRACT_VALUE> *led(Parser<ABSTRACT_VALUE> *parser, std::istream& stream, AST<ABSTRACT_VALUE> *left);
 private:
 	unsigned int bp;
 	Associativity assoc;
@@ -211,7 +207,7 @@ public:
 	
 	virtual ~PrefixOperator() {}
 
-	virtual AST<ABSTRACT_VALUE> *nud(Parser<ABSTRACT_VALUE> *parser);
+	virtual AST<ABSTRACT_VALUE> *nud(Parser<ABSTRACT_VALUE> *parser, std::istream& stream);
 private:
 	unsigned int bp;
 	unsigned int closing_id; // for a grouping operator (like '(')
@@ -236,7 +232,7 @@ public:
 
 	virtual ~SuffixOperator() {}
 
-	virtual AST<ABSTRACT_VALUE> *led(Parser<ABSTRACT_VALUE> *parser, AST<ABSTRACT_VALUE> *left);
+	virtual AST<ABSTRACT_VALUE> *led(Parser<ABSTRACT_VALUE> *parser, std::istream& stream, AST<ABSTRACT_VALUE> *left);
 private:
 };
 

@@ -2,6 +2,8 @@ libc/fcntl
 libc/signal
 libc/stdint
 libc/unistd
+m4/shared_memory
+m4/windows
 std/cassert
 std/cerrno
 std/cstdio

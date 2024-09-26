@@ -47,9 +47,6 @@ namespace dwarf {
 template <class MEMORY_ADDR>
 DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
-	, debug_info_stream(_dw_handler->GetDebugInfoStream())
-	, debug_warning_stream(_dw_handler->GetDebugWarningStream())
-	, debug_error_stream(_dw_handler->GetDebugErrorStream())
 	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
 	, address(0)
 	, op_index(0)
@@ -105,7 +102,7 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 				{
 					if(debug)
 					{
-						debug_warning_stream << "Directory index is out of range in line number program" << std::endl;
+						dw_handler->GetDebugWarningStream() << "Directory index is out of range in line number program" << std::endl;
 					}
 					
 					return;
@@ -190,7 +187,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							{
 								if(debug)
 								{
-									debug_error_stream << "LEB128 argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
+									dw_handler->GetDebugErrorStream() << "LEB128 argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
 								}
 								return false;
 							}
@@ -204,7 +201,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 						{
 							if(debug)
 							{
-								debug_error_stream << "uhalf argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
+								dw_handler->GetDebugErrorStream() << "uhalf argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
 							}
 							return false;
 						}
@@ -353,7 +350,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 				{
 					if(debug)
 					{
-						debug_error_stream << "Length (encoded as a LEB128) of an instruction (with an extended opcode) is bad or missing in line number program" << std::endl;
+						dw_handler->GetDebugErrorStream() << "Length (encoded as a LEB128) of an instruction (with an extended opcode) is bad or missing in line number program" << std::endl;
 					}
 					return false;
 				}
@@ -413,7 +410,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 								default:
 									if(debug)
 									{
-										debug_error_stream << "DW_LNE_set_address: unsupported address size" << std::endl;
+										dw_handler->GetDebugErrorStream() << "DW_LNE_set_address: unsupported address size" << std::endl;
 									}
 									return false;
 							}
@@ -431,7 +428,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							{
 								if(debug)
 								{
-									debug_error_stream << "DW_LNE_define_file: bad DWARF filename entry" << std::endl;
+									dw_handler->GetDebugErrorStream() << "DW_LNE_define_file: bad DWARF filename entry" << std::endl;
 								}
 								return false;
 							}
@@ -448,7 +445,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							{
 								if(debug)
 								{
-									debug_error_stream << "DW_LNE_set_discriminator: discriminator is bad or missing in line number program" << std::endl;
+									dw_handler->GetDebugErrorStream() << "DW_LNE_set_discriminator: discriminator is bad or missing in line number program" << std::endl;
 								}
 								return false;
 							}
@@ -459,7 +456,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 					default:
 						if(debug)
 						{
-							debug_error_stream << "unknown extended Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << std::endl;
+							dw_handler->GetDebugErrorStream() << "unknown extended Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << std::endl;
 						}
 						return false;
 				}

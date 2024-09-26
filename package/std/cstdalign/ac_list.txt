@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([cstdalign],, AC_MSG_ERROR([cstdalign is missing]))

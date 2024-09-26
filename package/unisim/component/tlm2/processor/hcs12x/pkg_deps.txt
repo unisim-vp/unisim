@@ -1,3 +1,4 @@
+am/isa_to_hh_cc
 libc/assert
 libc/inttypes
 m4/libxml2
@@ -9,6 +10,7 @@ std/queue
 std/string
 std/vector
 unisim/component/cxx/processor/hcs12x
+unisim/component/cxx/processor/hcs12x/isa/hcs12x
 unisim/component/tlm2/memory/ram
 unisim/kernel
 unisim/kernel/logger

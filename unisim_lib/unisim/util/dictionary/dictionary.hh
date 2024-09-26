@@ -77,26 +77,31 @@ template <class TYPE>
 class Dictionary
 {
 public:
-	Dictionary(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, bool debug = false);
+	Dictionary();
 	~Dictionary();
 
+	void SetDebug(bool flag = true);
+	void SetDebugInfoStream(std::ostream& debug_info_stream);
+	void SetDebugWarningStream(std::ostream& debug_warning_stream);
+	void SetDebugErrorStream(std::ostream& debug_error_stream);
+	
 	// Add a valued string in the dictionary
 	void Add(const char *text, const TYPE& value);
 	
 	// Find the longest match in the dictionary and tell the recognized text
-	DictionaryEntry<TYPE> *FindDictionaryEntry(std::istream *stream, std::string& text);
+	DictionaryEntry<TYPE> *FindDictionaryEntry(std::istream& stream, std::string& text) const;
 private:
 	
 	DictionaryEntry<TYPE> *root;
 
 	unsigned int num_entries;
-	std::ostream& debug_info_stream;
-	std::ostream& debug_warning_stream;
-	std::ostream& debug_error_stream;
+	std::ostream *debug_info_stream;
+	std::ostream *debug_warning_stream;
+	std::ostream *debug_error_stream;
 	bool debug;
 	
 	DictionaryEntry<TYPE> *Create(const char *text, const TYPE& value);
-	DictionaryEntry<TYPE> *FindDictionaryEntry(const char *text, unsigned int& pos);
+	DictionaryEntry<TYPE> *FindDictionaryEntry(const char *text, unsigned int& pos) const;
 	
 	friend std::ostream& operator << <TYPE>(std::ostream& os, const Dictionary<TYPE>& dictionary);
 };

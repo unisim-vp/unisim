@@ -194,7 +194,12 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, gdb_server()
 	, inline_debugger()
 	, profiler()
+#if HAVE_HLA_RTI1516E
 	, hla_federate(0)
+#endif
+#if HAVE_NODEJS
+	, nodejs()
+#endif
 	, sim_time(0)
 	, host_time(0)
 	, netstreamer0(0)
@@ -233,7 +238,12 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, enable_profiler0(false)
 	, enable_profiler1(false)
 	, enable_profiler2(false)
+#if HAVE_HLA_RTI1516E
 	, enable_hla_federate(false)
+#endif
+#if HAVE_NODEJS
+	, enable_nodejs(false)
+#endif
 	, enable_serial_terminal0(false)
 	, enable_serial_terminal1(false)
 	, enable_serial_terminal2(false)
@@ -281,7 +291,12 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, param_enable_profiler0("enable-profiler0", 0, enable_profiler0, "Enable/Disable profiling of Core #0")
 	, param_enable_profiler1("enable-profiler1", 0, enable_profiler1, "Enable/Disable profiling of Core #1")
 	, param_enable_profiler2("enable-profiler2", 0, enable_profiler2, "Enable/Disable profiling of Core #2")
+#if HAVE_HLA_RTI1516E
 	, param_enable_hla_federate("enable-hla-federate", 0, enable_hla_federate, "Enable/Disable HLA federate instantiation")
+#endif
+#if HAVE_NODEJS
+	, param_enable_nodejs("enable-nodejs", 0, enable_nodejs, "Enable/Disable Node.js JavaScript runtime environment debugging front-end")
+#endif
 	, param_enable_serial_terminal0("enable-serial-terminal0", 0, enable_serial_terminal0, "Enable/Disable serial terminal over LINFlexD_0 UART serial interface")
 	, param_enable_serial_terminal1("enable-serial-terminal1", 0, enable_serial_terminal1, "Enable/Disable serial terminal over LINFlexD_1 UART serial interface")
 	, param_enable_serial_terminal2("enable-serial-terminal2", 0, enable_serial_terminal2, "Enable/Disable serial terminal over LINFlexD_2 UART serial interface")
@@ -573,7 +588,14 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	//  - Multiformat loader
 	loader = new LOADER("loader");
 	//  - debugger
-	debugger = (enable_inline_debugger || enable_gdb_server || (enable_profiler0 || enable_profiler1 || enable_profiler2 || enable_hla_federate)) ? new DEBUGGER("debugger") : 0;
+	debugger = (enable_inline_debugger || enable_gdb_server || (enable_profiler0 || enable_profiler1 || enable_profiler2
+#if HAVE_HLA_RTI1516E
+	           || enable_hla_federate
+#endif
+#if HAVE_NODEJS
+	           || enable_nodejs
+#endif
+	           )) ? new DEBUGGER("debugger") : 0;
 	//  - GDB server
 	gdb_server[0] = enable_gdb_server ? new GDB_SERVER("gdb-server0") : 0;
 	gdb_server[1] = enable_gdb_server ? new GDB_SERVER("gdb-server1") : 0;
@@ -586,8 +608,14 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	profiler[0] = enable_profiler0 ? new PROFILER("profiler0") : 0;
 	profiler[1] = enable_profiler1 ? new PROFILER("profiler1") : 0;
 	profiler[2] = enable_profiler2 ? new PROFILER("profiler2") : 0;
+#if HAVE_HLA_RTI1516E
 	//  - HLA federate
 	hla_federate = enable_hla_federate ? new HLA_FEDERATE("hla-federate") : 0;
+#endif
+#if HAVE_NODEJS
+	//  - Node.js JavaScript runtime environment debugging front-end
+	nodejs = enable_nodejs ? new NODEJS("nodejs") : 0;
+#endif
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
@@ -4759,11 +4787,10 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 			inline_debugger[prc_num]->registers_import              >> *debugger->registers_export[front_end_num];
 			inline_debugger[prc_num]->stmt_lookup_import            >> *debugger->stmt_lookup_export[front_end_num];
 			inline_debugger[prc_num]->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[front_end_num];
-			inline_debugger[prc_num]->backtrace_import              >> *debugger->backtrace_export[front_end_num];
+			inline_debugger[prc_num]->stack_frame_import            >> *debugger->stack_frame_export[front_end_num];
 			inline_debugger[prc_num]->debug_info_loading_import     >> *debugger->debug_info_loading_export[front_end_num];
 			inline_debugger[prc_num]->data_object_lookup_import     >> *debugger->data_object_lookup_export[front_end_num];
 			inline_debugger[prc_num]->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[front_end_num];
-			inline_debugger[prc_num]->stack_unwinding_import        >> *debugger->stack_unwinding_export[front_end_num];
 			inline_debugger[prc_num]->stubbing_import               >> *debugger->stubbing_export[front_end_num];
 			inline_debugger[prc_num]->hooking_import                >> *debugger->hooking_export[front_end_num];
 		}
@@ -4783,13 +4810,14 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 			profiler[prc_num]->registers_import                   >> *debugger->registers_export[front_end_num];
 			profiler[prc_num]->stmt_lookup_import                 >> *debugger->stmt_lookup_export[front_end_num];
 			profiler[prc_num]->symbol_table_lookup_import         >> *debugger->symbol_table_lookup_export[front_end_num];
-			profiler[prc_num]->backtrace_import                   >> *debugger->backtrace_export[front_end_num];
+			profiler[prc_num]->stack_frame_import                   >> *debugger->stack_frame_export[front_end_num];
 			profiler[prc_num]->debug_info_loading_import          >> *debugger->debug_info_loading_export[front_end_num];
 			profiler[prc_num]->data_object_lookup_import          >> *debugger->data_object_lookup_export[front_end_num];
 			profiler[prc_num]->subprogram_lookup_import           >> *debugger->subprogram_lookup_export[front_end_num];
 		}
 	}
-		
+	
+#if HAVE_HLA_RTI1516E
 	if(hla_federate)
 	{
 		*debugger->debug_event_listener_import[front_end_num] >> hla_federate->debug_event_listener_export;
@@ -4802,15 +4830,32 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		hla_federate->registers_import                        >> *debugger->registers_export[front_end_num];
 		hla_federate->stmt_lookup_import                      >> *debugger->stmt_lookup_export[front_end_num];
 		hla_federate->symbol_table_lookup_import              >> *debugger->symbol_table_lookup_export[front_end_num];
-		hla_federate->backtrace_import                        >> *debugger->backtrace_export[front_end_num];
+		hla_federate->stack_frame_import                        >> *debugger->stack_frame_export[front_end_num];
 		hla_federate->debug_info_loading_import               >> *debugger->debug_info_loading_export[front_end_num];
 		hla_federate->data_object_lookup_import               >> *debugger->data_object_lookup_export[front_end_num];
 		hla_federate->subprogram_lookup_import                >> *debugger->subprogram_lookup_export[front_end_num];
-		hla_federate->stack_unwinding_import                  >> *debugger->stack_unwinding_export[front_end_num];
 		hla_federate->stubbing_import                         >> *debugger->stubbing_export[front_end_num];
 		hla_federate->hooking_import                          >> *debugger->hooking_export[front_end_num];
 		hla_federate->debug_timing_import                     >> *debugger->debug_timing_export[front_end_num];
 	}
+	front_end_num++;
+#endif
+
+#if HAVE_NODEJS
+	// Connect nodejs to debugger
+	if(nodejs)
+	{
+		*debugger->debug_yielding_import[front_end_num] >> nodejs->debug_yielding_export;
+		nodejs->debug_yielding_request_import           >> *debugger->debug_yielding_request_export[front_end_num];
+		nodejs->debug_event_trigger_import              >> *debugger->debug_event_trigger_export[front_end_num];
+		nodejs->stmt_lookup_import                      >> *debugger->stmt_lookup_export[front_end_num];
+		nodejs->symbol_table_lookup_import              >> *debugger->symbol_table_lookup_export[front_end_num];
+		nodejs->debug_info_loading_import               >> *debugger->debug_info_loading_export[front_end_num];
+		nodejs->subprogram_lookup_import                >> *debugger->subprogram_lookup_export[front_end_num];
+		nodejs->debug_processors_import                 >> *debugger->debug_processors_export[front_end_num];
+	}
+	front_end_num++;
+#endif
 	
 	(*loader->memory_import[0]) >> flash->memory_export;
 	(*loader->memory_import[1]) >> system_sram->memory_export;
@@ -5228,7 +5273,9 @@ Simulator::~Simulator()
 {
 	unsigned int i;
 	
+#if HAVE_HLA_RTI1516E
 	if(hla_federate) delete hla_federate;
+#endif
 	if(main_core_0) delete main_core_0;
 	if(main_core_1) delete main_core_1;
 	if(peripheral_core_2) delete peripheral_core_2;
@@ -5378,6 +5425,9 @@ Simulator::~Simulator()
 	if(profiler[0]) delete profiler[0];
 	if(profiler[1]) delete profiler[1];
 	if(profiler[2]) delete profiler[2];
+#if HAVE_NODEJS
+	if(nodejs) delete nodejs;
+#endif
 	if(debugger) delete debugger;
 	if(sim_time) delete sim_time;
 	if(host_time) delete host_time;
@@ -6422,6 +6472,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	simulator->SetVariable("debugger.sel-cpu[7]", 1); // profiler
 	simulator->SetVariable("debugger.sel-cpu[8]", 2); // profiler
 	simulator->SetVariable("debugger.sel-cpu[9]", 0); // HLA federate
+	simulator->SetVariable("debugger.sel-cpu[10]", 0); // NodeJS
+	simulator->SetVariable("debugger.sel-cpu[11]", 1); // NodeJS
+	simulator->SetVariable("debugger.sel-cpu[12]", 2); // NodeJS
 	simulator->SetVariable("debugger.architecture[0]", "powerpc-e500");
 	simulator->SetVariable("debugger.architecture[1]", "powerpc-e500");
 	simulator->SetVariable("debugger.architecture[2]", "powerpc-e500");
@@ -6591,7 +6644,14 @@ bool Simulator::EndSetup()
 
 unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
-	if(inline_debugger[0] || inline_debugger[1] || inline_debugger[2] || profiler[0] || profiler[1] || profiler[2] || hla_federate)
+	if(inline_debugger[0] || inline_debugger[1] || inline_debugger[2] || profiler[0] || profiler[1] || profiler[2]
+#if HAVE_HLA_RTI1516E
+	  || hla_federate
+#endif
+#if HAVE_NODEJS
+	  || nodejs
+#endif
+	  )
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}
@@ -6607,14 +6667,4 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 	unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
 	
 	return setup_status;
-}
-
-void Simulator::SigInt()
-{
-	if((!inline_debugger[0] || !inline_debugger[0]->IsStarted()) &&
-	   (!inline_debugger[1] || !inline_debugger[1]->IsStarted()) &&
-	   (!inline_debugger[2] || !inline_debugger[2]->IsStarted()))
-	{
-		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-	}
 }

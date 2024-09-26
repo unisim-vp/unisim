@@ -1,6 +1,0 @@
-libc/inttypes
-libc/string
-std/iomanip
-std/iostream
-std/list
-std/set

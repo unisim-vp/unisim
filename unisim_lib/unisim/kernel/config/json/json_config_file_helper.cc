@@ -250,48 +250,48 @@ struct JSON_AST_Visitor
 	bool Visit(const unisim::util::json::JSON_Value& value)
 	{
 		throw std::runtime_error("Internal error!");
-		return false;
+		return true;
 	}
 	
 	bool Visit(const unisim::util::json::JSON_String& value)
 	{
 		SetVariable((const char *) value);
 		if(InArray()) NextIndex();
-		return true;
+		return false;
 	}
 	
 	bool Visit(const unisim::util::json::JSON_Integer& value)
 	{
 		SetVariable((int64_t) value);
 		if(InArray()) NextIndex();
-		return true;
+		return false;
 	}
 	
 	bool Visit(const unisim::util::json::JSON_Float& value)
 	{
 		SetVariable((double) value);
 		if(InArray()) NextIndex();
-		return true;
+		return false;
 	}
 	
 	bool Visit(const unisim::util::json::JSON_Boolean& value)
 	{
 		SetVariable((bool) value);
 		if(InArray()) NextIndex();
-		return true;
+		return false;
 	}
 	
 	bool Visit(const unisim::util::json::JSON_Null& value)
 	{
 		if(InArray()) NextIndex();
-		return true;
+		return false;
 	}
 	
 	bool Visit(const unisim::util::json::JSON_Object& object)
 	{
 		object.Scan(*this);
 		if(InArray()) NextIndex();
-		return true;
+		return false;
 	}
 	
 	bool Visit(const unisim::util::json::JSON_Member& member)
@@ -299,7 +299,7 @@ struct JSON_AST_Visitor
 		PushMemberContext(member.GetName());
 		member.Scan(*this);
 		PopContext();
-		return true;
+		return false;
 	}
 	
 	bool Visit(const unisim::util::json::JSON_Array& array)
@@ -308,7 +308,7 @@ struct JSON_AST_Visitor
 		array.Scan(*this);
 		PopContext();
 		if(InArray()) NextIndex();
-		return true;
+		return false;
 	}
 	
 	void PushMemberContext(const std::string& name)

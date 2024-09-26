@@ -34,6 +34,7 @@
 
 #include <unisim/util/unicode/unicode.hh>
 #include <climits>
+#include <cstdint>
 
 namespace unisim {
 namespace util {

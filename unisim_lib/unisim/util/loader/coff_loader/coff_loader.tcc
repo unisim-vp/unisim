@@ -44,6 +44,7 @@
 
 #include <unisim/util/loader/coff_loader/ti/ti.hh>
 #include <unisim/util/loader/coff_loader/ti/ti.tcc>
+#include <unisim/util/locate/locate.hh>
 
 namespace unisim {
 namespace util {
@@ -52,6 +53,9 @@ namespace coff_loader {
 
 using std::stringstream;
 using unisim::kernel::Object;
+
+template <class MEMORY_ADDR>
+FileHandlerRegistry<MEMORY_ADDR> CoffLoader<MEMORY_ADDR>::file_handler_registry;
 
 template <class MEMORY_ADDR>
 CoffLoader<MEMORY_ADDR>::CoffLoader(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
@@ -73,8 +77,6 @@ CoffLoader<MEMORY_ADDR>::CoffLoader(std::ostream& _debug_info_stream, std::ostre
 		const_blob->Catch();
 		ParseSymbols();
 	}
-	
-	unisim::util::loader::coff_loader::ti::FileHandler<MEMORY_ADDR>::Register(&file_handler_registry);
 }
 
 template <class MEMORY_ADDR>
@@ -97,6 +99,12 @@ CoffLoader<MEMORY_ADDR>::~CoffLoader()
 		const_blob->Release();
 		const_blob = 0;
 	}
+}
+
+template <class MEMORY_ADDR>
+bool CoffLoader<MEMORY_ADDR>::Supports(uint16_t magic)
+{
+	return file_handler_registry[magic] != 0;
 }
 
 template <class MEMORY_ADDR>
@@ -360,6 +368,8 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 	blob->Catch();
 	
 	blob->SetEntryPoint(entry_point * memory_atom_size);
+	std::string resolved_filename;
+	blob->SetFilename(unisim::util::locate::ResolvePath(filename, resolved_filename) ? resolved_filename.c_str() : filename.c_str());
 	blob->SetArchitecture(file->GetArchitectureName());
 	blob->SetFileEndian(file_endianness);
 	blob->SetMemoryAtomSize(memory_atom_size);
@@ -606,18 +616,21 @@ void CoffLoader<MEMORY_ADDR>::ParseSymbols()
 }
 
 template <class MEMORY_ADDR>
-void CoffLoader<MEMORY_ADDR>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+void CoffLoader<MEMORY_ADDR>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner) const
 {
 	if(symtab_handler)
 	{
-		symtab_handler->GetSymbols(lst, type);
+		symtab_handler->ScanSymbols(scanner);
 	}
 }
 
 template <class MEMORY_ADDR>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+void CoffLoader<MEMORY_ADDR>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<MEMORY_ADDR>& scanner, typename unisim::util::debug::SymbolBase::Type type) const
 {
-	return symtab_handler ? symtab_handler->FindSymbol(name, addr, type) : 0;
+	if(symtab_handler)
+	{
+		symtab_handler->ScanSymbols(scanner, type);
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -633,13 +646,13 @@ const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>
 }
 
 template <class MEMORY_ADDR>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	return symtab_handler ? symtab_handler->FindSymbolByName(name, type) : 0;
 }
 
 template <class MEMORY_ADDR>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::SymbolBase::Type type) const
 {
 	return symtab_handler ? symtab_handler->FindSymbolByAddr(addr, type) : 0;
 }
@@ -686,6 +699,7 @@ template <class MEMORY_ADDR>
 FileHandlerRegistry<MEMORY_ADDR>::FileHandlerRegistry()
 {
 	Reset();
+	unisim::util::loader::coff_loader::ti::FileHandler<MEMORY_ADDR>::Register(this);
 }
 
 template <class MEMORY_ADDR>
@@ -699,9 +713,14 @@ void FileHandlerRegistry<MEMORY_ADDR>::Register(FileHandler<MEMORY_ADDR> *file_h
 {
 	uint16_t magic = file_handler->GetMagic();
 
-	if(file_handlers[magic])
+	typename FileHandlers::iterator it = file_handlers.find(magic);
+	if(it != file_handlers.end())
 	{
-		delete file_handlers[magic];
+		FileHandler<MEMORY_ADDR> *file_handler = (*it).second;
+		if(file_handler)
+		{
+			delete file_handler;
+		}
 	}
 
 	file_handlers[magic] = file_handler;
@@ -710,13 +729,14 @@ void FileHandlerRegistry<MEMORY_ADDR>::Register(FileHandler<MEMORY_ADDR> *file_h
 template <class MEMORY_ADDR>
 FileHandler<MEMORY_ADDR> *FileHandlerRegistry<MEMORY_ADDR>::operator [] (uint16_t magic)
 {
-	return file_handlers[magic];
+	typename FileHandlers::iterator it = file_handlers.find(magic);
+	return (it != file_handlers.end()) ? (*it).second : 0;
 }
 
 template <class MEMORY_ADDR>
 void FileHandlerRegistry<MEMORY_ADDR>::DumpFileHandlers(std::ostream& os)
 {
-	typename std::map<uint16_t, FileHandler<MEMORY_ADDR> *>::iterator it;
+	typename FileHandlers::iterator it;
 
 	for(it = file_handlers.begin(); it != file_handlers.end(); it++)
 	{
@@ -729,7 +749,7 @@ void FileHandlerRegistry<MEMORY_ADDR>::DumpFileHandlers(std::ostream& os)
 template <class MEMORY_ADDR>
 void FileHandlerRegistry<MEMORY_ADDR>::Reset()
 {
-	typename std::map<uint16_t, FileHandler<MEMORY_ADDR> *>::iterator it;
+	typename FileHandlers::iterator it;
 
 	for(it = file_handlers.begin(); it != file_handlers.end(); it++)
 	{
@@ -739,7 +759,6 @@ void FileHandlerRegistry<MEMORY_ADDR>::Reset()
 	
 	file_handlers.clear();
 }
-
 
 } // end of namespace coff_loader
 } // end of namespace loader

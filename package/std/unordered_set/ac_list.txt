@@ -1,0 +1,1 @@
+AC_CHECK_HEADER([unordered_set],, AC_MSG_ERROR([unordered_set is missing]))

@@ -86,6 +86,7 @@ using unisim::util::arithmetic::SignedAdd32;
 using unisim::util::arithmetic::UnsignedSatAdd32;
 using unisim::util::arithmetic::SignedSatAdd32;
 using unisim::util::arithmetic::SignExtend;
+using unisim::util::arithmetic::ConditionalMove;
 
 
 typedef CPU::EFFECTIVE_ADDRESS ADDRESS;

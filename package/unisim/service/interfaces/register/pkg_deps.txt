@@ -1,1 +1,4 @@
+libc/inttypes
+libc/string
+std/iostream
 unisim/service/interfaces/interface

@@ -175,28 +175,28 @@ public:
 		Error(const std::string& msg);
 	};
 	
-	class ReadError : Error
+	class ReadError : public Error
 	{
 	public:
 		ReadError(const char *data_object_name);
 		ReadError(const std::string& data_object_name);
 	};
 	
-	class WriteError : Error
+	class WriteError : public Error
 	{
 	public:
 		WriteError(const char *data_object_name);
 		WriteError(const std::string& data_object_name);
 	};
 	
-	class TypeError : Error
+	class TypeError : public Error
 	{
 	public:
-		TypeError(const char *data_object_name);
-		TypeError(const std::string& data_object_name);
+		TypeError(const char *data_object_name, const char *reason = 0);
+		TypeError(const std::string& data_object_name, const std::string& reason = std::string());
 	};
 	
-	class UndefinedReferenceError : Error
+	class UndefinedReferenceError : public Error
 	{
 	public:
 		UndefinedReferenceError();
@@ -204,7 +204,14 @@ public:
 		UndefinedReferenceError(const std::string& data_object_name);
 	};
 	
-	class OptimizedOutError : Error
+	class DoesNotExistError : public Error
+	{
+	public:
+		DoesNotExistError(const char *data_object_name);
+		DoesNotExistError(const std::string& data_object_name);
+	};
+	
+	class OptimizedOutError : public Error
 	{
 	public:
 		OptimizedOutError(const char *data_object_name);
@@ -213,8 +220,10 @@ public:
 	
 	virtual ~DataObject() {}
 	virtual const char *GetName() const = 0;
+	virtual unsigned int GetProcessorNumber() const = 0;
 	virtual ADDRESS GetBitSize() const = 0;
-	virtual const Type *GetType() const = 0;
+	virtual const Type *GetType() const = 0; // returns (possibly) cv-qualified type
+	inline const Type *GetCVUnqualifiedType() const; // returns cv-unqualified type
 	virtual unisim::util::endian::endian_type GetEndian() const = 0;
 	virtual bool Exists() const = 0;
 	virtual bool IsOptimizedOut() const = 0;
@@ -223,6 +232,28 @@ public:
 	virtual bool Write(ADDRESS obj_bit_offset, uint64_t value, ADDRESS bit_size) = 0;
 	virtual bool Read(ADDRESS obj_bit_offset, void *buffer, ADDRESS buf_bit_offset, ADDRESS bit_size) const = 0;
 	virtual bool Write(ADDRESS obj_bit_offset, const void *buffer, ADDRESS buf_bit_offset, ADDRESS bit_size) = 0;
+	
+	// testing type
+	bool IsComposite() const { return GetCVUnqualifiedType()->IsComposite(); } // either structure, union, class, or interface
+	bool IsObject() const { return IsComposite(); } // same as composite
+	bool IsStructure() const { return GetCVUnqualifiedType()->IsStructure(); }
+	bool IsUnion() const { return GetCVUnqualifiedType()->IsUnion(); }
+	bool IsClass() const { return GetCVUnqualifiedType()->IsClass(); }
+	bool IsInterface() const { return GetCVUnqualifiedType()->IsInterface(); }
+	bool IsBasic() const { return GetCVUnqualifiedType()->IsBase(); } // either char, integer, float, or boolean
+	bool IsChar() const { return GetCVUnqualifiedType()->IsChar(); }
+	bool IsInteger() const { return GetCVUnqualifiedType()->IsInteger(); }
+	bool IsBoolean() const { return GetCVUnqualifiedType()->IsBoolean();; }
+	bool IsFloat() const { return GetCVUnqualifiedType()->IsFloat(); }
+	bool IsPointer() const { return GetCVUnqualifiedType()->IsPointer(); }
+	bool IsFunction() const { return GetCVUnqualifiedType()->IsFunction(); }
+	bool IsArray() const { return GetCVUnqualifiedType()->IsArray(); }
+	bool IsConst() const { return unisim::util::debug::TypeIsConst::Test(GetType()); }
+	bool IsEnum() const { return GetCVUnqualifiedType()->IsEnum(); }
+	bool IsVoid() const { return GetCVUnqualifiedType()->IsUnspecified(); } // has an unspecified type
+	bool IsVolatile() const { return unisim::util::debug::TypeIsVolatile::Test(GetType()); }
+	bool IsCharPointer() const { return unisim::util::debug::TypeIsCharPointer::Test(GetType()); }
+	bool IsSigned() const { return unisim::util::debug::TypeIsSigned::Test(GetCVUnqualifiedType()); } // for char and integer
 	
 	// conversion operators
 	virtual operator bool() const = 0;
@@ -266,10 +297,19 @@ public:
 	virtual const DataObjectRef<ADDRESS> operator [] (const char *property_name) const = 0;
 	DataObjectRef<ADDRESS> operator [] (const std::string& property_name) { return this->operator [] (property_name.c_str()); }
 	const DataObjectRef<ADDRESS> operator [] (const std::string& property_name) const { return this->operator [] (property_name.c_str()); }
+	template <typename VISITOR, typename T = bool> T ScanProperties(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T ScanProperties(VISITOR& visitor);
+	bool HasProperty(const char *property_name) const { return IsComposite() && GetCVUnqualifiedType()->AsComposite().HasMember(property_name); }
+	bool HasProperty(const std::string& property_name) const { return IsComposite() && GetCVUnqualifiedType()->AsComposite().HasMember(property_name.c_str()); }
 	
 	// array item accessors
 	virtual DataObjectRef<ADDRESS> operator [] (int64_t subscript) = 0;
 	virtual const DataObjectRef<ADDRESS> operator [] (int64_t subscript) const = 0;
+	template <typename VISITOR, typename T = bool> T ScanItems(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T ScanItems(VISITOR& visitor);
+	int64_t GetLowerBound() const { return IsArray() ? GetCVUnqualifiedType()->AsArray().GetLowerBound() : 0; }
+	int64_t GetUpperBound() const { return IsArray() ? GetCVUnqualifiedType()->AsArray().GetUpperBound() : 0; }
+	int64_t GetLength() const { return IsArray() ? GetCVUnqualifiedType()->AsArray().GetCount() : 0; }
 	
 	// arithmetic operators
 	template <typename T> DataObject<ADDRESS>& operator += (T value) { return this->operator = (Sum<ADDRESS, T>(*this, value)); }
@@ -288,17 +328,24 @@ public:
 	template <typename T> DataObject<ADDRESS>& operator <<= (unsigned int n) { return this->operator = (ShiftLeft<ADDRESS>(*this, n)); }
 
 protected:
-	DataObject() : ref_count(0) {}
+	DataObject() : ref_count(0), cv_unqualified_type(0) {}
 private:
 	friend class DataObjectRef<ADDRESS>;
 	
 	unsigned int ref_count;
+	mutable const Type *cv_unqualified_type;
 	
 	template <typename T> int CompareBaseType(T value) const { return this->operator T() - value; }
 	template <typename T> T Sum(T value) const { return this->operator T() + value; }
 	void Acquire() { ++ref_count; }
 	void Release() { if(ref_count && (--ref_count == 0)) delete this; }
 };
+
+template <class ADDRESS>
+inline const Type *DataObject<ADDRESS>::GetCVUnqualifiedType() const
+{
+	return cv_unqualified_type ? cv_unqualified_type : (cv_unqualified_type = unisim::util::debug::TypeResolver::Resolve(GetType()));
+}
 
 template <class ADDRESS, typename T>
 bool operator == (const DataObject<ADDRESS>& data_object, T value) { return Difference<ADDRESS, T>(data_object, value) == 0; }
@@ -414,8 +461,10 @@ public:
 	bool operator != (const DataObjectRef<ADDRESS>& o) const { return data_object != o.data_object; }
 	
 	const char *GetName() const { Check(); return data_object->GetName(); }
+	unsigned int GetProcessorNumber() const { Check(); return data_object->GetProcessorNumber(); }
 	ADDRESS GetBitSize() const { Check(); return data_object->GetBitSize(); }
 	const Type *GetType() const { Check(); return data_object->GetType(); }
+	const Type *GetCVUnqualifiedType() const { Check(); return data_object->GetCVUnqualifiedType(); } 
 	unisim::util::endian::endian_type GetEndian() const { Check(); return data_object->GetEndian(); }
 	bool Exists() const { Check(); return data_object->Exists(); }
 	bool IsOptimizedOut() const { Check(); return data_object->IsOptimizedOut(); }
@@ -424,7 +473,30 @@ public:
 	bool Write(ADDRESS obj_bit_offset, uint64_t value, ADDRESS bit_size) { Check(); return data_object->Write(obj_bit_offset, value, bit_size); }
 	bool Read(ADDRESS obj_bit_offset, void *buffer, ADDRESS buf_bit_offset, ADDRESS bit_size) const { Check(); return data_object->Read(obj_bit_offset, buffer, buf_bit_offset, bit_size); }
 	bool Write(ADDRESS obj_bit_offset, const void *buffer, ADDRESS buf_bit_offset, ADDRESS bit_size) { Check(); return data_object->Write(obj_bit_offset, buffer, buf_bit_offset, bit_size); }
+	void Write(const DataObjectRef<ADDRESS>& src_data_object);
 
+	// testing type
+	bool IsComposite() const { Check(); return data_object->IsComposite(); }
+	bool IsObject() const { Check(); return data_object->IsObject(); }
+	bool IsStructure() const { Check(); return data_object->IsStructure(); }
+	bool IsUnion() const { Check(); return data_object->IsUnion(); }
+	bool IsClass() const { Check(); return data_object->IsClass(); }
+	bool IsInterface() const { Check(); return data_object->IsInterface(); }
+	bool IsBasic() const { Check(); return data_object->IsBasic(); }
+	bool IsChar() const { Check(); return data_object->IsChar(); }
+	bool IsInteger() const { Check(); return data_object->IsInteger(); }
+	bool IsBoolean() const { Check(); return data_object->IsBoolean(); }
+	bool IsFloat() const { Check(); return data_object->IsFloat(); }
+	bool IsPointer() const { Check(); return data_object->IsPointer(); }
+	bool IsFunction() const { Check(); return data_object->IsFunction(); }
+	bool IsArray() const { Check(); return data_object->IsArray(); }
+	bool IsConst() const { Check(); return data_object->IsConst(); }
+	bool IsEnum() const { Check(); return data_object->IsEnum(); }
+	bool IsVoid() const { Check(); return data_object->IsVoid(); }
+	bool IsVolatile() const { Check(); return data_object->IsVolatile(); }
+	bool IsCharPointer() const { Check(); return data_object->IsCharPointer(); }
+	bool IsSigned() const { Check(); return data_object->IsSigned(); }
+	
 	// conversion operators
 	operator bool() const { Check(); return data_object->operator bool(); }
 	operator char() const { Check(); return data_object->operator char(); }
@@ -469,10 +541,17 @@ public:
 	const DataObjectRef<ADDRESS> operator [] (const char *property_name) const { Check(); return data_object->operator [] (property_name); }
 	DataObjectRef<ADDRESS> operator [] (const std::string& property_name) { Check(); return data_object->operator [] (property_name); }
 	const DataObjectRef<ADDRESS> operator [] (const std::string& property_name) const { Check(); return data_object->operator [] (property_name); }
+	template <typename VISITOR, typename T = bool> T ScanProperties(VISITOR& visitor) const { Check(); return data_object->template ScanProperties<VISITOR, T>(visitor); }
+	bool HasProperty(const char *property_name) const { Check(); return data_object->HasProperty(property_name); }
+	bool HasProperty(const std::string& property_name) const { Check(); return data_object->HasProperty(property_name); }
 	
 	// array item accessors
 	DataObjectRef<ADDRESS> operator [] (int64_t subscript) { Check(); return data_object->operator [](subscript); }
 	const DataObjectRef<ADDRESS> operator [] (int64_t subscript) const { Check(); return data_object->operator [](subscript); }
+	template <typename VISITOR, typename T = bool> T ScanItems(VISITOR& visitor) const { Check(); return data_object->template ScanItems<VISITOR, T>(visitor); }
+	int64_t GetLowerBound() const { Check(); return data_object->GetLowerBound(); }
+	int64_t GetUpperBound() const { Check(); return data_object->GetUpperBound(); }
+	int64_t GetLength() const { Check(); return data_object->GetLength(); }
 	
 	// arithmetic operators
 	template <typename T> DataObjectRef<ADDRESS>& operator += (T value) { Check(); data_object->operator += (value); return *this; }
@@ -605,10 +684,11 @@ public:
 	enum StatusEnum
 	{
 		OK                       = 0,
-		OPTIMIZED_OUT            = 1,
-		READ_ERROR               = 2,
-		NOT_FOUND                = 4,
-		UNSUPPORTED_FLOAT_FORMAT = 8
+		DOES_NOT_EXIST           = 1,
+		OPTIMIZED_OUT            = 2,
+		READ_ERROR               = 4,
+		NOT_FOUND                = 8,
+		UNSUPPORTED_FLOAT_FORMAT = 16
 	};
 	
 	typedef unsigned int Status;
@@ -677,12 +757,13 @@ public:
 	enum StatusEnum
 	{
 		OK                       = 0,
-		OPTIMIZED_OUT            = 1,
-		TYPE_ERROR               = 2,
-		READ_ERROR               = 4,
-		WRITE_ERROR              = 8,
-		NOT_FOUND                = 16,
-		UNSUPPORTED_FLOAT_FORMAT = 32
+		DOES_NOT_EXIST           = 1,
+		OPTIMIZED_OUT            = 2,
+		TYPE_ERROR               = 4,
+		READ_ERROR               = 8,
+		WRITE_ERROR              = 16,
+		NOT_FOUND                = 32,
+		UNSUPPORTED_FLOAT_FORMAT = 64
 	};
 	
 	typedef unsigned int Status;
@@ -762,14 +843,14 @@ inline DataObject<ADDRESS>::ReadError::ReadError(const std::string& data_object_
 }
 
 template <class ADDRESS>
-inline DataObject<ADDRESS>::TypeError::TypeError(const char *data_object_name)
-	: DataObject<ADDRESS>::Error(std::string("\"") + data_object_name + "\" type error")
+inline DataObject<ADDRESS>::TypeError::TypeError(const char *data_object_name, const char *reason)
+	: DataObject<ADDRESS>::Error(std::string("\"") + data_object_name + "\" type error" + (reason ? ": " : "") + (reason ? reason : ""))
 {
 }
 
 template <class ADDRESS>
-inline DataObject<ADDRESS>::TypeError::TypeError(const std::string& data_object_name)
-	: DataObject<ADDRESS>::Error(std::string("\"") + data_object_name + "\" type error")
+inline DataObject<ADDRESS>::TypeError::TypeError(const std::string& data_object_name, const std::string& reason)
+	: DataObject<ADDRESS>::Error(std::string("\"") + data_object_name + "\" type error" + ((!reason.empty()) ? ": " : "") + reason)
 {
 }
 
@@ -800,6 +881,18 @@ inline DataObject<ADDRESS>::UndefinedReferenceError::UndefinedReferenceError(con
 template <class ADDRESS>
 inline DataObject<ADDRESS>::UndefinedReferenceError::UndefinedReferenceError(const std::string& data_object_name)
 	: DataObject<ADDRESS>::Error(std::string("\"") + data_object_name + "\" undefined reference error")
+{
+}
+
+template <class ADDRESS>
+inline DataObject<ADDRESS>::DoesNotExistError::DoesNotExistError(const char *data_object_name)
+	: DataObject<ADDRESS>::Error(std::string("\"") + data_object_name + "\" does not exist in this context")
+{
+}
+
+template <class ADDRESS>
+inline DataObject<ADDRESS>::DoesNotExistError::DoesNotExistError(const std::string& data_object_name)
+	: DataObject<ADDRESS>::Error(std::string("\"") + data_object_name + "\" does not exist in this context")
 {
 }
 

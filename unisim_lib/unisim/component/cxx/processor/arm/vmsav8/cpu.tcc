@@ -39,7 +39,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_TCC__
 
 #include <unisim/component/cxx/processor/arm/vmsav8/cpu.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
+#include <unisim/component/cxx/processor/arm/isa/arm64/arm64.tcc>
 #include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
