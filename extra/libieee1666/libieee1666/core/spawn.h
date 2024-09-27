@@ -41,7 +41,14 @@
 #include "core/process.h"
 #include "core/kernel.h"
 #include <vector>
+
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 107300 // boost version >= 1.73.0
+#include <boost/bind/bind.hpp>
+using namespace boost::placeholders;
+#else // boost version < 1.73.0
 #include <boost/bind.hpp>
+#endif
 
 namespace sc_core {
 
