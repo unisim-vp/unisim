@@ -1,3 +1,0 @@
-aarch64dec.tcc
-top_arm32.tcc
-top_thumb.tcc

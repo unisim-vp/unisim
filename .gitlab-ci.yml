@@ -20,6 +20,8 @@ build_unisim:
     expire_in: 2 day
     paths:
       - build.log
+      - coverage.txt
+      - orphans.txt
       - unisim-*.tar.gz
   script: |
     (
@@ -247,8 +249,20 @@ build_unisim:
     ) > config.yaml
     
     # build everything with unisimatic
-    ./unisim_tools/unisimatic/unisimatic --config=config.yaml build '*'
+    ./unisim_tools/unisimatic/unisimatic --config=config.yaml --coverage build '*'
     
     # clean everything with unisimatic
     ./unisim_tools/unisimatic/unisimatic --config=config.yaml clean '*'
+    
+    # coverage
+    (
+    ./unisim_tools/unisimatic/unisimatic --config=config.yaml --synthesize coverage
+    ./unisim_tools/unisimatic/unisimatic --config=config.yaml coverage
+    ) > coverage.txt
+    
+    # coverage
+    (
+    ./unisim_tools/unisimatic/unisimatic --config=config.yaml --synthesize orphans
+    ./unisim_tools/unisimatic/unisimatic --config=config.yaml orphans
+    ) > orphans.txt
     ) 2>&1 | tee build.log

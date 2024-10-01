@@ -31,6 +31,8 @@ CONFIG_YAML="${HOME}/${USER_CONFIG_FILE}"
 DEFAULT_VERBOSE_LEVEL=3
 VERBOSE_LEVEL=${DEFAULT_VERBOSE_LEVEL}
 INCLUDE_UNTRACKED_FILES='no'
+COVERAGE='no'
+SYNTHESIZE='no'
 OPTIONS=()
 
 ################################################ from config.yaml ######################################################
@@ -246,6 +248,18 @@ Commands:
 
         Clean
 
+  uncover
+
+        Clear coverage of distributed files
+
+  coverage
+
+        Print coverage of distributed files
+
+  orphans
+
+        Print orphans, i.e. files that were never distributed
+
 Options:
 
   -h, --help
@@ -265,6 +279,12 @@ Options:
 
   --include-untracked-files
         Generate dependencies for untracked files too (Git)
+
+  --coverage
+        Update coverage of distributed files (to be used in conjunction with command 'dist')
+
+  --synthesize
+        Synthesize printing (to be used in conjunction with commands 'coverage' or 'orphans')
 
 License:
 
@@ -1421,6 +1441,7 @@ function list_files()
 	shift
 	local FILENAME_LIST=("$@")
 	local LIST_TXT="$(concat_paths "${OWN_PACKAGE_DIR}" "${BASE}")/${LIST_NAME}_list.txt"
+	local INDEX_TXT="${OWN_PACKAGE_DIR}/index.txt"
 	
 	mkdir -p "$(concat_paths "${OWN_PACKAGE_DIR}" "${BASE}")"
 	
@@ -1429,7 +1450,7 @@ function list_files()
 		local FILENAME
 		for FILENAME in "${FILENAME_LIST[@]}"; do
 			can_process_file "$(concat_paths "${OWN_REPO_DIR}" "${BASE}")/${FILENAME}" || continue
-			echo "$(concat_paths "${BASE}" "${FILENAME}")" >> "${LIST_TXT}"
+			echo "$(concat_paths "${BASE}" "${FILENAME}")" | tee -a "${INDEX_TXT}" >> "${LIST_TXT}"
 		done
 		[ -s "${LIST_TXT}" ] || rm -f "${LIST_TXT}"
 	fi
@@ -1441,6 +1462,7 @@ function list_interfaces_files()
 	local OWN_REPO_DIR="$1"
 	local OWN_PACKAGE_DIR="$2"
 	local INTERFACE_DIR="${OWN_REPO_DIR}/unisim/service/interfaces"
+	local INDEX_TXT="${OWN_PACKAGE_DIR}/index.txt"
 	
 	pushd "${INTERFACE_DIR}" > /dev/null || die "Can't enter directory ${INTERFACE_DIR}"
 	local HEADER_FILENAME
@@ -1448,7 +1470,7 @@ function list_interfaces_files()
 		can_process_file "${OWN_REPO_DIR}/unisim/service/interfaces/${HEADER_FILENAME}" || continue
 		local PKG_NAME=$(echo "${HEADER_FILENAME}" | sed -e 's/\.hh$//')
 		mkdir -p "${OWN_PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}"
-		echo "unisim/service/interfaces/${HEADER_FILENAME}" > "${OWN_PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}/header_list.txt"
+		echo "unisim/service/interfaces/${HEADER_FILENAME}" | tee -a "${INDEX_TXT}" > "${OWN_PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}/header_list.txt"
 	done
 	popd > /dev/null
 }
@@ -1559,6 +1581,9 @@ function gendeps()
 	local REPO_DIR
 	local REPO_PACKAGE_DIR
 	local -a REPO_NAMES=("$@")
+	local INDEX_TXT
+	local FILE
+	local FILES
 	[ ${#REPO_NAMES[@]} -ne 0 ] || REPO_NAMES=("${REPOSITORY_NAMES[@]}")
 
 	for REPO_NAME in "${REPO_NAMES[@]}"; do
@@ -1566,7 +1591,18 @@ function gendeps()
 		[ -n "${REPOSITORY_DIRS["${REPO_NAME}"]+x}" ] || [ -n "${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]+x}" ] || die "repository $1 not found"
 		REPO_DIR="${REPOSITORY_DIRS["${REPO_NAME}"]}"
 		REPO_PACKAGE_DIR="${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"
+		INDEX_TXT="${REPO_PACKAGE_DIR}/index.txt"
+		if [ -f "${INDEX_TXT}" ]; then
+			FILES=()
+			while IFS=$'\n' read -r FILE; do
+				FILES+=("${FILE}")
+			done < "${INDEX_TXT}"
+			for FILE in "${FILES[@]}"; do
+				[ -f "${REPO_DIR}/${FILE}" ] || sed -i -e "/^$(echo -n "${FILE}" | sed -e 's/[]\/$*.^[\#-]/\\&/g')$/d" "${INDEX_TXT}"
+			done
+		fi
 		crawl_directory "${REPO_DIR}" "${REPO_PACKAGE_DIR}"
+		sort -u -o "${INDEX_TXT}" "${INDEX_TXT}"
 	done
 	
 	resolve_pkg_dep_quirks "${REPO_NAMES[@]}"
@@ -2058,15 +2094,25 @@ function copy()
 	[ -n "${DIST_DIR+x}" ] || die "copy: distribution directory is undefined"
 	local status=1
 	local REPO_DIR
+	local REPO_PACKAGE_DIR
 	local REPO_DIST_SUBDIR
 	local DIST_FILE
 	local REPO_NAME
 	local LIST_NAME
+	local FILE
+	local INDEX_TXT
+	local COVERAGE_TXT
 	for LIST_NAME in "$@"; do
 		info "Distributing ${LIST_NAME}"
 		for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+			REPO_DIR="${REPOSITORY_DIRS["${REPO_NAME}"]}"
+			REPO_PACKAGE_DIR="${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"
+			INDEX_TXT="${REPO_PACKAGE_DIR}/index.txt"
 			for FILE in $(list_pkg "${REPO_NAME}" 'copy' "${LIST_NAME}"); do
-				REPO_DIR="${REPOSITORY_DIRS["${REPO_NAME}"]}"
+				if [ "${COVERAGE}" = 'yes' ] && [ -f "${INDEX_TXT}" ] && grep -qsF "${FILE}" "${INDEX_TXT}"; then
+					COVERAGE_TXT="${REPO_PACKAGE_DIR}/coverage.txt"
+					echo "${FILE}" >> "${COVERAGE_TXT}"
+				fi
 				if [ -n "${REPOSITORY_DIST_SUBDIR["${REPO_NAME}"]+x}" ]; then
 					REPO_DIST_SUBDIR="${REPOSITORY_DIST_SUBDIR["${REPO_NAME}"]}"
 					DIST_FILE="${DIST_DIR}/${REPO_DIST_SUBDIR}/${FILE}"
@@ -2081,6 +2127,17 @@ function copy()
 			done
 		done
 	done
+
+	if [ "${COVERAGE}" = 'yes' ]; then
+		for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+			REPO_PACKAGE_DIR="${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"
+			COVERAGE_TXT="${REPO_PACKAGE_DIR}/coverage.txt"
+			if [ -f "${COVERAGE_TXT}" ]; then
+				sort -u -o "${COVERAGE_TXT}" "${COVERAGE_TXT}"
+			fi
+		done
+	fi
+
 	return ${status}
 }
 
@@ -2441,6 +2498,97 @@ function clean()
 	for_each_build do_clean "$@"
 }
 
+################################################## uncover ##########################################################
+
+function uncover()
+{
+	info "Resetting coverage"
+	local REPO_NAME
+	local REPO_PACKAGE_DIR
+	local COVERAGE_TXT
+	for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+		REPO_PACKAGE_DIR="${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"
+		INDEX_TXT="${REPO_PACKAGE_DIR}/index.txt"
+		COVERAGE_TXT="${REPO_PACKAGE_DIR}/coverage.txt"
+		if [ -f "${INDEX_TXT}" ]; then
+			if [ -f "${COVERAGE_TXT}" ]; then
+				rm -f "${COVERAGE_TXT}"
+			fi
+		fi
+	done
+}
+
+################################################## coverage ##########################################################
+
+function coverage()
+{
+	if [ "${SYNTHESIZE}" = 'yes' ]; then
+		info "Synthesizing coverage"
+	else
+		info "Printing coverage"
+	fi
+	local REPO_NAME
+	local REPO_PACKAGE_DIR
+	local INDEX_TXT
+	local COVERAGE_TXT
+	for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+		REPO_PACKAGE_DIR="${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"
+		INDEX_TXT="${REPO_PACKAGE_DIR}/index.txt"
+		COVERAGE_TXT="${REPO_PACKAGE_DIR}/coverage.txt"
+		if [ -f "${INDEX_TXT}" ]; then
+			if [ -f "${COVERAGE_TXT}" ]; then
+				if [ "${SYNTHESIZE}" = 'yes' ]; then
+					echo "${REPO_NAME}: $((($(wc -l "${COVERAGE_TXT}" | cut -f 1 -d ' ')*100)/$(wc -l "${INDEX_TXT}" | cut -f 1 -d ' ')))% coverage"
+				else
+					sed -e "s/^/$(echo "${REPO_NAME}" | sed -e 's/[\\\/#]/\\&/g'):/" "${COVERAGE_TXT}"
+				fi
+			else
+				if [ "${SYNTHESIZE}" = 'yes' ]; then
+					echo "${REPO_NAME}: 0%"
+				fi
+			fi
+		fi
+	done
+}
+
+################################################## orphans ##########################################################
+
+function filter_orphans()
+{
+	local REPO_NAME="$1"
+
+	if [ "${SYNTHESIZE}" = 'yes' ]; then
+		echo "${REPO_NAME}: $(wc -l | cut -f 1 -d ' ') file(s)"
+	else
+		sed -e "s/^/$(echo "${REPO_NAME}" | sed -e 's/[\\\/#]/\\&/g'):/"
+	fi
+}
+
+function orphans()
+{
+	if [ "${SYNTHESIZE}" = 'yes' ]; then
+		info "Synthesizing orphans"
+	else
+		info "Printing orphans"
+	fi
+	local REPO_NAME
+	local REPO_PACKAGE_DIR
+	local INDEX_TXT
+	local COVERAGE_TXT
+	for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
+		REPO_PACKAGE_DIR="${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"
+		INDEX_TXT="${REPO_PACKAGE_DIR}/index.txt"
+		COVERAGE_TXT="${REPO_PACKAGE_DIR}/coverage.txt"
+		if [ -f "${INDEX_TXT}" ]; then
+			if [ -f "${COVERAGE_TXT}" ]; then
+				diff -u "${INDEX_TXT}" "${COVERAGE_TXT}" | tail -n +3 | grep -E '^-.*$' | sed -e 's/^.//' | filter_orphans "${REPO_NAME}"
+			else
+				filter_orphans "${REPO_NAME}" < "${INDEX_TXT}"
+			fi
+		fi
+	done
+}
+
 #################################################### main ###########################################################
 
 # main function
@@ -2483,7 +2631,17 @@ function main()
 				exit 0
 				;;
 			--config=*)
+				OPTIONS+=("$1")
 				CONFIG_YAML="$(realpath -m -q "${1##--config=}")"
+				shift
+				;;
+			--coverage)
+				OPTIONS+=("$1")
+				COVERAGE='yes'
+				shift
+				;;
+			--synthesize)
+				SYNTHESIZE='yes'
 				shift
 				;;
 			--)
@@ -2505,7 +2663,7 @@ function main()
 	local CMD
 	local PROG_NAME="$(basename "${BASH_SOURCE}")"
 	case "${PROG_NAME}" in
-		gendeps|dist|shell|build|clean)
+		gendeps|dist|shell|build|clean|uncover|coverage|orphans)
 			CMD="${PROG_NAME}"
 			;;
 		*)
@@ -2515,7 +2673,7 @@ function main()
 	esac
 
 	case "${CMD}" in
-		gendeps|dist|shell|build|clean)
+		gendeps|dist|shell|build|clean|uncover|coverage|orphans)
 			"${CMD}" "$@"
 			;;
 		*)
