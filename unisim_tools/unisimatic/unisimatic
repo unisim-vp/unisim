@@ -33,6 +33,7 @@ VERBOSE_LEVEL=${DEFAULT_VERBOSE_LEVEL}
 INCLUDE_UNTRACKED_FILES='no'
 COVERAGE='no'
 SYNTHESIZE='no'
+SILENT_BUILD='no'
 OPTIONS=()
 
 ################################################ from config.yaml ######################################################
@@ -286,6 +287,9 @@ Options:
   --synthesize
         Synthesize printing (to be used in conjunction with commands 'coverage' or 'orphans')
 
+  --silent-build
+        Silent build and print tail of build command output on error
+
 License:
 
   GPLv2
@@ -522,6 +526,14 @@ function check_external_programs()
 
 	if ! command -v jq &> /dev/null; then
 		die "Please install jq (https://stedolan.github.io/jq/)"
+	fi
+
+	if ! command -v grep &> /dev/null; then
+		die "Please install GNU grep)"
+	fi
+
+	if ! command -v diff &> /dev/null; then
+		die "Please install GNU diff)"
 	fi
 }
 
@@ -2428,6 +2440,27 @@ EOF
 
 ################################################ build/clean ########################################################
 
+function run_command()
+{
+	local COMMAND="$1"
+	local STATUS=0
+	local TMP_FILE
+	if [ "${SILENT_BUILD}" = 'yes' ]; then
+		TMP_FILE="$(mktemp)"
+		"${SHELL}" -c "${COMMAND}" &> "${TMP_FILE}"
+		STATUS=$?
+		if [ ${STATUS} -ne 0 ]; then
+			tail -n 200 "${TMP_FILE}" >&2
+		fi
+		rm -f "${TMP_FILE}"
+	else
+		"${SHELL}" -c "${COMMAND}"
+		STATUS=$?
+	fi
+
+	return ${STATUS}
+}
+
 function do_build()
 {
 	local BUILD_NAME="$1"
@@ -2446,7 +2479,7 @@ function do_build()
 	BUILD_COMMAND="${BUILD_COMMANDS["${BUILD_NAME}"]}"
 	if [ -n "${BUILD_COMMAND}" ]; then
 		info "Running: ${BUILD_COMMAND}"
-		"${SHELL}" -c "${BUILD_COMMAND}" || die "Build \"${BUILD_NAME}\" failed"
+		run_command "${BUILD_COMMAND}" || die "Build \"${BUILD_NAME}\" failed"
 	fi
 	popd > /dev/null
 	info "Done building \"${BUILD_NAME}\""
@@ -2538,7 +2571,11 @@ function coverage()
 		if [ -f "${INDEX_TXT}" ]; then
 			if [ -f "${COVERAGE_TXT}" ]; then
 				if [ "${SYNTHESIZE}" = 'yes' ]; then
-					echo "${REPO_NAME}: $((($(wc -l "${COVERAGE_TXT}" | cut -f 1 -d ' ')*100)/$(wc -l "${INDEX_TXT}" | cut -f 1 -d ' ')))% coverage"
+					DIVISOR=$(wc -l "${INDEX_TXT}" | cut -f 1 -d ' ')
+					if [ ${DIVISOR} -ne 0 ]; then
+						DIVIDEND=$(($(wc -l "${COVERAGE_TXT}" | cut -f 1 -d ' ')*100))
+						echo "${REPO_NAME}: $((${DIVIDEND}/${DIVISOR}))% coverage"
+					fi
 				else
 					sed -e "s/^/$(echo "${REPO_NAME}" | sed -e 's/[\\\/#]/\\&/g'):/" "${COVERAGE_TXT}"
 				fi
@@ -2644,6 +2681,11 @@ function main()
 				SYNTHESIZE='yes'
 				shift
 				;;
+			--silent-build)
+				OPTIONS+=("$1")
+				SILENT_BUILD='yes'
+				shift
+				;;
 			--)
 				shift
 				break
@@ -2684,3 +2726,5 @@ function main()
 
 # entry point
 main "$@"
+
+exit 0

@@ -123,14 +123,14 @@ _Float16 FRem( _Float16 a, _Float16 b )
 {
 	int r = fegetround();
 	fesetround( FE_TONEAREST );
-	_Float16 q = nearbyintf( a / b );
+	_Float16 q = _Float16( nearbyintf( a / b ) );
 	_Float16 f = a - (q * b);
 	fesetround( r );
 	return f;
 }
 
-_Float16 FSqrt( _Float16 a ) { return sqrtf( a ); }
-_Float16 FAbs( _Float16 a ) { return fabs( a ); }
+_Float16 FSqrt( _Float16 a ) { return _Float16( sqrtf( a ) ); }
+_Float16 FAbs( _Float16 a ) { return _Float16( fabs( a ) ); }
 _Float16 FMin( _Float16 a, _Float16 b ) { return unisim::util::floating_point::_FMin<_Float16>( a, b ); }
 _Float16 FMinNumber( _Float16 a, _Float16 b ) { return unisim::util::floating_point::_FMinNumber<_Float16>( a, b ); }
 _Float16 FMax( _Float16 a, _Float16 b ) { return unisim::util::floating_point::_FMax<_Float16>( a, b ); }
