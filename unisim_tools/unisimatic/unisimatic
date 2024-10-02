@@ -34,6 +34,7 @@ INCLUDE_UNTRACKED_FILES='no'
 COVERAGE='no'
 SYNTHESIZE='no'
 SILENT_BUILD='no'
+RUN_BUILD_COMMAND='yes'
 OPTIONS=()
 
 ################################################ from config.yaml ######################################################
@@ -288,7 +289,10 @@ Options:
         Synthesize printing (to be used in conjunction with commands 'coverage' or 'orphans')
 
   --silent-build
-        Silent build and print tail of build command output on error
+        Silent build and print tail of build command output on error (see command 'build')
+
+  --dont-run-build-command
+        Don't run build command (see command 'build')
 
 License:
 
@@ -2477,7 +2481,7 @@ function do_build()
 	( dist "${BUILD_PROJECT_NAME}" "${BUILD_DIST_DIR}" ) || die "While Build \"${BUILD_NAME}\", distribution of Project \"${BUILD_PROJECT_NAME}\" failed"
 	pushd "${BUILD_DIR}" > /dev/null || die "Can't enter directory ${BUILD_DIR}"
 	BUILD_COMMAND="${BUILD_COMMANDS["${BUILD_NAME}"]}"
-	if [ -n "${BUILD_COMMAND}" ]; then
+	if [ -n "${BUILD_COMMAND}" ] && [ "${RUN_BUILD_COMMAND}" = 'yes' ]; then
 		info "Running: ${BUILD_COMMAND}"
 		run_command "${BUILD_COMMAND}" || die "Build \"${BUILD_NAME}\" failed"
 	fi
@@ -2593,9 +2597,10 @@ function coverage()
 function filter_orphans()
 {
 	local REPO_NAME="$1"
+	local FILE_COUNT=$2
 
 	if [ "${SYNTHESIZE}" = 'yes' ]; then
-		echo "${REPO_NAME}: $(wc -l | cut -f 1 -d ' ') file(s)"
+		echo "${REPO_NAME}: $(wc -l | cut -f 1 -d ' ') of ${FILE_COUNT} file(s)"
 	else
 		sed -e "s/^/$(echo "${REPO_NAME}" | sed -e 's/[\\\/#]/\\&/g'):/"
 	fi
@@ -2612,15 +2617,19 @@ function orphans()
 	local REPO_PACKAGE_DIR
 	local INDEX_TXT
 	local COVERAGE_TXT
+	local FILE_COUNT
 	for REPO_NAME in "${REPOSITORY_NAMES[@]}"; do
 		REPO_PACKAGE_DIR="${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"
 		INDEX_TXT="${REPO_PACKAGE_DIR}/index.txt"
 		COVERAGE_TXT="${REPO_PACKAGE_DIR}/coverage.txt"
 		if [ -f "${INDEX_TXT}" ]; then
-			if [ -f "${COVERAGE_TXT}" ]; then
-				diff -u "${INDEX_TXT}" "${COVERAGE_TXT}" | tail -n +3 | grep -E '^-.*$' | sed -e 's/^.//' | filter_orphans "${REPO_NAME}"
-			else
-				filter_orphans "${REPO_NAME}" < "${INDEX_TXT}"
+			FILE_COUNT=$(wc -l "${INDEX_TXT}" | cut -f 1 -d ' ')
+			if [ ${FILE_COUNT} -ne 0 ]; then
+				if [ -f "${COVERAGE_TXT}" ]; then
+					diff -u "${INDEX_TXT}" "${COVERAGE_TXT}" | tail -n +3 | grep -E '^-.*$' | sed -e 's/^.//' | filter_orphans "${REPO_NAME}" ${FILE_COUNT}
+				else
+					filter_orphans "${REPO_NAME}" ${FILE_COUNT} < "${INDEX_TXT}"
+				fi
 			fi
 		fi
 	done
@@ -2684,6 +2693,11 @@ function main()
 			--silent-build)
 				OPTIONS+=("$1")
 				SILENT_BUILD='yes'
+				shift
+				;;
+			--dont-run-build-command)
+				OPTIONS+=("$1")
+				RUN_BUILD_COMMAND='no'
 				shift
 				;;
 			--)
