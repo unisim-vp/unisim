@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2023,
+ *  Copyright (c) 2015,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -38,8 +38,14 @@
 #include <iosfwd>
 #include <inttypes.h>
 
-namespace aarch32
-{
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
+namespace dba {
+namespace aarch32 {
+
   struct StatusRegister
   {
     enum InstructionSet { Arm, Thumb, Jazelle, ThumbEE };
@@ -58,6 +64,14 @@ namespace aarch32
   {
     void process( std::ostream& sink, uint32_t addr, uint32_t code );
   };
-}
+
+} /* end of namespace aarch32 */
+} /* end of namespace dba */
+} /* end of namespace arm */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
+
 
 #endif /* __AARCH32_DECODER_HH__ */

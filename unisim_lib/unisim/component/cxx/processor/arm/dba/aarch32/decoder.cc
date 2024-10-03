@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2023,
+ *  Copyright (c) 2015,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,14 +32,14 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include "decoder.hh"
+#include <unisim/component/cxx/processor/arm/dba/aarch32/decoder.hh>
 
+#include <unisim/component/cxx/processor/arm/isa/arm32/arm32.tcc>
+#include <unisim/component/cxx/processor/arm/isa/thumb2/thumb.tcc>
 #include <unisim/component/cxx/processor/arm/isa/disasm.hh>
 #include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
-#include <top_arm32.tcc>
-#include <top_thumb.tcc>
 
 #include <iostream>
 #include <string>
@@ -51,6 +51,12 @@
 #include <cstdlib>
 #include <cstdio>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
+namespace dba {
 namespace aarch32 {
 
 // template <typename ARCH, unsigned OPSIZE> struct TypeFor {};
@@ -1090,7 +1096,13 @@ bool CheckCondition( Processor& state, Processor::ITCond const& cond )
     ((cc == U8(14)) and (unisim::util::symbolic::make_const( true ))));
 }
 
-}
+} /* end of namespace aarch32 */
+} /* end of namespace dba */
+} /* end of namespace arm */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
 
 namespace unisim { namespace util { namespace symbolic {
 template <class OP>
@@ -1102,6 +1114,12 @@ unisim::util::symbolic::SmartValue<OP> NeonSHL( unisim::util::symbolic::SmartVal
 }
 }}}
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
+namespace dba {
 namespace aarch32 {
 
 void UpdateStatusSub( Processor& state, Processor::U32 const& res, Processor::U32 const& lhs, Processor::U32 const& rhs )
@@ -1811,4 +1829,11 @@ StatusRegister::StatusRegister()
   , mode(unisim::component::cxx::processor::arm::SUPERVISOR_MODE) // Default mode is supervisor
 {}
 
-}
+} /* end of namespace aarch32 */
+} /* end of namespace dba */
+} /* end of namespace arm */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
+

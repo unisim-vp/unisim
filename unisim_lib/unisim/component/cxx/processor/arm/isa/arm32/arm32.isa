@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2023,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -52,7 +52,7 @@ action {void} execute({ARCH &} {cpu}) {
   cpu.UndefinedInstruction( this );
 }
 
-action {void} disasm({std::ostream&} {buffer}) {
+action {void} disasm({ARCH &} {cpu}, {std::ostream&} {buffer}) {
   buffer << "; Unknown ARM instruction";
 }
 
@@ -61,12 +61,11 @@ impl {
 #include <unisim/component/cxx/processor/arm/isa/disasm.hh>
 #include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/likely/likely.hh>
 #include <unisim/util/endian/endian.hh>
 #include <iostream>
 #include <iomanip>
 
-#include <unisim/util/likely/likely.hh>
-  
 using unisim::util::arithmetic::BitScanReverse;
 using unisim::util::endian::ByteSwap;
 using unisim::util::arithmetic::RotateRight;
