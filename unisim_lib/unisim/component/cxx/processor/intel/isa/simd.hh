@@ -3827,7 +3827,7 @@ Operation<ARCH>* newMovddup( InputCode<ARCH> const& ic, OpBase<ARCH> const& opba
   if (not ic.vex())
     return new Movddup<ARCH,SSE>( opbase, std::move(rm), gn );
 
-  uint8_t vn = ic.vreg();
+  // uint8_t vn = ic.vreg();
   if (ic.vlen() == 128)
     return new Movddup<ARCH,XMM>( opbase, std::move(rm), gn );
   if (ic.vlen() == 256)
