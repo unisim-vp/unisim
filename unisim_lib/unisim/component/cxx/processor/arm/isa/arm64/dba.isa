@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017-2023,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 /**********************************************
 
              ARM64 TOP ISA DESCRIPTION
@@ -59,10 +59,11 @@ using unisim::util::arithmetic::BitScanReverse;
 
 #include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
-
 }
 
-action {void} execute({ARCH &} {cpu}) const { cpu.UndefinedInstruction(this); }
+action {void} execute({ARCH &} {cpu}) const {
+  cpu.UndefinedInstruction(this);
+}
 
 action {void} disasm({ARCH &} {cpu}, {std::ostream&} {sink}) const {
   sink << "; Unknown AARCH64 instruction";

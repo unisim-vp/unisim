@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2021,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -38,12 +38,25 @@
 #include <iosfwd>
 #include <inttypes.h>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
+namespace dba {
 namespace aarch64 {
   
   struct Decoder
   {
     void process( std::ostream& sink, uint64_t addr, uint32_t code );
   };
-}
+
+} /* end of namespace aarch64 */
+} /* end of namespace dba */
+} /* end of namespace arm */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
 
 #endif /* __AARCH64_DECODER_HH__ */

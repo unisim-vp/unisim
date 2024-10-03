@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <decoder.hh>
+#include <unisim/component/cxx/processor/arm/dba/aarch64/decoder.hh>
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
@@ -60,7 +60,7 @@ struct Usage
   }
 };
 
-bool process(aarch64::Decoder& decoder, std::ostream& sink, char const* addr_arg, char const* code_arg)
+bool process(unisim::component::cxx::processor::arm::dba::aarch64::Decoder& decoder, std::ostream& sink, char const* addr_arg, char const* code_arg)
 {
   uint64_t addr;
   uint32_t code;
@@ -78,7 +78,7 @@ bool process(aarch64::Decoder& decoder, std::ostream& sink, char const* addr_arg
 int
 main( int argc, char** argv )
 {
-  aarch64::Decoder decoder;
+  unisim::component::cxx::processor::arm::dba::aarch64::Decoder decoder;
 
   if (argc > 1 and strcmp(argv[1], "file") == 0)
     {

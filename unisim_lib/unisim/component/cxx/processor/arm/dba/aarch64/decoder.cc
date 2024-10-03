@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include "decoder.hh"
+#include <unisim/component/cxx/processor/arm/dba/aarch64/decoder.hh>
 
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
 #include <unisim/util/symbolic/binsec/binsec.hh>
@@ -40,12 +40,18 @@
 #include <unisim/util/symbolic/symbolic.hh>
 #include <unisim/util/floating_point/floating_point.hh>
 
-#include <aarch64dec.tcc>
+#include <unisim/component/cxx/processor/arm/isa/arm64/dba.tcc>
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
 #include <set>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
+namespace dba {
 namespace aarch64 {
 
 struct ProcTypes
@@ -644,4 +650,11 @@ Decoder::process( std::ostream& sink, uint64_t addr, uint32_t code )
   translator.translate( sink );
 }
 
-}
+} /* end of namespace aarch64 */
+} /* end of namespace dba */
+} /* end of namespace arm */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
+
