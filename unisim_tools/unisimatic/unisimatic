@@ -125,6 +125,14 @@ function bad()
   exit 1
 }
 
+############################################# utility functions #####################################################
+
+function sort_file()
+{
+	local FILE="$1"
+	LC_ALL=C sort -u -o "${FILE}" "${FILE}"
+}
+
 #################################################### help ###########################################################
 
 # print full help
@@ -1022,7 +1030,7 @@ function discover_file_build_deps_quirks()
 		local AM_LIST_TXT="${OWN_PACKAGE_DIR}/${BASE}/am_list.txt"
 		mkdir -p "$(dirname "${AM_LIST_TXT}")"
 		echo "$(sed -e 's/\.isa$/\.hh/g' <<< "$(concat_paths "${BASE}" "${FILENAME}")"): ${INCLUDE_DEP}" >> "${AM_LIST_TXT}"
-		sort -u -o "${AM_LIST_TXT}" "${AM_LIST_TXT}"
+		sort_file "${AM_LIST_TXT}"
 	fi
 }
 
@@ -1065,7 +1073,7 @@ function built()
 		mkdir -p "$(dirname "${BUILT_LIST_TXT}")"
 #		echo "\$(top_builddir)/${FILE}" >> "${BUILT_LIST_TXT}"
 		echo "${FILE}" >> "${BUILT_LIST_TXT}"
-		sort -u -o "${BUILT_LIST_TXT}" "${BUILT_LIST_TXT}"
+		sort_file "${BUILT_LIST_TXT}"
 	done
 }
 
@@ -1183,7 +1191,7 @@ function resolve_pkg_dep_quirks()
 								local AM_LIST_TXT="${REPOSITORY_PACKAGE_DIR["${PKG_DEP_REPO_NAME}"]}/${PKG_DEP}/am_list.txt"
 								mkdir -p "$(dirname "${AM_LIST_TXT}")"
 								echo "${INCLUDE_DEP}: $(sed -e 's/\.isa$/\.hh/g' <<< "${ISA_FILE}")" >> "${AM_LIST_TXT}"
-								sort -u -o "${AM_LIST_TXT}" "${AM_LIST_TXT}"
+								sort_file "${AM_LIST_TXT}"
 								RESOLVED='yes'
 								break
 							fi
@@ -1381,7 +1389,7 @@ function resolve_pkg_dep_quirks()
 				fi
 			done
 			if [ -f "${PKG_DEPS_TXT}" ]; then
-				sort -u -o "${PKG_DEPS_TXT}" "${PKG_DEPS_TXT}"
+				sort_file "${PKG_DEPS_TXT}"
 			fi
 		done < <(find "${REPOSITORY_PACKAGE_DIR["${OWN_REPO_NAME}"]}" -name ".unresolved.txt" -print0)
 	done
@@ -1431,7 +1439,7 @@ function discover_file_deps()
 				local UNRESOLVED_TXT="$(concat_paths "${OWN_PACKAGE_DIR}" "${BASE}")/.unresolved.txt"
 				debug "${INCLUDE_DEP} dependency is pending"
 				echo "${INCLUDE_DEP}" >> "${UNRESOLVED_TXT}"
-				sort -u -o "${UNRESOLVED_TXT}" "${UNRESOLVED_TXT}"
+				sort_file "${UNRESOLVED_TXT}"
 				
 				discover_file_build_deps_quirks "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${BASE}" "${FILENAME}" "${INCLUDE_DEP}"
 			fi
@@ -1440,7 +1448,7 @@ function discover_file_deps()
 	fi
 	
 	if [ -f "${PKG_DEPS_TXT}" ]; then
-		sort -u -o "${PKG_DEPS_TXT}" "${PKG_DEPS_TXT}"
+		sort_file "${PKG_DEPS_TXT}"
 	fi
 }
 
@@ -1517,7 +1525,7 @@ function discover_interfaces_file_deps()
 				local UNRESOLVED_TXT="${OWN_PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}/.unresolved.txt"
 				debug "${INCLUDE_DEP} dependency is pending"
 				echo "${INCLUDE_DEP}" >> "${UNRESOLVED_TXT}"
-				sort -u -o "${UNRESOLVED_TXT}" "${UNRESOLVED_TXT}"
+				sort_file "${UNRESOLVED_TXT}"
 			fi
 		done
 	done
@@ -1618,7 +1626,7 @@ function gendeps()
 			done
 		fi
 		crawl_directory "${REPO_DIR}" "${REPO_PACKAGE_DIR}"
-		sort -u -o "${INDEX_TXT}" "${INDEX_TXT}"
+		sort_file "${INDEX_TXT}"
 	done
 	
 	resolve_pkg_dep_quirks "${REPO_NAMES[@]}"
@@ -2149,7 +2157,7 @@ function copy()
 			REPO_PACKAGE_DIR="${REPOSITORY_PACKAGE_DIR["${REPO_NAME}"]}"
 			COVERAGE_TXT="${REPO_PACKAGE_DIR}/coverage.txt"
 			if [ -f "${COVERAGE_TXT}" ]; then
-				sort -u -o "${COVERAGE_TXT}" "${COVERAGE_TXT}"
+				sort_file "${COVERAGE_TXT}"
 			fi
 		done
 	fi
