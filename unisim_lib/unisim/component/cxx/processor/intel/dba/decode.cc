@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,7 +32,14 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <arch.hh>
+#include <unisim/component/cxx/processor/intel/dba/arch.hh>
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace intel {
+namespace dba {
 
 typedef Processor<Intel64>  P64;
 typedef Processor<Compat32> P32;
@@ -85,18 +92,29 @@ F64 eval_fprem ( P64& arch, F64 const& dividend, F64 const& modulus ) { throw Pr
 F64 eval_fprem1( P32& arch, F64 const& dividend, F64 const& modulus ) { throw ProcessorBase::Unimplemented(); }
 F64 eval_fprem1( P64& arch, F64 const& dividend, F64 const& modulus ) { throw ProcessorBase::Unimplemented(); }
 
-namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
-          template <typename FPT> FPT firound( FPT const& src, int x87frnd_mode )
-          {
-            throw ProcessorBase::Unimplemented();
-            return FPT();
-          }
-        } /* namespace unisim */ } /* namespace component */ } /* namespace cxx */ } /* namespace processor */ } /* namespace intel */
+} /* end of namespace dba */
+
+  template <typename FPT> FPT firound( FPT const& src, int x87frnd_mode )
+  {
+    throw dba::ProcessorBase::Unimplemented();
+    return FPT();
+  }
+
+} /* end of namespace intel */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
 
 
 #include <unisim/component/cxx/processor/intel/isa/intel.tcc>
 
-typedef unisim::component::cxx::processor::intel::Mode Mode;
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace intel {
+namespace dba {
 
 template <>
 P64::Operation*
@@ -113,4 +131,11 @@ P32::Decode(uint32_t address, uint8_t const* bytes)
   typedef unisim::component::cxx::processor::intel::InputCode<P32> InputCode;
   return getoperation( InputCode( Mode(0, 1, 1), bytes, OpHeader(address) ) );
 }
+
+} /* end of namespace dba */
+} /* end of namespace intel */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
 

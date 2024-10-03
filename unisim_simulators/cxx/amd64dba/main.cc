@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <decoder.hh>
+#include <unisim/component/cxx/processor/intel/dba/decoder.hh>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -68,7 +68,7 @@ void usage( std::ostream& sink, char const* progname )
        << "  " << progname << " x86|intel64 <file>\n";
 }
 
-bool process( intel::Decoder& decoder, std::ostream& sink, char const* as, char const* cs )
+bool process( unisim::component::cxx::processor::intel::dba::Decoder& decoder, std::ostream& sink, char const* as, char const* cs )
 {
   uint64_t addr;
   std::vector<uint8_t> code;
@@ -95,7 +95,7 @@ main( int argc, char** argv )
       return 1;
     }
 
-  intel::Decoder decoder;
+  unisim::component::cxx::processor::intel::dba::Decoder decoder;
   decoder.mode64 = strcmp("intel64", argv[1]) == 0;
 
   if (argc == 3)

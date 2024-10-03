@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2020,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,14 +32,19 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include "decoder.hh"
-#include <arch.hh>
+#include <unisim/component/cxx/processor/intel/dba/decoder.hh>
+#include <unisim/component/cxx/processor/intel/dba/arch.hh>
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <iostream>
 #include <cstdint>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
 namespace intel {
+namespace dba {
 
 struct InstructionAddress : public unisim::util::symbolic::binsec::ASExprNode
 {
@@ -151,4 +156,9 @@ Decoder::process( std::ostream& sink, uint64_t addr, std::vector<uint8_t>&& code
   actset.translate( mode64, sink );
 }
 
-}
+} /* end of namespace dba */
+} /* end of namespace intel */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */

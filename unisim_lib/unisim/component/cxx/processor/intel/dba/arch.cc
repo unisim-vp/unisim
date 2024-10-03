@@ -32,8 +32,15 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <arch.hh>
+#include <unisim/component/cxx/processor/intel/dba/arch.hh>
 #include <iostream>
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace intel {
+namespace dba {
 
 ProcessorBase::ProcessorBase()
   : path(0)
@@ -127,3 +134,9 @@ void show(unsigned idx, unisim::util::symbolic::ExprNode const* node)
   std::cerr << "\n";
 }
 
+} /* end of namespace dba */
+} /* end of namespace intel */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */

@@ -45,6 +45,13 @@
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace intel {
+namespace dba {
+
 // template <typename ARCH, unsigned OPSIZE> struct TypeFor {};
 
 // template <typename ARCH> struct TypeFor<ARCH, 8> { typedef typename ARCH:: S8 S; typedef typename ARCH:: U8 U; };
@@ -1078,5 +1085,12 @@ struct Compat32
   };
 
 };
+
+} /* end of namespace dba */
+} /* end of namespace intel */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
 
 #endif // ARMD64DBA_ARCH_HH

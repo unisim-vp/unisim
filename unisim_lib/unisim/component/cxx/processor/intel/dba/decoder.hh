@@ -39,7 +39,12 @@
 #include <iosfwd>
 #include <inttypes.h>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
 namespace intel {
+namespace dba {
 
   struct Decoder
   {
@@ -49,6 +54,12 @@ namespace intel {
 
     bool mode64;
   };
-}
+
+} /* end of namespace dba */
+} /* end of namespace intel */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
 
 #endif /* __AARCH64_DECODER_HH__ */
