@@ -1,0 +1,2 @@
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divw_sat.hh: unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divw.isa
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu_sat.hh: unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu.isa

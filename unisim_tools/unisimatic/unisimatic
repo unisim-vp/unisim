@@ -1016,8 +1016,26 @@ function discover_file_deps_quirks()
 	fi
 }
 
-# upstream quirks for adding build dependencies
-function discover_file_build_deps_quirks()
+# upstream quirks for adding build dependencies (for a resolved include dependency)
+function discover_file_build_deps_quirks_resolved()
+{
+	local OWN_REPO_DIR="$1"
+	local OWN_PACKAGE_DIR="$2"
+	local BASE="$3"
+	local FILENAME="$4"
+	local INCLUDE_DEP="$5"
+
+	if [[ "${FILENAME}" = *.isa ]]; then
+		# quirk: let automake know that there is a build dependency of GenISSLib generated decoder .hh with included dependency
+		local AM_LIST_TXT="${OWN_PACKAGE_DIR}/${BASE}/am_list.txt"
+		mkdir -p "$(dirname "${AM_LIST_TXT}")"
+		echo "$(sed -e 's/\.isa$/\.hh/g' <<< "$(concat_paths "${BASE}" "${FILENAME}")"): ${INCLUDE_DEP}" >> "${AM_LIST_TXT}"
+		sort_file "${AM_LIST_TXT}"
+	fi
+}
+
+# upstream quirks for adding build dependencies (for an unresolved include dependency)
+function discover_file_build_deps_quirks_unresolved()
 {
 	local OWN_REPO_DIR="$1"
 	local OWN_PACKAGE_DIR="$2"
@@ -1435,13 +1453,14 @@ function discover_file_deps()
 				if [ "${BASE}" != "${PKG_DEP}" ] && [ "${PKG_DEP}" != '.' ]; then
 					resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${PKG_DEP}" >> "${PKG_DEPS_TXT}"
 				fi
+				discover_file_build_deps_quirks_resolved "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${BASE}" "${FILENAME}" "${INCLUDE_DEP}"
 			else
 				local UNRESOLVED_TXT="$(concat_paths "${OWN_PACKAGE_DIR}" "${BASE}")/.unresolved.txt"
 				debug "${INCLUDE_DEP} dependency is pending"
 				echo "${INCLUDE_DEP}" >> "${UNRESOLVED_TXT}"
 				sort_file "${UNRESOLVED_TXT}"
 				
-				discover_file_build_deps_quirks "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${BASE}" "${FILENAME}" "${INCLUDE_DEP}"
+				discover_file_build_deps_quirks_unresolved "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${BASE}" "${FILENAME}" "${INCLUDE_DEP}"
 			fi
 		done
 		discover_file_deps_quirks "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${FILEPATH}" "${PKG_DEPS_TXT}"
