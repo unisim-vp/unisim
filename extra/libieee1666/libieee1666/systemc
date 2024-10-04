@@ -35,6 +35,7 @@
 #ifndef __LIBIEEE1666_SYSTEMC__
 #define __LIBIEEE1666_SYSTEMC__
 
+#include <cassert>
 #include "core/attribute.h"
 #include "core/event_finder.h"
 #include "core/event.h"
