@@ -70,14 +70,25 @@ private:
 ///////////////////////////// sc_vector_iter<> ////////////////////////////////
 
 template <typename T>
-class sc_vector_iter : public std::iterator<std::random_access_iterator_tag, T>
+class sc_vector_iter
+#if __cplusplus < 201703L
+	: public std::iterator<std::random_access_iterator_tag, T>
+#endif
 {
 // Conforms to Random Access Iterator category.
 // See ISO/IEC 14882:2003(E), 24.1 [lib.iterator.requirements]
 // implementation-defined
+#if __cplusplus < 201703L
 	typedef std::iterator<std::random_access_iterator_tag, T> base_type;
 	
 	typedef typename base_type::reference reference;
+#else
+	using iterator_category = std::random_access_iterator_tag;
+	using value_type = T;
+	using difference_type = std::ptrdiff_t;
+	using pointer = T*;
+	using reference = T&;
+#endif
 	
 	sc_vector_iter& operator ++ () { ++obj_iter; return *this; }
 	sc_vector_iter& operator ++ (int)  { sc_vector_iter prev(*this); ++obj_iter; return prev; };

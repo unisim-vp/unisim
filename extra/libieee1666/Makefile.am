@@ -343,5 +343,6 @@ install-data-hook:
 	(test -e $(includedir)/channels || (cd $(includedir) && $(LN_S) libieee1666/channels channels))
 	(test -e $(includedir)/data_types || (cd $(includedir) && $(LN_S) libieee1666/data_types data_types))
 	(test -e $(includedir)/utilities || (cd $(includedir) && $(LN_S) libieee1666/utilities utilities))
+	(test -e $(includedir)/tlm1 || (cd $(includedir) && $(LN_S) libieee1666/tlm1 tlm1))
 	(test -e $(includedir)/tlm2 || (cd $(includedir) && $(LN_S) libieee1666/tlm2 tlm2))
 endif
