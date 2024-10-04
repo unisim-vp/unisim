@@ -32,12 +32,21 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include "types.hh"
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_DBA_ARCH64_ARCH_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_DBA_ARCH64_ARCH_HH__
+
+#include <unisim/component/cxx/processor/powerpc/dba/types.hh>
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <inttypes.h>
 
-namespace ppc64 {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+namespace dba {
+namespace arch64 {
 
   struct Path
   {
@@ -473,22 +482,12 @@ namespace ppc64 {
     std::set<Expr>   stores;
   };
 
-  typedef Arch CPU;
-  typedef Arch CONFIG;
+} /* end of namespace arch64 */
+} /* end of namespace dba */
+} /* end of namespace powerpc */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
 
-  typedef Arch::CTR CTR;
-  typedef Arch::CR CR;
-  typedef Arch::XER XER;
-  typedef Arch::FPSCR FPSCR;
-
-  inline U64 UnsignedMultiplyHigh( U64 lop, U64 rop ) { throw 0; return U64(); }
-  inline S64 SignedMultiplyHigh( S64 lop, S64 rop ) { throw 0; return S64(); }
-  inline U64 RotL32( U64 const& src, U8 const& sh ) {
-    U32 val = U32(src);
-    val = (val << (U32(31) & U32(sh)))
-        | (val >> (U32(31) & (U32(32) - U32(sh))));;
-    return U64(val << U32(32)) | U64(val);
-  }
-
-} // end of namespace ppc64
-
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_DBA_ARCH64_ARCH_HH__

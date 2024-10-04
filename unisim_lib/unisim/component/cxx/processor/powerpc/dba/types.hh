@@ -32,19 +32,19 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef PPC64DBA_TYPES_HH
-#define PPC64DBA_TYPES_HH
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_DBA_ARCH64_TYPES_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_DBA_ARCH64_TYPES_HH__
 
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
-// #include <ppc64dec.hh>
-// #include <iostream>
-// #include <iomanip>
-// #include <cstdlib>
-// #include <set>
 #include <inttypes.h>
 
-namespace ppc64 {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+namespace dba {
 
   typedef unisim::util::symbolic::SmartValue<double>   F32;
   typedef unisim::util::symbolic::SmartValue<float>    F64;
@@ -229,6 +229,11 @@ namespace ppc64 {
   template <typename T> void GenFPSCR_VX(U64& r) { r.expr = unisim::util::symbolic::make_opaque_operation(/*GenFPSCR_VX*/uint64_t(),r.expr); }
   template <typename T> void GenFPSCR_FEX(U64& r) { r.expr = unisim::util::symbolic::make_opaque_operation(/*GenFPSCR_FEX*/uint64_t(),r.expr); }
 
-} // end of namespace ppc64
+} /* end of namespace dba */
+} /* end of namespace powerpc */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
 
 #endif // PPC64DBA_TYPES_HH

@@ -32,20 +32,26 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include "decoder.hh"
-#include "arch.hh"
-#include "ppc64dec.hh"
+#include <unisim/component/cxx/processor/powerpc/dba/arch64/decoder.hh>
+#include <unisim/component/cxx/processor/powerpc/dba/arch64/arch.hh>
+#include <unisim/component/cxx/processor/powerpc/dba/ppc64/ppc64.hh>
 
 #include <unisim/util/symbolic/binsec/binsec.hh>
 
-namespace ppc64 {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+namespace dba {
+namespace arch64 {
 
 struct TBD {};
 
 struct Translator
 {
-  typedef isa::Decoder Decoder;
-  typedef isa::Operation Operation;
+  typedef ppc64::Decoder Decoder;
+  typedef ppc64::Operation Operation;
 
   typedef unisim::util::symbolic::binsec::ActionNode ActionNode;
 
@@ -135,4 +141,11 @@ Decoder::process( std::ostream& sink, uint64_t addr, uint32_t code )
   translator.translate( sink );
 }
 
-}
+} /* end of namespace arch64 */
+} /* end of namespace dba */
+} /* end of namespace powerpc */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
+

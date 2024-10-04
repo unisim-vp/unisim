@@ -32,11 +32,17 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include "arch.hh"
+#include <unisim/component/cxx/processor/powerpc/dba/arch64/arch.hh>
 #include <iostream>
 #include <iomanip>
 
-namespace ppc64 {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+namespace dba {
+namespace arch64 {
 
   Arch::Arch( U64 const& insn_addr, Path& _path )
     : path(_path)
@@ -161,8 +167,16 @@ namespace ppc64 {
     sink << c_str();
   }
 
-  void ppc64::Arch::FPSCR::ID::Repr(std::ostream& sink) const { sink << "fpscr"; }
-  void ppc64::Arch::XER::ID::Repr(std::ostream& sink) const { sink << "xer"; }
-  void ppc64::Arch::CR::ID::Repr(std::ostream& sink) const { sink << "cr"; }
-} // end of namespace ppc64
+  void Arch::FPSCR::ID::Repr(std::ostream& sink) const { sink << "fpscr"; }
+  void Arch::XER::ID::Repr(std::ostream& sink) const { sink << "xer"; }
+  void Arch::CR::ID::Repr(std::ostream& sink) const { sink << "cr"; }
+
+} /* end of namespace arch64 */
+} /* end of namespace dba */
+} /* end of namespace powerpc */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
+
 

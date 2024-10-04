@@ -32,18 +32,31 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __PPC64_DECODER_HH__
-#define __PPC64_DECODER_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_DBA_ARCH64_DECODER_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_DBA_ARCH64_DECODER_HH__
 
 #include <iosfwd>
 #include <inttypes.h>
 
-namespace ppc64 {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+namespace dba {
+namespace arch64 {
   
   struct Decoder
   {
     void process( std::ostream& sink, uint64_t addr, uint32_t code );
   };
-}
 
-#endif /* __PPC64_DECODER_HH__ */
+} /* end of namespace arch64 */
+} /* end of namespace dba */
+} /* end of namespace powerpc */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
+
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_DBA_ARCH64_DECODER_HH__

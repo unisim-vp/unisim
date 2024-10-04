@@ -1,0 +1,11 @@
+libc/inttypes
+std/iosfwd
+std/iostream
+unisim/component/cxx/processor/powerpc/dba/arch64
+unisim/component/cxx/processor/powerpc/isa
+unisim/component/cxx/processor/powerpc/isa/book_i/branch
+unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point
+unisim/component/cxx/processor/powerpc/isa/book_i/floating_point
+unisim/component/cxx/processor/powerpc/isa/book_iii_e
+unisim/util/likely

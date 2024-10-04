@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2018-2023,
+ *  Copyright (c) 2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-namespace ppc64::isa
+namespace unisim::component::cxx::processor::powerpc::dba::ppc64
 set endianness big
 set addressclass {uint64_t}
 set codetype scalar;
@@ -41,32 +41,49 @@ decl {
 #include <iosfwd>
 #include <inttypes.h>
 
-namespace ppc64 { struct Arch; }
+namespace unisim::component::cxx::processor::powerpc::dba::arch64 { struct Arch; }
 
 }
 
 impl {
-#include <arch.hh>
+#include <unisim/component/cxx/processor/powerpc/dba/arch64/arch.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
   //#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
 
-  //namespace ppc64
-  //{
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+namespace dba {
+namespace ppc64 {
+
   typedef unisim::component::cxx::processor::powerpc::CondPrint CondPrint;
   typedef unisim::component::cxx::processor::powerpc::GPRPrint GPRPrint;
   typedef unisim::component::cxx::processor::powerpc::FPRPrint FPRPrint;
   typedef unisim::component::cxx::processor::powerpc::CRPrint CRPrint;
   typedef unisim::component::cxx::processor::powerpc::EAPrint EAPrint;
   using unisim::component::cxx::processor::powerpc::Mask64;
-  typedef ppc64::U64 LR;
+  typedef U64 LR;
+  typedef arch64::Arch CPU;
+  typedef arch64::Arch CONFIG;
+  typedef arch64::Arch::CTR CTR;
+  typedef arch64::Arch::CR CR;
+  typedef arch64::Arch::XER XER;
+  typedef arch64::Arch::FPSCR FPSCR;
 
-namespace ppc64
-{
-}
-  
+  inline U64 UnsignedMultiplyHigh( U64 lop, U64 rop ) { throw 0; return U64(); }
+  inline S64 SignedMultiplyHigh( S64 lop, S64 rop ) { throw 0; return S64(); }
+  inline U64 RotL32( U64 const& src, U8 const& sh ) {
+    U32 val = U32(src);
+    val = (val << (U32(31) & U32(sh)))
+        | (val >> (U32(31) & (U32(32) - U32(sh))));;
+    return U64(val << U32(32)) | U64(val);
+  }
+
   // using ut::GenSPEFSCR_FOVF;
   // using ut::GenSPEFSCR_FUNF;
   // using ut::GenSPEFSCR_FINXS;
@@ -75,7 +92,15 @@ namespace ppc64
   // using ut::GenSPEFSCR_FX;
   // using ut::DoesSPEFSCR_TriggerException;
   // using ut::GenSPEFSCR_FG;
- 
+
+} /* end of namespace arch64 */
+} /* end of namespace dba */
+} /* end of namespace powerpc */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
+
 #if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
 #if defined(likely)
 #undef likely
@@ -85,18 +110,18 @@ namespace ppc64
 #undef unlikely
 #endif
 
-#define likely(x)       __builtin_expect(Path::Test(x),1)
-#define evenly(x)       (Path::Test(x))
-#define unlikely(x)     __builtin_expect(Path::Test(x),0)
+#define likely(x)       __builtin_expect(arch64::Path::Test(x),1)
+#define evenly(x)       (arch64::Path::Test(x))
+#define unlikely(x)     __builtin_expect(arch64::Path::Test(x),0)
 #else
-#define likely(x)       (Path::Test(x))
-#define evenly(x)       (Path::Test(x))
-#define unlikely(x)     (Path::Test(x))
+#define likely(x)       (arch64::Path::Test(x))
+#define evenly(x)       (arch64::Path::Test(x))
+#define unlikely(x)     (arch64::Path::Test(x))
 #endif
 
 }
 
-action {bool} execute({Arch*} {cpu}) {
+action {bool} execute({arch64::Arch*} {cpu}) {
   throw 0;//ut::Untestable("not implemented");
   return false;
 };
