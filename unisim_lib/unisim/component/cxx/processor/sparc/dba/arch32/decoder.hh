@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2022,
+ *  Copyright (c) 2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,18 +32,31 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __SPARC_DECODER_HH__
-#define __SPARC_DECODER_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_SPARC_DBA_ARCH32_DECODER_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_SPARC_DBA_ARCH32_DECODER_HH__
 
 #include <iosfwd>
 #include <inttypes.h>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
 namespace sparc {
+namespace dba {
+namespace arch32 {
   
   struct Decoder
   {
     void process( std::ostream& sink, uint32_t addr, uint32_t code0, uint32_t code1 );
   };
-}
 
-#endif /* __SPARC_DECODER_HH__ */
+} /* end of namespace arch32 */
+} /* end of namespace dba */
+} /* end of namespace sparc */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
+
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_SPARC_DBA_ARCH32_DECODER_HH__

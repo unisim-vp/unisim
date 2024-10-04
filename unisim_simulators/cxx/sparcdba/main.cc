@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <decoder.hh>
+#include <unisim/component/cxx/processor/sparc/dba/arch32/decoder.hh>
 #include <iostream>
 #include <cstdlib>
 #include <inttypes.h>
@@ -72,7 +72,7 @@ main( int argc, char** argv )
       return 1;
     }
 
-  sparc::Decoder decoder;
+  unisim::component::cxx::processor::sparc::dba::arch32::Decoder decoder;
 
   decoder.process( std::cout, addr, code0, code1 );
 

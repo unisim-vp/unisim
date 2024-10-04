@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2023,
+ *  Copyright (c) 2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,20 +32,26 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include "decoder.hh"
+#include <unisim/component/cxx/processor/sparc/dba/arch32/decoder.hh>
 
 #include <unisim/component/cxx/processor/sparc/asi.hh>
 #include <unisim/component/cxx/processor/sparc/trap.hh>
 #include <unisim/component/cxx/processor/sparc/isa/sv8/arch.hh>
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
-#include <sparc.tcc>
+#include <unisim/component/cxx/processor/sparc/dba/sv8/sparc.tcc>
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
 #include <set>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
 namespace sparc {
+namespace dba {
+namespace arch32 {
 
 struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Arch<Processor>
 {
@@ -70,7 +76,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   typedef unisim::util::symbolic::ValueType            ValueType;
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
 
-  typedef unisim::component::cxx::processor::sparc::isa::sv8::Operation<Processor> Operation;
+  typedef unisim::component::cxx::processor::sparc::dba::sv8::Operation<Processor> Operation;
   typedef unisim::component::cxx::processor::sparc::ASI ASI;
   typedef unisim::component::cxx::processor::sparc::Trap_t::TrapType_t TrapType_t;
 
@@ -369,8 +375,8 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
 
 struct Translator
 {
-  typedef unisim::component::cxx::processor::sparc::isa::sv8::Decoder<Processor> Decoder;
-  typedef unisim::component::cxx::processor::sparc::isa::sv8::Operation<Processor> Operation;
+  typedef unisim::component::cxx::processor::sparc::dba::sv8::Decoder<Processor> Decoder;
+  typedef unisim::component::cxx::processor::sparc::dba::sv8::Operation<Processor> Operation;
 
   typedef unisim::util::symbolic::binsec::ActionNode ActionNode;
 
@@ -516,4 +522,11 @@ Decoder::process( std::ostream& sink, uint32_t addr, uint32_t code0, uint32_t co
   translator.translate( sink );
 }
 
-}
+} /* end of namespace arch32 */
+} /* end of namespace dba */
+} /* end of namespace sparc */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
+

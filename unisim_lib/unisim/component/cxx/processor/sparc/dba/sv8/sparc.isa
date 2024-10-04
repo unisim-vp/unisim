@@ -38,7 +38,7 @@
 
 **********************************************/
 
-namespace unisim::component::cxx::processor::sparc::isa::sv8
+namespace unisim::component::cxx::processor::sparc::dba::sv8
 set endianness big;
 set addressclass {uint32_t};
 set fields_order descending;
@@ -56,6 +56,8 @@ impl {
 #include <unisim/component/cxx/processor/sparc/trap.hh>
 #include <iostream>
 
+using namespace unisim::component::cxx::processor::sparc::isa::sv8;
+  
 } // end of impl
 
 action {void} execute({ARCH&} {cpu}) const {
