@@ -1008,7 +1008,7 @@ function discover_file_deps_quirks()
 		resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" 'm4/float16' >> "${PKG_DEPS_TXT}"
 	fi
 	
-	# realpath
+	# shared memory
 	if grep -qs "shmget(" "${FILEPATH}" ||
 	   grep -qs "shmctl(" "${FILEPATH}" ||
 	   grep -qs "shmat(" "${FILEPATH}"; then
@@ -1884,9 +1884,9 @@ function import()
 						FROM_REPO_NAME="${REPO_NAME}"
 						DEP_PKG="${DEP_PKG_LINE}"
 					fi
-					debug "In \"${REPO_NAME}\", Package \"${PKG}\" requires Packages \"${DEP_PKG}\" from Repository \"${FROM_REPO_NAME}\""
+					debug "In \"${REPO_NAME}\", Package \"${PKG}\" requires Package \"${DEP_PKG}\" from Repository \"${FROM_REPO_NAME}\""
 					if ! import "${FROM_REPO_NAME}" "${DEP_PKG}"; then
-						error "Missing dependency: In \"${REPO_NAME}\", Package \"${PKG}\" requires Packages \"${DEP_PKG}\" from Repository \"${FROM_REPO_NAME}\""
+						error "Missing dependency: In \"${REPO_NAME}\", Package \"${PKG}\" requires Package \"${DEP_PKG}\" from Repository \"${FROM_REPO_NAME}\""
 						unset PACKAGE_IMPORTED["${PACKAGE_DIR}/${PKG}"]
 						return 1
 					fi
@@ -1899,7 +1899,11 @@ function import()
 		return 0
 	fi
 
-	die "in \"${REPO_NAME}\", Package \"${PKG}\" is missing"
+	if [ -n "${PROJECT_DISTRIB_FILE+x}" ]; then
+		die "Missing dependency: Project distribution file \"${PROJECT_DISTRIB_FILE}\" requires Package \"${PKG}\" from Repository \"${REPO_NAME}\""
+	else
+		die "Missing dependency: Package \"${PKG}\" from Repository \"${REPO_NAME}\""
+	fi
 	return 1
 }
 
@@ -2436,6 +2440,7 @@ function shell()
 {
 	unset DIST_DIR
 	
+	unset PROJECT_DISTRIB_FILE
 	unset PROJECT_NAME
 	unset PROJECT_VERSION
 	unset PROJECT_FULL_NAME
