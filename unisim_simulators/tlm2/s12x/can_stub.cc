@@ -463,7 +463,7 @@ void CAN_STUB::parseRow (xmlDocPtr doc, xmlNodePtr cur, CAN_DATATYPE &data) {
 //	vector<xmlNodePtr> rowCells;
 //
 //	if ((xmlStrcmp(cur->name, (const xmlChar *)"Row"))) {
-//		cerr << "Error: Can't parse " << cur->name << endl;
+//		std::cerr << "Error: Can't parse " << cur->name << std::endl;
 //		return;
 //	}
 //
@@ -476,7 +476,7 @@ void CAN_STUB::parseRow (xmlDocPtr doc, xmlNodePtr cur, CAN_DATATYPE &data) {
 //	}
 //
 //	if ((rowCells.size() < 2) || (rowCells.size() > (SIZE+1))) {
-//		cerr << "Error: Wrong row size. The minimum is 2 and the maximum is " << std::dec << (SIZE+1) << " cells by row." << endl;
+//		std::cerr << "Error: Wrong row size. The minimum is 2 and the maximum is " << std::dec << (SIZE+1) << " cells by row." << std::endl;
 //		return;
 //	}
 //
@@ -521,12 +521,12 @@ int CAN_STUB::LoadXmlData(const char *filename, std::vector<CAN_DATATYPE* > &vec
 //	xmlXPathObjectPtr xmlobject;
 //	int result = 0;
 //
-//	cout << sc_object::name() << " Parsing " << filename << endl;
+//	std::cerr << sc_object::name() << " Parsing " << filename << std::endl;
 //
 //	doc = xmlParseFile (GetSimulator()->SearchSharedDataFile(filename).c_str());
 //	if (!doc)
 //	{
-//		cerr << __FILE__ << ":" << __LINE__ << " Could not parse the document" << endl;
+//		std::cerr << __FILE__ << ":" << __LINE__ << " Could not parse the document" << std::endl;
 //		return (0);
 //	}
 //

@@ -143,11 +143,11 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> & kernel, std::ostream & os)
 {
 	Load(kernel);
 	typename CONFIG::address_t pc = CONFIG::CODE_START;
-	os << "Dumping code from " << kernel.Name() << " @" << std::hex << pc << endl;
+	os << "Dumping code from " << kernel.Name() << " @" << std::hex << pc << std::endl;
 	while(pc < CONFIG::CODE_START + kernel.CodeSize())
 	{
 		string s = cores[0]->Disasm(pc, pc);
-		os << s << endl;
+		os << s << std::endl;
 	}
 }
 
@@ -186,21 +186,21 @@ template<class CONFIG>
 typename CONFIG::address_t Device<CONFIG>::MAlloc(size_t size)
 {
 	typename CONFIG::address_t addr = global_allocator.Alloc(size);
-	cerr << "Device malloc: " << size << "B @" << hex << addr << dec << endl;
+	std::cerr << "Device malloc: " << size << "B @" << hex << addr << dec << std::endl;
 	return addr;
 }
 
 template<class CONFIG>
 void Device<CONFIG>::Free(typename CONFIG::address_t addr)
 {
-	cerr << "Device free: @" << hex << addr << dec << endl;
+	std::cerr << "Device free: @" << hex << addr << dec << std::endl;
 	global_allocator.Free(addr);
 }
 
 template<class CONFIG>
 void Device<CONFIG>::CopyHtoD(typename CONFIG::address_t dest, void const * src, size_t size)
 {
-	cerr << "Device copy " << size << "B to @" << hex << dest << dec << endl;
+	std::cerr << "Device copy " << size << "B to @" << hex << dest << dec << std::endl;
 	if(!memory->WriteMemory(dest, src, size)) {
 		throw CudaException(CUDA_ERROR_INVALID_VALUE);
 	}
@@ -209,7 +209,7 @@ void Device<CONFIG>::CopyHtoD(typename CONFIG::address_t dest, void const * src,
 template<class CONFIG>
 void Device<CONFIG>::CopyDtoH(void * dest, typename CONFIG::address_t src, size_t size)
 {
-	cerr << "Device copy " << size << "B from @" << hex << src << dec << endl;
+	std::cerr << "Device copy " << size << "B from @" << hex << src << dec << std::endl;
 	if(!memory->ReadMemory(src, dest, size)) {
 		throw CudaException(CUDA_ERROR_INVALID_VALUE);
 	}
@@ -218,7 +218,7 @@ void Device<CONFIG>::CopyDtoH(void * dest, typename CONFIG::address_t src, size_
 template<class CONFIG>
 void Device<CONFIG>::CopyDtoD(typename CONFIG::address_t dest, typename CONFIG::address_t src, size_t size)
 {
-	cerr << "Device copy " << size << "B from @" << hex << src << " to @" << dest << dec << endl;
+	std::cerr << "Device copy " << size << "B from @" << hex << src << " to @" << dest << dec << std::endl;
 	std::vector<uint8_t> buffer(size);
 	if(!memory->ReadMemory(src, &buffer[0], size)) {
 		throw CudaException(CUDA_ERROR_INVALID_VALUE);
@@ -231,7 +231,7 @@ void Device<CONFIG>::CopyDtoD(typename CONFIG::address_t dest, typename CONFIG::
 template<class CONFIG>
 void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint32_t val, size_t n)
 {
-	cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << endl;
+	std::cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << std::endl;
 	for(unsigned int i = 0; i != n; ++i)
 	{
 		if(!memory->WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
@@ -243,7 +243,7 @@ void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint32_t val, size_
 template<class CONFIG>
 void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint16_t val, size_t n)
 {
-	cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << endl;
+	std::cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << std::endl;
 	for(unsigned int i = 0; i != n; ++i)
 	{
 		if(!memory->WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
@@ -255,7 +255,7 @@ void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint16_t val, size_
 template<class CONFIG>
 void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint8_t val, size_t n)
 {
-	cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << endl;
+	std::cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << std::endl;
 	for(unsigned int i = 0; i != n; ++i)
 	{
 		if(!memory->WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
@@ -279,7 +279,7 @@ std::string Device<CONFIG>::Name()
 template<class CONFIG>
 unsigned int Device<CONFIG>::TotalMem()
 {
-	cerr << "TotalMem: " << CONFIG::GLOBAL_SIZE << endl;
+	std::cerr << "TotalMem: " << CONFIG::GLOBAL_SIZE << std::endl;
 	return CONFIG::GLOBAL_SIZE;
 }
 

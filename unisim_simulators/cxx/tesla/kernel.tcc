@@ -74,7 +74,7 @@ Kernel<CONFIG>::Kernel(Module<CONFIG> * module, std::istream & is) :
 {
 	std::fill(samplers, samplers + CONFIG::MAX_SAMPLERS, (::Sampler<CONFIG>*)0);
 	if(trace_parsing)
-		cerr << " Kernel segment\n";
+		std::cerr << " Kernel segment\n";
 	typedef string::iterator it_t;
 	while(true)
 	{
@@ -100,25 +100,25 @@ Kernel<CONFIG>::Kernel(Module<CONFIG> * module, std::istream & is) :
 					if(cmd == "bincode")
 					{
 						if(trace_parsing)
-							cerr << "  bincode {...}\n";
+							std::cerr << "  bincode {...}\n";
 						ParseBinCode(bincode, is);
 					}
 					else if(cmd == "const")
 					{
 						if(trace_parsing)
-							cerr << "  const {...}\n";
+							std::cerr << "  const {...}\n";
 						const_segs.push_back(MemSegment<CONFIG>(is, SegmentConst));
 					}
 					else if(cmd == "constrelocs")
 					{
-						cerr << " Warning: ignored constrelocs\n";
+						std::cerr << " Warning: ignored constrelocs\n";
 						while(find(line.begin(), line.end(), '}') == line.end()) {
 							getline(is, line);
 						}
 					}
 					else if(cmd == "shared")
 					{
-						cerr << " Warning: ignored shared\n";
+						std::cerr << " Warning: ignored shared\n";
 						while(find(line.begin(), line.end(), '}') == line.end()) {
 							getline(is, line);
 						}
@@ -126,7 +126,7 @@ Kernel<CONFIG>::Kernel(Module<CONFIG> * module, std::istream & is) :
 					}
 					else if(cmd == "local")
 					{
-						cerr << " Warning: ignored local\n";
+						std::cerr << " Warning: ignored local\n";
 						while(find(line.begin(), line.end(), '}') == line.end()) {
 							getline(is, line);
 						}
@@ -180,9 +180,9 @@ void Kernel<CONFIG>::Load(Service<unisim::service::interfaces::Memory<typename C
 	module->Load(mem, allocator);
 	
 	if(trace_loading)
-		cerr << "Loading " << CodeSize() << "B code @" << std::hex << CONFIG::CODE_START + offset << std::dec << std::endl;
+		std::cerr << "Loading " << CodeSize() << "B code @" << std::hex << CONFIG::CODE_START + offset << std::dec << std::endl;
 	if(!mem.WriteMemory(CONFIG::CODE_START + offset, &bincode[0], CodeSize())) {
-		cerr << "Kernel::Load : Cannot write memory??\n";
+		std::cerr << "Kernel::Load : Cannot write memory??\n";
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);	// Generic memory error
 	}
 	for(typename ConstList::iterator it = const_segs.begin();
@@ -197,7 +197,7 @@ void Kernel<CONFIG>::Load(Service<unisim::service::interfaces::Memory<typename C
 template<class CONFIG>
 void Kernel<CONFIG>::SetAttribute(std::string const & attrname, std::string const & value)
 {
-	cerr << "  " << attrname << " = " << value << endl;
+	std::cerr << "  " << attrname << " = " << value << std::endl;
 	if(attrname == "name")
 	{
 		name = value;
@@ -330,21 +330,21 @@ int Kernel<CONFIG>::GridY() const
 template<class CONFIG>
 void Kernel<CONFIG>::ParamSeti(int offset, uint32_t value)
 {
-	cerr << "ParamSeti @" << offset << " = " << value << endl; 
+	std::cerr << "ParamSeti @" << offset << " = " << value << std::endl; 
 	ParamSetv(offset, &value, sizeof(value));
 }
 
 template<class CONFIG>
 void Kernel<CONFIG>::ParamSetf(int offset, float value)
 {
-	cerr << "ParamSetf @" << offset << " = " << value << endl; 
+	std::cerr << "ParamSetf @" << offset << " = " << value << std::endl; 
 	ParamSetv(offset, &value, sizeof(value));
 }
 
 template<class CONFIG>
 void Kernel<CONFIG>::ParamSetv(int offset, void * data, int size)
 {
-	cerr << "ParamSetv @" << offset << "(" << size << ")" << endl; 
+	std::cerr << "ParamSetv @" << offset << "(" << size << ")" << std::endl; 
 	if(offset + size > int(parameters.size())) {
 		parameters.resize(offset + size);
 	}
@@ -370,7 +370,7 @@ void Kernel<CONFIG>::SetTexRef(Sampler<CONFIG> * sampler)
 {
 	assert(sampler->GetTexUnit() < CONFIG::MAX_SAMPLERS);
 	if(trace_loading)
-		cerr << " texunit = " << sampler->GetTexUnit() << endl;
+		std::cerr << " texunit = " << sampler->GetTexUnit() << std::endl;
 	samplers[sampler->GetTexUnit()] = sampler;
 }
 

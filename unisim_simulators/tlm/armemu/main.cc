@@ -97,7 +97,7 @@ void DisableDebug() {
 bool stop_program = false;
 
 void SigIntHandler(int signum) {
-	cerr << "Interrupted by Ctrl-C or SIGINT signal (" << signum << ")" << endl;
+	std::cerr << "Interrupted by Ctrl-C or SIGINT signal (" << signum << ")" << std::endl;
 //	stop_program = true;
 	sc_stop();
 }
@@ -118,39 +118,39 @@ using unisim::service::time::host_time::HostTime;
 using unisim::kernel::ServiceManager;
 
 void help(char *prog_name) {
-	cerr << "Usage: " << prog_name << " [<options>] <program> [program arguments]" << endl << endl;
-	cerr << "       'program' is an ELF32 statically linked Linux binary" << endl;
-	cerr << "Options:" << endl;
-	cerr << "--inline-debugger" << endl;
-	cerr << "-d" << endl;
-	cerr << "            starts the inline debugger" << endl;
-	cerr << "--gdb-server <TCP port>" << endl;
-	cerr << "-g <TCP port>" << endl;
-	cerr << "            starts a gdb server" << endl << endl;
-	cerr << "--gdb-server-arch-file <arch file>" << endl;
-	cerr << "-a  <arch file>" << endl;
-	cerr << "            uses <arch file> as architecture description file for GDB server" << endl << endl;
-	cerr << "-i <count>" << endl;
-	cerr << "--max:inst <count>" << endl;
-	cerr << "            execute <count> instructions then exit" << endl << endl;
-	cerr << "-z" << endl;
-	cerr << "--logger:zip" << endl;
-	cerr << "            zip log file" << endl << endl;
-	cerr << "-e" << endl;
-	cerr << "--logger:error" << endl;
-	cerr << "            pipe the log into the standard error" << endl << endl;
-	cerr << "-o" << endl;
-	cerr << "--logger:out" << endl;
-	cerr << "            pipe the log into the standard output" << endl << endl;
-	cerr << "-m" << endl;
-	cerr << "--logger:message_spy" << endl;
-	cerr << "            create message spies (requires one log to work)" << endl << endl;
-	cerr << "-l <file>" << endl;
-	cerr << "--logger:file <file>" << endl;
-	cerr << "            store log file in <file>" << endl << endl;
-	cerr << "--help" << endl;
-	cerr << "-h" << endl;
-	cerr << "            displays this help" << endl;
+	std::cerr << "Usage: " << prog_name << " [<options>] <program> [program arguments]" << std::endl << endl;
+	std::cerr << "       'program' is an ELF32 statically linked Linux binary" << std::endl;
+	std::cerr << "Options:" << std::endl;
+	std::cerr << "--inline-debugger" << std::endl;
+	std::cerr << "-d" << std::endl;
+	std::cerr << "            starts the inline debugger" << std::endl;
+	std::cerr << "--gdb-server <TCP port>" << std::endl;
+	std::cerr << "-g <TCP port>" << std::endl;
+	std::cerr << "            starts a gdb server" << std::endl << endl;
+	std::cerr << "--gdb-server-arch-file <arch file>" << std::endl;
+	std::cerr << "-a  <arch file>" << std::endl;
+	std::cerr << "            uses <arch file> as architecture description file for GDB server" << std::endl << endl;
+	std::cerr << "-i <count>" << std::endl;
+	std::cerr << "--max:inst <count>" << std::endl;
+	std::cerr << "            execute <count> instructions then exit" << std::endl << endl;
+	std::cerr << "-z" << std::endl;
+	std::cerr << "--logger:zip" << std::endl;
+	std::cerr << "            zip log file" << std::endl << endl;
+	std::cerr << "-e" << std::endl;
+	std::cerr << "--logger:error" << std::endl;
+	std::cerr << "            pipe the log into the standard error" << std::endl << endl;
+	std::cerr << "-o" << std::endl;
+	std::cerr << "--logger:out" << std::endl;
+	std::cerr << "            pipe the log into the standard output" << std::endl << endl;
+	std::cerr << "-m" << std::endl;
+	std::cerr << "--logger:message_spy" << std::endl;
+	std::cerr << "            create message spies (requires one log to work)" << std::endl << endl;
+	std::cerr << "-l <file>" << std::endl;
+	std::cerr << "--logger:file <file>" << std::endl;
+	std::cerr << "            store log file in <file>" << std::endl << endl;
+	std::cerr << "--help" << std::endl;
+	std::cerr << "-h" << std::endl;
+	std::cerr << "            displays this help" << std::endl;
 }
 
 // Front Side Bus template parameters
@@ -445,7 +445,7 @@ int main(int argc, char *argv[], char **envp) {
 	for(unsigned int i = 0; i < sim_argc; i++)
 	{
 		(*linux_loader)["argv"][i] = sim_argv[i];
-		cerr << sim_argv[i] << endl;
+		std::cerr << sim_argv[i] << std::endl;
 	}
 	(*linux_loader)["envc"] = 0;
 
@@ -484,7 +484,7 @@ int main(int argc, char *argv[], char **envp) {
 
 	if(ServiceManager::Setup())
 	{
-		cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
+		std::cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << std::endl;
 
 		double time_start = host_time->GetTime();
 
@@ -506,8 +506,8 @@ int main(int argc, char *argv[], char **envp) {
 		}
 		catch(std::runtime_error& e)
 		{
-			cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-			cerr << e.what() << endl;
+			std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+			std::cerr << e.what() << std::endl;
 		}
 
 		if(!inline_debugger || !inline_debugger->IsStarted())
@@ -515,24 +515,24 @@ int main(int argc, char *argv[], char **envp) {
 			signal(SIGINT, prev_sig_int_handler);
 		}
 
-		cerr << "Simulation finished" << endl;
-		cerr << "Simulation statistics:" << endl;
+		std::cerr << "Simulation finished" << std::endl;
+		std::cerr << "Simulation statistics:" << std::endl;
 
 		double time_stop = host_time->GetTime();
 		double spent_time = time_stop - time_start;
 
-		cerr << "simulation time: " << spent_time << " seconds" << endl;
-		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "simulated instructions : " << cpu->GetInstructionCounter() << " instructions" << endl;
-		cerr << "host simulation speed: " << ((double) cpu->GetInstructionCounter() / spent_time / 1000000.0) << " MIPS" << endl;
-		cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+		std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
+		std::cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
+		std::cerr << "simulated instructions : " << cpu->GetInstructionCounter() << " instructions" << std::endl;
+		std::cerr << "host simulation speed: " << ((double) cpu->GetInstructionCounter() / spent_time / 1000000.0) << " MIPS" << std::endl;
+		std::cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 	}
 	else
 	{
-		cerr << "Can't start simulation because of previous errors" << endl;
+		std::cerr << "Can't start simulation because of previous errors" << std::endl;
 	}
 
-//	cerr << "Profile" << endl;
+// std::cerr << "Profile" << std::endl;
 //	class item {
 //		uint64_t opcode;
 //		uint32_t profile;
@@ -564,7 +564,7 @@ int main(int argc, char *argv[], char **envp) {
 //	for(vector<uint64_t>::iterator oit = opcode.begin();
 //		oit != opcode.end();
 //		oit++, cit++) {
-//		cerr << "0x" << hex << (*oit) << dec << "\t " << (*cit) << endl;
+//		std::cerr << "0x" << hex << (*oit) << dec << "\t " << (*cit) << std::endl;
 //		index++;
 //	}
 	

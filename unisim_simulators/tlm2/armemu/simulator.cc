@@ -245,17 +245,17 @@ Simulator::Run()
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
-  std::cerr << "Simulation run-time parameters:" << endl;
+  std::cerr << "Simulation run-time parameters:" << std::endl;
   DumpParameters(cerr);
-  std::cerr << endl;
-  std::cerr << "Simulation statistics:" << endl;
+  std::cerr << std::endl;
+  std::cerr << "Simulation statistics:" << std::endl;
   DumpStatistics(cerr);
-  std::cerr << endl;
+  std::cerr << std::endl;
 
-  std::cerr << "simulation time: " << simulation_spent_time << " seconds" << endl;
-  std::cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << endl;
-  std::cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-  std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+  std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
+  std::cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
+  std::cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
+  std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 
   if (profiler)
   {

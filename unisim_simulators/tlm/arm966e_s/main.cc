@@ -83,7 +83,7 @@ void DisableDebug() {
 }
 
 void SigIntHandler(int signum) {
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
 	sc_stop();
 }
 
@@ -101,35 +101,35 @@ using unisim::kernel::ServiceManager;
 using unisim::kernel::VariableBase;
 
 void help(char *prog_name) {
-	cerr << "Usage: " << prog_name << " [<options>] <binary to simulate>" << endl << endl;
-	cerr << "Options:" << endl;
-	cerr << " --help" << endl;
-	cerr << " -h" << endl;
-	cerr << "            displays this help" << endl << endl;
-	cerr << " --get-variables <xml file>" << endl;
-	cerr << " -v <xml file>" << endl;
-	cerr << "            get the simulation default configuration variables on a xml file" << endl << endl;
-	cerr << " --config <xml file>" << endl;
-	cerr << " -c <xml file>" << endl;
-	cerr << "            configures the simulator with the given xml configuration file" << endl << endl;
-	cerr << " --get-config <xml file>" << endl;
-	cerr << " -g <xml file>" << endl;
-	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl << endl;
-	cerr << " --logger" << endl;
-	cerr << " -l" << endl;
-	cerr << "            activate the logger" << endl << endl;
-	cerr << " --xml-gdb <file>" << endl;
-	cerr << " -x <file>" << endl;
-	cerr << "            processor xml description file for gdb" << endl << endl;
-	cerr << " --gdb-server <port_number>" << endl;
-	cerr << " -d <port_number>" << endl;
-	cerr << "            activate the gdb server and use the given port" << endl << endl;
-	cerr << " --inline-debugger" << endl;
-	cerr << " -i" << endl;
-	cerr << "            activate the inline debugger (only active if logger option used)" << endl << endl;
-	cerr << " --message-spy" << endl;
-	cerr << " -m" << endl;
-	cerr << "            activate message spies" << endl << endl;
+	std::cerr << "Usage: " << prog_name << " [<options>] <binary to simulate>" << std::endl << endl;
+	std::cerr << "Options:" << std::endl;
+	std::cerr << " --help" << std::endl;
+	std::cerr << " -h" << std::endl;
+	std::cerr << "            displays this help" << std::endl << endl;
+	std::cerr << " --get-variables <xml file>" << std::endl;
+	std::cerr << " -v <xml file>" << std::endl;
+	std::cerr << "            get the simulation default configuration variables on a xml file" << std::endl << endl;
+	std::cerr << " --config <xml file>" << std::endl;
+	std::cerr << " -c <xml file>" << std::endl;
+	std::cerr << "            configures the simulator with the given xml configuration file" << std::endl << endl;
+	std::cerr << " --get-config <xml file>" << std::endl;
+	std::cerr << " -g <xml file>" << std::endl;
+	std::cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << std::endl << endl;
+	std::cerr << " --logger" << std::endl;
+	std::cerr << " -l" << std::endl;
+	std::cerr << "            activate the logger" << std::endl << endl;
+	std::cerr << " --xml-gdb <file>" << std::endl;
+	std::cerr << " -x <file>" << std::endl;
+	std::cerr << "            processor xml description file for gdb" << std::endl << endl;
+	std::cerr << " --gdb-server <port_number>" << std::endl;
+	std::cerr << " -d <port_number>" << std::endl;
+	std::cerr << "            activate the gdb server and use the given port" << std::endl << endl;
+	std::cerr << " --inline-debugger" << std::endl;
+	std::cerr << " -i" << std::endl;
+	std::cerr << "            activate the inline debugger (only active if logger option used)" << std::endl << endl;
+	std::cerr << " --message-spy" << std::endl;
+	std::cerr << " -m" << std::endl;
+	std::cerr << "            activate message spies" << std::endl << endl;
 }
 
 // Front Side Bus template parameters
@@ -154,7 +154,7 @@ int main(int argc, char *argv[], char **envp) {
 	WSADATA wsaData;
 	if(WSAStartup(wVersionRequested, &wsaData) != 0)
 	{
-		cerr << "WSAStartup failed" << endl;
+		std::cerr << "WSAStartup failed" << std::endl;
 		return -1;
 	}
 #endif
@@ -355,24 +355,24 @@ int main(int argc, char *argv[], char **envp) {
 
 	ServiceManager::LoadXmlParameters(set_config_name);
 	if(use_gdb_server) {
-		cerr << "gdb_server_port = " << gdb_server_port << endl;
+		std::cerr << "gdb_server_port = " << gdb_server_port << std::endl;
 		VariableBase *var =	ServiceManager::GetParameter("gdb-server.tcp-port");
 		*var = gdb_server_port;
 		if(gdb_xml != 0) {
-			cerr << "gdb_xml = " << gdb_xml << endl;
+			std::cerr << "gdb_xml = " << gdb_xml << std::endl;
 			var = ServiceManager::GetParameter("gdb-server.architecture-description-filename");
 			*var = gdb_xml;
 		}
 	}
 	{
-		cerr << "filename = " << filename << endl;
+		std::cerr << "filename = " << filename << std::endl;
 		VariableBase *var = ServiceManager::GetParameter("elf32-loader.filename");
 		*var = filename;
 	}
 	
 	if(ServiceManager::Setup())
 	{
-		cerr << "Starting simulation at system privilege level" << endl;
+		std::cerr << "Starting simulation at system privilege level" << std::endl;
 
 		double time_start = host_time->GetTime();
 
@@ -388,28 +388,28 @@ int main(int argc, char *argv[], char **envp) {
 		}
 		catch(std::runtime_error& e)
 		{
-			cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-			cerr << e.what() << endl;
+			std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+			std::cerr << e.what() << std::endl;
 		}
 
 		if(!use_inline_debugger)
 			signal(SIGINT, prev_sig_int_handler);
 
-		cerr << "Simulation finished" << endl;
-		cerr << "Simulation statistics:" << endl;
+		std::cerr << "Simulation finished" << std::endl;
+		std::cerr << "Simulation statistics:" << std::endl;
 
 		double time_stop = host_time->GetTime();
 		double spent_time = time_stop - time_start;
 
-		cerr << "simulation time: " << spent_time << " seconds" << endl;
-		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "simulated instructions : " << cpu->GetInstructionCounter() << " instructions" << endl;
-		cerr << "host simulation speed: " << ((double) cpu->GetInstructionCounter() / spent_time / 1000000.0) << " MIPS" << endl;
-		cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+		std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
+		std::cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
+		std::cerr << "simulated instructions : " << cpu->GetInstructionCounter() << " instructions" << std::endl;
+		std::cerr << "host simulation speed: " << ((double) cpu->GetInstructionCounter() / spent_time / 1000000.0) << " MIPS" << std::endl;
+		std::cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 	}
 	else
 	{
-		cerr << "Can't start simulation because of previous errors" << endl;
+		std::cerr << "Can't start simulation because of previous errors" << std::endl;
 	}
 
 

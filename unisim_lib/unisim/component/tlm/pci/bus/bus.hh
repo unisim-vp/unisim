@@ -451,10 +451,8 @@ public:
       		device_request->device = device;
 
 			if(device_request_list.empty()) {
-				sc_core::sc_time delay;
-				sc_dt::uint64 ui_delay = sc_core::sc_time_stamp().value();
-				ui_delay = ui_delay % cycle_time.value();
-				delay = sc_core::sc_time(ui_delay, false);
+				sc_core::sc_time delay(sc_core::sc_time_stamp());
+				delay %= cycle_time;
 	   			device_dispatch_event.notify(delay);
 				//std::cerr << "Send: delay= " << delay << ")" << endl;
 			}
@@ -533,9 +531,8 @@ public:
 	 				logger << DebugInfo
 	 					<< "notifying response received from device: " << device << std::endl
 	 					<< EndDebugInfo;
-				sc_dt::uint64 ui_delay = sc_core::sc_time_stamp().value();
-				ui_delay = ui_delay % cycle_time.value();
-				delay = sc_core::sc_time(ui_delay, false);
+				delay = sc_core::sc_time_stamp();
+				delay %= cycle_time;
 	 			message->GetResponseEvent()->notify(delay);
 	 			delay += cycle_time;
       		} else {

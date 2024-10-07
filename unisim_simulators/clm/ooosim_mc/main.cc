@@ -109,7 +109,7 @@ int main(int argc, char **argv, char **envp)
 
   if(kernel_mode)
     {
-      cerr << "<<< Error: kernel mode is no more supported, until it will be implement by none TLM modules. >>>" << endl;
+      std::cerr << "<<< Error: kernel mode is no more supported, until it will be implement by none TLM modules. >>>" << std::endl;
       //      help(argv[0]);
       return 0;
     }
@@ -158,7 +158,7 @@ int main(int argc, char **argv, char **envp)
     if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
       if (command_line["display-signals"])
-      { cerr << "---------------------------- DISPLAY 1 -----------------------------------" << endl;
+      { std::cerr << "---------------------------- DISPLAY 1 -----------------------------------" << std::endl;
 	unisim_port::check_signals(s.stream_knowness(),s._unknown_fatal);
       }
     }

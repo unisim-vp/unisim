@@ -37,6 +37,7 @@
 
 #include "core/fwd.h"
 #include "core/object.h"
+#include "core/kernel.h"
 #include "utilities/fwd.h"
 #include <stdexcept>
 #include <vector>
@@ -50,7 +51,7 @@ namespace sc_core {
 class sc_vector_base : public sc_object
 {
 public:
-	typedef std::vector<sc_object *>::size_type size_type; // implementation-defined
+	typedef std::vector<void *>::size_type size_type; // implementation-defined
 
 	virtual const char *kind() const;
 	size_type size() const;
@@ -59,12 +60,17 @@ protected:
 	sc_vector_base();
 	explicit sc_vector_base(const char *name);
 	
-	void push_back(sc_object *);
-	sc_object *at(size_type);
-	const sc_object *at(size_type) const;
+	void push_back(void *);
+	void *at(size_type);
+	const void *at(size_type) const;
 	void clear();
+	
+	virtual sc_object *to_object(void *) const = 0;
+	sc_object *to_object_checked(sc_object *o) const { return o; }
+	sc_object *to_object_checked(...) const { throw std::runtime_error("not a vector of sc_object"); return 0; }
 private:
-	std::vector<sc_object *> elements;
+	std::vector<void *> elements;
+	mutable std::vector<sc_object *> object_elements;
 };
 
 ///////////////////////////// sc_vector_iter<> ////////////////////////////////
@@ -95,7 +101,7 @@ class sc_vector_iter
 	reference operator * () const { *static_cast<T *>(*obj_iter); }
 	
 private:
-	std::vector<sc_object *>::iterator obj_iter;
+	std::vector<void *>::iterator obj_iter;
 	
 	sc_vector_iter(const sc_vector_iter& other) : obj_iter(other.obj_iter) {}
 };
@@ -152,6 +158,8 @@ private:
 	sc_vector<T>& operator = (const sc_vector&);
 	
 	void clear();
+	
+	virtual sc_object *to_object(void *p) const { return to_object_checked(static_cast<T *>(p)); }
 };
 
 template <typename T, typename MT>
@@ -226,14 +234,14 @@ template <typename T>
 sc_vector<T>::sc_vector(const char *nm, size_type sz)
 	: sc_vector_base(nm)
 {
-	init(nm, sz, sc_vector::create_element);
+	init(sz, sc_vector::create_element);
 }
 
 template <typename T>
 template <typename Creator> sc_vector<T>::sc_vector(const char *nm, size_type sz, Creator c)
 	: sc_vector_base(nm)
 {
-	init(nm, sz, c);
+	init(sz, c);
 }
 
 template <typename T>
@@ -266,7 +274,7 @@ template <typename Creator> void sc_vector<T>::init(size_type sz, Creator c)
 	
 	for(idx = 0; idx < sz; idx++)
 	{
-		T *element = c(sc_gen_unique_name(this->base_name()), idx);
+		T *element = c(sc_gen_unique_name(this->basename()), idx);
 		
 		sc_vector_base::push_back(element);
 	}
@@ -287,13 +295,13 @@ const T& sc_vector<T>::operator [] (size_type idx) const
 template <typename T>
 T& sc_vector<T>::at(size_type idx)
 {
-	return *static_cast<T *>((sc_object *) sc_vector_base::at(idx));
+	return *static_cast<T *>(sc_vector_base::at(idx));
 }
 
 template <typename T>
 const T& sc_vector<T>::at(size_type idx) const
 {
-	return *static_cast<const T *>((const sc_object *) sc_vector_base::at(idx));
+	return *static_cast<const T *>(sc_vector_base::at(idx));
 }
 
 template <typename T>
@@ -385,8 +393,8 @@ void sc_vector<T>::clear()
 	
 	for(idx = 0; idx < sz; idx++)
 	{
-		sc_object *obj = at(idx);
-		delete obj;
+		T *element = &at(idx);
+		delete element;
 	}
 	
 	sc_vector_base::clear();

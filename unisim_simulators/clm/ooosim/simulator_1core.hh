@@ -440,9 +440,9 @@ public:
     
     //    for(int cfg=0; cfg<nConfig; cfg++)
     //      {
-    //	cerr << "       Cpu[" << cfg << "] ended at cycle : " << ooo_cpu[cfg]->check_emulator->end_at_cycle << endl;
+    // std::cerr << "       Cpu[" << cfg << "] ended at cycle : " << ooo_cpu[cfg]->check_emulator->end_at_cycle << std::endl;
     //      }
-    cerr << "       Cpu[" << 0 << "] ended at cycle : " << ooo_cpu->check_emulator->end_at_cycle << endl;
+    std::cerr << "       Cpu[" << 0 << "] ended at cycle : " << ooo_cpu->check_emulator->end_at_cycle << std::endl;
   }
   /**************************************************************************
    *                      CLM COMPONENT GENERATION and CONNECTION           *
@@ -488,18 +488,18 @@ public:
 
     //__icache[cfg]->outCPU >> __cpu[cfg]->fetch->inIL1;
     
-    //    cerr << ooo_cpu->lsq->inDL1[0];
-    //    cerr << "Before bad connexion..." << endl;
+    //    std::cerr << ooo_cpu->lsq->inDL1[0];
+    //    std::cerr << "Before bad connexion..." << std::endl;
     //    ooo_dcache->outCPU >> ooo_cpu->lsq->inDL1[0];
     ooo_dcache->outCPU >> ooo_cpu->lsq->inDL1[0];
     //ooo_dcache->outCPU >> (( (*(*ooo_cpu).lsq).inDL1 )[0]);
     //    ooo_dcache->outCPU(ooo_cpu->lsq->inDL1[0]);
     
-    //    cerr << "After bad connexion..." << endl;
+    //    std::cerr << "After bad connexion..." << std::endl;
 
-    //    cerr << "Before bad connexion..." << endl;
+    //    std::cerr << "Before bad connexion..." << std::endl;
     ooo_icache->outCPU >> ooo_cpu->fetch->inIL1;
-    //    cerr << "After bad connexion..." << endl;
+    //    std::cerr << "After bad connexion..." << std::endl;
 
     ooo_cpu->lsq->outDL1[0] >> ooo_dcache->inCPU;
     //ooo_cpu->lsq->outDL1[0] >> ooo_dcache->inCPU;
@@ -892,7 +892,7 @@ public:
     //ServiceManager::Dump(cout);
     if(ServiceManager::Setup())
       {
-	cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
+	std::cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << std::endl;
       }
     //    ServiceManager::Dump(cout);
     ooo_cpu->Reset();

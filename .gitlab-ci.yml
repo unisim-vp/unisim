@@ -12,7 +12,7 @@ before_script:
   - if [ -z "${GITLAB_REPO_ACCESS_TOKEN}" ]; then echo "ERROR! GITLAB_REPO_ACCESS_TOKEN is unset"; exit 1; fi
   - if [ -z "${NPROC}" ]; then echo "ERROR! NPROC is unset"; exit 1; fi
   # Install build dependencies
-  - apt-get update && apt-get -y install make cmake g++ zlib1g-dev libxml2-dev libedit-dev libsdl1.2-dev libnode-dev gettext-base yq autoconf automake libtool autoconf-archive pkg-config libpython3.12-dev python3-distutils-extra opam wget tar gzip grep diffutils
+  - apt-get update && apt-get -y install make cmake g++ zlib1g-dev libxml2-dev libedit-dev libsdl1.2-dev libnode-dev libboost-context-dev valgrind gettext-base yq autoconf automake libtool autoconf-archive pkg-config libpython3.12-dev python3-distutils-extra opam wget tar gzip grep diffutils
 
 build_unisim:
   stage: build
@@ -80,6 +80,17 @@ build_unisim:
     pushd src/scml2_logging
     make V=0 scml2_logging.h
     popd
+    make -j ${NPROC} V=0
+    make install
+    popd
+    popd
+    
+    # libieee1666
+    pushd extra/libieee1666
+    ./bootstrap.sh
+    mkdir build
+    pushd build
+    ../configure --prefix="$(realpath "$(pwd)/../install")"
     make -j ${NPROC} V=0
     make install
     popd
@@ -177,21 +188,25 @@ build_unisim:
           if [[ "${FILE}" = */tlm* ]]; then
             case "${FLAVOR}" in
               debug)
-                OPTIONS+=" --with-systemc=\"$(pwd)/systemc-2.3.3/install-posix\""
+                if [[ "${NAME}" = *'-s12x' ]] || [[ "${NAME}" = *'-s12xe' ]] || grep -qs 'scml2' "${FILE}"; then
+                  OPTIONS+=" --with-systemc=\"$(pwd)/systemc-2.3.3/install-posix\""
+                  if grep -qs 'scml2' "${FILE}"; then
+                    OPTIONS+=" --with-scml2=\"$(pwd)/scml-2.3/install-posix\""
+                  fi
+                else
+                  OPTIONS+=" --with-systemc=\"$(pwd)/extra/libieee1666/install\""
+                fi
                 ;;
               release)
-                OPTIONS+=" --with-systemc=\"$(pwd)/systemc-2.3.3/install\""
+                if [[ "${NAME}" = *'-s12x' ]] || [[ "${NAME}" = *'-s12xe' ]] || grep -qs 'scml2' "${FILE}"; then
+                  OPTIONS+=" --with-systemc=\"$(pwd)/systemc-2.3.3/install\""
+                  if grep -qs 'scml2' "${FILE}"; then
+                    OPTIONS+=" --with-scml2=\"$(pwd)/scml-2.3/install\""
+                  fi
+                else
+                  OPTIONS+=" --with-systemc=\"$(pwd)/extra/libieee1666/install\""
+                fi
                 ;;
-            esac
-          fi
-          if grep -qs 'scml2' "${FILE}"; then
-            case "${FLAVOR}" in
-            debug)
-              OPTIONS+=" --with-scml2=\"$(pwd)/scml-2.3/install-posix\""
-              ;;
-            release)
-              OPTIONS+=" --with-scml2=\"$(pwd)/scml-2.3/install\""
-              ;;
             esac
           fi
           if grep -qs 'hla' "${FILE}"; then
@@ -247,7 +262,7 @@ build_unisim:
     ) > config.yaml
     
     # build everything with unisimatic
-    ./unisim_tools/unisimatic/unisimatic --config=config.yaml --silent-build --coverage build '*'
+    ./unisim_tools/unisimatic/unisimatic --config=config.yaml --coverage build '*'
     
     # clean everything with unisimatic
     ./unisim_tools/unisimatic/unisimatic --config=config.yaml clean '*'

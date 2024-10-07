@@ -199,7 +199,7 @@ void System::Build()
 
 
 	if(!ServiceManager::Setup()) {
-		cerr << "Error, setup failed\n";
+	 std::cerr << "Error, setup failed\n";
 		ServiceManager::Dump(cerr);
 		assert(false);
 	}

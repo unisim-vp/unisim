@@ -1044,7 +1044,7 @@ public:
     //ServiceManager::Dump(cout);
     if(ServiceManager::Setup())
       {
-	cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
+	std::cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << std::endl;
       }
     //    ServiceManager::Dump(cout);
     __cpu->Reset();

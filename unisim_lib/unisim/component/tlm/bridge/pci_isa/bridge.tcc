@@ -267,12 +267,19 @@ void Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::ISAMaster()
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 sc_core::sc_time Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::GetSynchro(const sc_core::sc_time& cycle_time, const sc_core::sc_time& process_delay)
 {
-	sc_dt::uint64 current_time_tu = sc_core::sc_time_stamp().value();
-	sc_dt::uint64 process_delay_tu = process_delay.value();
-	sc_dt::uint64 next_time_tu = current_time_tu + process_delay_tu;
-	sc_dt::uint64 cycle_time_tu = cycle_time.value();
-	sc_dt::uint64 time_phase_tu = next_time_tu % cycle_time_tu;
-	return sc_core::sc_time(next_time_tu - current_time_tu + (cycle_time_tu - time_phase_tu), false);
+	// sc_dt::uint64 current_time_tu = sc_core::sc_time_stamp().value();
+	// sc_dt::uint64 process_delay_tu = process_delay.value();
+	// sc_dt::uint64 next_time_tu = current_time_tu + process_delay_tu;
+	// sc_dt::uint64 cycle_time_tu = cycle_time.value();
+	// sc_dt::uint64 time_phase_tu = next_time_tu % cycle_time_tu;
+	// return sc_core::sc_time(next_time_tu - current_time_tu + (cycle_time_tu - time_phase_tu), false);
+	
+	sc_core::sc_time current_time(sc_core::sc_time_stamp());
+	sc_core::sc_time next_time(current_time);
+	next_time += process_delay;
+	sc_core::sc_time time_phase(next_time);
+	time_phase %= cycle_time;
+	return next_time - sc_core::sc_time_stamp() + (cycle_time - time_phase);
 }
 
 } // end of namespace pci_isa

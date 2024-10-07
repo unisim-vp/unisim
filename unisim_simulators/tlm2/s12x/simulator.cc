@@ -656,7 +656,7 @@ Simulator::~Simulator()
 		std::cerr << "CPU data-load ratio    : " << (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100 << " %" << std::endl;
 		std::cerr << "CPU data-store ratio   : " << (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100 << " %" << std::endl;
 
-		std::cerr << endl;
+		std::cerr << std::endl;
 
 		std::cerr << "XGATE Clock (MHz)      : " << (double) (1 / (double) (*xgate)["core-clock"] * 1000000)  << std::endl;
 		std::cerr << "XGATE CPI              : " << (double) ((uint64_t) (*xgate)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << std::endl;
@@ -897,7 +897,7 @@ void Simulator::Run() {
 
 	spent_time += time_stop - time_start;
 
-	std::cerr << "Simulation finished" << endl << endl;
+	std::cerr << "Simulation finished" << std::endl << endl;
 
 
 }

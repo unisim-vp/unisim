@@ -146,13 +146,22 @@ inline void CPU<TYPES, CONFIG>::LazyRunInternalTimers()
 template <typename TYPES, typename CONFIG>
 inline void CPU<TYPES, CONFIG>::AlignToBusClock()
 {
-	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
-	sc_dt::uint64 run_time_tu = run_time.value();
-	sc_dt::uint64 modulo = run_time_tu % bus_cycle_time_tu;
-	if(!modulo) return; // already aligned
+// 	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
+// 	sc_dt::uint64 run_time_tu = run_time.value();
+// 	sc_dt::uint64 modulo = run_time_tu % bus_cycle_time_tu;
+// 	if(!modulo) return; // already aligned
+// 	
+// 	sc_dt::uint64 time_alignment_tu = bus_cycle_time_tu - modulo;
+// 	sc_core::sc_time time_alignment(time_alignment_tu, false);
+// 	cpu_time += time_alignment;
+// 	run_time += time_alignment;
+// 	
+	sc_core::sc_time modulo(bus_cycle_time);
+	modulo %= run_time;
+	if(modulo == sc_core::SC_ZERO_TIME) return; // already aligned
 	
-	sc_dt::uint64 time_alignment_tu = bus_cycle_time_tu - modulo;
-	sc_core::sc_time time_alignment(time_alignment_tu, false);
+	sc_core::sc_time time_alignment(bus_cycle_time);
+	time_alignment -= modulo;
 	cpu_time += time_alignment;
 	run_time += time_alignment;
 }
@@ -229,8 +238,10 @@ void CPU<TYPES, CONFIG>::RunInternalTimers()
 		sc_dt::uint64 timer_cycle_time_tu = timer_cycle_time.value();
 		uint64_t delta = delta_time_tu / timer_cycle_time_tu;
 		Super::RunTimers(delta);
-		sc_dt::uint64 t_tu = timer_cycle_time_tu * delta;
-		sc_core::sc_time t(t_tu, false);
+		// sc_dt::uint64 t_tu = timer_cycle_time_tu * delta;
+		// sc_core::sc_time t(t_tu, false);
+		sc_core::sc_time t(sc_core::sc_get_time_resolution());
+		t *= delta;
 		timer_time += t;
 		timers_update_deadline = timer_time + (Super::GetTimersDeadline() * timer_cycle_time);
 	}

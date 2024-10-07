@@ -89,7 +89,7 @@ class sc_fifo_out_if : public sc_fifo_nonblocking_out_if<T>, public sc_fifo_bloc
 {
 public:
 	virtual int num_free() const = 0;
-	protected:
+protected:
 	sc_fifo_out_if();
 private:
 	// Disabled
@@ -98,6 +98,11 @@ private:
 };
 
 //////////////////////////////////// sc_fifo_in_if<> /////////////////////////////////////////////
+
+template <class T>
+sc_fifo_in_if<T>::sc_fifo_in_if()
+{
+}
 
 template <class T>
 sc_fifo_in_if<T>::sc_fifo_in_if( const sc_fifo_in_if<T>& )

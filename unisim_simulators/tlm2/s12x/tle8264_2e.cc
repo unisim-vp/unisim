@@ -188,19 +188,19 @@ tlm_sync_enum TLE8264_2E::can_slave_nb_transport_fw(CAN_Payload& payload, tlm_ph
 
 			return (resp);
 		case END_REQ:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << std::endl;
 			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_RESP" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_RESP" << std::endl;
 			Object::Stop(-1);
 			break;
 		case END_RESP:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << std::endl;
 			Object::Stop(-1);
 			break;
 		default:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << std::endl;
 			Object::Stop(-1);
 			break;
 	}
@@ -214,12 +214,12 @@ tlm_sync_enum TLE8264_2E::can_slave_nb_transport_bw(CAN_Payload& can_rx_payload,
 	switch(phase)
 	{
 		case BEGIN_REQ:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_REQ" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_REQ" << std::endl;
 
 			Object::Stop(-1);
 			break;
 		case END_REQ:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << std::endl;
 			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
@@ -227,11 +227,11 @@ tlm_sync_enum TLE8264_2E::can_slave_nb_transport_bw(CAN_Payload& can_rx_payload,
 			resp = can_master_rx_sock->nb_transport_bw(can_rx_payload, phase, t);
 			return (resp);
 		case END_RESP:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << std::endl;
 			Object::Stop(-1);
 			break;
 		default:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << std::endl;
 			Object::Stop(-1);
 			break;
 	}
@@ -278,19 +278,19 @@ tlm_sync_enum TLE8264_2E::can_master_nb_transport_fw(CAN_Payload& payload, tlm_p
 
 			return (resp);
 		case END_REQ:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << std::endl;
 			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_RESP" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_RESP" << std::endl;
 			Object::Stop(-1);
 			break;
 		case END_RESP:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << std::endl;
 			Object::Stop(-1);
 			break;
 		default:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << std::endl;
 			Object::Stop(-1);
 			break;
 	}
@@ -305,12 +305,12 @@ tlm_sync_enum TLE8264_2E::can_master_nb_transport_bw(CAN_Payload& can_rx_payload
 	switch(phase)
 	{
 		case BEGIN_REQ:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_REQ" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_REQ" << std::endl;
 
 			Object::Stop(-1);
 			break;
 		case END_REQ:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << std::endl;
 			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
@@ -320,11 +320,11 @@ tlm_sync_enum TLE8264_2E::can_master_nb_transport_bw(CAN_Payload& can_rx_payload
 
 			return (TLM_COMPLETED);
 		case END_RESP:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << std::endl;
 			Object::Stop(-1);
 			break;
 		default:
-			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << endl;
+			std::cerr << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << std::endl;
 			Object::Stop(-1);
 			break;
 	}

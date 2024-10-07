@@ -194,27 +194,27 @@ Simulator::Run()
     }
   catch(std::runtime_error& e)
     {
-      cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-      cerr << e.what() << endl;
+      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+      std::cerr << e.what() << std::endl;
     }
 
-  cerr << "Simulation finished" << endl;
+  std::cerr << "Simulation finished" << std::endl;
 
   double time_stop = host_time.GetTime();
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
-  cerr << "Simulation run-time parameters:" << endl;
+  std::cerr << "Simulation run-time parameters:" << std::endl;
   DumpParameters(cerr);
-  cerr << endl;
-  cerr << "Simulation statistics:" << endl;
+  std::cerr << std::endl;
+  std::cerr << "Simulation statistics:" << std::endl;
   DumpStatistics(cerr);
-  cerr << endl;
+  std::cerr << std::endl;
 
-  cerr << "simulation time: " << simulation_spent_time << " seconds" << endl;
-  cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-  cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-  cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+  std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
+  std::cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
+  std::cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
+  std::cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 
   return exit_status;
 }
@@ -234,17 +234,17 @@ Simulator::Run(double time, sc_time_unit unit)
     }
   catch(std::runtime_error& e)
     {
-      cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-      cerr << e.what() << endl;
+      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+      std::cerr << e.what() << std::endl;
     }
 
   double time_stop = host_time.GetTime();
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
-  cerr << "Simulation statistics:" << endl;
+  std::cerr << "Simulation statistics:" << std::endl;
   DumpStatistics(cerr);
-  cerr << endl;
+  std::cerr << std::endl;
 
   return exit_status;
 }

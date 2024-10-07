@@ -130,10 +130,10 @@ MemSegment<CONFIG>::MemSegment(std::istream & is, SegmentType st) :
 	reloc_address(0)
 {
 	if(st == SegmentConst) {
-		cerr << " Constant segment\n";
+		std::cerr << " Constant segment\n";
 	}
 	else {
-		cerr << " Reloc segment\n";
+		std::cerr << " Reloc segment\n";
 	}
 	
 	typedef string::iterator it_t;
@@ -160,7 +160,7 @@ MemSegment<CONFIG>::MemSegment(std::istream & is, SegmentType st) :
 				{
 					if(cmd == "mem")
 					{
-						cerr << "  Mem {...}\n";
+						std::cerr << "  Mem {...}\n";
 						ParseBinCode(mem, is);
 					}
 					else
@@ -199,7 +199,7 @@ uint32_t MemSegment<CONFIG>::Size() const
 template<class CONFIG>
 void MemSegment<CONFIG>::SetAttribute(std::string const & attrname, std::string const & value)
 {
-	cerr << "  " << attrname << " = " << value << endl;
+	std::cerr << "  " << attrname << " = " << value << std::endl;
 	if(attrname == "name")
 	{
 		name = value;
@@ -241,7 +241,7 @@ void MemSegment<CONFIG>::Load(Service<Memory<typename CONFIG::address_t> > & mem
 		}
 	}
 	
-	cerr << "Loading " << bytes << "B "
+	std::cerr << "Loading " << bytes << "B "
 		<< (type == SegmentReloc ? "reloc" : "const")
 		<< " @" << std::hex << Address() << std::endl;
 	
@@ -352,7 +352,7 @@ Sampler<CONFIG>::Sampler(std::istream & is)
 template<class CONFIG>
 void Sampler<CONFIG>::SetAttribute(std::string const & attrname, std::string const & value)
 {
-	cerr << "  " << attrname << " = " << value << endl;
+	std::cerr << "  " << attrname << " = " << value << std::endl;
 	if(attrname == "name")
 	{
 		name = value;
@@ -435,7 +435,7 @@ template<class CONFIG>
 Module<CONFIG>::Module(char const * fname)
 {
 	if(verbose)
-		cerr << "Cubin " << fname << endl;
+		std::cerr << "Cubin " << fname << std::endl;
 	ifstream is(fname, ifstream::in);
 	LoadCubin(is);
 }
@@ -455,7 +455,7 @@ template<class CONFIG>
 Kernel<CONFIG> & Module<CONFIG>::GetKernel(char const * name)
 {
 	if(verbose)
-		cerr << "GetFunction : \"" << name << "\"\n";
+		std::cerr << "GetFunction : \"" << name << "\"\n";
 	typename KernelMap::iterator it = kernels.find(string(name));
 	if(it == kernels.end()) {
 		throw CudaException(CUDA_ERROR_NOT_FOUND);
@@ -568,7 +568,7 @@ void Module<CONFIG>::LoadCubin(istream & is)
 template<class CONFIG>
 void Module<CONFIG>::SetField(std::string const & attrname, std::string const & value)
 {
-	cerr << " " << attrname << " = " << value << endl;
+	std::cerr << " " << attrname << " = " << value << std::endl;
 	if(attrname == "architecture")
 	{
 		architecture = value;

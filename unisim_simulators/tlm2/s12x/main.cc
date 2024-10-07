@@ -45,14 +45,14 @@ int sc_main(int argc, char *argv[])
 			simulator->GeneratePim();
 			break;
 		case unisim::kernel::Simulator::ST_WARNING:
-			cerr << "Some warnings occurred during setup" << endl;
+			std::cerr << "Some warnings occurred during setup" << std::endl;
 			break;
 		case unisim::kernel::Simulator::ST_OK_TO_START:
-			cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
+			std::cerr << "Starting simulation at supervisor privilege level (kernel mode)" << std::endl;
 			simulator->Run();
 			break;
 		case unisim::kernel::Simulator::ST_ERROR:
-			cerr << "Can't start simulation because of previous errors" << endl;
+			std::cerr << "Can't start simulation because of previous errors" << std::endl;
 			break;
 	}
 

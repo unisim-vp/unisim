@@ -143,7 +143,7 @@ private:
 
 void SigIntHandler(int signum)
 {
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
 	unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 }
 
@@ -316,24 +316,24 @@ void Simulator::Run()
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-		cerr << e.what() << endl;
+		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+		std::cerr << e.what() << std::endl;
 	}
 
-	cerr << "Simulation finished" << endl;
+	std::cerr << "Simulation finished" << std::endl;
 	
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
 
-	cerr << "Simulation run-time parameters:" << endl;
+	std::cerr << "Simulation run-time parameters:" << std::endl;
 	DumpParameters(cerr);
-	cerr << endl;
-	cerr << "Simulation statistics:" << endl;
+	std::cerr << std::endl;
+	std::cerr << "Simulation statistics:" << std::endl;
 	DumpStatistics(cerr);
-	cerr << endl;
+	std::cerr << std::endl;
 
-	cerr << "simulation time: " << spent_time << " seconds" << endl;
-	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
+	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
+	std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
 
 }
 
@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
 	WSADATA wsaData;
 	if(WSAStartup(wVersionRequested, &wsaData) != 0)
 	{
-		cerr << "WSAStartup failed" << endl;
+		std::cerr << "WSAStartup failed" << std::endl;
 		return -1;
 	}
 #endif
@@ -393,13 +393,13 @@ int main(int argc, char *argv[])
 		case unisim::kernel::Simulator::ST_OK_DONT_START:
 			break;
 		case unisim::kernel::Simulator::ST_WARNING:
-			cerr << "Some warnings occurred during setup" << endl;
+			std::cerr << "Some warnings occurred during setup" << std::endl;
 		case unisim::kernel::Simulator::ST_OK_TO_START:
-			cerr << "Starting simulation" << endl;
+			std::cerr << "Starting simulation" << std::endl;
 			simulator->Run();
 			break;
 		case unisim::kernel::Simulator::ST_ERROR:
-			cerr << "Can't start simulation because of previous errors" << endl;
+			std::cerr << "Can't start simulation because of previous errors" << std::endl;
 			break;
 	}
 

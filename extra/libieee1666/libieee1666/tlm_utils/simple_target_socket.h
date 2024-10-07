@@ -94,7 +94,7 @@ private:
 		std::vector<nb_to_b_transport_process_s *> nb_to_b_transport_process_pool;
 		
 		peq_with_get<transaction_type> b_transport_peq;
-		std::map<transaction_type *, sc_core::sc_event *> pending_payload_freed;
+		std::map<void *, sc_core::sc_event *> pending_payload_freed;
 		
 		void b_to_nb_transport_process();
 		void nb_to_b_transport_process(nb_to_b_transport_process_s *self);
@@ -180,7 +180,7 @@ private:
 		std::vector<nb_to_b_transport_process_s *> nb_to_b_transport_process_pool;
 		
 		peq_with_get<transaction_type> b_transport_peq;
-		std::map<transaction_type *, sc_core::sc_event *> pending_payload_freed;
+		std::map<void *, sc_core::sc_event *> pending_payload_freed;
 		
 		void b_to_nb_transport_process();
 		void nb_to_b_transport_process(nb_to_b_transport_process_s *self);
@@ -532,7 +532,7 @@ simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_to_b_tran
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::free(tlm::tlm_generic_payload *trans)
 {
-	typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = pending_payload_freed.find(trans);
+	typename std::map<void *, sc_core::sc_event *>::iterator it = pending_payload_freed.find(trans);
 	
 	if(it != pending_payload_freed.end())
 	{
@@ -939,7 +939,7 @@ simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_to
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::free(tlm::tlm_generic_payload *trans)
 {
-	typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = pending_payload_freed.find(trans);
+	typename std::map<void *, sc_core::sc_event *>::iterator it = pending_payload_freed.find(trans);
 	
 	if(it != pending_payload_freed.end())
 	{

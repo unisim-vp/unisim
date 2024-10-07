@@ -139,7 +139,7 @@ void RTBStub::control() {
 					// simulation is ended
 					//sends ack for stop
 					send_ack(client_ctl->sockfd);
-					//cout << "Press button for exiting the program" << endl ;
+					//cout << "Press button for exiting the program" << std::endl ;
 					getchar();
 	//				exit(0);
 					/**
@@ -170,7 +170,7 @@ void RTBStub::Input_Cob2ATD0(double atd0_anValue[ATD0_SIZE])
 
 	/*********get data************/
 	if ( !get_data_at_time(atd0_dataline_in, current_time, INFINITE, atd0_data_in) ) {
-		cerr << "error get data " << endl;
+		std::cerr << "error get data " << std::endl;
 		exit(1);
 	}
 
@@ -181,7 +181,7 @@ void RTBStub::Input_Cob2ATD0(double atd0_anValue[ATD0_SIZE])
 
 	control();
 
-	cout << "current_time : " << current_time  <<" s "<<endl;
+	std::cerr << "current_time : " << current_time  <<" s "<<endl;
 }
 
 void RTBStub::Input_Cob2ATD1(double atd1_anValue[ATD1_SIZE])
@@ -190,7 +190,7 @@ void RTBStub::Input_Cob2ATD1(double atd1_anValue[ATD1_SIZE])
 
 	/*********get data************/
 	if ( !get_data_at_time(atd1_dataline_in, current_time, INFINITE, atd1_data_in) ) {
-		cerr << "error get data " << endl;
+		std::cerr << "error get data " << std::endl;
 		exit(1);
 	}
 
@@ -200,7 +200,7 @@ void RTBStub::Input_Cob2ATD1(double atd1_anValue[ATD1_SIZE])
 	}
 
 	control();
-	cout << "current_time : " << current_time  <<" s "<<endl;
+	std::cerr << "current_time : " << current_time  <<" s "<<endl;
 }
 
 void RTBStub::output_PWM2Cob(bool pwmValue[PWM_SIZE]){
@@ -217,13 +217,13 @@ void RTBStub::output_PWM2Cob(bool pwmValue[PWM_SIZE]){
 		pwm_data_out->time = current_time;
 		pwm_data_out->validity = current_time ;
 		if ( !send_data(client_out->sockfd, pwm_data_out) ) {
-			cerr << "Cannot send data" << endl;
+			std::cerr << "Cannot send data" << std::endl;
 			exit(1);
 		}
 	}
 
 	control();
-	cout << "current_time : " << current_time  <<" s "<<endl;
+	std::cerr << "current_time : " << current_time  <<" s "<<endl;
 }
 
 void RTBStub::ProcessATD0() {

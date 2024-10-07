@@ -1231,7 +1231,7 @@ PCIDispatch() {
 		}
 		bus_pci_req_list.pop_front();
 		req_list.pop_front();
-		if(!bus_pci_req_list.empty()) pci_dispatch_event.notify_delayed();
+		if(!bus_pci_req_list.empty()) pci_dispatch_event.notify(sc_core::SC_ZERO_TIME);
 	}
 }
 
@@ -1503,7 +1503,7 @@ DispatchPCIReq() {
 		item->pci_msg = 0;
 		pci_req_list.pop_front();
 	    free_pci_req_list.push_back(item);
-        if(!pci_req_list.empty()) dispatch_pci_req_ev.notify_delayed();
+        if(!pci_req_list.empty()) dispatch_pci_req_ev.notify(sc_core::SC_ZERO_TIME);
 	}
 }
 
@@ -1592,7 +1592,7 @@ DMARead(PHYSICAL_ADDR addr,
 	
 	dma_req_list.push_back(dma_msg);
 	if(dma_req_list.size() == 1) {
-		dispatchDMALocalMemoryAccessEvent.notify_delayed();
+		dispatchDMALocalMemoryAccessEvent.notify(sc_core::SC_ZERO_TIME);
 	}
 }
 
@@ -1630,7 +1630,7 @@ DMAWrite(PHYSICAL_ADDR addr,
 	
 	dma_req_list.push_back(dma_msg);
 	if(dma_req_list.size() == 1) {
-		dispatchDMALocalMemoryAccessEvent.notify_delayed();
+		dispatchDMALocalMemoryAccessEvent.notify(sc_core::SC_ZERO_TIME);
 	}
 }
 
@@ -1682,7 +1682,7 @@ DispatchDMALocalMemoryAccess() {
 		/* if still messages in the list, rise the event to be 
 		 *   executed again */
 		if(dma_req_list.size() != 0)
-			dispatchDMALocalMemoryAccessEvent.notify_delayed();
+			dispatchDMALocalMemoryAccessEvent.notify(sc_core::SC_ZERO_TIME);
 	}
 }
 
@@ -1715,7 +1715,7 @@ DMAPCIRead(PHYSICAL_ADDR addr,
 	
 	dma_pci_req_list.push_back(dma_msg);
 	if(dma_pci_req_list.size() == 1) {
-		dispatchDMAPCIAccessEvent.notify_delayed();
+		dispatchDMAPCIAccessEvent.notify(sc_core::SC_ZERO_TIME);
 	}
 }
 
@@ -1752,7 +1752,7 @@ DMAPCIWrite(PHYSICAL_ADDR addr,
 	
 	dma_pci_req_list.push_back(dma_msg);
 	if(dma_pci_req_list.size() == 1) {
-		dispatchDMAPCIAccessEvent.notify_delayed();
+		dispatchDMAPCIAccessEvent.notify(sc_core::SC_ZERO_TIME);
 	}
 }
 
@@ -1804,7 +1804,7 @@ DispatchDMAPCIAccess() {
 		/* if still messages in the list, rise the event to be 
 		 *   executed again */
 		if(dma_req_list.size() != 0)
-			dispatchDMALocalMemoryAccessEvent.notify_delayed();
+			dispatchDMALocalMemoryAccessEvent.notify(sc_core::SC_ZERO_TIME);
 	}
 }
 

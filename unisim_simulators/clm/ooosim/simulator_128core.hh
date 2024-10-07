@@ -422,7 +422,7 @@ public:
     
     for(int cfg=0; cfg<nConfig; cfg++)
       {
-	cerr << "       Cpu[" << cfg << "] ended at cycle : " << __cpu[cfg]->check_emulator->end_at_cycle << endl;
+	std::cerr << "       Cpu[" << cfg << "] ended at cycle : " << __cpu[cfg]->check_emulator->end_at_cycle << std::endl;
       }
   }
   /**************************************************************************
@@ -1044,7 +1044,7 @@ public:
     //ServiceManager::Dump(cout);
     if(ServiceManager::Setup())
       {
-	cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
+	std::cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << std::endl;
       }
     //    ServiceManager::Dump(cout);
     for (int cfg=0; cfg<nConfig; cfg++)

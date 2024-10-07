@@ -53,8 +53,8 @@ char const * FatFormat::GetCubin(char const * gpuname)
     // TODO: fallback to ELF if Cubin not found
 	assert(fcb->cubin[0].cubin != 0 && fcb->cubin[0].gpuProfileName != 0);
 	if(verbose) {
-		cerr << "Fat: using cubin profile " << fcb->cubin[0].gpuProfileName << endl;
-		cerr << fcb->cubin[0].cubin << endl;
+	 std::cerr << "Fat: using cubin profile " << fcb->cubin[0].gpuProfileName << std::endl;
+	 std::cerr << fcb->cubin[0].cubin << std::endl;
 	}
 	return fcb->cubin[0].cubin;
 }
@@ -62,39 +62,39 @@ char const * FatFormat::GetCubin(char const * gpuname)
 
 void FatFormat::Dump()
 {
-	cerr << "Fat file\n";
-	cerr << " magic=" << hex << fcb->magic << dec << endl;
-	cerr << " version=" << fcb->version << endl;
-	cerr << " gpuInfoVersion=" << hex << fcb->gpuInfoVersion << dec << endl;
-	cerr << " key=\"" << fcb->key << "\"" << endl;
-	cerr << " ident=\"" << fcb->ident << "\"" << endl;
-	cerr << " usageMode=\"" << fcb->usageMode << "\"" << endl;
+	std::cerr << "Fat file\n";
+	std::cerr << " magic=" << hex << fcb->magic << dec << std::endl;
+	std::cerr << " version=" << fcb->version << std::endl;
+	std::cerr << " gpuInfoVersion=" << hex << fcb->gpuInfoVersion << dec << std::endl;
+	std::cerr << " key=\"" << fcb->key << "\"" << std::endl;
+	std::cerr << " ident=\"" << fcb->ident << "\"" << std::endl;
+	std::cerr << " usageMode=\"" << fcb->usageMode << "\"" << std::endl;
 
-	cerr << " ptx:\n";
+	std::cerr << " ptx:\n";
 	cudaFatPtxEntry const * ptx = fcb->ptx;
 	while(ptx->ptx != 0)
 	{
-		cerr << "  gpuProfileName=\"" << ptx->gpuProfileName << "\"\n";
+	 std::cerr << "  gpuProfileName=\"" << ptx->gpuProfileName << "\"\n";
 		++ptx;
 	}
 
-	cerr << " cubin:\n";
+	std::cerr << " cubin:\n";
 	cudaFatCubinEntry const * cubin = fcb->cubin;
 	while(cubin->cubin != 0)
 	{
-		cerr << "  gpuProfileName=\"" << cubin->gpuProfileName << "\"\n";
+	 std::cerr << "  gpuProfileName=\"" << cubin->gpuProfileName << "\"\n";
 		++cubin;
 	}
 	
-	cerr << " debug:\n";
+	std::cerr << " debug:\n";
 	cudaFatDebugEntry const * debug = fcb->debug;
 	if(debug->debug != 0)	// Second one has invalid pointer??
 	{
-		cerr << "  gpuProfileName=\"" << debug->gpuProfileName << "\"\n";
-		cerr << "  debug = \"" << debug->debug << "\"\n";
+	 std::cerr << "  gpuProfileName=\"" << debug->gpuProfileName << "\"\n";
+	 std::cerr << "  debug = \"" << debug->debug << "\"\n";
 		++debug;
 	}
 	
-	cerr << " flags=" << fcb->flags << endl;
+	std::cerr << " flags=" << fcb->flags << std::endl;
 }
 

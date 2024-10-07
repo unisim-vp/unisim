@@ -501,7 +501,7 @@ void Simulator::Run()
 	catch(std::runtime_error& e)
 	{
 		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-		std::cerr << e.what() << endl;
+		std::cerr << e.what() << std::endl;
 	}
 
 	std::cerr << "Simulation finished" << std::endl;
@@ -509,13 +509,13 @@ void Simulator::Run()
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
 
-	std::cerr << "Simulation run-time parameters:" << endl;
+	std::cerr << "Simulation run-time parameters:" << std::endl;
 	DumpParameters(std::cerr);
-	std::cerr << endl;
+	std::cerr << std::endl;
 	
-	std::cerr << "Simulation statistics:" << endl;
+	std::cerr << "Simulation statistics:" << std::endl;
 	DumpStatistics(std::cerr);
-	std::cerr << endl;
+	std::cerr << std::endl;
 
 	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
 	std::cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
@@ -589,13 +589,13 @@ int sc_main(int argc, char *argv[])
 		case unisim::kernel::Simulator::ST_OK_DONT_START:
 			break;
 		case unisim::kernel::Simulator::ST_WARNING:
-			cerr << "Some warnings occurred during setup" << endl;
+			std::cerr << "Some warnings occurred during setup" << std::endl;
 		case unisim::kernel::Simulator::ST_OK_TO_START:
-			cerr << "Starting simulation" << endl;
+			std::cerr << "Starting simulation" << std::endl;
 			simulator->Run();
 			break;
 		case unisim::kernel::Simulator::ST_ERROR:
-			cerr << "Can't start simulation because of previous errors" << endl;
+			std::cerr << "Can't start simulation because of previous errors" << std::endl;
 			break;
 	}
 

@@ -11,6 +11,7 @@
 
 #include <unisim/component/tlm2/processor/hcs12x/s12xftmx.hh>
 #include <unisim/util/converter/convert.hh>
+#include <cmath>
 
 #define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 

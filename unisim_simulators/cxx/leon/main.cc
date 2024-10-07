@@ -105,7 +105,7 @@ main( int argc, char *argv[] )
   //   ifstream img_source( img_path );
     
   //   if( not img_source.good() ) {
-  //     std::std::cerr << "Can't open image file: " << img_path << endl;
+  //     std::std::cerr << "Can't open image file: " << img_path << std::endl;
   //     throw 0;
   //   }
     

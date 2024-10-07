@@ -179,6 +179,11 @@ bool operator <= (const sc_int_base& a, const sc_int_base& b);
 bool operator > (const sc_int_base& a, const sc_int_base& b);
 bool operator >= (const sc_int_base& a, const sc_int_base& b);
 
+// Stream operators
+inline std::ostream& operator << (std::ostream& stream, const sc_int_base& a);
+
+inline std::istream& operator >> (std::istream& stream, sc_int_base& a);
+
 ///////////////////////////////// definition //////////////////////////////////
 
 // Constructors
@@ -196,6 +201,19 @@ template <class T> sc_int_base& sc_int_base::operator = (const sc_generic_base<T
 	len = a->length();
 	sign_extend();
 	return *this;
+}
+
+// Stream operators
+inline std::ostream& operator << (std::ostream& stream, const sc_int_base& a)
+{
+	a.print(stream);
+	return stream;
+}
+
+inline std::istream& operator >> (std::istream& stream, sc_int_base& a)
+{
+	a.scan(stream);
+	return stream;
 }
 
 } // end of namespace sc_dt
