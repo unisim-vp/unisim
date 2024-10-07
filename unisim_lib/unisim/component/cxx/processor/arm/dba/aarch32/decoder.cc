@@ -362,14 +362,17 @@ public:
         if (reg_values[reg].expr != ref.reg_values[reg].expr)
           path->add_sink( newRegWrite( RegID("r0") + reg, reg_values[reg].expr ) );
       }
-    for (ForeignRegisters::iterator itr = foreign_registers.begin(), end = foreign_registers.end(); itr != end; ++itr)
+    for (auto const& item : foreign_registers)
       {
-        unisim::util::symbolic::binsec::RegRead<ForeignRegisterID> ref(ForeignRegisterID(itr->first.first, itr->first.second));
-        ref.Retain(); // Prevent deletion of this static instance
-        if (itr->second == Expr(&ref)) continue;
+        ForeignRegisterID ref(item.first.first, item.first.second);
+        if (auto foreign_register = dynamic_cast<unisim::util::symbolic::binsec::RegRead<ForeignRegisterID> const*>(item.second.node))
+          {
+            if (foreign_register->id.cmp(ref) == 0)
+              continue;
+          }
         std::ostringstream buf;
         ref.Repr( buf );
-        path->add_sink( newRegWrite( RegID(buf.str().c_str()), itr->second ) );
+        path->add_sink( newRegWrite( RegID(buf.str().c_str()), item.second ) );
       }
     for (unsigned reg = 0; reg < 32; ++reg)
       GetNeonSinks(ref, reg);
