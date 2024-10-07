@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2020,
+ *  Copyright (c) 2024,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -34,47 +34,117 @@
 
 #include <unisim/component/cxx/processor/sparc/dba/arch32/decoder.hh>
 #include <iostream>
-#include <cstdlib>
+#include <fstream>
+#include <cstring>
 #include <inttypes.h>
 
 template <typename T>
 bool getu( T& res, char const* arg )
 {
   char *end;
-  uint64_t tmp = strtoull( arg, &end, 0 );
+  uint64_t tmp = strtoull( arg, &end, 16 );
   if ((*arg == '\0') or (*end != '\0'))
     return false;
   res = tmp;
   return true;
 }
 
-char const* usage()
+struct Usage
 {
-  return
-    "usage: <program> <address> <encoding0> <encoding1>\n";
-}
+  char const* program;
+  friend std::ostream& operator << (std::ostream& sink, Usage const& usage)
+  {
+    sink << "usage:\t" << usage.program << " [file] <address> <encoding0> <encoding1>\n";
+    sink <<       "\t" << usage.program << " [file] <address> delayed_nop <encoding>\n";
+    return sink;
+  }
+};
+
+struct Decoder : public unisim::component::cxx::processor::sparc::dba::arch32::Decoder
+{
+  Decoder( char const* _app_name) : app_name(_app_name) {}
+
+  bool
+  run(std::ostream& sink, char const* addr_arg, char const* code_arg0, char const* code_arg1)
+  {
+    uint32_t addr, code0, code1;
+
+    if (strcmp("delayed_nop", code_arg0) == 0)
+      {
+        code_arg0 = code_arg1;
+        code_arg1 = "01000000";
+      }
+
+    if (not getu(addr, addr_arg) or not getu(code0, code_arg0) or not getu(code1, code_arg1))
+      {
+        std::cerr << "<address>, <encoding0> and <encoding1> should all be 32bits numeric values.\n" << Usage{app_name};
+        return false;
+      }
+
+    process( sink, addr, code0, code1 );
+
+    return true;
+  }
+  char const* app_name;
+};
 
 int
 main( int argc, char** argv )
 {
-  if (argc < 4)
+  Decoder decoder(argv[0]);
+
+  if (argc > 1 and strcmp(argv[1], "file") == 0)
     {
-      std::cerr << "Wrong number of CLI arguments.\n" << usage();
-      return 1;
+      if (argc < 3 or argc > 5)
+        { std::cerr << Usage{argv[0]}; return 1; }
+
+      std::string insns(argv[argc-1]);
+      std::ifstream source(insns);
+
+      if (not source.good())
+        {
+          std::cerr << "Cannot open " << insns << '\n' << Usage{argv[0]};
+          return 1;
+        }
+
+      std::string args[3]; // address, encoding0, encoding1
+      std::string disasm;
+      int cl_argcount = argc - 3;
+      for (int idx = 0; idx < cl_argcount; ++idx)
+        args[idx] = argv[2+idx];
+
+      int line = 0;
+      for (;;)
+        {
+          for (int idx = cl_argcount; idx < 3; ++idx)
+            if (not (source >> args[idx]).good())
+              return 0;
+          if (not getline(source, disasm).good())
+            return 0;
+          line += 1;
+          std::cout << "(";
+          if (not decoder.run( std::cout, args[0].c_str(), args[1].c_str(), args[2].c_str() ))
+            {
+              std::cerr << argv[2] << ':' << line << ": cannot process instruction " << args[1].c_str() << ' ' << args[2].c_str() << ' ' << disasm << '\n' << Usage{argv[0]};
+              return 1;
+            }
+          std::cout << ")\n";
+        }
+      return 0;
     }
 
-  uint64_t addr;
-  uint32_t code0, code1;
-
-  if (not getu(addr, argv[argc-3+0]) or not getu(code0, argv[argc-3+1]) or not getu(code1, argv[argc-3+2]))
+  if (argc == 4)
     {
-      std::cerr << "<addr> <code0> and <code1> should be, respectively, 64bits, 32bits and 32bits numeric values.\n" << usage();
-      return 1;
+      if (not decoder.run( std::cout, argv[1], argv[2], argv[3] ))
+        {
+          std::cerr << Usage{argv[0]};
+          return 1;
+        }
+      return 0;
     }
 
-  unisim::component::cxx::processor::sparc::dba::arch32::Decoder decoder;
 
-  decoder.process( std::cout, addr, code0, code1 );
-
-  return 0;
+  std::cerr << "Wrong number of CLI arguments.\n" << Usage{argv[0]};
+  return 1;
 }
+
