@@ -1,0 +1,5740 @@
+98000ee0	add %r0, %r0, %r12
+8002c6e0	add %r11, %r0, %r0
+80018cc0	add %r6, %r0, %r0
+840000e2	add %r0, %r2, %r2
+860017e3	add %r0, %r3, %r3
+8e01d980	add %r7, %r0, %r7
+8600dbc0	add %r3, %r0, %r3
+84008002	add %r2, %r2, %r2
+8600c003	add %r3, %r3, %r3
+80035785	add %r13, %r5, %r0
+8002ccc5	add %r11, %r5, %r0
+8a000a8b	add %r0, %r11, %r5
+94001d44	add %r0, %r4, %r10
+8e019ba0	add %r6, %r0, %r7
+8c02cee0	add %r11, %r0, %r6
+960281aa	add %r10, %r10, %r11
+84019a66	add %r6, %r6, %r2
+84008003	add %r2, %r3, %r2
+84008004	add %r2, %r4, %r2
+8e015627	add %r5, %r7, %r7
+8e011d47	add %r4, %r7, %r7
+94010666	add %r4, %r6, %r10
+9800cec6	add %r3, %r6, %r12
+80801b60	addcc %r0, %r0, %r0
+9a800e20	addcc %r0, %r0, %r13
+84800aa0	addcc %r0, %r0, %r2
+80800aeb	addcc %r0, %r11, %r0
+8080058b	addcc %r0, %r11, %r0
+9480134a	addcc %r0, %r10, %r10
+8e800c67	addcc %r0, %r7, %r7
+808159a0	addcc %r5, %r0, %r0
+80811480	addcc %r4, %r0, %r0
+80831cac	addcc %r12, %r12, %r0
+808348cd	addcc %r13, %r13, %r0
+9a834f4d	addcc %r13, %r13, %r13
+9883000c	addcc %r12, %r12, %r12
+9a800dec	addcc %r0, %r12, %r13
+86801147	addcc %r0, %r7, %r3
+868117c0	addcc %r4, %r0, %r3
+96811920	addcc %r4, %r0, %r11
+8683400d	addcc %r13, %r13, %r3
+9683400d	addcc %r13, %r13, %r11
+8082c9c4	addcc %r11, %r4, %r0
+8080c68c	addcc %r3, %r12, %r0
+9880906c	addcc %r2, %r12, %r12
+96809acb	addcc %r2, %r11, %r11
+98831faa	addcc %r12, %r10, %r12
+84808003	addcc %r2, %r3, %r2
+8e809e6c	addcc %r2, %r12, %r7
+96834147	addcc %r13, %r7, %r11
+80802c0e	addcc %r0, 3086, %r0
+80803f10	addcc %r0, -240, %r0
+8e8021a0	addcc %r0, 416, %r7
+8a80220d	addcc %r0, 525, %r5
+94802650	addcc %r0, 1616, %r10
+9a802b84	addcc %r0, 2948, %r13
+94802ab0	addcc %r0, 2736, %r10
+8a802a36	addcc %r0, 2614, %r5
+8a802aa6	addcc %r0, 2726, %r5
+988025d6	addcc %r0, 1494, %r12
+94802daa	addcc %r0, 3498, %r10
+9a802edc	addcc %r0, 3804, %r13
+86802ef1	addcc %r0, 3825, %r3
+86802ed7	addcc %r0, 3799, %r3
+86802bbf	addcc %r0, 3007, %r3
+9a803410	addcc %r0, -3056, %r13
+9a80301c	addcc %r0, -4068, %r13
+88803488	addcc %r0, -2936, %r4
+8c803390	addcc %r0, -3184, %r6
+8e803c28	addcc %r0, -984, %r7
+94803e88	addcc %r0, -376, %r10
+84803345	addcc %r0, -3259, %r2
+86803758	addcc %r0, -2216, %r3
+8e80326e	addcc %r0, -3474, %r7
+868035ea	addcc %r0, -2582, %r3
+98803b4e	addcc %r0, -1202, %r12
+8e803f6c	addcc %r0, -148, %r7
+8a803ecb	addcc %r0, -309, %r5
+9a803bfd	addcc %r0, -1027, %r13
+9a803fbf	addcc %r0, -65, %r13
+8480bfff	addcc %r2, -1, %r2
+8680ffff	addcc %r3, -1, %r3
+8480bffb	addcc %r2, -5, %r2
+9682fffe	addcc %r11, -2, %r11
+80813fd7	addcc %r4, -41, %r0
+9482bffc	addcc %r10, -4, %r10
+9682fff6	addcc %r11, -10, %r11
+808137d7	addcc %r4, -2089, %r0
+8080bfae	addcc %r2, -82, %r0
+88813cfb	addcc %r4, -773, %r4
+9482bff8	addcc %r10, -8, %r10
+80813f96	addcc %r4, -106, %r0
+8081bd5b	addcc %r6, -677, %r0
+88813f39	addcc %r4, -199, %r4
+98833b79	addcc %r12, -1159, %r12
+8081b6cd	addcc %r6, -2355, %r0
+8080f8af	addcc %r3, -1873, %r0
+8680ffe0	addcc %r3, -32, %r3
+8a81773a	addcc %r5, -2246, %r5
+80813639	addcc %r4, -2503, %r0
+8081f41f	addcc %r7, -3041, %r0
+8a817627	addcc %r5, -2521, %r5
+9a837173	addcc %r13, -3725, %r13
+808371b2	addcc %r13, -3662, %r0
+8081f686	addcc %r7, -2426, %r0
+8e81f299	addcc %r7, -3431, %r7
+9482b52a	addcc %r10, -2774, %r10
+8082b8a1	addcc %r10, -1887, %r0
+8081fc81	addcc %r7, -895, %r0
+8881350a	addcc %r4, -2806, %r4
+9883309c	addcc %r12, -3940, %r12
+80817a20	addcc %r5, -1504, %r0
+8082b094	addcc %r10, -3948, %r0
+9a837046	addcc %r13, -4026, %r13
+8082b030	addcc %r10, -4048, %r0
+80813044	addcc %r4, -4028, %r0
+8081ed5f	addcc %r7, 3423, %r0
+8081e7f5	addcc %r7, 2037, %r0
+8c81af5d	addcc %r6, 3933, %r6
+88812e7d	addcc %r4, 3709, %r4
+8080e7ad	addcc %r3, 1965, %r0
+8080af59	addcc %r2, 3929, %r0
+98832f27	addcc %r12, 3879, %r12
+9682e9ee	addcc %r11, 2542, %r11
+80836adc	addcc %r13, 2780, %r0
+8082e8f6	addcc %r11, 2294, %r0
+888124fa	addcc %r4, 1274, %r4
+8c81a9f4	addcc %r6, 2548, %r6
+8081e1f8	addcc %r7, 504, %r0
+80812f30	addcc %r4, 3888, %r0
+988321cb	addcc %r12, 459, %r12
+8a8161a7	addcc %r5, 423, %r5
+80812b18	addcc %r4, 2840, %r0
+8081ab84	addcc %r6, 2948, %r0
+8a8160f8	addcc %r5, 248, %r5
+9482a741	addcc %r10, 1857, %r10
+8082e550	addcc %r11, 1360, %r0
+8081e305	addcc %r7, 773, %r0
+9682e609	addcc %r11, 1545, %r11
+8680ea60	addcc %r3, 2656, %r3
+8081a092	addcc %r6, 146, %r0
+80832242	addcc %r12, 578, %r0
+98832142	addcc %r12, 322, %r12
+8e81e308	addcc %r7, 776, %r7
+8480a003	addcc %r2, 3, %r2
+9682e006	addcc %r11, 6, %r11
+8480a001	addcc %r2, 1, %r2
+8480a004	addcc %r2, 4, %r2
+8680bfff	addcc %r2, -1, %r3
+8682ffff	addcc %r11, -1, %r3
+9480bbff	addcc %r2, -1025, %r10
+8682bfbf	addcc %r10, -65, %r3
+8c82fefb	addcc %r11, -261, %r6
+8e817f5f	addcc %r5, -161, %r7
+9480b7be	addcc %r2, -2114, %r10
+8880bfda	addcc %r2, -38, %r4
+84837bd5	addcc %r13, -1067, %r2
+8e83775b	addcc %r13, -2213, %r7
+8c80be63	addcc %r2, -413, %r6
+8481fe17	addcc %r7, -489, %r2
+8881ba8b	addcc %r6, -1397, %r4
+8a80f8f1	addcc %r3, -1807, %r5
+8882b946	addcc %r10, -1722, %r4
+8c80f5c2	addcc %r3, -2622, %r6
+8482b20b	addcc %r10, -3573, %r2
+8c80b854	addcc %r2, -1964, %r6
+8480f920	addcc %r3, -1760, %r2
+8c81f290	addcc %r7, -3440, %r6
+8e80b802	addcc %r2, -2046, %r7
+9881f900	addcc %r7, -1792, %r12
+9480e7ff	addcc %r3, 2047, %r10
+9680abff	addcc %r2, 3071, %r11
+9a816fbd	addcc %r5, 4029, %r13
+8880efd7	addcc %r3, 4055, %r4
+84836d6f	addcc %r13, 3439, %r2
+9881ab7d	addcc %r6, 2941, %r12
+8c80e77c	addcc %r3, 1916, %r6
+8c836fc9	addcc %r13, 4041, %r6
+9881efe0	addcc %r7, 4064, %r12
+8481a8bd	addcc %r6, 2237, %r2
+8a832734	addcc %r12, 1844, %r5
+9a80ec1b	addcc %r3, 3099, %r13
+8482e1c5	addcc %r11, 453, %r2
+848160ba	addcc %r5, 186, %r2
+8c80a8d0	addcc %r2, 2256, %r6
+8c83224a	addcc %r12, 586, %r6
+9481e4a0	addcc %r7, 1184, %r10
+968324c0	addcc %r12, 1216, %r11
+86836003	addcc %r13, 3, %r3
+96812003	addcc %r4, 3, %r11
+86836001	addcc %r13, 1, %r3
+94832080	addcc %r12, 128, %r10
+80003fe6	add %r0, -26, %r0
+80002364	add %r0, 868, %r0
+96002104	add %r0, 260, %r11
+8c002a80	add %r0, 2688, %r6
+98002442	add %r0, 1090, %r12
+88002864	add %r0, 2148, %r4
+960020c6	add %r0, 198, %r11
+86002a13	add %r0, 2579, %r3
+96002463	add %r0, 1123, %r11
+96002987	add %r0, 2439, %r11
+8c002d4a	add %r0, 3402, %r6
+8c0022be	add %r0, 702, %r6
+840026f8	add %r0, 1784, %r2
+88002bda	add %r0, 3034, %r4
+8c0027da	add %r0, 2010, %r6
+9a002eef	add %r0, 3823, %r13
+9a003044	add %r0, -4028, %r13
+88003540	add %r0, -2752, %r4
+9a003498	add %r0, -2920, %r13
+88003960	add %r0, -1696, %r4
+96003a8a	add %r0, -1398, %r11
+9a0032aa	add %r0, -3414, %r13
+960030f3	add %r0, -3853, %r11
+96003d8a	add %r0, -630, %r11
+8c003eaa	add %r0, -342, %r6
+86003ee4	add %r0, -284, %r3
+8e003dab	add %r0, -597, %r7
+8a0037da	add %r0, -2086, %r5
+98003edd	add %r0, -291, %r12
+960036fe	add %r0, -2306, %r11
+9a003ddf	add %r0, -545, %r13
+8002b378	add %r10, -3208, %r0
+8002f76b	add %r11, -2197, %r0
+8400a000	add %r2, 0, %r2
+8600e000	add %r3, 0, %r3
+8400a001	add %r2, 1, %r2
+8400a002	add %r2, 2, %r2
+8400a003	add %r2, 3, %r2
+8400a005	add %r2, 5, %r2
+8400a007	add %r2, 7, %r2
+8400a00b	add %r2, 11, %r2
+8400a00f	add %r2, 15, %r2
+8400a01d	add %r2, 29, %r2
+8400a2c5	add %r2, 709, %r2
+8600e05b	add %r3, 91, %r3
+9a036876	add %r13, 2166, %r13
+98032d0e	add %r12, 3342, %r12
+8400a17e	add %r2, 382, %r2
+8400a76c	add %r2, 1900, %r2
+98032d6d	add %r12, 3437, %r12
+8c01a99f	add %r6, 2463, %r6
+8c01afdf	add %r6, 4063, %r6
+9a037c00	add %r13, -1024, %r13
+8600f141	add %r3, -3775, %r3
+8400bc02	add %r2, -1022, %r2
+8400b894	add %r2, -1900, %r2
+8600fe10	add %r3, -496, %r3
+8400bf80	add %r2, -128, %r2
+8600fe14	add %r3, -492, %r3
+8c01bf60	add %r6, -160, %r6
+980336b4	add %r12, -2380, %r12
+980339d3	add %r12, -1581, %r12
+8400be27	add %r2, -473, %r2
+9402b3e7	add %r10, -3097, %r10
+8e01f0ff	add %r7, -3841, %r7
+8400bbed	add %r2, -1043, %r2
+8400bf3e	add %r2, -194, %r2
+8400bf9f	add %r2, -97, %r2
+8400bfde	add %r2, -34, %r2
+8400bfbf	add %r2, -65, %r2
+8400bff7	add %r2, -9, %r2
+8400bfff	add %r2, -1, %r2
+8600ffff	add %r3, -1, %r3
+8400e000	add %r3, 0, %r2
+84012000	add %r4, 0, %r2
+8400e001	add %r3, 1, %r2
+8400e002	add %r3, 2, %r2
+8802e210	add %r11, 528, %r4
+8400e003	add %r3, 3, %r2
+8601aa02	add %r6, 2562, %r3
+8401e01c	add %r7, 28, %r2
+8400e42c	add %r3, 1068, %r2
+8401206c	add %r4, 108, %r2
+94012923	add %r4, 2339, %r10
+9602a8b8	add %r10, 2232, %r11
+94032d2a	add %r12, 3370, %r10
+8401a1f4	add %r6, 500, %r2
+9400aa9e	add %r2, 2718, %r10
+9802e7a6	add %r11, 1958, %r12
+8e036e5b	add %r13, 3675, %r7
+960125db	add %r4, 1499, %r11
+8601e5f7	add %r7, 1527, %r3
+84012cef	add %r4, 3311, %r2
+9601a7f7	add %r6, 2039, %r11
+9601e7ef	add %r7, 2031, %r11
+880167ff	add %r5, 2047, %r4
+8e037201	add %r13, -3583, %r7
+84037440	add %r13, -3008, %r2
+8600bc01	add %r2, -1023, %r3
+8e01b460	add %r6, -2976, %r7
+94017262	add %r5, -3486, %r10
+8a01b628	add %r6, -2520, %r5
+9801bd84	add %r6, -636, %r12
+8802b0e9	add %r10, -3863, %r4
+9400b0cf	add %r2, -3889, %r10
+8a013578	add %r4, -2696, %r5
+8800b3e5	add %r2, -3099, %r4
+9a02f937	add %r11, -1737, %r13
+860337dc	add %r12, -2084, %r3
+8e02fb9b	add %r11, -1125, %r7
+9600ffae	add %r3, -82, %r11
+86037eee	add %r13, -274, %r3
+86013dfe	add %r4, -514, %r3
+8a00bf3f	add %r2, -193, %r5
+8400fffd	add %r3, -3, %r2
+8402bffe	add %r10, -2, %r2
+8400ffff	add %r3, -1, %r2
+84013fff	add %r4, -1, %r2
+8041cce7	addx %r7, %r7, %r0
+804018eb	addx %r0, %r11, %r0
+964000e0	addx %r0, %r0, %r11
+98400000	addx %r0, %r0, %r12
+844001a2	addx %r0, %r2, %r2
+86400003	addx %r0, %r3, %r3
+84408000	addx %r2, %r0, %r2
+8640c000	addx %r3, %r0, %r3
+984311cc	addx %r12, %r12, %r12
+9442828a	addx %r10, %r10, %r10
+80418e8d	addx %r6, %r13, %r0
+80408c87	addx %r2, %r7, %r0
+8e40088d	addx %r0, %r13, %r7
+84400e46	addx %r0, %r6, %r2
+8642d520	addx %r11, %r0, %r3
+98418ce0	addx %r6, %r0, %r12
+8c40dc03	addx %r3, %r3, %r6
+8e4153a5	addx %r5, %r5, %r7
+8e41c884	addx %r7, %r4, %r7
+8440902b	addx %r2, %r11, %r2
+8c428546	addx %r10, %r6, %r6
+8e414ac7	addx %r5, %r7, %r7
+8841ddea	addx %r7, %r10, %r4
+96428327	addx %r10, %r7, %r11
+80c01d47	addxcc %r0, %r7, %r0
+88c01e64	addxcc %r0, %r4, %r4
+8ac00e85	addxcc %r0, %r5, %r5
+80c300e0	addxcc %r12, %r0, %r0
+8ec1d840	addxcc %r7, %r0, %r7
+84c08000	addxcc %r2, %r0, %r2
+80c2d3eb	addxcc %r11, %r11, %r0
+80c35d0d	addxcc %r13, %r13, %r0
+94c29eea	addxcc %r10, %r10, %r10
+80c006c0	addxcc %r0, %r0, %r0
+8ec014e3	addxcc %r0, %r3, %r7
+94c01c02	addxcc %r0, %r2, %r10
+94c1c4c0	addxcc %r7, %r0, %r10
+94c19760	addxcc %r6, %r0, %r10
+9ac14285	addxcc %r5, %r5, %r13
+86c09f22	addxcc %r2, %r2, %r3
+80c153a4	addxcc %r5, %r4, %r0
+80c31087	addxcc %r12, %r7, %r0
+8ac1ddc5	addxcc %r7, %r5, %r5
+8cc08326	addxcc %r2, %r6, %r6
+84c0800c	addxcc %r2, %r12, %r2
+86c0c00d	addxcc %r3, %r13, %r3
+8cc01300	addxcc %r0, %r0, %r6
+8ec006e0	addxcc %r0, %r0, %r7
+8cc1de85	addxcc %r7, %r5, %r6
+86c18a0d	addxcc %r6, %r13, %r3
+80c16004	addxcc %r5, 4, %r0
+94c2a010	addxcc %r10, 16, %r10
+80c2e005	addxcc %r11, 5, %r0
+80c1a180	addxcc %r6, 384, %r0
+80c16124	addxcc %r5, 292, %r0
+80c2e904	addxcc %r11, 2308, %r0
+8cc1a0c4	addxcc %r6, 196, %r6
+84c0a046	addxcc %r2, 70, %r2
+80c122c4	addxcc %r4, 708, %r0
+80c0a981	addxcc %r2, 2433, %r0
+98c320a3	addxcc %r12, 163, %r12
+86c0e512	addxcc %r3, 1298, %r3
+80c1e664	addxcc %r7, 1636, %r0
+80c0a782	addxcc %r2, 1922, %r0
+84c0a3c4	addxcc %r2, 964, %r2
+8ac1651a	addxcc %r5, 1306, %r5
+80c1e749	addxcc %r7, 1865, %r0
+80c0a33a	addxcc %r2, 826, %r0
+84c0ab25	addxcc %r2, 2853, %r2
+88c12aa3	addxcc %r4, 2723, %r4
+80c0aaf4	addxcc %r2, 2804, %r0
+80c36756	addxcc %r13, 1878, %r0
+8ec1e8bb	addxcc %r7, 2235, %r7
+96c2ed99	addxcc %r11, 3481, %r11
+80c1a6db	addxcc %r6, 1755, %r0
+80c1ee3d	addxcc %r7, 3645, %r0
+84c0ac3f	addxcc %r2, 3135, %r2
+86c0eea7	addxcc %r3, 3751, %r3
+80c32f6d	addxcc %r12, 3949, %r0
+80c327ed	addxcc %r12, 2029, %r0
+8ec1efcb	addxcc %r7, 4043, %r7
+94c2adbb	addxcc %r10, 3515, %r10
+80c1ef7e	addxcc %r7, 3966, %r0
+80c32f77	addxcc %r12, 3959, %r0
+86c0eff5	addxcc %r3, 4085, %r3
+8cc1adf7	addxcc %r6, 3575, %r6
+94c2b014	addxcc %r10, -4076, %r10
+80c1f406	addxcc %r7, -3066, %r0
+80c37454	addxcc %r13, -2988, %r0
+80c33149	addxcc %r12, -3767, %r0
+98c33b08	addxcc %r12, -1272, %r12
+86c0f321	addxcc %r3, -3295, %r3
+80c2f433	addxcc %r11, -3021, %r0
+80c33c07	addxcc %r12, -1017, %r0
+84c0b155	addxcc %r2, -3755, %r2
+8ec1f954	addxcc %r7, -1708, %r7
+80c0f68e	addxcc %r3, -2418, %r0
+80c0bb45	addxcc %r2, -1211, %r0
+84c0b4e9	addxcc %r2, -2839, %r2
+8ec1fb92	addxcc %r7, -1134, %r7
+80c37ce6	addxcc %r13, -794, %r0
+80c0ffc2	addxcc %r3, -62, %r0
+8cc1b93e	addxcc %r6, -1730, %r6
+94c2bd9a	addxcc %r10, -614, %r10
+80c2f7ea	addxcc %r11, -2070, %r0
+80c1b6ee	addxcc %r6, -2322, %r0
+8ec1f5f6	addxcc %r7, -2570, %r7
+96c2fbd9	addxcc %r11, -1063, %r11
+80c1feed	addxcc %r7, -275, %r0
+98c33f6b	addxcc %r12, -149, %r12
+96c2fdcf	addxcc %r11, -561, %r11
+80c02d20	addxcc %r0, 3360, %r0
+80c022da	addxcc %r0, 730, %r0
+80c02e33	addxcc %r0, 3635, %r0
+80c02abe	addxcc %r0, 2750, %r0
+80c03027	addxcc %r0, -4057, %r0
+80c03351	addxcc %r0, -3247, %r0
+80c033ca	addxcc %r0, -3126, %r0
+80c034de	addxcc %r0, -2850, %r0
+80c03bbd	addxcc %r0, -1091, %r0
+98c16000	addxcc %r5, 0, %r12
+84c2a000	addxcc %r10, 0, %r2
+8ec0a100	addxcc %r2, 256, %r7
+88c0e100	addxcc %r3, 256, %r4
+86c12480	addxcc %r4, 1152, %r3
+96c0e600	addxcc %r3, 1536, %r11
+9ac2a109	addxcc %r10, 265, %r13
+94c0a411	addxcc %r2, 1041, %r10
+8ec32498	addxcc %r12, 1176, %r7
+98c16258	addxcc %r5, 600, %r12
+84c2e6c2	addxcc %r11, 1730, %r2
+8ec1a9a1	addxcc %r6, 2465, %r7
+94c1a732	addxcc %r6, 1842, %r10
+8cc325ac	addxcc %r12, 1452, %r6
+94c1e35d	addxcc %r7, 861, %r10
+86c321f5	addxcc %r12, 501, %r3
+94c0e4ef	addxcc %r3, 1263, %r10
+96c329af	addxcc %r12, 2479, %r11
+86c0af8f	addxcc %r2, 3983, %r3
+98c0e9fd	addxcc %r3, 2557, %r12
+8ec2ab7f	addxcc %r10, 2943, %r7
+98c163ff	addxcc %r5, 1023, %r12
+86c13080	addxcc %r4, -3968, %r3
+8ec2f010	addxcc %r11, -4080, %r7
+8cc2f340	addxcc %r11, -3264, %r6
+84c2b023	addxcc %r10, -4061, %r2
+8ac0b8c1	addxcc %r2, -1855, %r5
+86c0b189	addxcc %r2, -3703, %r3
+88c17a85	addxcc %r5, -1403, %r4
+8ec2f28e	addxcc %r11, -3442, %r7
+8ac0b556	addxcc %r2, -2730, %r5
+8cc0bda1	addxcc %r2, -607, %r6
+8cc33c1f	addxcc %r12, -993, %r6
+8ec1b31f	addxcc %r6, -3297, %r7
+84c2bc77	addxcc %r10, -905, %r2
+8ac1f577	addxcc %r7, -2697, %r5
+8ec33fe9	addxcc %r12, -23, %r7
+8ec17dfc	addxcc %r5, -516, %r7
+8cc17fee	addxcc %r5, -18, %r6
+96c37fbb	addxcc %r13, -69, %r11
+9ac0fffb	addxcc %r3, -5, %r13
+9ac02050	addxcc %r0, 80, %r13
+88c02580	addxcc %r0, 1408, %r4
+84c02411	addxcc %r0, 1041, %r2
+98c02c0c	addxcc %r0, 3084, %r12
+9ac02b04	addxcc %r0, 2820, %r13
+8cc02658	addxcc %r0, 1624, %r6
+8cc02964	addxcc %r0, 2404, %r6
+88c02c6c	addxcc %r0, 3180, %r4
+8ac02cca	addxcc %r0, 3274, %r5
+94c02c9b	addxcc %r0, 3227, %r10
+9ac0239d	addxcc %r0, 925, %r13
+96c02f6c	addxcc %r0, 3948, %r11
+98c02bec	addxcc %r0, 3052, %r12
+8ac027cf	addxcc %r0, 1999, %r5
+9ac02bed	addxcc %r0, 3053, %r13
+94c02efb	addxcc %r0, 3835, %r10
+88c03245	addxcc %r0, -3515, %r4
+86c03d40	addxcc %r0, -704, %r3
+88c03358	addxcc %r0, -3240, %r4
+84c03558	addxcc %r0, -2728, %r2
+8ec03672	addxcc %r0, -2446, %r7
+96c03734	addxcc %r0, -2252, %r11
+86c038cf	addxcc %r0, -1841, %r3
+84c031ee	addxcc %r0, -3602, %r2
+8ec03ed3	addxcc %r0, -301, %r7
+9ac037dc	addxcc %r0, -2084, %r13
+8ac036ef	addxcc %r0, -2321, %r5
+8ec03b3f	addxcc %r0, -1217, %r7
+80403497	addx %r0, -2921, %r0
+80403443	addx %r0, -3005, %r0
+8042f707	addx %r11, -2297, %r0
+80437d36	addx %r13, -714, %r0
+84402000	addx %r0, 0, %r2
+86402000	addx %r0, 0, %r3
+8c402110	addx %r0, 272, %r6
+94402016	addx %r0, 22, %r10
+8c402409	addx %r0, 1033, %r6
+86402126	addx %r0, 294, %r3
+84402682	addx %r0, 1666, %r2
+88402f04	addx %r0, 3844, %r4
+8c40291c	addx %r0, 2332, %r6
+984023e8	addx %r0, 1000, %r12
+8e402a8d	addx %r0, 2701, %r7
+88402bd2	addx %r0, 3026, %r4
+844021cf	addx %r0, 463, %r2
+98402e6b	addx %r0, 3691, %r12
+884027ab	addx %r0, 1963, %r4
+944025df	addx %r0, 1503, %r10
+84402ef6	addx %r0, 3830, %r2
+88403001	addx %r0, -4095, %r4
+86403260	addx %r0, -3488, %r3
+8c403013	addx %r0, -4077, %r6
+8e403164	addx %r0, -3740, %r7
+96403c30	addx %r0, -976, %r11
+94403529	addx %r0, -2775, %r10
+984031a6	addx %r0, -3674, %r12
+96403b52	addx %r0, -1198, %r11
+96403ac3	addx %r0, -1341, %r11
+94403766	addx %r0, -2202, %r10
+86403fc8	addx %r0, -56, %r3
+88403ef2	addx %r0, -270, %r4
+9a40373e	addx %r0, -2242, %r13
+9a403baf	addx %r0, -1105, %r13
+8c403bbb	addx %r0, -1093, %r6
+84403fff	addx %r0, -1, %r2
+98432000	addx %r12, 0, %r12
+9a436000	addx %r13, 0, %r13
+8440a020	addx %r2, 32, %r2
+9642e026	addx %r11, 38, %r11
+9442a344	addx %r10, 836, %r10
+8a416311	addx %r5, 785, %r5
+8c41a689	addx %r6, 1673, %r6
+8e41ecb0	addx %r7, 3248, %r7
+9642ec3c	addx %r11, 3132, %r11
+8440a1f1	addx %r2, 497, %r2
+9a4367ac	addx %r13, 1964, %r13
+9642ed87	addx %r11, 3463, %r11
+8440a2fe	addx %r2, 766, %r2
+8c41abda	addx %r6, 3034, %r6
+9442aff8	addx %r10, 4088, %r10
+8c41aaef	addx %r6, 2799, %r6
+8440b082	addx %r2, -3966, %r2
+8a417780	addx %r5, -2176, %r5
+8640f151	addx %r3, -3759, %r3
+8440b42b	addx %r2, -3029, %r2
+88413709	addx %r4, -2295, %r4
+9642f33c	addx %r11, -3268, %r11
+8440bb16	addx %r2, -1258, %r2
+9843316f	addx %r12, -3729, %r12
+8c41bfc4	addx %r6, -60, %r6
+98433b3d	addx %r12, -1219, %r12
+8440bf66	addx %r2, -154, %r2
+88413cdf	addx %r4, -801, %r4
+8440bfff	addx %r2, -1, %r2
+9642ffff	addx %r11, -1, %r11
+8442a000	addx %r10, 0, %r2
+84432000	addx %r12, 0, %r2
+8e41a400	addx %r6, 1024, %r7
+8e42e200	addx %r11, 512, %r7
+98416440	addx %r5, 1088, %r12
+84436082	addx %r13, 130, %r2
+9640a288	addx %r2, 648, %r11
+9841ac01	addx %r6, 3073, %r12
+86416c41	addx %r5, 3137, %r3
+9a40e268	addx %r3, 616, %r13
+884320b9	addx %r12, 185, %r4
+8a42e05d	addx %r11, 93, %r5
+884364b9	addx %r13, 1209, %r4
+9441af28	addx %r6, 3880, %r10
+964128db	addx %r4, 2267, %r11
+9a42afd0	addx %r10, 4048, %r13
+8441ad6e	addx %r6, 3438, %r2
+88436ad7	addx %r13, 2775, %r4
+8640a3bf	addx %r2, 959, %r3
+9a416daf	addx %r5, 3503, %r13
+8e41a7f7	addx %r6, 2039, %r7
+8c40ef7b	addx %r3, 3963, %r6
+8c436dff	addx %r13, 3583, %r6
+8e41aeff	addx %r6, 3839, %r7
+8841b840	addx %r6, -1984, %r4
+9841f810	addx %r7, -2032, %r12
+88433888	addx %r12, -1912, %r4
+9640b248	addx %r2, -3512, %r11
+88433903	addx %r12, -1789, %r4
+9442f50a	addx %r11, -2806, %r10
+86417760	addx %r5, -2208, %r3
+8441b24b	addx %r6, -3509, %r2
+9a4335b2	addx %r12, -2638, %r13
+9441fcb4	addx %r7, -844, %r10
+98437b1d	addx %r13, -1251, %r12
+9641fbaa	addx %r7, -1110, %r11
+8842f57b	addx %r11, -2693, %r4
+944333f3	addx %r12, -3085, %r10
+9842fbd7	addx %r11, -1065, %r12
+8c437f3d	addx %r13, -195, %r6
+8c41fbfb	addx %r7, -1029, %r6
+8642fffa	addx %r11, -6, %r3
+8442bfff	addx %r10, -1, %r2
+84433fff	addx %r12, -1, %r2
+9a080fe0	and %r0, %r0, %r13
+84080e40	and %r0, %r0, %r2
+800814c2	and %r0, %r2, %r0
+800a818a	and %r10, %r10, %r0
+8a081cc5	and %r0, %r5, %r5
+980816ec	and %r0, %r12, %r12
+960ac500	and %r11, %r0, %r11
+840891c0	and %r2, %r0, %r2
+8a094ca5	and %r5, %r5, %r5
+800b43c3	and %r13, %r3, %r0
+800b57c5	and %r13, %r5, %r0
+8c080e43	and %r0, %r3, %r6
+8a08056c	and %r0, %r12, %r5
+8c08cc60	and %r3, %r0, %r6
+940b4400	and %r13, %r0, %r10
+8c0a824a	and %r10, %r10, %r6
+880ac68b	and %r11, %r11, %r4
+8a0954e2	and %r5, %r2, %r5
+84089aaa	and %r2, %r10, %r2
+8c08c266	and %r3, %r6, %r6
+8408c002	and %r3, %r2, %r2
+8408deec	and %r3, %r12, %r2
+88088a8a	and %r2, %r10, %r4
+98880840	andcc %r0, %r0, %r12
+80880f8d	andcc %r0, %r13, %r0
+80880f82	andcc %r0, %r2, %r0
+8a880365	andcc %r0, %r5, %r5
+8088c7a0	andcc %r3, %r0, %r0
+8089d820	andcc %r7, %r0, %r0
+8e89db40	andcc %r7, %r0, %r7
+8688c800	andcc %r3, %r0, %r3
+80889aa2	andcc %r2, %r2, %r0
+80891a84	andcc %r4, %r4, %r0
+8688c7c3	andcc %r3, %r3, %r3
+84888122	andcc %r2, %r2, %r2
+8c881f83	andcc %r0, %r3, %r6
+98880b0b	andcc %r0, %r11, %r12
+988b5580	andcc %r13, %r0, %r12
+888985a0	andcc %r6, %r0, %r4
+8e8ad3ab	andcc %r11, %r11, %r7
+86895b65	andcc %r5, %r5, %r3
+808b0865	andcc %r12, %r5, %r0
+8088df24	andcc %r3, %r4, %r0
+988b0f27	andcc %r12, %r7, %r12
+84888003	andcc %r2, %r3, %r2
+9a89c9ad	andcc %r7, %r13, %r13
+9a89940d	andcc %r6, %r13, %r13
+96890742	andcc %r4, %r2, %r11
+98889faa	andcc %r2, %r10, %r12
+8088249e	andcc %r0, 1182, %r0
+80882511	andcc %r0, 1297, %r0
+8c8834f2	andcc %r0, -2830, %r6
+968822a3	andcc %r0, 675, %r11
+8088a001	andcc %r2, 1, %r0
+8088a002	andcc %r2, 2, %r0
+8488a002	andcc %r2, 2, %r2
+8488a020	andcc %r2, 32, %r2
+8088a003	andcc %r2, 3, %r0
+8088a030	andcc %r2, 48, %r0
+8488a003	andcc %r2, 3, %r2
+8688e003	andcc %r3, 3, %r3
+8088e8c0	andcc %r3, 2240, %r0
+8088a007	andcc %r2, 7, %r0
+8488a007	andcc %r2, 7, %r2
+88892007	andcc %r4, 7, %r4
+80896344	andcc %r5, 836, %r0
+8088a03c	andcc %r2, 60, %r0
+8e89ee02	andcc %r7, 3586, %r7
+8e89e407	andcc %r7, 1031, %r7
+8088aec0	andcc %r2, 3776, %r0
+808b628e	andcc %r13, 654, %r0
+968aeaa8	andcc %r11, 2728, %r11
+8c89a469	andcc %r6, 1129, %r6
+808b6a2e	andcc %r13, 2606, %r0
+808aea95	andcc %r11, 2709, %r0
+9a8b6d58	andcc %r13, 3416, %r13
+8e89ea17	andcc %r7, 2583, %r7
+80896b33	andcc %r5, 2867, %r0
+8088a0fd	andcc %r2, 253, %r0
+988b2ea5	andcc %r12, 3749, %r12
+8488ae72	andcc %r2, 3698, %r2
+8088eacf	andcc %r3, 2767, %r0
+8088a0ff	andcc %r2, 255, %r0
+8e89efe8	andcc %r7, 4072, %r7
+948aae6b	andcc %r10, 3691, %r10
+808aadbd	andcc %r10, 3517, %r0
+8089e6fd	andcc %r7, 1789, %r0
+968ae3fe	andcc %r11, 1022, %r11
+968aeb5f	andcc %r11, 2911, %r11
+8088e7fe	andcc %r3, 2046, %r0
+8088b800	andcc %r2, -2048, %r0
+8088f800	andcc %r3, -2048, %r0
+968af204	andcc %r11, -3580, %r11
+8c89b018	andcc %r6, -4072, %r6
+808b7109	andcc %r13, -3831, %r0
+8088b484	andcc %r2, -2940, %r0
+808b7035	andcc %r13, -4043, %r0
+808abc09	andcc %r10, -1015, %r0
+9a8b7146	andcc %r13, -3770, %r13
+8a897528	andcc %r5, -2776, %r5
+808b770a	andcc %r13, -2294, %r0
+8088bc46	andcc %r2, -954, %r0
+8688f92a	andcc %r3, -1750, %r3
+9a8b70ce	andcc %r13, -3890, %r13
+808b7cac	andcc %r13, -852, %r0
+808b3d49	andcc %r12, -695, %r0
+8e89f317	andcc %r7, -3305, %r7
+88893571	andcc %r4, -2703, %r4
+808affe0	andcc %r11, -32, %r0
+80897f58	andcc %r5, -168, %r0
+968af1de	andcc %r11, -3618, %r11
+968aff25	andcc %r11, -219, %r11
+8089fbcd	andcc %r7, -1075, %r0
+80897bf1	andcc %r5, -1039, %r0
+8a8977ae	andcc %r5, -2130, %r5
+988b3e3b	andcc %r12, -453, %r12
+808abb6f	andcc %r10, -1169, %r0
+808af6f7	andcc %r11, -2313, %r0
+8c89bbd7	andcc %r6, -1065, %r6
+8a897ff8	andcc %r5, -8, %r5
+80897fd7	andcc %r5, -41, %r0
+8088bdff	andcc %r2, -513, %r0
+8088bffd	andcc %r2, -3, %r0
+8c89bdff	andcc %r6, -513, %r6
+84892400	andcc %r4, 1024, %r2
+8888a010	andcc %r2, 16, %r4
+9a88e024	andcc %r3, 36, %r13
+888aa003	andcc %r10, 3, %r4
+9489e406	andcc %r7, 1030, %r10
+8e8aea80	andcc %r11, 2688, %r7
+848b2494	andcc %r12, 1172, %r2
+8889e511	andcc %r7, 1297, %r4
+8a89e4e8	andcc %r7, 1256, %r5
+9489a4d4	andcc %r6, 1236, %r10
+9688aa4b	andcc %r2, 2635, %r11
+8e8aa5c6	andcc %r10, 1478, %r7
+8689eccd	andcc %r7, 3277, %r3
+8e8b6de8	andcc %r13, 3560, %r7
+9a89edbc	andcc %r7, 3516, %r13
+9a88e0ff	andcc %r3, 255, %r13
+8888ab7d	andcc %r2, 2941, %r4
+8c892db7	andcc %r4, 3511, %r6
+8a89aaff	andcc %r6, 2815, %r5
+9488ef7d	andcc %r3, 3965, %r10
+8688affe	andcc %r2, 4094, %r3
+888b3004	andcc %r12, -4092, %r4
+8c8b3840	andcc %r12, -1984, %r6
+9689b180	andcc %r6, -3712, %r11
+88897310	andcc %r5, -3312, %r4
+868af0c2	andcc %r11, -3902, %r3
+9a8b3a42	andcc %r12, -1470, %r13
+84897505	andcc %r5, -2811, %r2
+8689b24d	andcc %r6, -3507, %r3
+9689b84b	andcc %r6, -1973, %r11
+8e89749d	andcc %r5, -2915, %r7
+8a8b31ae	andcc %r12, -3666, %r5
+8e88b976	andcc %r2, -1674, %r7
+9a89bd6c	andcc %r6, -660, %r13
+968b7bea	andcc %r13, -1046, %r11
+968b3f4e	andcc %r12, -178, %r11
+868b3bb7	andcc %r12, -1097, %r3
+988abd7e	andcc %r10, -642, %r12
+868b3edf	andcc %r12, -289, %r3
+888b7fbb	andcc %r13, -69, %r4
+8689bfef	andcc %r6, -17, %r3
+80083d36	and %r0, -714, %r0
+80082ffd	and %r0, 4093, %r0
+98083396	and %r0, -3178, %r12
+840822df	and %r0, 735, %r2
+800b6dbb	and %r13, 3515, %r0
+80092531	and %r4, 1329, %r0
+8408a001	and %r2, 1, %r2
+8408a002	and %r2, 2, %r2
+8408a401	and %r2, 1025, %r2
+8408a003	and %r2, 3, %r2
+8e09e111	and %r7, 273, %r7
+8408a007	and %r2, 7, %r2
+8408a00f	and %r2, 15, %r2
+8408a03c	and %r2, 60, %r2
+8408a01f	and %r2, 31, %r2
+8608e01f	and %r3, 31, %r3
+8408a03f	and %r2, 63, %r2
+8608e03f	and %r3, 63, %r3
+960aecae	and %r11, 3246, %r11
+8408a07f	and %r2, 127, %r2
+8408a0ff	and %r2, 255, %r2
+8608e0ff	and %r3, 255, %r3
+8408a1ff	and %r2, 511, %r2
+960aedaf	and %r11, 3503, %r11
+8408a3ff	and %r2, 1023, %r2
+8608e3ff	and %r3, 1023, %r3
+8408a7ff	and %r2, 2047, %r2
+8608e7ff	and %r3, 2047, %r3
+8608efff	and %r3, 4095, %r3
+88093000	and %r4, -4096, %r4
+960af000	and %r11, -4096, %r11
+8c09bc08	and %r6, -1016, %r6
+88093250	and %r4, -3504, %r4
+8408bf00	and %r2, -256, %r2
+88093a14	and %r4, -1516, %r4
+8c09b266	and %r6, -3482, %r6
+8e09f1b8	and %r7, -3656, %r7
+8408b333	and %r2, -3277, %r2
+8e09f46d	and %r7, -2963, %r7
+8c09b747	and %r6, -2233, %r6
+8e09fd17	and %r7, -745, %r7
+960afde9	and %r11, -535, %r11
+9a0b7e7a	and %r13, -390, %r13
+8408bfb9	and %r2, -71, %r2
+8408bff8	and %r2, -8, %r2
+8408b9ff	and %r2, -1537, %r2
+8408bfcf	and %r2, -49, %r2
+8408b7ff	and %r2, -2049, %r2
+8408bbff	and %r2, -1025, %r2
+8408e001	and %r3, 1, %r2
+8408e008	and %r3, 8, %r2
+8a092810	and %r4, 2064, %r5
+8e09a210	and %r6, 528, %r7
+98096091	and %r5, 145, %r12
+84092007	and %r4, 7, %r2
+8409a055	and %r6, 85, %r2
+960b6486	and %r13, 1158, %r11
+840b28e8	and %r12, 2280, %r2
+8a09a2c6	and %r6, 710, %r5
+8a09a5aa	and %r6, 1450, %r5
+9a096875	and %r5, 2165, %r13
+860b256d	and %r12, 1389, %r3
+8e08eed2	and %r3, 3794, %r7
+9a092afa	and %r4, 2810, %r13
+8a09ae3e	and %r6, 3646, %r5
+8c0b27f3	and %r12, 2035, %r6
+9a09efcd	and %r7, 4045, %r13
+840aefb7	and %r11, 4023, %r2
+860b63ff	and %r13, 1023, %r3
+8408e7ff	and %r3, 2047, %r2
+860927ff	and %r4, 2047, %r3
+8808afff	and %r2, 4095, %r4
+8408f000	and %r3, -4096, %r2
+86093800	and %r4, -2048, %r3
+9a09b800	and %r6, -2048, %r13
+86097090	and %r5, -3952, %r3
+8c0af024	and %r11, -4060, %r6
+8a0b7242	and %r13, -3518, %r5
+9808b411	and %r2, -3055, %r12
+8808b4c8	and %r2, -2872, %r4
+8e08f05c	and %r3, -4004, %r7
+8608ba1a	and %r2, -1510, %r3
+9a0b349c	and %r12, -2916, %r13
+9a09b5c6	and %r6, -2618, %r13
+880ab61d	and %r10, -2531, %r4
+8c093eca	and %r4, -310, %r6
+96093bf0	and %r4, -1040, %r11
+9a08bf55	and %r2, -171, %r13
+8608bf87	and %r2, -121, %r3
+84093ff8	and %r4, -8, %r2
+8608bff8	and %r2, -8, %r3
+8e09bff3	and %r6, -13, %r7
+9609febf	and %r7, -321, %r11
+9809bff7	and %r6, -9, %r12
+8408ffdf	and %r3, -33, %r2
+8e281fc0	andn %r0, %r0, %r7
+80298cc0	andn %r6, %r0, %r0
+8028d2a0	andn %r3, %r0, %r0
+9a280a6d	andn %r0, %r13, %r13
+88291160	andn %r4, %r0, %r4
+942a910a	andn %r10, %r10, %r10
+9a2b480d	andn %r13, %r13, %r13
+8029d385	andn %r7, %r5, %r0
+8029180b	andn %r4, %r11, %r0
+8a28114d	andn %r0, %r13, %r5
+94280627	andn %r0, %r7, %r10
+9628c060	andn %r3, %r0, %r11
+862980c0	andn %r6, %r0, %r3
+8a288402	andn %r2, %r2, %r5
+9628c6e3	andn %r3, %r3, %r11
+84288003	andn %r2, %r3, %r2
+8628c004	andn %r3, %r4, %r3
+942b540a	andn %r13, %r10, %r10
+8629de43	andn %r7, %r3, %r3
+9829d9c2	andn %r7, %r2, %r12
+84294023	andn %r5, %r3, %r2
+8aa817a0	andncc %r0, %r0, %r5
+80a80fca	andncc %r0, %r10, %r0
+9aa8084d	andncc %r0, %r13, %r13
+84a802e2	andncc %r0, %r2, %r2
+80a9cb40	andncc %r7, %r0, %r0
+80a91c00	andncc %r4, %r0, %r0
+80ab5a8d	andncc %r13, %r13, %r0
+80a908c4	andncc %r4, %r4, %r0
+94aa8cea	andncc %r10, %r10, %r10
+94aa8e8a	andncc %r10, %r10, %r10
+8ea8132b	andncc %r0, %r11, %r7
+8ea81dcb	andncc %r0, %r11, %r7
+8aa89da0	andncc %r2, %r0, %r5
+84ab1ce0	andncc %r12, %r0, %r2
+96a8c303	andncc %r3, %r3, %r11
+8ea98226	andncc %r6, %r6, %r7
+80a98fe4	andncc %r6, %r4, %r0
+80aa800d	andncc %r10, %r13, %r0
+84a8936a	andncc %r2, %r10, %r2
+8ea9d685	andncc %r7, %r5, %r7
+8aab5e85	andncc %r13, %r5, %r5
+8ca9d9a6	andncc %r7, %r6, %r6
+8ca9190c	andncc %r4, %r12, %r6
+96ab1ac4	andncc %r12, %r4, %r11
+80a83319	andncc %r0, -3303, %r0
+80a821a7	andncc %r0, 423, %r0
+8ca83045	andncc %r0, -4027, %r6
+8aa83d5e	andncc %r0, -674, %r5
+80ab7f3e	andncc %r13, -194, %r0
+86a8fdf9	andncc %r3, -519, %r3
+86a8fdbe	andncc %r3, -578, %r3
+80a9fed5	andncc %r7, -299, %r0
+80a97eae	andncc %r5, -338, %r0
+84a8babe	andncc %r2, -1346, %r2
+88a93f71	andncc %r4, -143, %r4
+80aabc73	andncc %r10, -909, %r0
+80ab7b99	andncc %r13, -1127, %r0
+88a935f8	andncc %r4, -2568, %r4
+8ca9b6ab	andncc %r6, -2389, %r6
+80a8b237	andncc %r2, -3529, %r0
+80a8f157	andncc %r3, -3753, %r0
+8ca9bb46	andncc %r6, -1210, %r6
+8aa97792	andncc %r5, -2158, %r5
+80ab7a54	andncc %r13, -1452, %r0
+80a9f1a6	andncc %r7, -3674, %r0
+9aab7a8a	andncc %r13, -1398, %r13
+8ea9f255	andncc %r7, -3499, %r7
+80a9740d	andncc %r5, -3059, %r0
+80a8fc48	andncc %r3, -952, %r0
+8aa97930	andncc %r5, -1744, %r5
+86a8f035	andncc %r3, -4043, %r3
+80a93822	andncc %r4, -2014, %r0
+80aab822	andncc %r10, -2014, %r0
+80ab6fdd	andncc %r13, 4061, %r0
+80ab2bbf	andncc %r12, 3007, %r0
+80ab2b6f	andncc %r12, 2927, %r0
+96aaefdc	andncc %r11, 4060, %r11
+8aa967eb	andncc %r5, 2027, %r5
+80a96b1f	andncc %r5, 2847, %r0
+80a961f7	andncc %r5, 503, %r0
+8aa96afc	andncc %r5, 2812, %r5
+96aae7ec	andncc %r11, 2028, %r11
+80ab2b9c	andncc %r12, 2972, %r0
+80a9a99d	andncc %r6, 2461, %r0
+8aa963da	andncc %r5, 986, %r5
+8ea9e6ab	andncc %r7, 1707, %r7
+80aae2da	andncc %r11, 730, %r0
+80a922b6	andncc %r4, 694, %r0
+8ca9ae43	andncc %r6, 3651, %r6
+8ca9a03f	andncc %r6, 63, %r6
+80ab25c8	andncc %r12, 1480, %r0
+80a8eb48	andncc %r3, 2888, %r0
+88a92255	andncc %r4, 597, %r4
+86a8ea43	andncc %r3, 2627, %r3
+80a963a0	andncc %r5, 928, %r0
+80a8e390	andncc %r3, 912, %r0
+84a8a443	andncc %r2, 1091, %r2
+86a8e059	andncc %r3, 89, %r3
+86a8e007	andncc %r3, 7, %r3
+96aae700	andncc %r11, 1792, %r11
+96aae006	andncc %r11, 6, %r11
+8ea9e300	andncc %r7, 768, %r7
+84a8a400	andncc %r2, 1024, %r2
+86a9beff	andncc %r6, -257, %r3
+8ca97def	andncc %r5, -529, %r6
+8ca8bfe7	andncc %r2, -25, %r6
+94ab77fa	andncc %r13, -2054, %r10
+94aafde7	andncc %r11, -537, %r10
+9aab336f	andncc %r12, -3217, %r13
+9aa9ba6f	andncc %r6, -1425, %r13
+88a97b3c	andncc %r5, -1220, %r4
+8eaaba3d	andncc %r10, -1475, %r7
+98a8fc2d	andncc %r3, -979, %r12
+86a9f574	andncc %r7, -2700, %r3
+98aab23a	andncc %r10, -3526, %r12
+96a8f2b1	andncc %r3, -3407, %r11
+86a9b309	andncc %r6, -3319, %r3
+8eaaf605	andncc %r11, -2555, %r7
+8aaab812	andncc %r10, -2030, %r5
+8ca9310c	andncc %r4, -3828, %r6
+94a93048	andncc %r4, -4024, %r10
+8ca8b024	andncc %r2, -4060, %r6
+9aa8afbe	andncc %r2, 4030, %r13
+84aaedfb	andncc %r11, 3579, %r2
+9aa967bd	andncc %r5, 1981, %r13
+8cab6ef3	andncc %r13, 3827, %r6
+8ea8adf4	andncc %r2, 3572, %r7
+86aaab3d	andncc %r10, 2877, %r3
+88a8aee8	andncc %r2, 3816, %r4
+8ca96b5c	andncc %r5, 2908, %r6
+84a965d1	andncc %r5, 1489, %r2
+8ea9a2ab	andncc %r6, 683, %r7
+8ca9248b	andncc %r4, 1163, %r6
+98a9a570	andncc %r6, 1392, %r12
+8aab6861	andncc %r13, 2145, %r5
+84a9a505	andncc %r6, 1285, %r2
+96aaa250	andncc %r10, 592, %r11
+88a8a484	andncc %r2, 1156, %r4
+98a8e014	andncc %r3, 20, %r12
+8ea96110	andncc %r5, 272, %r7
+80283659	andn %r0, -2471, %r0
+80283ac7	andn %r0, -1337, %r0
+8a282f5e	andn %r0, 3934, %r5
+96282eee	andn %r0, 3822, %r11
+8028e27e	andn %r3, 638, %r0
+802b62ff	andn %r13, 767, %r0
+882935fd	andn %r4, -2563, %r4
+8a297eb7	andn %r5, -329, %r5
+962afcfc	andn %r11, -772, %r11
+882937e9	andn %r4, -2071, %r4
+9a2b799b	andn %r13, -1637, %r13
+942ab5b5	andn %r10, -2635, %r10
+8a297d0e	andn %r5, -754, %r5
+942abe92	andn %r10, -366, %r10
+8428b147	andn %r2, -3769, %r2
+962af471	andn %r11, -2959, %r11
+8a297158	andn %r5, -3752, %r5
+942ab90c	andn %r10, -1780, %r10
+88293111	andn %r4, -3823, %r4
+9a2b7c01	andn %r13, -1023, %r13
+982b3801	andn %r12, -2047, %r12
+9a2b6fd7	andn %r13, 4055, %r13
+8c29a5df	andn %r6, 1503, %r6
+8a296fb6	andn %r5, 4022, %r5
+982b2aed	andn %r12, 2797, %r12
+962ae0ff	andn %r11, 255, %r11
+942aace3	andn %r10, 3299, %r10
+8628ece6	andn %r3, 3302, %r3
+8c29a45d	andn %r6, 1117, %r6
+942aaba8	andn %r10, 2984, %r10
+9a2b64d4	andn %r13, 1236, %r13
+8e29e433	andn %r7, 1075, %r7
+8c29a1c2	andn %r6, 450, %r6
+982b2c06	andn %r12, 3078, %r12
+8428a144	andn %r2, 324, %r2
+8628ea20	andn %r3, 2592, %r3
+942aa030	andn %r10, 48, %r10
+96297fdf	andn %r5, -33, %r11
+8c2b3ffd	andn %r12, -3, %r6
+9a2aff7d	andn %r11, -131, %r13
+8828bfbd	andn %r2, -67, %r4
+9a2b33f7	andn %r12, -3081, %r13
+84293dcf	andn %r4, -561, %r2
+8e2b7cde	andn %r13, -802, %r7
+8e2977ae	andn %r5, -2130, %r7
+9428bec5	andn %r2, -315, %r10
+882abde4	andn %r10, -540, %r4
+8e29b237	andn %r6, -3529, %r7
+8c2970e7	andn %r5, -3865, %r6
+8c2934a3	andn %r4, -2909, %r6
+8c297ac8	andn %r5, -1336, %r6
+962ab780	andn %r10, -2176, %r11
+8c2af590	andn %r11, -2672, %r6
+8c2971c0	andn %r5, -3648, %r6
+8e2ab212	andn %r10, -3566, %r7
+842ab840	andn %r10, -1984, %r2
+8a2ab808	andn %r10, -2040, %r5
+9828efbf	andn %r3, 4031, %r12
+882aeffe	andn %r11, 4094, %r4
+842b6f7e	andn %r13, 3966, %r2
+942b67df	andn %r13, 2015, %r10
+862b2fb9	andn %r12, 4025, %r3
+9a28efce	andn %r3, 4046, %r13
+9a29297d	andn %r4, 2429, %r13
+982923de	andn %r4, 990, %r12
+842aac9b	andn %r10, 3227, %r2
+8e2b68de	andn %r13, 2270, %r7
+8c2ae0b7	andn %r11, 183, %r6
+9829abe0	andn %r6, 3040, %r12
+8a28a1ac	andn %r2, 428, %r5
+9429e2c3	andn %r7, 707, %r10
+8e28ea18	andn %r3, 2584, %r7
+8c28a826	andn %r2, 2086, %r6
+98292450	andn %r4, 1104, %r12
+8a2aa007	andn %r10, 7, %r5
+962aa003	andn %r10, 3, %r11
+882b6014	andn %r13, 20, %r4
+c00300e0	ld [%r12 + %r0], %r0
+c0008860	ld [%r2 + %r0], %r0
+ca0005e5	ld [%r0 + %r5], %r5
+c4008000	ld [%r2 + %r0], %r2
+c600c000	ld [%r3 + %r0], %r3
+c0019f2a	ld [%r6 + %r10], %r0
+c0008d2b	ld [%r2 + %r11], %r0
+ca0006e4	ld [%r0 + %r4], %r5
+d800050a	ld [%r0 + %r10], %r12
+c400c000	ld [%r3 + %r0], %r2
+c4010000	ld [%r4 + %r0], %r2
+c4008003	ld [%r2 + %r3], %r2
+c4008004	ld [%r2 + %r4], %r2
+c400c002	ld [%r3 + %r2], %r2
+c4010002	ld [%r4 + %r2], %r2
+c601c542	ld [%r7 + %r2], %r3
+da031567	ld [%r12 + %r7], %r13
+da181bcd	ldd [%r0 + %r13], %r12
+c4180462	ldd [%r0 + %r2], %r2
+d61ac520	ldd [%r11 + %r0], %r10
+c4188000	ldd [%r2 + %r0], %r2
+d81b0000	ldd [%r12 + %r0], %r12
+ca190b05	ldd [%r4 + %r5], %r4
+d41ac0ca	ldd [%r11 + %r10], %r10
+c418c042	ldd [%r3 + %r2], %r2
+da181682	ldd [%r0 + %r2], %r12
+d4181aa7	ldd [%r0 + %r7], %r10
+da188320	ldd [%r2 + %r0], %r12
+d418c000	ldd [%r3 + %r0], %r10
+cc19d18d	ldd [%r7 + %r13], %r6
+ce19c7ad	ldd [%r7 + %r13], %r6
+d41a9e07	ldd [%r10 + %r7], %r10
+ca191d2b	ldd [%r4 + %r11], %r4
+c81883c5	ldd [%r2 + %r5], %r4
+c819cc05	ldd [%r7 + %r5], %r4
+c41a81e2	ldd [%r10 + %r2], %r2
+cc1a8c26	ldd [%r10 + %r6], %r6
+d41980ad	ldd [%r6 + %r13], %r10
+c41a8ccb	ldd [%r10 + %r11], %r2
+c418a000	ldd [%r2 + 0x0], %r2
+c418a020	ldd [%r2 + 0x20], %r2
+ca1920a0	ldd [%r4 + 0xa0], %r4
+ca192045	ldd [%r4 + 0x45], %r4
+ce19e264	ldd [%r7 + 0x264], %r6
+d41ae146	ldd [%r11 + 0x146], %r10
+c618a816	ldd [%r2 + 0x816], %r2
+c618e21d	ldd [%r3 + 0x21d], %r2
+ce19e41e	ldd [%r7 + 0x41e], %r6
+c418a3a1	ldd [%r2 + 0x3a1], %r2
+c418a28b	ldd [%r2 + 0x28b], %r2
+c418e359	ldd [%r3 + 0x359], %r2
+ce19ee92	ldd [%r7 + 0xe92], %r6
+d41aa875	ldd [%r10 + 0x875], %r10
+cc19ad26	ldd [%r6 + 0xd26], %r6
+c819653b	ldd [%r5 + 0x53b], %r4
+ce19e69d	ldd [%r7 + 0x69d], %r6
+ca1925ce	ldd [%r4 + 0x5ce], %r4
+c618a5ab	ldd [%r2 + 0x5ab], %r2
+c819669f	ldd [%r5 + 0x69f], %r4
+c8196e57	ldd [%r5 + 0xe57], %r4
+d41aedb7	ldd [%r11 + 0xdb7], %r10
+c81927be	ldd [%r4 + 0x7be], %r4
+d61aeefd	ldd [%r11 + 0xefd], %r10
+c8196edf	ldd [%r5 + 0xedf], %r4
+d81b3044	ldd [%r12 - 0xfbc], %r12
+d61af085	ldd [%r11 - 0xf7b], %r10
+c418f106	ldd [%r3 - 0xefa], %r2
+c618b608	ldd [%r2 - 0x9f8], %r2
+c81978c8	ldd [%r5 - 0x738], %r4
+c8197611	ldd [%r5 - 0x9ef], %r4
+da1b30a9	ldd [%r12 - 0xf57], %r12
+da1b31c8	ldd [%r12 - 0xe38], %r12
+d41afb88	ldd [%r11 - 0x478], %r10
+d41af970	ldd [%r11 - 0x690], %r10
+d81b3c4a	ldd [%r12 - 0x3b6], %r12
+cc19b316	ldd [%r6 - 0xcea], %r6
+d61af987	ldd [%r11 - 0x679], %r10
+c418f8ae	ldd [%r3 - 0x752], %r2
+da1b3f12	ldd [%r12 - 0xee], %r12
+c418b68b	ldd [%r2 - 0x975], %r2
+cc19f774	ldd [%r7 - 0x88c], %r6
+d61afca7	ldd [%r11 - 0x359], %r10
+cc19b2fc	ldd [%r6 - 0xd04], %r6
+c418bcba	ldd [%r2 - 0x346], %r2
+d81b7c6f	ldd [%r13 - 0x391], %r12
+c819766f	ldd [%r5 - 0x991], %r4
+c618bdcb	ldd [%r2 - 0x235], %r2
+c418b7f1	ldd [%r2 - 0x80f], %r2
+d81b7cfe	ldd [%r13 - 0x302], %r12
+c41aa000	ldd [%r10 + 0x0], %r2
+d81aa000	ldd [%r10 + 0x0], %r12
+cc1aa100	ldd [%r10 + 0x100], %r6
+c41aa008	ldd [%r10 + 0x8], %r2
+c41aa018	ldd [%r10 + 0x18], %r2
+d819e240	ldd [%r7 + 0x240], %r12
+d419e610	ldd [%r7 + 0x610], %r10
+d41b6540	ldd [%r13 + 0x540], %r10
+cc1b2425	ldd [%r12 + 0x425], %r6
+ce1964a8	ldd [%r5 + 0x4a8], %r6
+ce1ae235	ldd [%r11 + 0x235], %r6
+c419ea91	ldd [%r7 + 0xa91], %r2
+da1964b3	ldd [%r5 + 0x4b3], %r12
+c819e3a5	ldd [%r7 + 0x3a5], %r4
+d818e8dd	ldd [%r3 + 0x8dd], %r12
+ce18a8e7	ldd [%r2 + 0x8e7], %r6
+cc1927e6	ldd [%r4 + 0x7e6], %r6
+d4192eae	ldd [%r4 + 0xeae], %r10
+cc1b6fe3	ldd [%r13 + 0xfe3], %r6
+d6192f3e	ldd [%r4 + 0xf3e], %r10
+d8192fdd	ldd [%r4 + 0xfdd], %r12
+d6192fde	ldd [%r4 + 0xfde], %r10
+ce1b6fef	ldd [%r13 + 0xfef], %r6
+d41b2f7f	ldd [%r12 + 0xf7f], %r10
+ca1b7280	ldd [%r13 - 0xd80], %r4
+d6197041	ldd [%r5 - 0xfbf], %r10
+d819f8c0	ldd [%r7 - 0x740], %r12
+c41af304	ldd [%r11 - 0xcfc], %r2
+d819b468	ldd [%r6 - 0xb98], %r12
+d819f3c0	ldd [%r7 - 0xc40], %r12
+c619fc2c	ldd [%r7 - 0x3d4], %r2
+ce197aa1	ldd [%r5 - 0x55f], %r6
+da193659	ldd [%r4 - 0x9a7], %r12
+ce1ab6ac	ldd [%r10 - 0x954], %r6
+d8193cc7	ldd [%r4 - 0x339], %r12
+c619ff92	ldd [%r7 - 0x6e], %r2
+cc1abff0	ldd [%r10 - 0x10], %r6
+c419b3eb	ldd [%r6 - 0xc15], %r2
+da19fbde	ldd [%r7 - 0x422], %r12
+cc1b3ee7	ldd [%r12 - 0x119], %r6
+cc18fefb	ldd [%r3 - 0x105], %r6
+ca18ffdd	ldd [%r3 - 0x23], %r4
+ca1abf7f	ldd [%r10 - 0x81], %r4
+c0036f6e	ld [%r13 + 0xf6e], %r0
+c001e66c	ld [%r7 + 0x66c], %r0
+c400a000	ld [%r2 + 0x0], %r2
+c600e000	ld [%r3 + 0x0], %r3
+c400a004	ld [%r2 + 0x4], %r2
+c400a008	ld [%r2 + 0x8], %r2
+da036480	ld [%r13 + 0x480], %r13
+c400a00c	ld [%r2 + 0xc], %r2
+c400a01c	ld [%r2 + 0x1c], %r2
+c400a034	ld [%r2 + 0x34], %r2
+ca01601e	ld [%r5 + 0x1e], %r5
+c400a03c	ld [%r2 + 0x3c], %r2
+da036ab0	ld [%r13 + 0xab0], %r13
+d602e456	ld [%r11 + 0x456], %r11
+c400a5a9	ld [%r2 + 0x5a9], %r2
+ca0168c7	ld [%r5 + 0x8c7], %r5
+c600ede8	ld [%r3 + 0xde8], %r3
+d602e33e	ld [%r11 + 0x33e], %r11
+d8032b6b	ld [%r12 + 0xb6b], %r12
+d602ecbd	ld [%r11 + 0xcbd], %r11
+c600eafd	ld [%r3 + 0xafd], %r3
+ca016efd	ld [%r5 + 0xefd], %r5
+cc01aff9	ld [%r6 + 0xff9], %r6
+d602effe	ld [%r11 + 0xffe], %r11
+ce01f01c	ld [%r7 - 0xfe4], %r7
+da037c81	ld [%r13 - 0x37f], %r13
+da03720e	ld [%r13 - 0xdf2], %r13
+d402b543	ld [%r10 - 0xabd], %r10
+c400bc64	ld [%r2 - 0x39c], %r2
+c600f49d	ld [%r3 - 0xb63], %r3
+c400bc5c	ld [%r2 - 0x3a4], %r2
+cc01bf13	ld [%r6 - 0xed], %r6
+c400bfe0	ld [%r2 - 0x20], %r2
+d602fb3d	ld [%r11 - 0x4c3], %r11
+d602fb9e	ld [%r11 - 0x462], %r11
+c400bfdc	ld [%r2 - 0x24], %r2
+c8013fdc	ld [%r4 - 0x24], %r4
+c400bffc	ld [%r2 - 0x4], %r2
+c400e000	ld [%r3 + 0x0], %r2
+c4012000	ld [%r4 + 0x0], %r2
+c400e004	ld [%r3 + 0x4], %r2
+c400e008	ld [%r3 + 0x8], %r2
+c400e00c	ld [%r3 + 0xc], %r2
+c400e024	ld [%r3 + 0x24], %r2
+da02e248	ld [%r11 + 0x248], %r13
+c400e058	ld [%r3 + 0x58], %r2
+c800e834	ld [%r3 + 0x834], %r4
+c400e05c	ld [%r3 + 0x5c], %r2
+d800ecc1	ld [%r3 + 0xcc1], %r12
+d800e235	ld [%r3 + 0x235], %r12
+c6012e38	ld [%r4 + 0xe38], %r3
+c6036393	ld [%r13 + 0x393], %r3
+d802aa6d	ld [%r10 + 0xa6d], %r12
+c800ec7a	ld [%r3 + 0xc7a], %r4
+ca01a3d7	ld [%r6 + 0x3d7], %r5
+c800e3fc	ld [%r3 + 0x3fc], %r4
+da00a7fc	ld [%r2 + 0x7fc], %r13
+c601efb5	ld [%r7 + 0xfb5], %r3
+c6016f3f	ld [%r5 + 0xf3f], %r3
+d40166ff	ld [%r5 + 0x6ff], %r10
+d601effd	ld [%r7 + 0xffd], %r11
+ce013090	ld [%r4 - 0xf70], %r7
+d400f801	ld [%r3 - 0x7ff], %r10
+c800b160	ld [%r2 - 0xea0], %r4
+ce0370d0	ld [%r13 - 0xf30], %r7
+d802f81a	ld [%r11 - 0x7e6], %r12
+da01b283	ld [%r6 - 0xd7d], %r13
+c601b315	ld [%r6 - 0xceb], %r3
+c4033519	ld [%r12 - 0xae7], %r2
+c602b176	ld [%r10 - 0xe8a], %r3
+d801f674	ld [%r7 - 0x98c], %r12
+ce037a1f	ld [%r13 - 0x5e1], %r7
+ce0133ba	ld [%r4 - 0xc46], %r7
+d801771f	ld [%r5 - 0x8e1], %r12
+d4013af9	ld [%r4 - 0x507], %r10
+d601757f	ld [%r5 - 0xa81], %r11
+da00f7f6	ld [%r3 - 0x80a], %r13
+c400fffc	ld [%r3 - 0x4], %r2
+c4013ffc	ld [%r4 - 0x4], %r2
+d401bf7f	ld [%r6 - 0x81], %r10
+c0480c2a	ldsb [%r0 + %r10], %r0
+c0495780	ldsb [%r5 + %r0], %r0
+c4488bc0	ldsb [%r2 + %r0], %r2
+c4488000	ldsb [%r2 + %r0], %r2
+c0490cea	ldsb [%r4 + %r10], %r0
+c0494346	ldsb [%r5 + %r6], %r0
+d4480225	ldsb [%r0 + %r5], %r10
+c6481b45	ldsb [%r0 + %r5], %r3
+d84a81c0	ldsb [%r10 + %r0], %r12
+c448c000	ldsb [%r3 + %r0], %r2
+d44a99ed	ldsb [%r10 + %r13], %r10
+c4489eca	ldsb [%r2 + %r10], %r2
+c6488003	ldsb [%r2 + %r3], %r3
+d648800b	ldsb [%r2 + %r11], %r11
+ce495163	ldsb [%r5 + %r3], %r7
+d44952e7	ldsb [%r5 + %r7], %r10
+c049b52a	ldsb [%r6 - 0xad6], %r0
+c04b78c1	ldsb [%r13 - 0x73f], %r0
+c448a001	ldsb [%r2 + 0x1], %r2
+c448a008	ldsb [%r2 + 0x8], %r2
+c448a003	ldsb [%r2 + 0x3], %r2
+c648e018	ldsb [%r3 + 0x18], %r3
+da4b6244	ldsb [%r13 + 0x244], %r13
+ca496428	ldsb [%r5 + 0x428], %r5
+c648e11a	ldsb [%r3 + 0x11a], %r3
+d84b2834	ldsb [%r12 + 0x834], %r12
+c8492692	ldsb [%r4 + 0x692], %r4
+da4b6171	ldsb [%r13 + 0x171], %r13
+c648ecc9	ldsb [%r3 + 0xcc9], %r3
+d84b213d	ldsb [%r12 + 0x13d], %r12
+ca496ad5	ldsb [%r5 + 0xad5], %r5
+ca496f07	ldsb [%r5 + 0xf07], %r5
+c849237e	ldsb [%r4 + 0x37e], %r4
+ca49679b	ldsb [%r5 + 0x79b], %r5
+ca496be7	ldsb [%r5 + 0xbe7], %r5
+da4b6bbd	ldsb [%r13 + 0xbbd], %r13
+ce49f804	ldsb [%r7 - 0x7fc], %r7
+d44ab043	ldsb [%r10 - 0xfbd], %r10
+c8493086	ldsb [%r4 - 0xf7a], %r4
+d84b36a0	ldsb [%r12 - 0x960], %r12
+d84b3928	ldsb [%r12 - 0x6d8], %r12
+d64af14e	ldsb [%r11 - 0xeb2], %r11
+ca4970ce	ldsb [%r5 - 0xf32], %r5
+d84b34a7	ldsb [%r12 - 0xb59], %r12
+c648fc96	ldsb [%r3 - 0x36a], %r3
+d64af67c	ldsb [%r11 - 0x984], %r11
+ce49fd8e	ldsb [%r7 - 0x272], %r7
+d64af37d	ldsb [%r11 - 0xc83], %r11
+ce49feea	ldsb [%r7 - 0x116], %r7
+c448bfff	ldsb [%r2 - 0x1], %r2
+c648ffff	ldsb [%r3 - 0x1], %r3
+c448e001	ldsb [%r3 + 0x1], %r2
+c448e002	ldsb [%r3 + 0x2], %r2
+c4492003	ldsb [%r4 + 0x3], %r2
+ce49a440	ldsb [%r6 + 0x440], %r7
+d449e206	ldsb [%r7 + 0x206], %r10
+d6496c04	ldsb [%r5 + 0xc04], %r11
+d448a360	ldsb [%r2 + 0x360], %r10
+d44b6425	ldsb [%r13 + 0x425], %r10
+c44b2349	ldsb [%r12 + 0x349], %r2
+c64b2b06	ldsb [%r12 + 0xb06], %r3
+c448e857	ldsb [%r3 + 0x857], %r2
+ca48e571	ldsb [%r3 + 0x571], %r5
+d649e29f	ldsb [%r7 + 0x29f], %r11
+cc48adac	ldsb [%r2 + 0xdac], %r6
+c849a6af	ldsb [%r6 + 0x6af], %r4
+c849a9dd	ldsb [%r6 + 0x9dd], %r4
+c4492b6f	ldsb [%r4 + 0xb6f], %r2
+da4aaee7	ldsb [%r10 + 0xee7], %r13
+c449aeef	ldsb [%r6 + 0xeef], %r2
+cc496fbe	ldsb [%r5 + 0xfbe], %r6
+d448b080	ldsb [%r2 - 0xf80], %r10
+d44930a0	ldsb [%r4 - 0xf60], %r10
+d448b048	ldsb [%r2 - 0xfb8], %r10
+c648b482	ldsb [%r2 - 0xb7e], %r3
+c848f0c2	ldsb [%r3 - 0xf3e], %r4
+ca49330c	ldsb [%r4 - 0xcf4], %r5
+ca4afa11	ldsb [%r11 - 0x5ef], %r5
+d64b7da0	ldsb [%r13 - 0x260], %r11
+c64ab44e	ldsb [%r10 - 0xbb2], %r3
+ce4af4a7	ldsb [%r11 - 0xb59], %r7
+c64af3d1	ldsb [%r11 - 0xc2f], %r3
+c848beb8	ldsb [%r2 - 0x148], %r4
+cc4b3ad9	ldsb [%r12 - 0x527], %r6
+d848f977	ldsb [%r3 - 0x689], %r12
+ce4937b9	ldsb [%r4 - 0x847], %r7
+c64937db	ldsb [%r4 - 0x825], %r3
+c8497bfc	ldsb [%r5 - 0x404], %r4
+ca4b3dbf	ldsb [%r12 - 0x241], %r5
+c64abddf	ldsb [%r10 - 0x221], %r3
+c4493ffe	ldsb [%r4 - 0x2], %r2
+d64abf7f	ldsb [%r10 - 0x81], %r11
+c448ffff	ldsb [%r3 - 0x1], %r2
+c4493fff	ldsb [%r4 - 0x1], %r2
+c050008c	ldsh [%r0 + %r12], %r0
+d4501dea	ldsh [%r0 + %r10], %r10
+c051c6ac	ldsh [%r7 + %r12], %r0
+c0530906	ldsh [%r12 + %r6], %r0
+ca500cab	ldsh [%r0 + %r11], %r5
+ce5004a3	ldsh [%r0 + %r3], %r7
+ce5300c0	ldsh [%r12 + %r0], %r7
+cc51d0c0	ldsh [%r7 + %r0], %r6
+d45292ed	ldsh [%r10 + %r13], %r10
+d452912d	ldsh [%r10 + %r13], %r10
+c8518ec4	ldsh [%r6 + %r4], %r4
+cc5282c6	ldsh [%r10 + %r6], %r6
+da5285ec	ldsh [%r10 + %r12], %r13
+ce50d16a	ldsh [%r3 + %r10], %r7
+c051e68e	ldsh [%r7 + 0x68e], %r0
+c051267e	ldsh [%r4 + 0x67e], %r0
+ca516026	ldsh [%r5 + 0x26], %r5
+d85328c0	ldsh [%r12 + 0x8c0], %r12
+ce51e02e	ldsh [%r7 + 0x2e], %r7
+c450a845	ldsh [%r2 + 0x845], %r2
+ce51e247	ldsh [%r7 + 0x247], %r7
+ce51e983	ldsh [%r7 + 0x983], %r7
+da536475	ldsh [%r13 + 0x475], %r13
+c650e387	ldsh [%r3 + 0x387], %r3
+cc51aee2	ldsh [%r6 + 0xee2], %r6
+c650ecb5	ldsh [%r3 + 0xcb5], %r3
+cc51ae3e	ldsh [%r6 + 0xe3e], %r6
+d8532aee	ldsh [%r12 + 0xaee], %r12
+c650eedb	ldsh [%r3 + 0xedb], %r3
+da536f9e	ldsh [%r13 + 0xf9e], %r13
+c450b201	ldsh [%r2 - 0xdff], %r2
+d452b208	ldsh [%r10 - 0xdf8], %r10
+da537025	ldsh [%r13 - 0xfdb], %r13
+c650f602	ldsh [%r3 - 0x9fe], %r3
+ca51750a	ldsh [%r5 - 0xaf6], %r5
+ca51718a	ldsh [%r5 - 0xe76], %r5
+d8533c15	ldsh [%r12 - 0x3eb], %r12
+c85132d8	ldsh [%r4 - 0xd28], %r4
+ce51f3a9	ldsh [%r7 - 0xc57], %r7
+d452b497	ldsh [%r10 - 0xb69], %r10
+c85139a7	ldsh [%r4 - 0x659], %r4
+c650f8f5	ldsh [%r3 - 0x70b], %r3
+ca5176ee	ldsh [%r5 - 0x912], %r5
+c650fcbd	ldsh [%r3 - 0x343], %r3
+ca517e9f	ldsh [%r5 - 0x161], %r5
+c650fedf	ldsh [%r3 - 0x121], %r3
+d8516240	ldsh [%r5 + 0x240], %r12
+ce536005	ldsh [%r13 + 0x5], %r7
+da50ac04	ldsh [%r2 + 0xc04], %r13
+ce52e1a0	ldsh [%r11 + 0x1a0], %r7
+da51a116	ldsh [%r6 + 0x116], %r13
+c6512451	ldsh [%r4 + 0x451], %r3
+ce50e84e	ldsh [%r3 + 0x84e], %r7
+cc51e472	ldsh [%r7 + 0x472], %r6
+cc51e366	ldsh [%r7 + 0x366], %r6
+da532da8	ldsh [%r12 + 0xda8], %r13
+c651eb2d	ldsh [%r7 + 0xb2d], %r3
+ca52ebd2	ldsh [%r11 + 0xbd2], %r5
+ca512de9	ldsh [%r4 + 0xde9], %r5
+da512b3d	ldsh [%r4 + 0xb3d], %r13
+ce50eedd	ldsh [%r3 + 0xedd], %r7
+ce50ef8f	ldsh [%r3 + 0xf8f], %r7
+d4532ebf	ldsh [%r12 + 0xebf], %r10
+ce5365ff	ldsh [%r13 + 0x5ff], %r7
+d450afbf	ldsh [%r2 + 0xfbf], %r10
+d4513040	ldsh [%r4 - 0xfc0], %r10
+c4513440	ldsh [%r4 - 0xbc0], %r2
+d852f003	ldsh [%r11 - 0xffd], %r12
+da51f4c0	ldsh [%r7 - 0xb40], %r13
+ce50f502	ldsh [%r3 - 0xafe], %r7
+c652f161	ldsh [%r11 - 0xe9f], %r3
+cc50f605	ldsh [%r3 - 0x9fb], %r6
+ca51f1d4	ldsh [%r7 - 0xe2c], %r5
+ce5174a5	ldsh [%r5 - 0xb5b], %r7
+c451bc17	ldsh [%r6 - 0x3e9], %r2
+c451b44f	ldsh [%r6 - 0xbb1], %r2
+ca52f97c	ldsh [%r11 - 0x684], %r5
+ca51f75c	ldsh [%r7 - 0x8a4], %r5
+c6533bec	ldsh [%r12 - 0x414], %r3
+c45336de	ldsh [%r12 - 0x922], %r2
+c451fbed	ldsh [%r7 - 0x413], %r2
+ce52b3bf	ldsh [%r10 - 0xc41], %r7
+ce513f7b	ldsh [%r4 - 0x85], %r7
+c452bfe7	ldsh [%r10 - 0x19], %r2
+c8517ffb	ldsh [%r5 - 0x5], %r4
+c06810ec	ldstub [%r0 + %r12], %r0
+c0681c4c	ldstub [%r0 + %r12], %r0
+c0695f40	ldstub [%r5 + %r0], %r0
+c06a9140	ldstub [%r10 + %r0], %r0
+da6b5fe0	ldstub [%r13 + %r0], %r13
+d86b0120	ldstub [%r12 + %r0], %r12
+c0698d43	ldstub [%r6 + %r3], %r0
+c06ad102	ldstub [%r11 + %r2], %r0
+c6680062	ldstub [%r0 + %r2], %r3
+ca680006	ldstub [%r0 + %r6], %r5
+c86a9dc0	ldstub [%r10 + %r0], %r4
+c6689800	ldstub [%r2 + %r0], %r3
+ce69cdc2	ldstub [%r7 + %r2], %r7
+d66ac38a	ldstub [%r11 + %r10], %r11
+cc68dd66	ldstub [%r3 + %r6], %r6
+c46ada42	ldstub [%r11 + %r2], %r2
+da6b0767	ldstub [%r12 + %r7], %r13
+c46b064d	ldstub [%r12 + %r13], %r2
+c06920c1	ldstub [%r4 + 0xc1], %r0
+c06b2a12	ldstub [%r12 + 0xa12], %r0
+c0696825	ldstub [%r5 + 0x825], %r0
+c06ae16a	ldstub [%r11 + 0x16a], %r0
+c06aac1a	ldstub [%r10 + 0xc1a], %r0
+c068a393	ldstub [%r2 + 0x393], %r0
+c06ae369	ldstub [%r11 + 0x369], %r0
+c06b2979	ldstub [%r12 + 0x979], %r0
+c06b21fc	ldstub [%r12 + 0x1fc], %r0
+c06b6f99	ldstub [%r13 + 0xf99], %r0
+c06ae9d7	ldstub [%r11 + 0x9d7], %r0
+c069efd9	ldstub [%r7 + 0xfd9], %r0
+c069ecef	ldstub [%r7 + 0xcef], %r0
+c068b310	ldstub [%r2 - 0xcf0], %r0
+c068b2c0	ldstub [%r2 - 0xd40], %r0
+c069fd04	ldstub [%r7 - 0x2fc], %r0
+c06b7283	ldstub [%r13 - 0xd7d], %r0
+c068b0f1	ldstub [%r2 - 0xf0f], %r0
+c06afc61	ldstub [%r11 - 0x39f], %r0
+c0697d92	ldstub [%r5 - 0x26e], %r0
+c069f5ca	ldstub [%r7 - 0xa36], %r0
+c06af78b	ldstub [%r11 - 0x875], %r0
+c06b336b	ldstub [%r12 - 0xc95], %r0
+c068bd75	ldstub [%r2 - 0x28b], %r0
+c068fd4f	ldstub [%r3 - 0x2b1], %r0
+c06b7f7c	ldstub [%r13 - 0x84], %r0
+c069fff9	ldstub [%r7 - 0x7], %r0
+da6b6824	ldstub [%r13 + 0x824], %r13
+d86b220a	ldstub [%r12 + 0x20a], %r12
+da6b6194	ldstub [%r13 + 0x194], %r13
+ce69ea60	ldstub [%r7 + 0xa60], %r7
+c668e863	ldstub [%r3 + 0x863], %r3
+cc69a80f	ldstub [%r6 + 0x80f], %r6
+da6b6b83	ldstub [%r13 + 0xb83], %r13
+ce69e8b3	ldstub [%r7 + 0x8b3], %r7
+d66aeae9	ldstub [%r11 + 0xae9], %r11
+c668eaf1	ldstub [%r3 + 0xaf1], %r3
+ce69e3db	ldstub [%r7 + 0x3db], %r7
+d46aa776	ldstub [%r10 + 0x776], %r10
+c468aa7f	ldstub [%r2 + 0xa7f], %r2
+da6b6f79	ldstub [%r13 + 0xf79], %r13
+ce69f210	ldstub [%r7 - 0xdf0], %r7
+cc69b861	ldstub [%r6 - 0x79f], %r6
+c468bd0c	ldstub [%r2 - 0x2f4], %r2
+d66af0d5	ldstub [%r11 - 0xf2b], %r11
+d86b3d25	ldstub [%r12 - 0x2db], %r12
+d86b368e	ldstub [%r12 - 0x972], %r12
+ca6975c7	ldstub [%r5 - 0xa39], %r5
+d46abcb9	ldstub [%r10 - 0x347], %r10
+d66af4bf	ldstub [%r11 - 0xb41], %r11
+d46ab72f	ldstub [%r10 - 0x8d1], %r10
+c468bf37	ldstub [%r2 - 0xc9], %r2
+c468bef9	ldstub [%r2 - 0x107], %r2
+d66aff7b	ldstub [%r11 - 0x85], %r11
+cc69bffb	ldstub [%r6 - 0x5], %r6
+d468a240	ldstub [%r2 + 0x240], %r10
+da69e0c0	ldstub [%r7 + 0xc0], %r13
+c86b2144	ldstub [%r12 + 0x144], %r4
+c66b2212	ldstub [%r12 + 0x212], %r3
+ca69a04e	ldstub [%r6 + 0x4e], %r5
+cc68a470	ldstub [%r2 + 0x470], %r6
+d668a625	ldstub [%r2 + 0x625], %r11
+ca692cc1	ldstub [%r4 + 0xcc1], %r5
+d46b647a	ldstub [%r13 + 0x47a], %r10
+c66aeec4	ldstub [%r11 + 0xec4], %r3
+da69ae4d	ldstub [%r6 + 0xe4d], %r13
+d46b6d2e	ldstub [%r13 + 0xd2e], %r10
+c469a3ee	ldstub [%r6 + 0x3ee], %r2
+ce6b63be	ldstub [%r13 + 0x3be], %r7
+ca69ab7e	ldstub [%r6 + 0xb7e], %r5
+d66b2f3d	ldstub [%r12 + 0xf3d], %r11
+d668a7f7	ldstub [%r2 + 0x7f7], %r11
+da69ebbf	ldstub [%r7 + 0xbbf], %r13
+cc6aedff	ldstub [%r11 + 0xdff], %r6
+da6af004	ldstub [%r11 - 0xffc], %r13
+d66b3480	ldstub [%r12 - 0xb80], %r11
+ca69f060	ldstub [%r7 - 0xfa0], %r5
+c469b214	ldstub [%r6 - 0xdec], %r2
+ce68b181	ldstub [%r2 - 0xe7f], %r7
+c6697134	ldstub [%r5 - 0xecc], %r3
+ce68f0a6	ldstub [%r3 - 0xf5a], %r7
+c868b5c8	ldstub [%r2 - 0xa38], %r4
+c468f307	ldstub [%r3 - 0xcf9], %r2
+ca6ab38b	ldstub [%r10 - 0xc75], %r5
+c8697955	ldstub [%r5 - 0x6ab], %r4
+c86b7a9d	ldstub [%r13 - 0x563], %r4
+cc69faea	ldstub [%r7 - 0x516], %r6
+c86ab977	ldstub [%r10 - 0x689], %r4
+c46abfd2	ldstub [%r10 - 0x2e], %r2
+cc697fab	ldstub [%r5 - 0x55], %r6
+c469b6ef	ldstub [%r6 - 0x911], %r2
+da6ab7df	ldstub [%r10 - 0x821], %r13
+ca6b3faf	ldstub [%r12 - 0x51], %r5
+d66ab7ff	ldstub [%r10 - 0x801], %r11
+c008116d	ldub [%r0 + %r13], %r0
+c0080025	ldub [%r0 + %r5], %r0
+da08192d	ldub [%r0 + %r13], %r13
+d60804cb	ldub [%r0 + %r11], %r11
+ce09de60	ldub [%r7 + %r0], %r7
+c4088000	ldub [%r2 + %r0], %r2
+c0095027	ldub [%r5 + %r7], %r0
+c00ad723	ldub [%r11 + %r3], %r0
+da080743	ldub [%r0 + %r3], %r13
+d40805a7	ldub [%r0 + %r7], %r10
+ca089800	ldub [%r2 + %r0], %r5
+c408c000	ldub [%r3 + %r0], %r2
+da0b416a	ldub [%r13 + %r10], %r13
+c4088003	ldub [%r2 + %r3], %r2
+d40b52aa	ldub [%r13 + %r10], %r10
+c6089c43	ldub [%r2 + %r3], %r3
+cc091b43	ldub [%r4 + %r3], %r6
+c609562a	ldub [%r5 + %r10], %r3
+c00af960	ldub [%r11 - 0x6a0], %r0
+c00afbae	ldub [%r11 - 0x452], %r0
+c408a000	ldub [%r2 + 0x0], %r2
+c408a001	ldub [%r2 + 0x1], %r2
+c408a004	ldub [%r2 + 0x4], %r2
+c408a003	ldub [%r2 + 0x3], %r2
+c408a028	ldub [%r2 + 0x28], %r2
+c408a007	ldub [%r2 + 0x7], %r2
+ce09e015	ldub [%r7 + 0x15], %r7
+c608e511	ldub [%r3 + 0x511], %r3
+c8092926	ldub [%r4 + 0x926], %r4
+c80920f1	ldub [%r4 + 0xf1], %r4
+c408acb1	ldub [%r2 + 0xcb1], %r2
+ca096c17	ldub [%r5 + 0xc17], %r5
+c608e16f	ldub [%r3 + 0x16f], %r3
+c408acea	ldub [%r2 + 0xcea], %r2
+d80b2b97	ldub [%r12 + 0xb97], %r12
+c8092eb6	ldub [%r4 + 0xeb6], %r4
+c408a5fb	ldub [%r2 + 0x5fb], %r2
+d40aacff	ldub [%r10 + 0xcff], %r10
+c8093602	ldub [%r4 - 0x9fe], %r4
+d60af488	ldub [%r11 - 0xb78], %r11
+d60af115	ldub [%r11 - 0xeeb], %r11
+d80b3384	ldub [%r12 - 0xc7c], %r12
+c608ff02	ldub [%r3 - 0xfe], %r3
+ce09fa70	ldub [%r7 - 0x590], %r7
+da0b72ce	ldub [%r13 - 0xd32], %r13
+d40ab563	ldub [%r10 - 0xa9d], %r10
+ca097753	ldub [%r5 - 0x8ad], %r5
+c608ffe0	ldub [%r3 - 0x20], %r3
+d40ab6f6	ldub [%r10 - 0x90a], %r10
+c608faf3	ldub [%r3 - 0x50d], %r3
+c80937f5	ldub [%r4 - 0x80b], %r4
+c8093e7d	ldub [%r4 - 0x183], %r4
+c608fefb	ldub [%r3 - 0x105], %r3
+c408bffe	ldub [%r2 - 0x2], %r2
+c608ffff	ldub [%r3 - 0x1], %r3
+da08a000	ldub [%r2 + 0x0], %r13
+c408e001	ldub [%r3 + 0x1], %r2
+c4092001	ldub [%r4 + 0x1], %r2
+c408e003	ldub [%r3 + 0x3], %r2
+c408e00c	ldub [%r3 + 0xc], %r2
+ca0b620c	ldub [%r13 + 0x20c], %r5
+c609e244	ldub [%r7 + 0x244], %r3
+d40b2c44	ldub [%r12 + 0xc44], %r10
+ce0921e0	ldub [%r4 + 0x1e0], %r7
+c40ae853	ldub [%r11 + 0x853], %r2
+ce0b21ca	ldub [%r12 + 0x1ca], %r7
+d40b607b	ldub [%r13 + 0x7b], %r10
+d408e936	ldub [%r3 + 0x936], %r10
+d808e57a	ldub [%r3 + 0x57a], %r12
+c40ae2dd	ldub [%r11 + 0x2dd], %r2
+c60ae8ef	ldub [%r11 + 0x8ef], %r3
+ce08efc5	ldub [%r3 + 0xfc5], %r7
+cc0aeedd	ldub [%r11 + 0xedd], %r6
+c608abaf	ldub [%r2 + 0xbaf], %r3
+da092ffa	ldub [%r4 + 0xffa], %r13
+cc08aedf	ldub [%r2 + 0xedf], %r6
+cc0aefef	ldub [%r11 + 0xfef], %r6
+cc08b200	ldub [%r2 - 0xe00], %r6
+ca093100	ldub [%r4 - 0xf00], %r5
+d808b402	ldub [%r2 - 0xbfe], %r12
+cc08f240	ldub [%r3 - 0xdc0], %r6
+c608b049	ldub [%r2 - 0xfb7], %r3
+d60b3890	ldub [%r12 - 0x770], %r11
+ca08f60a	ldub [%r3 - 0x9f6], %r5
+d60b7152	ldub [%r13 - 0xeae], %r11
+cc0b3551	ldub [%r12 - 0xaaf], %r6
+d80b7156	ldub [%r13 - 0xeaa], %r12
+c809b32e	ldub [%r6 - 0xcd2], %r4
+d608f539	ldub [%r3 - 0xac7], %r11
+d609372e	ldub [%r4 - 0x8d2], %r11
+d40935b5	ldub [%r4 - 0xa4b], %r10
+d40975f9	ldub [%r5 - 0xa07], %r10
+ce0b75f3	ldub [%r13 - 0xa0d], %r7
+ca08ff7a	ldub [%r3 - 0x86], %r5
+cc0ab7ed	ldub [%r10 - 0x813], %r6
+c80b37bf	ldub [%r12 - 0x841], %r4
+c40b3ff3	ldub [%r12 - 0xd], %r2
+d4093ffe	ldub [%r4 - 0x2], %r10
+da093ffd	ldub [%r4 - 0x3], %r13
+c408ffff	ldub [%r3 - 0x1], %r2
+c40abfff	ldub [%r10 - 0x1], %r2
+c0100eeb	lduh [%r0 + %r11], %r0
+c012c060	lduh [%r11 + %r0], %r0
+c61003c3	lduh [%r0 + %r3], %r3
+cc1002a6	lduh [%r0 + %r6], %r6
+c4108000	lduh [%r2 + %r0], %r2
+c610c000	lduh [%r3 + %r0], %r3
+c0109e0a	lduh [%r2 + %r10], %r0
+c010d5c6	lduh [%r3 + %r6], %r0
+d4101a8c	lduh [%r0 + %r12], %r10
+ce101ec3	lduh [%r0 + %r3], %r7
+c810c000	lduh [%r3 + %r0], %r4
+c4134880	lduh [%r13 + %r0], %r2
+d81304ca	lduh [%r12 + %r10], %r12
+c610c004	lduh [%r3 + %r4], %r3
+cc109026	lduh [%r2 + %r6], %r6
+c410c002	lduh [%r3 + %r2], %r2
+ce108683	lduh [%r2 + %r3], %r7
+cc10c784	lduh [%r3 + %r4], %r6
+c010e12a	lduh [%r3 + 0x12a], %r0
+c010e57e	lduh [%r3 + 0x57e], %r0
+cc11aa02	lduh [%r6 + 0xa02], %r6
+c610e221	lduh [%r3 + 0x221], %r3
+da1360e8	lduh [%r13 + 0xe8], %r13
+c610e191	lduh [%r3 + 0x191], %r3
+d412a98c	lduh [%r10 + 0x98c], %r10
+ce11e983	lduh [%r7 + 0x983], %r7
+d412a8d6	lduh [%r10 + 0x8d6], %r10
+da1367a4	lduh [%r13 + 0x7a4], %r13
+d412af89	lduh [%r10 + 0xf89], %r10
+c410ac9e	lduh [%r2 + 0xc9e], %r2
+d412acaf	lduh [%r10 + 0xcaf], %r10
+c410aa7d	lduh [%r2 + 0xa7d], %r2
+cc11ae3f	lduh [%r6 + 0xe3f], %r6
+d8132fa7	lduh [%r12 + 0xfa7], %r12
+c8113032	lduh [%r4 - 0xfce], %r4
+c610f508	lduh [%r3 - 0xaf8], %r3
+c410b05a	lduh [%r2 - 0xfa6], %r2
+da137c28	lduh [%r13 - 0x3d8], %r13
+ce11f583	lduh [%r7 - 0xa7d], %r7
+ce11fb48	lduh [%r7 - 0x4b8], %r7
+da137e4a	lduh [%r13 - 0x1b6], %r13
+d612f31b	lduh [%r11 - 0xce5], %r11
+cc11bbd8	lduh [%r6 - 0x428], %r6
+d8133dc6	lduh [%r12 - 0x23a], %r12
+c8113a77	lduh [%r4 - 0x589], %r4
+ca117ee5	lduh [%r5 - 0x11b], %r5
+cc11bff2	lduh [%r6 - 0xe], %r6
+ca117bf7	lduh [%r5 - 0x409], %r5
+c410e004	lduh [%r3 + 0x4], %r2
+c610a004	lduh [%r2 + 0x4], %r3
+cc12e440	lduh [%r11 + 0x440], %r6
+c612a208	lduh [%r10 + 0x208], %r3
+c412e045	lduh [%r11 + 0x45], %r2
+c410e00e	lduh [%r3 + 0xe], %r2
+da13228a	lduh [%r12 + 0x28a], %r13
+d4136c81	lduh [%r13 + 0xc81], %r10
+d410a62a	lduh [%r2 + 0x62a], %r10
+c6132c31	lduh [%r12 + 0xc31], %r3
+c410e05f	lduh [%r3 + 0x5f], %r2
+ca10aa1e	lduh [%r2 + 0xa1e], %r5
+c813617d	lduh [%r13 + 0x17d], %r4
+d612aeb2	lduh [%r10 + 0xeb2], %r11
+ca11e9b7	lduh [%r7 + 0x9b7], %r5
+c612ee6b	lduh [%r11 + 0xe6b], %r3
+da12ab7d	lduh [%r10 + 0xb7d], %r13
+c41167af	lduh [%r5 + 0x7af], %r2
+d812af7b	lduh [%r10 + 0xf7b], %r12
+d811afed	lduh [%r6 + 0xfed], %r12
+da12ef7f	lduh [%r11 + 0xf7f], %r13
+ce12b000	lduh [%r10 - 0x1000], %r7
+c4117101	lduh [%r5 - 0xeff], %r2
+da10f410	lduh [%r3 - 0xbf0], %r13
+d4137089	lduh [%r13 - 0xf77], %r10
+ca11f211	lduh [%r7 - 0xdef], %r5
+d8113892	lduh [%r4 - 0x76e], %r12
+cc1132c8	lduh [%r4 - 0xd38], %r6
+c412fc54	lduh [%r11 - 0x3ac], %r2
+cc10b90d	lduh [%r2 - 0x6f3], %r6
+cc1132da	lduh [%r4 - 0xd26], %r6
+d610bc4d	lduh [%r2 - 0x3b3], %r11
+c61175e9	lduh [%r5 - 0xa17], %r3
+c412b33d	lduh [%r10 - 0xcc3], %r2
+c611b66f	lduh [%r6 - 0x991], %r3
+d411379e	lduh [%r4 - 0x862], %r10
+c412ff97	lduh [%r11 - 0x69], %r2
+c812fef3	lduh [%r11 - 0x10d], %r4
+da10febf	lduh [%r3 - 0x141], %r13
+c811b77f	lduh [%r6 - 0x881], %r4
+ce1377ff	lduh [%r13 - 0x801], %r7
+c6113fef	lduh [%r4 - 0x11], %r3
+812010ec	mulscc %r0, %r12, %r0
+8120122d	mulscc %r0, %r13, %r0
+85200d42	mulscc %r0, %r2, %r2
+9920080c	mulscc %r0, %r12, %r12
+89201b25	mulscc %r0, %r5, %r4
+95201823	mulscc %r0, %r3, %r10
+8f21c887	mulscc %r7, %r7, %r7
+8f21dbc7	mulscc %r7, %r7, %r7
+8b21552b	mulscc %r5, %r11, %r5
+89211b66	mulscc %r4, %r6, %r4
+8122d6cb	mulscc %r11, %r11, %r0
+81209b82	mulscc %r2, %r2, %r0
+812297a3	mulscc %r10, %r3, %r0
+8122dce5	mulscc %r11, %r5, %r0
+8f219c66	mulscc %r6, %r6, %r7
+8523522d	mulscc %r13, %r13, %r2
+9b215e6d	mulscc %r5, %r13, %r13
+9b2094cd	mulscc %r2, %r13, %r13
+8d21c1e5	mulscc %r7, %r5, %r6
+872096e6	mulscc %r2, %r6, %r3
+872000e0	mulscc %r0, %r0, %r3
+8122c340	mulscc %r11, %r0, %r0
+81230d40	mulscc %r12, %r0, %r0
+8b2152c0	mulscc %r5, %r0, %r5
+8720c5c0	mulscc %r3, %r0, %r3
+8b2098a0	mulscc %r2, %r0, %r5
+8721d9c0	mulscc %r7, %r0, %r3
+81203ee7	mulscc %r0, -281, %r0
+81203e54	mulscc %r0, -428, %r0
+812037d0	mulscc %r0, -2096, %r0
+81202f43	mulscc %r0, 3907, %r0
+81202ae6	mulscc %r0, 2790, %r0
+812021c6	mulscc %r0, 454, %r0
+9b203daf	mulscc %r0, -593, %r13
+89203bf9	mulscc %r0, -1031, %r4
+85203af5	mulscc %r0, -1291, %r2
+9520355f	mulscc %r0, -2721, %r10
+8f2039ce	mulscc %r0, -1586, %r7
+9b2035dc	mulscc %r0, -2596, %r13
+992036b4	mulscc %r0, -2380, %r12
+8d2037a1	mulscc %r0, -2143, %r6
+89203a52	mulscc %r0, -1454, %r4
+9720381e	mulscc %r0, -2018, %r11
+99203921	mulscc %r0, -1759, %r12
+872030a9	mulscc %r0, -3927, %r3
+99203104	mulscc %r0, -3836, %r12
+87203102	mulscc %r0, -3838, %r3
+8d202fb7	mulscc %r0, 4023, %r6
+87202f67	mulscc %r0, 3943, %r3
+8f2023fe	mulscc %r0, 1022, %r7
+8f202df8	mulscc %r0, 3576, %r7
+992023e5	mulscc %r0, 997, %r12
+99202d8b	mulscc %r0, 3467, %r12
+992024ba	mulscc %r0, 1210, %r12
+972022dc	mulscc %r0, 732, %r11
+89202aa2	mulscc %r0, 2722, %r4
+8f20205d	mulscc %r0, 93, %r7
+8f202c0c	mulscc %r0, 3084, %r7
+8f202c0c	mulscc %r0, 3084, %r7
+8f202205	mulscc %r0, 517, %r7
+8d21b37f	mulscc %r6, -3201, %r6
+9522bdbb	mulscc %r10, -581, %r10
+9722fdd9	mulscc %r11, -551, %r11
+8520babe	mulscc %r2, -1346, %r2
+992335ae	mulscc %r12, -2642, %r12
+9522b91f	mulscc %r10, -1761, %r10
+89213633	mulscc %r4, -2509, %r4
+89213a78	mulscc %r4, -1416, %r4
+9b237d84	mulscc %r13, -636, %r13
+8720f2cc	mulscc %r3, -3380, %r3
+9722fc41	mulscc %r11, -959, %r11
+8520b8e0	mulscc %r2, -1824, %r2
+8520b860	mulscc %r2, -1952, %r2
+8720f288	mulscc %r3, -3448, %r3
+9722f880	mulscc %r11, -1920, %r11
+8d21afd6	mulscc %r6, 4054, %r6
+8720ef73	mulscc %r3, 3955, %r3
+9b236bcd	mulscc %r13, 3021, %r13
+9722ee3e	mulscc %r11, 3646, %r11
+8520ac3b	mulscc %r2, 3131, %r2
+8520afa2	mulscc %r2, 4002, %r2
+8f21e587	mulscc %r7, 1415, %r7
+89212a9c	mulscc %r4, 2716, %r4
+8520a133	mulscc %r2, 307, %r2
+8f21ea0d	mulscc %r7, 2573, %r7
+8520a82c	mulscc %r2, 2092, %r2
+8d21a849	mulscc %r6, 2121, %r6
+8f21e222	mulscc %r7, 546, %r7
+9522a022	mulscc %r10, 34, %r10
+81213f4b	mulscc %r4, -181, %r0
+81213c7e	mulscc %r4, -898, %r0
+81217b1e	mulscc %r5, -1250, %r0
+8121b5e3	mulscc %r6, -2589, %r0
+8122f5b2	mulscc %r11, -2638, %r0
+81237c9a	mulscc %r13, -870, %r0
+81237319	mulscc %r13, -3303, %r0
+81217c34	mulscc %r5, -972, %r0
+8120be80	mulscc %r2, -384, %r0
+8123348c	mulscc %r12, -2932, %r0
+8121b058	mulscc %r6, -4008, %r0
+81233822	mulscc %r12, -2014, %r0
+81213210	mulscc %r4, -3568, %r0
+8120aefb	mulscc %r2, 3835, %r0
+812369af	mulscc %r13, 2479, %r0
+812367b3	mulscc %r13, 1971, %r0
+8121a67c	mulscc %r6, 1660, %r0
+8121e1eb	mulscc %r7, 491, %r0
+8122e6c5	mulscc %r11, 1733, %r0
+8122e2b9	mulscc %r11, 697, %r0
+812160bc	mulscc %r5, 188, %r0
+8122a3b0	mulscc %r10, 944, %r0
+8122e48a	mulscc %r11, 1162, %r0
+8122ac03	mulscc %r10, 3075, %r0
+812320a1	mulscc %r12, 161, %r0
+8120e20a	mulscc %r3, 522, %r0
+8122a440	mulscc %r10, 1088, %r0
+8b21bfff	mulscc %r6, -1, %r5
+8721feff	mulscc %r7, -257, %r3
+8b20bbff	mulscc %r2, -1025, %r5
+9b213bfd	mulscc %r4, -1027, %r13
+9b217ffc	mulscc %r5, -4, %r13
+85213bbb	mulscc %r4, -1093, %r2
+8f22fbdb	mulscc %r11, -1061, %r7
+85213bba	mulscc %r4, -1094, %r2
+9521bf74	mulscc %r6, -140, %r10
+8521bd56	mulscc %r6, -682, %r2
+8b21f36b	mulscc %r7, -3221, %r5
+8522f1bc	mulscc %r11, -3652, %r2
+8521fda8	mulscc %r7, -600, %r2
+8722bb03	mulscc %r10, -1277, %r3
+9b21f643	mulscc %r7, -2493, %r13
+87217154	mulscc %r5, -3756, %r3
+8920f170	mulscc %r3, -3728, %r4
+8521f0e0	mulscc %r7, -3872, %r2
+85217508	mulscc %r5, -2808, %r2
+97213030	mulscc %r4, -4048, %r11
+8f213408	mulscc %r4, -3064, %r7
+9520f200	mulscc %r3, -3584, %r10
+8922b004	mulscc %r10, -4092, %r4
+8b22efff	mulscc %r11, 4095, %r5
+8f216fff	mulscc %r5, 4095, %r7
+8921ef7f	mulscc %r7, 3967, %r4
+9721afdf	mulscc %r6, 4063, %r11
+9920afe7	mulscc %r2, 4071, %r12
+9920ebfe	mulscc %r3, 3070, %r12
+87232fd3	mulscc %r12, 4051, %r3
+8920acfe	mulscc %r2, 3326, %r4
+8522e6f5	mulscc %r11, 1781, %r2
+8d21233f	mulscc %r4, 831, %r6
+8923693b	mulscc %r13, 2363, %r4
+8f236f83	mulscc %r13, 3971, %r7
+8921ea8e	mulscc %r7, 2702, %r4
+892321e9	mulscc %r12, 489, %r4
+8b21a607	mulscc %r6, 1543, %r5
+8d21e12e	mulscc %r7, 302, %r6
+8b20ea60	mulscc %r3, 2656, %r5
+8f20ee08	mulscc %r3, 3592, %r7
+8920a111	mulscc %r2, 273, %r4
+872361a0	mulscc %r13, 416, %r3
+8522a240	mulscc %r10, 576, %r2
+9b21a801	mulscc %r6, 2049, %r13
+86100000	or %r0, %r0, %r3
+88100000	or %r0, %r0, %r4
+80128a6a	or %r10, %r10, %r0
+80128aca	or %r10, %r10, %r0
+861000c3	or %r0, %r3, %r3
+8a100405	or %r0, %r5, %r5
+9a135040	or %r13, %r0, %r13
+88110360	or %r4, %r0, %r4
+9612d0eb	or %r11, %r11, %r11
+8011046b	or %r4, %r11, %r0
+80114feb	or %r5, %r11, %r0
+8c10030d	or %r0, %r13, %r6
+94100ecc	or %r0, %r12, %r10
+98115fc0	or %r5, %r0, %r12
+8412ce60	or %r11, %r0, %r2
+9413538d	or %r13, %r13, %r10
+96135c8d	or %r13, %r13, %r11
+8e11cb42	or %r7, %r2, %r7
+8e11c142	or %r7, %r2, %r7
+8e12cb67	or %r11, %r7, %r7
+8410c002	or %r3, %r2, %r2
+94114b83	or %r5, %r3, %r10
+8e10db82	or %r3, %r2, %r7
+809017e5	tst %r0, %r5
+809015ea	tst %r0, %r10
+9a901ded	orcc %r0, %r13, %r13
+80928000	tst %r10, %r0
+8690c1e0	orcc %r3, %r0, %r3
+8690d520	orcc %r3, %r0, %r3
+80909182	tst %r2, %r2
+809119c4	tst %r4, %r4
+8690d2e3	orcc %r3, %r3, %r3
+9893086c	orcc %r12, %r12, %r12
+8c9016c3	orcc %r0, %r3, %r6
+8890118b	orcc %r0, %r11, %r4
+9891c1c0	orcc %r7, %r0, %r12
+88908e60	orcc %r2, %r0, %r4
+8c9289ea	orcc %r10, %r10, %r6
+949340ad	orcc %r13, %r13, %r10
+80910ba3	tst %r4, %r3
+80908003	tst %r2, %r3
+88910283	orcc %r4, %r3, %r4
+84908003	orcc %r2, %r3, %r2
+8691dbe3	orcc %r7, %r3, %r3
+9a9150ed	orcc %r5, %r13, %r13
+9892c2a6	orcc %r11, %r6, %r12
+9890d6cd	orcc %r3, %r13, %r12
+809028a8	tst %r0, 2216
+8090330d	tst %r0, -3315
+80903414	tst %r0, -3052
+88902040	orcc %r0, 64, %r4
+94902608	orcc %r0, 1544, %r10
+949028c1	orcc %r0, 2241, %r10
+8c902431	orcc %r0, 1073, %r6
+88902307	orcc %r0, 775, %r4
+8490205b	orcc %r0, 91, %r2
+96902d16	orcc %r0, 3350, %r11
+9a902c1e	orcc %r0, 3102, %r13
+8890296b	orcc %r0, 2411, %r4
+8e90235d	orcc %r0, 861, %r7
+8c902fd4	orcc %r0, 4052, %r6
+8e9022f7	orcc %r0, 759, %r7
+84902e6f	orcc %r0, 3695, %r2
+889029f7	orcc %r0, 2551, %r4
+989038c0	orcc %r0, -1856, %r12
+88903908	orcc %r0, -1784, %r4
+869030d2	orcc %r0, -3886, %r3
+969038a4	orcc %r0, -1884, %r11
+98903233	orcc %r0, -3533, %r12
+8a90306d	orcc %r0, -3987, %r5
+8a903327	orcc %r0, -3289, %r5
+9a903c8e	orcc %r0, -882, %r13
+8c903e93	orcc %r0, -365, %r6
+96903c79	orcc %r0, -903, %r11
+9a903be5	orcc %r0, -1051, %r13
+9a90375e	orcc %r0, -2210, %r13
+8c903efc	orcc %r0, -260, %r6
+84903fd9	orcc %r0, -39, %r2
+9a936040	orcc %r13, 64, %r13
+8c91a401	orcc %r6, 1025, %r6
+8092a230	tst %r10, 560
+80912209	tst %r4, 521
+8092e02b	tst %r11, 43
+8091a291	tst %r6, 657
+8690e528	orcc %r3, 1320, %r3
+88912609	orcc %r4, 1545, %r4
+8091629a	tst %r5, 666
+80916487	tst %r5, 1159
+8490a465	orcc %r2, 1125, %r2
+88912714	orcc %r4, 1812, %r4
+8091e1ec	tst %r7, 492
+8093213d	tst %r12, 317
+9692e8b6	orcc %r11, 2230, %r11
+9492a764	orcc %r10, 1892, %r10
+80912d1d	tst %r4, 3357
+8090e1de	tst %r3, 478
+98932cc7	orcc %r12, 3271, %r12
+9a9365ea	orcc %r13, 1514, %r13
+8092ab6b	tst %r10, 2923
+8090afc3	tst %r2, 4035
+8c91acbe	orcc %r6, 3262, %r6
+8690ef78	orcc %r3, 3960, %r3
+8091abf6	tst %r6, 3062
+8090e9bf	tst %r3, 2495
+88912e6f	orcc %r4, 3695, %r4
+8091f820	tst %r7, -2016
+80937101	tst %r13, -3839
+8090f045	tst %r3, -4027
+8092f0c8	tst %r11, -3896
+8c91b601	orcc %r6, -2559, %r6
+8091b82a	tst %r6, -2006
+80937868	tst %r13, -1944
+8a91730a	orcc %r5, -3318, %r5
+9a9370c5	orcc %r13, -3899, %r13
+8091f329	tst %r7, -3287
+8093381b	tst %r12, -2021
+9692f30e	orcc %r11, -3314, %r11
+88913187	orcc %r4, -3705, %r4
+8092f336	tst %r11, -3274
+8091389b	tst %r4, -1893
+9492b935	orcc %r10, -1739, %r10
+8490b563	orcc %r2, -2717, %r2
+8092f7e2	tst %r11, -2078
+809132ee	tst %r4, -3346
+8e91f6ad	orcc %r7, -2387, %r7
+9492bd9c	orcc %r10, -612, %r10
+8092fd2f	tst %r11, -721
+8092b1fb	tst %r10, -3589
+8490baaf	orcc %r2, -1361, %r2
+98933d9e	orcc %r12, -610, %r12
+8091b7e7	tst %r6, -2073
+889136fd	orcc %r4, -2307, %r4
+9692ff8f	orcc %r11, -113, %r11
+8090ff7e	tst %r3, -130
+8092befe	tst %r10, -258
+98933aff	orcc %r12, -1281, %r12
+84932000	orcc %r12, 0, %r2
+9490a000	orcc %r2, 0, %r10
+8c90a140	orcc %r2, 320, %r6
+8891e060	orcc %r7, 96, %r4
+9892e0d0	orcc %r11, 208, %r12
+9a916228	orcc %r5, 552, %r13
+8a92e922	orcc %r11, 2338, %r5
+8891e252	orcc %r7, 594, %r4
+9a91e38a	orcc %r7, 906, %r13
+8c91e370	orcc %r7, 880, %r6
+8492e9e8	orcc %r11, 2536, %r2
+8491ab2c	orcc %r6, 2860, %r2
+8491e697	orcc %r7, 1687, %r2
+9a9323b6	orcc %r12, 950, %r13
+8890a767	orcc %r2, 1895, %r4
+9891acb7	orcc %r6, 3255, %r12
+94932777	orcc %r12, 1911, %r10
+8691ecdf	orcc %r7, 3295, %r3
+94936efb	orcc %r13, 3835, %r10
+9492efe7	orcc %r11, 4071, %r10
+8a92eeff	orcc %r11, 3839, %r5
+8491ebff	orcc %r7, 3071, %r2
+98917201	orcc %r5, -3583, %r12
+8c917050	orcc %r5, -4016, %r6
+8890b013	orcc %r2, -4077, %r4
+8c92f602	orcc %r11, -2558, %r6
+8a92b688	orcc %r10, -2424, %r5
+8891f251	orcc %r7, -3503, %r4
+8c917c23	orcc %r5, -989, %r6
+84913253	orcc %r4, -3501, %r2
+9891fca6	orcc %r7, -858, %r12
+8e933a65	orcc %r12, -1435, %r7
+9691fa97	orcc %r7, -1385, %r11
+889331f3	orcc %r12, -3597, %r4
+9892ff95	orcc %r11, -107, %r12
+8692fed9	orcc %r11, -295, %r3
+96937bb7	orcc %r13, -1097, %r11
+84913ff1	orcc %r4, -15, %r2
+9a933dfe	orcc %r12, -514, %r13
+9a913bfb	orcc %r4, -1029, %r13
+80102a6d	or %r0, 2669, %r0
+80103204	or %r0, -3580, %r0
+84102000	or %r0, 0, %r2
+86102000	or %r0, 0, %r3
+84102001	or %r0, 1, %r2
+84102002	or %r0, 2, %r2
+84102003	or %r0, 3, %r2
+84102005	or %r0, 5, %r2
+8e10280c	or %r0, 2060, %r7
+84102007	or %r0, 7, %r2
+881028d0	or %r0, 2256, %r4
+8410200f	or %r0, 15, %r2
+8e102370	or %r0, 880, %r7
+8410202f	or %r0, 47, %r2
+8410203f	or %r0, 63, %r2
+8410205f	or %r0, 95, %r2
+8a102778	or %r0, 1912, %r5
+8410207f	or %r0, 127, %r2
+841020ff	or %r0, 255, %r2
+861020ff	or %r0, 255, %r3
+841021ff	or %r0, 511, %r2
+941023fd	or %r0, 1021, %r10
+861023ff	or %r0, 1023, %r3
+941027bf	or %r0, 1983, %r10
+94102eff	or %r0, 3839, %r10
+94102fff	or %r0, 4095, %r10
+86103c00	or %r0, -1024, %r3
+88103c00	or %r0, -1024, %r4
+84103c02	or %r0, -1022, %r2
+86103c01	or %r0, -1023, %r3
+84103f00	or %r0, -256, %r2
+86103f00	or %r0, -256, %r3
+8a103117	or %r0, -3817, %r5
+86103f80	or %r0, -128, %r3
+84103f82	or %r0, -126, %r2
+86103f81	or %r0, -127, %r3
+9410355d	or %r0, -2723, %r10
+8e103e65	or %r0, -411, %r7
+84103fe8	or %r0, -24, %r2
+84103ff0	or %r0, -16, %r2
+86103f8f	or %r0, -113, %r3
+86103fec	or %r0, -20, %r3
+86103fd7	or %r0, -41, %r3
+86103fe7	or %r0, -25, %r3
+84103bff	or %r0, -1025, %r2
+84103ffb	or %r0, -5, %r2
+84103fff	or %r0, -1, %r2
+86103fff	or %r0, -1, %r3
+8011fd9b	or %r7, -613, %r0
+80117cbf	or %r5, -833, %r0
+8410a000	or %r2, 0, %r2
+8610e000	or %r3, 0, %r3
+8410a001	or %r2, 1, %r2
+8410a002	or %r2, 2, %r2
+8410a006	or %r2, 6, %r2
+8410a009	or %r2, 9, %r2
+8410a007	or %r2, 7, %r2
+8410a00e	or %r2, 14, %r2
+981322c8	or %r12, 712, %r12
+8410a01d	or %r2, 29, %r2
+8a11642d	or %r5, 1069, %r5
+9612ea54	or %r11, 2644, %r11
+8811270e	or %r4, 1806, %r4
+8610e8e9	or %r3, 2281, %r3
+88112c3b	or %r4, 3131, %r4
+8410a177	or %r2, 375, %r2
+9a136afa	or %r13, 2810, %r13
+9612ef9a	or %r11, 3994, %r11
+8410a1ff	or %r2, 511, %r2
+8410a3bf	or %r2, 959, %r2
+8410a3ff	or %r2, 1023, %r2
+8610e3ff	or %r3, 1023, %r3
+9612f029	or %r11, -4055, %r11
+8410b8c0	or %r2, -1856, %r2
+8410b152	or %r2, -3758, %r2
+9412b262	or %r10, -3486, %r10
+88113887	or %r4, -1913, %r4
+8410bf80	or %r2, -128, %r2
+8410b56c	or %r2, -2708, %r2
+8610ffa0	or %r3, -96, %r3
+8410bfe0	or %r2, -32, %r2
+8410be0f	or %r2, -497, %r2
+9612ff8d	or %r11, -115, %r11
+9412b3fc	or %r10, -3076, %r10
+98133fea	or %r12, -22, %r12
+881139ff	or %r4, -1537, %r4
+8410e000	or %r3, 0, %r2
+8412a000	or %r10, 0, %r2
+8410e010	or %r3, 16, %r2
+8410e020	or %r3, 32, %r2
+94136050	or %r13, 80, %r10
+94136005	or %r13, 5, %r10
+94116098	or %r5, 152, %r10
+8810e405	or %r3, 1029, %r4
+8810a530	or %r2, 1328, %r4
+841362a8	or %r13, 680, %r2
+8811ac89	or %r6, 3209, %r4
+8411202f	or %r4, 47, %r2
+861321e5	or %r12, 485, %r3
+841123cc	or %r4, 972, %r2
+98136abc	or %r13, 2748, %r12
+8412e35b	or %r11, 859, %r2
+861165f9	or %r5, 1529, %r3
+8e132f53	or %r12, 3923, %r7
+8e12ae5f	or %r10, 3679, %r7
+841123fe	or %r4, 1022, %r2
+8c12affc	or %r10, 4092, %r6
+9411aedf	or %r6, 3807, %r10
+8810b208	or %r2, -3576, %r4
+9a12b808	or %r10, -2040, %r13
+8c137888	or %r13, -1912, %r6
+8612f481	or %r11, -2943, %r3
+8810fa28	or %r3, -1496, %r4
+84117c28	or %r5, -984, %r2
+9811728b	or %r5, -3445, %r12
+841331c9	or %r12, -3639, %r2
+8811f3a5	or %r7, -3163, %r4
+8811703f	or %r5, -4033, %r4
+9a12f0df	or %r11, -3873, %r13
+8c133f1c	or %r12, -228, %r6
+8411bd76	or %r6, -650, %r2
+9610b3be	or %r2, -3138, %r11
+9a12fded	or %r11, -531, %r13
+861175fb	or %r5, -2565, %r3
+96137ff9	or %r13, -7, %r11
+9810f7f7	or %r3, -2057, %r12
+84117ffd	or %r5, -3, %r2
+9a10fff7	or %r3, -9, %r13
+943014a0	orn %r0, %r0, %r10
+80314640	orn %r5, %r0, %r0
+80301922	orn %r0, %r2, %r0
+8c301406	orn %r0, %r6, %r6
+88301564	orn %r0, %r4, %r4
+8630dba0	orn %r3, %r0, %r3
+88310324	orn %r4, %r4, %r4
+9432902a	orn %r10, %r10, %r10
+80310f46	orn %r4, %r6, %r0
+80311662	orn %r4, %r2, %r0
+8e300862	orn %r0, %r2, %r7
+8e3001ed	orn %r0, %r13, %r7
+863318a0	orn %r12, %r0, %r3
+86328980	orn %r10, %r0, %r3
+9831cb67	orn %r7, %r7, %r12
+883185a6	orn %r6, %r6, %r4
+9a334002	orn %r13, %r2, %r13
+9a33400b	orn %r13, %r11, %r13
+8c315f46	orn %r5, %r6, %r6
+9631c5eb	orn %r7, %r11, %r11
+8c334363	orn %r13, %r3, %r6
+9a30dd25	orn %r3, %r5, %r13
+8eb01740	orncc %r0, %r0, %r7
+86b000c0	orncc %r0, %r0, %r3
+80b00485	orncc %r0, %r5, %r0
+80b01b06	orncc %r0, %r6, %r0
+86b01623	orncc %r0, %r3, %r3
+80b2dd60	orncc %r11, %r0, %r0
+80b1cd20	orncc %r7, %r0, %r0
+84b09120	orncc %r2, %r0, %r2
+8cb18540	orncc %r6, %r0, %r6
+80b2884a	orncc %r10, %r10, %r0
+80b0dae3	orncc %r3, %r3, %r0
+8cb01803	orncc %r0, %r3, %r6
+88b00e63	orncc %r0, %r3, %r4
+84b15040	orncc %r5, %r0, %r2
+94b2cec0	orncc %r11, %r0, %r10
+98b1d3c7	orncc %r7, %r7, %r12
+9ab1dda7	orncc %r7, %r7, %r13
+80b0cae4	orncc %r3, %r4, %r0
+80b08825	orncc %r2, %r5, %r0
+94b28dad	orncc %r10, %r13, %r10
+88b106ad	orncc %r4, %r13, %r4
+98b0938c	orncc %r2, %r12, %r12
+94b357ca	orncc %r13, %r10, %r10
+8cb35f27	orncc %r13, %r7, %r6
+8eb0dd0d	orncc %r3, %r13, %r7
+80b0318d	orncc %r0, -3699, %r0
+80b0314f	orncc %r0, -3761, %r0
+80b024bf	orncc %r0, 1215, %r0
+80b02dca	orncc %r0, 3530, %r0
+86b03ecf	orncc %r0, -305, %r3
+94b03bc7	orncc %r0, -1081, %r10
+8cb03e75	orncc %r0, -395, %r6
+96b037e1	orncc %r0, -2079, %r11
+86b03b53	orncc %r0, -1197, %r3
+8ab03ae8	orncc %r0, -1304, %r5
+96b0331b	orncc %r0, -3301, %r11
+8eb03c62	orncc %r0, -926, %r7
+86b0360d	orncc %r0, -2547, %r3
+88b03443	orncc %r0, -3005, %r4
+96b03982	orncc %r0, -1662, %r11
+9ab03148	orncc %r0, -3768, %r13
+8ab03700	orncc %r0, -2304, %r5
+94b03410	orncc %r0, -3056, %r10
+94b02b7b	orncc %r0, 2939, %r10
+86b02f8f	orncc %r0, 3983, %r3
+8eb02fa9	orncc %r0, 4009, %r7
+8ab0265f	orncc %r0, 1631, %r5
+94b026dc	orncc %r0, 1756, %r10
+86b02e9a	orncc %r0, 3738, %r3
+8eb023a6	orncc %r0, 934, %r7
+8ab02f28	orncc %r0, 3880, %r5
+8cb02594	orncc %r0, 1428, %r6
+86b028e1	orncc %r0, 2273, %r3
+94b02095	orncc %r0, 149, %r10
+86b022c4	orncc %r0, 708, %r3
+8cb02148	orncc %r0, 328, %r6
+9ab0200b	orncc %r0, 11, %r13
+98b33ef3	orncc %r12, -269, %r12
+86b0fd7b	orncc %r3, -645, %r3
+80b33e6d	orncc %r12, -403, %r0
+80b1fbcd	orncc %r7, -1075, %r0
+94b2be7c	orncc %r10, -388, %r10
+86b0fc9f	orncc %r3, -865, %r3
+80b2ffe0	orncc %r11, -32, %r0
+80b0b36d	orncc %r2, -3219, %r0
+96b2f79c	orncc %r11, -2148, %r11
+96b2f3d3	orncc %r11, -3117, %r11
+80b0bd0e	orncc %r2, -754, %r0
+80b37b34	orncc %r13, -1228, %r0
+8eb1f176	orncc %r7, -3722, %r7
+9ab37762	orncc %r13, -2206, %r13
+80b0f4c9	orncc %r3, -2871, %r0
+80b1385c	orncc %r4, -1956, %r0
+8ab175d0	orncc %r5, -2608, %r5
+84b0b562	orncc %r2, -2718, %r2
+80b136c0	orncc %r4, -2368, %r0
+80b131c8	orncc %r4, -3640, %r0
+98b33588	orncc %r12, -2680, %r12
+80b2f181	orncc %r11, -3711, %r0
+8ab17064	orncc %r5, -3996, %r5
+80b33050	orncc %r12, -4016, %r0
+8eb1f600	orncc %r7, -2560, %r7
+80b2af79	orncc %r10, 3961, %r0
+80b32fec	orncc %r12, 4076, %r0
+94b2afcd	orncc %r10, 4045, %r10
+8cb1aabf	orncc %r6, 2751, %r6
+80b1ee2f	orncc %r7, 3631, %r0
+80b123dd	orncc %r4, 989, %r0
+9ab36bb6	orncc %r13, 2998, %r13
+8cb1a6ed	orncc %r6, 1773, %r6
+80b1e6dc	orncc %r7, 1756, %r0
+80b1e9d3	orncc %r7, 2515, %r0
+9ab366e9	orncc %r13, 1769, %r13
+98b323f1	orncc %r12, 1009, %r12
+80b365a9	orncc %r13, 1449, %r0
+80b1ada4	orncc %r6, 3492, %r0
+88b12791	orncc %r4, 1937, %r4
+8ab16f11	orncc %r5, 3857, %r5
+80b1eb28	orncc %r7, 2856, %r0
+80b0eac1	orncc %r3, 2753, %r0
+98b321e2	orncc %r12, 482, %r12
+9ab360ae	orncc %r13, 174, %r13
+80b0eb10	orncc %r3, 2832, %r0
+80b0e603	orncc %r3, 1539, %r0
+86b0e056	orncc %r3, 86, %r3
+86b0e831	orncc %r3, 2097, %r3
+80b2e181	orncc %r11, 385, %r0
+94b2a0a4	orncc %r10, 164, %r10
+9ab36260	orncc %r13, 608, %r13
+9ab0b7ff	orncc %r2, -2049, %r13
+88b0f7fd	orncc %r3, -2051, %r4
+98b0fbdf	orncc %r3, -1057, %r12
+94b1f8ff	orncc %r7, -1793, %r10
+8ab1fedd	orncc %r7, -291, %r5
+96b0fd37	orncc %r3, -713, %r11
+8eb13fcc	orncc %r4, -52, %r7
+88b0b5ec	orncc %r2, -2580, %r4
+86b1fba5	orncc %r7, -1115, %r3
+8ab2ba63	orncc %r10, -1437, %r5
+94b0ba87	orncc %r2, -1401, %r10
+84b37926	orncc %r13, -1754, %r2
+8eb0b187	orncc %r2, -3705, %r7
+96b1ba82	orncc %r6, -1406, %r11
+94b379a0	orncc %r13, -1632, %r10
+84b2f484	orncc %r11, -2940, %r2
+8eb1b085	orncc %r6, -3963, %r7
+98b13028	orncc %r4, -4056, %r12
+8eb0b202	orncc %r2, -3582, %r7
+84b37100	orncc %r13, -3840, %r2
+88b36ffb	orncc %r13, 4091, %r4
+9ab0edff	orncc %r3, 3583, %r13
+88b2eefd	orncc %r11, 3837, %r4
+8eb32efd	orncc %r12, 3837, %r7
+86b2eb3f	orncc %r11, 2879, %r3
+98b2efd5	orncc %r11, 4053, %r12
+9ab0a977	orncc %r2, 2423, %r13
+96b1ac9f	orncc %r6, 3231, %r11
+9ab0a9da	orncc %r2, 2522, %r13
+86b2ab59	orncc %r10, 2905, %r3
+8cb1613d	orncc %r5, 317, %r6
+96b0a26d	orncc %r2, 621, %r11
+84b16307	orncc %r5, 775, %r2
+8cb1214b	orncc %r4, 331, %r6
+84b16492	orncc %r5, 1170, %r2
+8ab1a905	orncc %r6, 2309, %r5
+94b1e188	orncc %r7, 392, %r10
+8cb32450	orncc %r12, 1104, %r6
+98b36408	orncc %r13, 1032, %r12
+94b16804	orncc %r5, 2052, %r10
+80303151	orn %r0, -3759, %r0
+80303454	orn %r0, -2988, %r0
+8a303dff	orn %r0, -513, %r5
+8a30376f	orn %r0, -2193, %r5
+983039bd	orn %r0, -1603, %r12
+9630337c	orn %r0, -3204, %r11
+9a303fa1	orn %r0, -95, %r13
+8c303267	orn %r0, -3481, %r6
+943030eb	orn %r0, -3861, %r10
+8a303439	orn %r0, -3015, %r5
+9a30392c	orn %r0, -1748, %r13
+9a303825	orn %r0, -2011, %r13
+88303264	orn %r0, -3484, %r4
+88303520	orn %r0, -2784, %r4
+8c303121	orn %r0, -3807, %r6
+8a303140	orn %r0, -3776, %r5
+8e303008	orn %r0, -4088, %r7
+94302f9f	orn %r0, 3999, %r10
+84302eeb	orn %r0, 3819, %r2
+96302bf6	orn %r0, 3062, %r11
+8e302f71	orn %r0, 3953, %r7
+88302f55	orn %r0, 3925, %r4
+94302de8	orn %r0, 3560, %r10
+8c3020fd	orn %r0, 253, %r6
+9630252d	orn %r0, 1325, %r11
+86302276	orn %r0, 630, %r3
+9a302493	orn %r0, 1171, %r13
+8630280f	orn %r0, 2063, %r3
+96302312	orn %r0, 786, %r11
+8a302270	orn %r0, 624, %r5
+96302620	orn %r0, 1568, %r11
+9a302280	orn %r0, 640, %r13
+84302088	orn %r0, 136, %r2
+8031a10b	orn %r6, 267, %r0
+8031e05d	orn %r7, 93, %r0
+9a3377d7	orn %r13, -2089, %r13
+98333bd7	orn %r12, -1065, %r12
+88313f9c	orn %r4, -100, %r4
+9632fabe	orn %r11, -1346, %r11
+8430bec6	orn %r2, -314, %r2
+8430b7e8	orn %r2, -2072, %r2
+8430b933	orn %r2, -1741, %r2
+9632f7e0	orn %r11, -2080, %r11
+9432b346	orn %r10, -3258, %r10
+883132c3	orn %r4, -3389, %r4
+8a317a0a	orn %r5, -1526, %r5
+8630f823	orn %r3, -2013, %r3
+8a317841	orn %r5, -1983, %r5
+8831297e	orn %r4, 2430, %r4
+8630eade	orn %r3, 2782, %r3
+9833225f	orn %r12, 607, %r12
+8a316da6	orn %r5, 3494, %r5
+8430ad1c	orn %r2, 3356, %r2
+8630ed2c	orn %r3, 3372, %r3
+9632e06b	orn %r11, 107, %r11
+8a316037	orn %r5, 55, %r5
+9432ac88	orn %r10, 3208, %r10
+8430a431	orn %r2, 1073, %r2
+98332c01	orn %r12, 3073, %r12
+98332304	orn %r12, 772, %r12
+8a316240	orn %r5, 576, %r5
+9831ffee	orn %r7, -18, %r12
+863176ff	orn %r5, -2305, %r3
+8832fed7	orn %r11, -297, %r4
+84333daf	orn %r12, -593, %r2
+8c313db3	orn %r4, -589, %r6
+8e3376f3	orn %r13, -2317, %r7
+8831b62f	orn %r6, -2513, %r4
+8e32f7e1	orn %r11, -2079, %r7
+8830f476	orn %r3, -2954, %r4
+9a31ba96	orn %r6, -1386, %r13
+9631b233	orn %r6, -3533, %r11
+9830fc58	orn %r3, -936, %r12
+863171c2	orn %r5, -3646, %r3
+8c333126	orn %r12, -3802, %r6
+8432f824	orn %r11, -2012, %r2
+88337128	orn %r13, -3800, %r4
+8e333048	orn %r12, -4024, %r7
+96333808	orn %r12, -2040, %r11
+86313002	orn %r4, -4094, %r3
+8630aaff	orn %r2, 2815, %r3
+8431affc	orn %r6, 4092, %r2
+96332eed	orn %r12, 3821, %r11
+8430e2ff	orn %r3, 767, %r2
+8a336e9d	orn %r13, 3741, %r5
+98336f3a	orn %r13, 3898, %r12
+9631ec3e	orn %r7, 3134, %r11
+8a31ae6c	orn %r6, 3692, %r5
+8c32e60f	orn %r11, 1551, %r6
+9630a7e0	orn %r2, 2016, %r11
+8e3361e1	orn %r13, 481, %r7
+8a31252a	orn %r4, 1322, %r5
+8a31a143	orn %r6, 323, %r5
+8c3368c2	orn %r13, 2242, %r6
+9830e016	orn %r3, 22, %r12
+8e312520	orn %r4, 1312, %r7
+8831e0c0	orn %r7, 192, %r4
+9a31e104	orn %r7, 260, %r13
+8830a040	orn %r2, 64, %r4
+814026e3	rd %y, %r0
+81403573	rd %y, %r0
+974001c4	rd %y, %r11
+874014b1	rd %y, %r3
+8ef9e001	sdivcc %r7, 1, %r7
+8af96081	sdivcc %r5, 129, %r5
+86f8e08b	sdivcc %r3, 139, %r3
+8ef9e149	sdivcc %r7, 329, %r7
+94faa654	sdivcc %r10, 1620, %r10
+9afb6685	sdivcc %r13, 1669, %r13
+96faea2d	sdivcc %r11, 2605, %r11
+96fae791	sdivcc %r11, 1937, %r11
+86f8ef31	sdivcc %r3, 3889, %r3
+8af96cad	sdivcc %r5, 3245, %r5
+8cf9af33	sdivcc %r6, 3891, %r6
+96faef47	sdivcc %r11, 3911, %r11
+8cf9aefc	sdivcc %r6, 3836, %r6
+8cf9af73	sdivcc %r6, 3955, %r6
+8ef9edbf	sdivcc %r7, 3519, %r7
+84f8b0a0	sdivcc %r2, -3936, %r2
+96faf015	sdivcc %r11, -4075, %r11
+94fab21c	sdivcc %r10, -3556, %r10
+94fab294	sdivcc %r10, -3436, %r10
+98fb331a	sdivcc %r12, -3302, %r12
+96faf0b6	sdivcc %r11, -3914, %r11
+88f9350f	sdivcc %r4, -2801, %r4
+8ef9f0b7	sdivcc %r7, -3913, %r7
+8cf9bb5a	sdivcc %r6, -1190, %r6
+8cf9b8cf	sdivcc %r6, -1841, %r6
+96faf75b	sdivcc %r11, -2213, %r11
+88f93e5d	sdivcc %r4, -419, %r4
+80f8200c	sdivcc %r0, 12, %r0
+80f82054	sdivcc %r0, 84, %r0
+9af82121	sdivcc %r0, 289, %r13
+8ef82901	sdivcc %r0, 2305, %r7
+80f820cc	sdivcc %r0, 204, %r0
+96f82511	sdivcc %r0, 1297, %r11
+86f82990	sdivcc %r0, 2448, %r3
+80f82545	sdivcc %r0, 1349, %r0
+96f82325	sdivcc %r0, 805, %r11
+8cf82247	sdivcc %r0, 583, %r6
+94f82c55	sdivcc %r0, 3157, %r10
+8ef82867	sdivcc %r0, 2151, %r7
+80f823da	sdivcc %r0, 986, %r0
+88f829a7	sdivcc %r0, 2471, %r4
+8cf8259b	sdivcc %r0, 1435, %r6
+94f82d5e	sdivcc %r0, 3422, %r10
+8af8279d	sdivcc %r0, 1949, %r5
+84f82ffb	sdivcc %r0, 4091, %r2
+96f82ffe	sdivcc %r0, 4094, %r11
+80f83088	sdivcc %r0, -3960, %r0
+88f83180	sdivcc %r0, -3712, %r4
+9af83802	sdivcc %r0, -2046, %r13
+98f83841	sdivcc %r0, -1983, %r12
+8af834c0	sdivcc %r0, -2880, %r5
+9af830e2	sdivcc %r0, -3870, %r13
+9af83e08	sdivcc %r0, -504, %r13
+9af834b2	sdivcc %r0, -2894, %r13
+8af830c7	sdivcc %r0, -3897, %r5
+80f8335c	sdivcc %r0, -3236, %r0
+80f83693	sdivcc %r0, -2413, %r0
+8cf83fc0	sdivcc %r0, -64, %r6
+8ef83e4a	sdivcc %r0, -438, %r7
+84f83aa7	sdivcc %r0, -1369, %r2
+96f83e72	sdivcc %r0, -398, %r11
+80f83b97	sdivcc %r0, -1129, %r0
+9af83f1e	sdivcc %r0, -226, %r13
+8af837f2	sdivcc %r0, -2062, %r5
+86f837fd	sdivcc %r0, -2051, %r3
+8cfb6100	sdivcc %r13, 256, %r6
+84fb2090	sdivcc %r12, 144, %r2
+8ef8e410	sdivcc %r3, 1040, %r7
+80faa242	sdivcc %r10, 578, %r0
+86f96032	sdivcc %r5, 50, %r3
+8afb2250	sdivcc %r12, 592, %r5
+80f9e02b	sdivcc %r7, 43, %r0
+86f8a628	sdivcc %r2, 1576, %r3
+98f96192	sdivcc %r5, 402, %r12
+80fae46a	sdivcc %r11, 1130, %r0
+80fb2316	sdivcc %r12, 790, %r0
+86f9a135	sdivcc %r6, 309, %r3
+98f9a685	sdivcc %r6, 1669, %r12
+80f8a7a4	sdivcc %r2, 1956, %r0
+80fae0d7	sdivcc %r11, 215, %r0
+98f923c5	sdivcc %r4, 965, %r12
+8af9a8cb	sdivcc %r6, 2251, %r5
+80fb25d3	sdivcc %r12, 1491, %r0
+80fb216f	sdivcc %r12, 367, %r0
+84fb66b5	sdivcc %r13, 1717, %r2
+8cf8e3ad	sdivcc %r3, 941, %r6
+80f92cf9	sdivcc %r4, 3321, %r0
+80f9257b	sdivcc %r4, 1403, %r0
+94f92aed	sdivcc %r4, 2797, %r10
+8efb6fb1	sdivcc %r13, 4017, %r7
+80f9ebcf	sdivcc %r7, 3023, %r0
+80f8e4ff	sdivcc %r3, 1279, %r0
+9af9adf9	sdivcc %r6, 3577, %r13
+88f8ed6f	sdivcc %r3, 3439, %r4
+88faaf7b	sdivcc %r10, 3963, %r4
+86f927f7	sdivcc %r4, 2039, %r3
+8afab020	sdivcc %r10, -4064, %r5
+8af8f400	sdivcc %r3, -3072, %r5
+80f8b101	sdivcc %r2, -3839, %r0
+80fab404	sdivcc %r10, -3068, %r0
+8af9bc00	sdivcc %r6, -1024, %r5
+8ef9b090	sdivcc %r6, -3952, %r7
+80fb708c	sdivcc %r13, -3956, %r0
+86f8b805	sdivcc %r2, -2043, %r3
+9af9b031	sdivcc %r6, -4047, %r13
+80faf88a	sdivcc %r11, -1910, %r0
+80f9b1c4	sdivcc %r6, -3644, %r0
+8efaf213	sdivcc %r11, -3565, %r7
+84fb3650	sdivcc %r12, -2480, %r2
+80f8f703	sdivcc %r3, -2301, %r0
+80f8bc89	sdivcc %r2, -887, %r0
+8cfb354c	sdivcc %r12, -2740, %r6
+94fb3558	sdivcc %r12, -2728, %r10
+80faf84f	sdivcc %r11, -1969, %r0
+80f8b58e	sdivcc %r2, -2674, %r0
+8afaf366	sdivcc %r11, -3226, %r5
+8ef938bc	sdivcc %r4, -1860, %r7
+80f9b99b	sdivcc %r6, -1637, %r0
+80faf58f	sdivcc %r11, -2673, %r0
+94f8b6d6	sdivcc %r2, -2346, %r10
+88fab6cd	sdivcc %r10, -2355, %r4
+80f93e4f	sdivcc %r4, -433, %r0
+8cfab773	sdivcc %r10, -2189, %r6
+8efaff63	sdivcc %r11, -157, %r7
+80fabedd	sdivcc %r10, -291, %r0
+84f8fefc	sdivcc %r3, -260, %r2
+98f9f7eb	sdivcc %r7, -2069, %r12
+80fafefb	sdivcc %r11, -261, %r0
+8ef9bf77	sdivcc %r6, -137, %r7
+84fabf6f	sdivcc %r10, -145, %r2
+8ef8ffef	sdivcc %r3, -17, %r7
+8efb3ffe	sdivcc %r12, -2, %r7
+80782e96	sdiv %r0, 3734, %r0
+80782aa3	sdiv %r0, 2723, %r0
+8e79e408	sdiv %r7, 1032, %r7
+8e79ea02	sdiv %r7, 2562, %r7
+887924c2	sdiv %r4, 1218, %r4
+947aaa30	sdiv %r10, 2608, %r10
+947aa781	sdiv %r10, 1921, %r10
+947aac16	sdiv %r10, 3094, %r10
+8678e93a	sdiv %r3, 2362, %r3
+8a796556	sdiv %r5, 1366, %r5
+8c79ae66	sdiv %r6, 3686, %r6
+8678eb8d	sdiv %r3, 2957, %r3
+8678edbc	sdiv %r3, 3516, %r3
+8678ef27	sdiv %r3, 3879, %r3
+9a7b7060	sdiv %r13, -4000, %r13
+8478b058	sdiv %r2, -4008, %r2
+967af422	sdiv %r11, -3038, %r11
+8879322c	sdiv %r4, -3540, %r4
+88793c0c	sdiv %r4, -1012, %r4
+8e79fc92	sdiv %r7, -878, %r7
+9a7b7295	sdiv %r13, -3435, %r13
+987b3959	sdiv %r12, -1703, %r12
+9a7b7a6c	sdiv %r13, -1428, %r13
+987b38dd	sdiv %r12, -1827, %r12
+88793e74	sdiv %r4, -396, %r4
+88793e7a	sdiv %r4, -390, %r4
+8e79fb57	sdiv %r7, -1193, %r7
+8478b7f5	sdiv %r2, -2059, %r2
+967affd9	sdiv %r11, -39, %r11
+987820c1	sdiv %r0, 193, %r12
+8a782224	sdiv %r0, 548, %r5
+8e78248a	sdiv %r0, 1162, %r7
+9a782226	sdiv %r0, 550, %r13
+9a7829a1	sdiv %r0, 2465, %r13
+947822b2	sdiv %r0, 690, %r10
+8a782da2	sdiv %r0, 3490, %r5
+86782cb2	sdiv %r0, 3250, %r3
+9878278d	sdiv %r0, 1933, %r12
+987822f5	sdiv %r0, 757, %r12
+8c78295f	sdiv %r0, 2399, %r6
+84782b6d	sdiv %r0, 2925, %r2
+84782cdf	sdiv %r0, 3295, %r2
+8c782e3f	sdiv %r0, 3647, %r6
+8c78320c	sdiv %r0, -3572, %r6
+88783062	sdiv %r0, -3998, %r4
+96783b04	sdiv %r0, -1276, %r11
+8e783425	sdiv %r0, -3035, %r7
+8c7832a6	sdiv %r0, -3418, %r6
+96783155	sdiv %r0, -3755, %r11
+8e783cc6	sdiv %r0, -826, %r7
+88783393	sdiv %r0, -3181, %r4
+9a783de1	sdiv %r0, -543, %r13
+86783e56	sdiv %r0, -426, %r3
+847838fe	sdiv %r0, -1794, %r2
+98783767	sdiv %r0, -2201, %r12
+98783bf3	sdiv %r0, -1037, %r12
+807b6b30	sdiv %r13, 2864, %r0
+8079a368	sdiv %r6, 872, %r0
+967b6018	sdiv %r13, 24, %r11
+8e7aa140	sdiv %r10, 320, %r7
+967aa848	sdiv %r10, 2120, %r11
+8e78a812	sdiv %r2, 2066, %r7
+8a7ae065	sdiv %r11, 101, %r5
+9a7aa452	sdiv %r10, 1106, %r13
+9478e463	sdiv %r3, 1123, %r10
+8a79ed88	sdiv %r7, 3464, %r5
+8c79e9e8	sdiv %r7, 2536, %r6
+8a79ef05	sdiv %r7, 3845, %r5
+98792d59	sdiv %r4, 3417, %r12
+9a7aea57	sdiv %r11, 2647, %r13
+987ae9f3	sdiv %r11, 2547, %r12
+8e79a7c7	sdiv %r6, 1991, %r7
+9a78e75f	sdiv %r3, 1887, %r13
+8679677e	sdiv %r5, 1918, %r3
+8e79adfb	sdiv %r6, 3579, %r7
+8a78e5ff	sdiv %r3, 1535, %r5
+967b6ff7	sdiv %r13, 4087, %r11
+8679b800	sdiv %r6, -2048, %r3
+9a7b30a0	sdiv %r12, -3936, %r13
+8a7b3108	sdiv %r12, -3832, %r5
+9879b424	sdiv %r6, -3036, %r12
+8e79b418	sdiv %r6, -3048, %r7
+867b7909	sdiv %r13, -1783, %r3
+887ab8a1	sdiv %r10, -1887, %r4
+8c7b7ba0	sdiv %r13, -1120, %r6
+9678b278	sdiv %r2, -3464, %r11
+847938f4	sdiv %r4, -1804, %r2
+96797574	sdiv %r5, -2700, %r11
+8878bd1e	sdiv %r2, -738, %r4
+867b33f4	sdiv %r12, -3084, %r3
+8a79bb75	sdiv %r6, -1163, %r5
+8a7b7a7d	sdiv %r13, -1411, %r5
+8c7b3b6f	sdiv %r12, -1169, %r6
+9678fbdb	sdiv %r3, -1061, %r11
+86797bfe	sdiv %r5, -1026, %r3
+8e7abbbf	sdiv %r10, -1089, %r7
+12e8708	sethi %hi(-0xba1c2000), %r0
+106de59	sethi %hi(-0x1b796400), %r0
+5000000	sethi %hi(-0x0), %r2
+7000000	sethi %hi(-0x0), %r3
+5000004	sethi %hi(-0x1000), %r2
+5000008	sethi %hi(-0x2000), %r2
+5000006	sethi %hi(-0x1800), %r2
+5000009	sethi %hi(-0x2400), %r2
+5000007	sethi %hi(-0x1c00), %r2
+5000013	sethi %hi(-0x4c00), %r2
+500000f	sethi %hi(-0x3c00), %r2
+500002b	sethi %hi(-0xac00), %r2
+1918020c	sethi %hi(-0x60083000), %r12
+500001f	sethi %hi(-0x7c00), %r2
+7151082	sethi %hi(-0x54420800), %r3
+1904e840	sethi %hi(-0x13a10000), %r12
+f18a01c	sethi %hi(-0x62807000), %r7
+b092289	sethi %hi(-0x248a2400), %r5
+17151330	sethi %hi(-0x544cc000), %r11
+90cb051	sethi %hi(-0x32c14400), %r4
+19276414	sethi %hi(-0x9d905000), %r12
+19249863	sethi %hi(-0x92618c00), %r12
+191570a5	sethi %hi(-0x55c29400), %r12
+152c8a2e	sethi %hi(-0xb228b800), %r10
+1914ee4c	sethi %hi(-0x53b93000), %r12
+d07bb06	sethi %hi(-0x1eec1800), %r6
+1722aadb	sethi %hi(-0x8aab6c00), %r11
+51d455b	sethi %hi(-0x75156c00), %r2
+1b3ad2e9	sethi %hi(-0xeb4ba400), %r13
+1727e1d9	sethi %hi(-0x9f876400), %r11
+71abfd1	sethi %hi(-0x6aff4400), %r3
+f35feb0	sethi %hi(-0xd7fac000), %r7
+533ed2f	sethi %hi(-0xcfb4bc00), %r2
+f1fe17e	sethi %hi(-0x7f85f800), %r7
+7354ffb	sethi %hi(-0xd53fec00), %r3
+53bcdf9	sethi %hi(-0xef37e400), %r2
+171eaffe	sethi %hi(-0x7abff800), %r11
+508ffff	sethi %hi(-0x23fffc00), %r2
+50fb7ff	sethi %hi(-0x3edffc00), %r2
+50fe7ff	sethi %hi(-0x3f9ffc00), %r2
+507ffff	sethi %hi(-0x1ffffc00), %r2
+50dffff	sethi %hi(-0x37fffc00), %r2
+50fffff	sethi %hi(-0x3ffffc00), %r2
+51bffff	sethi %hi(-0x6ffffc00), %r2
+51fffff	sethi %hi(-0x7ffffc00), %r2
+52fffff	sethi %hi(-0xbffffc00), %r2
+95280940	sll %r0, %r0, %r10
+9b280ee0	sll %r0, %r0, %r13
+81281f86	sll %r0, %r6, %r0
+812b56ed	sll %r13, %r13, %r0
+99281a4c	sll %r0, %r12, %r12
+8f280da7	sll %r0, %r7, %r7
+8d2996a0	sll %r6, %r0, %r6
+952a9b0a	sll %r10, %r10, %r10
+992b16cc	sll %r12, %r12, %r12
+81295602	sll %r5, %r2, %r0
+812acb85	sll %r11, %r5, %r0
+8b280503	sll %r0, %r3, %r5
+8528190c	sll %r0, %r12, %r2
+8f2b17a0	sll %r12, %r0, %r7
+8928c700	sll %r3, %r0, %r4
+8b289722	sll %r2, %r2, %r5
+852b160c	sll %r12, %r12, %r2
+87299a23	sll %r6, %r3, %r3
+8528c002	sll %r3, %r2, %r2
+992b0c67	sll %r12, %r7, %r12
+89291f83	sll %r4, %r3, %r4
+872b0c0a	sll %r12, %r10, %r3
+972983c3	sll %r6, %r3, %r11
+81282a11	sll %r0, 17, %r0
+812822fc	sll %r0, 28, %r0
+9b282561	sll %r0, 1, %r13
+9928339a	sll %r0, 26, %r12
+812aecce	sll %r11, 14, %r0
+8129b058	sll %r6, 24, %r0
+8528b020	sll %r2, 0, %r2
+952ab020	sll %r10, 0, %r10
+89293348	sll %r4, 8, %r4
+952ab961	sll %r10, 1, %r10
+8d29a852	sll %r6, 18, %r6
+992b2a05	sll %r12, 5, %r12
+992b28ae	sll %r12, 14, %r12
+8528a007	sll %r2, 7, %r2
+8528a00f	sll %r2, 15, %r2
+8528a017	sll %r2, 23, %r2
+8728e3bf	sll %r3, 31, %r3
+8528a01f	sll %r2, 31, %r2
+8b2938a0	sll %r4, 0, %r5
+8b2aac40	sll %r10, 0, %r5
+8b2933a8	sll %r4, 8, %r5
+9729b8a1	sll %r6, 1, %r11
+892b6e66	sll %r13, 6, %r4
+852ab04c	sll %r10, 12, %r2
+9528fd1c	sll %r3, 28, %r10
+9b2979b3	sll %r5, 19, %r13
+992b791d	sll %r13, 29, %r12
+8f297d3e	sll %r5, 30, %r7
+9b2b303f	sll %r12, 31, %r13
+972b2e7f	sll %r12, 31, %r11
+88580d80	smul %r0, %r0, %r4
+985816e0	smul %r0, %r0, %r12
+805a9560	smul %r10, %r0, %r0
+8058d700	smul %r3, %r0, %r0
+88580344	smul %r0, %r4, %r4
+9a5812ad	smul %r0, %r13, %r13
+88591a60	smul %r4, %r0, %r4
+8e59c660	smul %r7, %r0, %r7
+8a5947e5	smul %r5, %r5, %r5
+8a595d25	smul %r5, %r5, %r5
+805a9b2b	smul %r10, %r11, %r0
+80589e6d	smul %r2, %r13, %r0
+8c581f67	smul %r0, %r7, %r6
+8458088c	smul %r0, %r12, %r2
+865b0ac0	smul %r12, %r0, %r3
+94589f80	smul %r2, %r0, %r10
+8e58ce83	smul %r3, %r3, %r7
+86588002	smul %r2, %r2, %r3
+8a589185	smul %r2, %r5, %r5
+8458c002	smul %r3, %r2, %r2
+84588003	smul %r2, %r3, %r2
+84588004	smul %r2, %r4, %r2
+8c5a92c3	smul %r10, %r3, %r6
+865b5f87	smul %r13, %r7, %r3
+94d81960	smulcc %r0, %r0, %r10
+88d808a0	smulcc %r0, %r0, %r4
+80d808e4	smulcc %r0, %r4, %r0
+80d80825	smulcc %r0, %r5, %r0
+94d813aa	smulcc %r0, %r10, %r10
+80db0920	smulcc %r12, %r0, %r0
+80da89e0	smulcc %r10, %r0, %r0
+94da8ac0	smulcc %r10, %r0, %r10
+96dac0e0	smulcc %r11, %r0, %r11
+80dacb0b	smulcc %r11, %r11, %r0
+80d91c44	smulcc %r4, %r4, %r0
+8cd99846	smulcc %r6, %r6, %r6
+96dac04b	smulcc %r11, %r11, %r11
+9ad801a7	smulcc %r0, %r7, %r13
+94d81fe7	smulcc %r0, %r7, %r10
+96d8dae0	smulcc %r3, %r0, %r11
+88d8da80	smulcc %r3, %r0, %r4
+8edb55ed	smulcc %r13, %r13, %r7
+94db11cc	smulcc %r12, %r12, %r10
+80da9125	smulcc %r10, %r5, %r0
+80db1d4a	smulcc %r12, %r10, %r0
+84db5a42	smulcc %r13, %r2, %r2
+86d89ac3	smulcc %r2, %r3, %r3
+94da9e45	smulcc %r10, %r5, %r10
+86d8d5ed	smulcc %r3, %r13, %r3
+94d99e44	smulcc %r6, %r4, %r10
+94db1c25	smulcc %r12, %r5, %r10
+80d833d7	smulcc %r0, -3113, %r0
+80d8211b	smulcc %r0, 283, %r0
+96d820d6	smulcc %r0, 214, %r11
+86d833a6	smulcc %r0, -3162, %r3
+80db2080	smulcc %r12, 128, %r0
+80dae182	smulcc %r11, 386, %r0
+8ed9ec02	smulcc %r7, 3074, %r7
+8cd9a920	smulcc %r6, 2336, %r6
+80d9e44c	smulcc %r7, 1100, %r0
+80db2ca0	smulcc %r12, 3232, %r0
+96daec21	smulcc %r11, 3105, %r11
+96dae08e	smulcc %r11, 142, %r11
+80daea68	smulcc %r11, 2664, %r0
+80d8aa43	smulcc %r2, 2627, %r0
+9adb6cc4	smulcc %r13, 3268, %r13
+94daad60	smulcc %r10, 3424, %r10
+80d963e4	smulcc %r5, 996, %r0
+80d9a7a2	smulcc %r6, 1954, %r0
+8ad968e6	smulcc %r5, 2278, %r5
+8cd9aad8	smulcc %r6, 2776, %r6
+80db2e0f	smulcc %r12, 3599, %r0
+80d965e5	smulcc %r5, 1509, %r0
+94daaf31	smulcc %r10, 3889, %r10
+88d9219f	smulcc %r4, 415, %r4
+80d96fe8	smulcc %r5, 4072, %r0
+80d9a5ee	smulcc %r6, 1518, %r0
+9adb6aed	smulcc %r13, 2797, %r13
+96daeb79	smulcc %r11, 2937, %r11
+80daa7af	smulcc %r10, 1967, %r0
+80daa3fb	smulcc %r10, 1019, %r0
+98db2fce	smulcc %r12, 4046, %r12
+94daadfd	smulcc %r10, 3581, %r10
+98db2fb7	smulcc %r12, 4023, %r12
+8ad97090	smulcc %r5, -3952, %r5
+80d97814	smulcc %r5, -2028, %r0
+80d9f205	smulcc %r7, -3579, %r0
+80d93b40	smulcc %r4, -1216, %r0
+80dabc88	smulcc %r10, -888, %r0
+8cd9b158	smulcc %r6, -3752, %r6
+96daf426	smulcc %r11, -3034, %r11
+80d979c8	smulcc %r5, -1592, %r0
+80d9fe12	smulcc %r7, -494, %r0
+98db3a70	smulcc %r12, -1424, %r12
+96daf14d	smulcc %r11, -3763, %r11
+80d8b9a5	smulcc %r2, -1627, %r0
+80d9f4d3	smulcc %r7, -2861, %r0
+84d8b16d	smulcc %r2, -3731, %r2
+96daf50f	smulcc %r11, -2801, %r11
+80dabcd5	smulcc %r10, -811, %r0
+80d93f2a	smulcc %r4, -214, %r0
+96dafb63	smulcc %r11, -1181, %r11
+96dafb1b	smulcc %r11, -1253, %r11
+80db38bf	smulcc %r12, -1857, %r0
+80d9fbec	smulcc %r7, -1044, %r0
+8ad97abe	smulcc %r5, -1346, %r5
+88d939db	smulcc %r4, -1573, %r4
+8ed9ff6b	smulcc %r7, -149, %r7
+80db3f9f	smulcc %r12, -97, %r0
+80dabd7f	smulcc %r10, -641, %r0
+94dabebf	smulcc %r10, -321, %r10
+84db2012	smulcc %r12, 18, %r2
+98d96c00	smulcc %r5, 3072, %r12
+96d8a106	smulcc %r2, 262, %r11
+98dae20c	smulcc %r11, 524, %r12
+98d96a90	smulcc %r5, 2704, %r12
+96db6854	smulcc %r13, 2132, %r11
+8cd8a5a2	smulcc %r2, 1442, %r6
+8edb66d0	smulcc %r13, 1744, %r7
+8ed9af84	smulcc %r6, 3972, %r7
+84d8ee52	smulcc %r3, 3666, %r2
+8ad9ed4b	smulcc %r7, 3403, %r5
+98d9a95d	smulcc %r6, 2397, %r12
+94db6dab	smulcc %r13, 3499, %r10
+86db6edc	smulcc %r13, 3804, %r3
+84db6bb7	smulcc %r13, 2999, %r2
+8ad8ebe7	smulcc %r3, 3047, %r5
+8cd966ff	smulcc %r5, 1791, %r6
+8adb2fbe	smulcc %r12, 4030, %r5
+8edaf100	smulcc %r11, -3840, %r7
+8edb7040	smulcc %r13, -4032, %r7
+8cd93003	smulcc %r4, -4093, %r6
+8ad9b025	smulcc %r6, -4059, %r5
+84d9b0c8	smulcc %r6, -3896, %r2
+96db7708	smulcc %r13, -2296, %r11
+8adab930	smulcc %r10, -1744, %r5
+94d93a07	smulcc %r4, -1529, %r10
+8cd93b24	smulcc %r4, -1244, %r6
+8adb72ec	smulcc %r13, -3348, %r5
+86d97a0f	smulcc %r5, -1521, %r3
+86d9fc3e	smulcc %r7, -962, %r3
+8ad8f7cc	smulcc %r3, -2100, %r5
+98dabb7a	smulcc %r10, -1158, %r12
+84d8feae	smulcc %r3, -338, %r2
+8cdab5fd	smulcc %r10, -2563, %r6
+8adabfd6	smulcc %r10, -42, %r5
+8ed8bfee	smulcc %r2, -18, %r7
+8cd97ff7	smulcc %r5, -9, %r6
+805832a1	smul %r0, -3423, %r0
+80582d7f	smul %r0, 3455, %r0
+8c58250c	smul %r0, 1292, %r6
+8c583180	smul %r0, -3712, %r6
+8058f0a4	smul %r3, -3932, %r0
+8059a932	smul %r6, 2354, %r0
+8458a014	smul %r2, 20, %r2
+8458a028	smul %r2, 40, %r2
+8458a02c	smul %r2, 44, %r2
+8458a064	smul %r2, 100, %r2
+8458a03c	smul %r2, 60, %r2
+8458ae10	smul %r2, 3600, %r2
+965ae9a8	smul %r11, 2472, %r11
+9a5b642b	smul %r13, 1067, %r13
+8458a16d	smul %r2, 365, %r2
+8458a3e8	smul %r2, 1000, %r2
+8a596b72	smul %r5, 2930, %r5
+965ae6d6	smul %r11, 1750, %r11
+8e59e4ef	smul %r7, 1263, %r7
+965aeabb	smul %r11, 2747, %r11
+8a596d6f	smul %r5, 3439, %r5
+945ab180	smul %r10, -3712, %r10
+8a597022	smul %r5, -4062, %r5
+965af302	smul %r11, -3326, %r11
+8a597501	smul %r5, -2815, %r5
+8c59b41a	smul %r6, -3046, %r6
+965af491	smul %r11, -2927, %r11
+885932c9	smul %r4, -3383, %r4
+8c59b592	smul %r6, -2670, %r6
+945ab9a9	smul %r10, -1623, %r10
+8658f17a	smul %r3, -3718, %r3
+985b36da	smul %r12, -2342, %r12
+985b3b87	smul %r12, -1145, %r12
+8658fd5b	smul %r3, -677, %r3
+8e59fdfa	smul %r7, -518, %r7
+84592014	smul %r4, 20, %r2
+865b2050	smul %r12, 80, %r3
+8a5b6520	smul %r13, 1312, %r5
+8858e038	smul %r3, 56, %r4
+9a59ad40	smul %r6, 3392, %r13
+9a592688	smul %r4, 1672, %r13
+885aa878	smul %r10, 2168, %r4
+8a59213c	smul %r4, 316, %r5
+8e58ed68	smul %r3, 3432, %r7
+8e5b69d1	smul %r13, 2513, %r7
+8858aee4	smul %r2, 3812, %r4
+885b6b4e	smul %r13, 2894, %r4
+985aad7a	smul %r10, 3450, %r12
+845ae4f7	smul %r11, 1271, %r2
+86592f9b	smul %r4, 3995, %r3
+885aabe7	smul %r10, 3047, %r4
+8e58ef6f	smul %r3, 3951, %r7
+865b27fe	smul %r12, 2046, %r3
+8859b040	smul %r6, -4032, %r4
+9858b020	smul %r2, -4064, %r12
+9459f840	smul %r7, -1984, %r10
+9859f060	smul %r7, -4000, %r12
+8e593428	smul %r4, -3032, %r7
+885af40a	smul %r11, -3062, %r4
+8a5b71a1	smul %r13, -3679, %r5
+885af11c	smul %r11, -3812, %r4
+8a59f994	smul %r7, -1644, %r5
+8458fd09	smul %r3, -759, %r2
+8458f9cc	smul %r3, -1588, %r2
+985ab656	smul %r10, -2474, %r12
+9459f27e	smul %r7, -3458, %r10
+9858f5dc	smul %r3, -2596, %r12
+8859727f	smul %r5, -3457, %r4
+8a5b34ef	smul %r12, -2833, %r5
+9459ffbc	smul %r7, -68, %r10
+885abeb7	smul %r10, -329, %r4
+8e59bf7b	smul %r6, -133, %r7
+8859fef7	smul %r7, -265, %r4
+81381400	sra %r0, %r0, %r0
+85380340	sra %r0, %r0, %r2
+85381a80	sra %r0, %r0, %r2
+813ad060	sra %r11, %r0, %r0
+813a9a6a	sra %r10, %r10, %r0
+85380222	sra %r0, %r2, %r2
+87381243	sra %r0, %r3, %r3
+8738cc40	sra %r3, %r0, %r3
+8738c4a0	sra %r3, %r0, %r3
+8f39dbe7	sra %r7, %r7, %r7
+953a8fea	sra %r10, %r10, %r10
+81391f8a	sra %r4, %r10, %r0
+813b4146	sra %r13, %r6, %r0
+9b380b42	sra %r0, %r2, %r13
+8d380ba7	sra %r0, %r7, %r6
+8b38d2c0	sra %r3, %r0, %r5
+8d39cd20	sra %r7, %r0, %r6
+8f399086	sra %r6, %r6, %r7
+8f391ba4	sra %r4, %r4, %r7
+8b38de25	sra %r3, %r5, %r5
+8939cfc4	sra %r7, %r4, %r4
+89391eea	sra %r4, %r10, %r4
+993b0906	sra %r12, %r6, %r12
+85394883	sra %r5, %r3, %r2
+8938d84c	sra %r3, %r12, %r4
+81382e08	sra %r0, 8, %r0
+81382a49	sra %r0, 9, %r0
+85382d51	sra %r0, 17, %r2
+8b38230a	sra %r0, 10, %r5
+8138a83b	sra %r2, 27, %r0
+8138e772	sra %r3, 18, %r0
+8f39eb80	sra %r7, 0, %r7
+993b3c00	sra %r12, 0, %r12
+8538bbe1	sra %r2, 1, %r2
+8538a001	sra %r2, 1, %r2
+993b3c8c	sra %r12, 12, %r12
+9b3b6789	sra %r13, 9, %r13
+8b396e15	sra %r5, 21, %r5
+8538a955	sra %r2, 21, %r2
+953aac1b	sra %r10, 27, %r10
+8538a017	sra %r2, 23, %r2
+8538a01f	sra %r2, 31, %r2
+8738e01f	sra %r3, 31, %r3
+993aa4c0	sra %r10, 0, %r12
+853b38c0	sra %r12, 0, %r2
+8f3af502	sra %r11, 2, %r7
+8b3b3924	sra %r12, 4, %r5
+8d38f746	sra %r3, 6, %r6
+99396494	sra %r5, 20, %r12
+8f38bc73	sra %r2, 19, %r7
+8538eee7	sra %r3, 7, %r2
+893aba97	sra %r10, 23, %r4
+853b2f57	sra %r12, 23, %r2
+8739229f	sra %r4, 31, %r3
+8538e01f	sra %r3, 31, %r2
+81301a60	srl %r0, %r0, %r0
+9b301360	srl %r0, %r0, %r13
+8f301460	srl %r0, %r0, %r7
+8132dccb	srl %r11, %r11, %r0
+813003eb	srl %r0, %r11, %r0
+85300d42	srl %r0, %r2, %r2
+87300a03	srl %r0, %r3, %r3
+89311840	srl %r4, %r0, %r4
+8730c5e0	srl %r3, %r0, %r3
+9933062c	srl %r12, %r12, %r12
+81335385	srl %r13, %r5, %r0
+8132dd42	srl %r11, %r2, %r0
+973002ad	srl %r0, %r13, %r11
+95301706	srl %r0, %r6, %r10
+8931d620	srl %r7, %r0, %r4
+8b3342c0	srl %r13, %r0, %r5
+99311ea4	srl %r4, %r4, %r12
+8933450d	srl %r13, %r13, %r4
+8530c002	srl %r3, %r2, %r2
+85330002	srl %r12, %r2, %r2
+99331766	srl %r12, %r6, %r12
+85308003	srl %r2, %r3, %r2
+9930cd64	srl %r3, %r4, %r12
+8d30daa7	srl %r3, %r7, %r6
+8130365f	srl %r0, 31, %r0
+81302194	srl %r0, 20, %r0
+85302118	srl %r0, 24, %r2
+95302375	srl %r0, 21, %r10
+813165ff	srl %r5, 31, %r0
+8131677c	srl %r5, 28, %r0
+8530b020	srl %r2, 0, %r2
+8730e000	srl %r3, 0, %r3
+9532b144	srl %r10, 4, %r10
+8530a001	srl %r2, 1, %r2
+8f31f42a	srl %r7, 10, %r7
+8530a003	srl %r2, 3, %r2
+9732eaee	srl %r11, 14, %r11
+993336ba	srl %r12, 26, %r12
+8530a00f	srl %r2, 15, %r2
+8530a01b	srl %r2, 27, %r2
+8530a01f	srl %r2, 31, %r2
+8730e01f	srl %r3, 31, %r3
+8530f020	srl %r3, 0, %r2
+85313020	srl %r4, 0, %r2
+9b316910	srl %r5, 16, %r13
+8730b741	srl %r2, 1, %r3
+99316e69	srl %r5, 9, %r12
+8b31b814	srl %r6, 20, %r5
+9531fd96	srl %r7, 22, %r10
+85333ddc	srl %r12, 28, %r2
+8733397b	srl %r12, 27, %r3
+9731ee97	srl %r7, 23, %r11
+873136bf	srl %r4, 31, %r3
+8530e01f	srl %r3, 31, %r2
+c0201d65	st %r0, [%r0 + %r5]
+c0208000	st %r0, [%r2 + %r0]
+c020c000	st %r0, [%r3 + %r0]
+c620c3e0	st %r3, [%r3 + %r0]
+c8200c26	st %r4, [%r0 + %r6]
+cc2000ec	st %r6, [%r0 + %r12]
+cc2191cd	st %r6, [%r6 + %r13]
+d622de23	st %r11, [%r11 + %r3]
+c420c000	st %r2, [%r3 + %r0]
+c4210000	st %r2, [%r4 + %r0]
+c0208003	st %r0, [%r2 + %r3]
+c020c002	st %r0, [%r3 + %r2]
+ce211987	st %r7, [%r4 + %r7]
+ce208887	st %r7, [%r2 + %r7]
+c62158a4	st %r3, [%r5 + %r4]
+c621c68d	st %r3, [%r7 + %r13]
+c0280926	stb %r0, [%r0 + %r6]
+d8280cac	stb %r12, [%r0 + %r12]
+c0288000	stb %r0, [%r2 + %r0]
+c028c000	stb %r0, [%r3 + %r0]
+d8281de7	stb %r12, [%r0 + %r7]
+ce2800cd	stb %r7, [%r0 + %r13]
+cc2987e7	stb %r6, [%r6 + %r7]
+d42a8e2c	stb %r10, [%r10 + %r12]
+cc290ac0	stb %r6, [%r4 + %r0]
+c428c000	stb %r2, [%r3 + %r0]
+c0288004	stb %r0, [%r2 + %r4]
+c028c002	stb %r0, [%r3 + %r2]
+d62894ab	stb %r11, [%r2 + %r11]
+d828dc8c	stb %r12, [%r3 + %r12]
+d828c22d	stb %r12, [%r3 + %r13]
+ce28924c	stb %r7, [%r2 + %r12]
+c028e000	stb %r0, [%r3 + 0x0]
+c028a001	stb %r0, [%r2 + 0x1]
+c028a002	stb %r0, [%r2 + 0x2]
+c0296084	stb %r0, [%r5 + 0x84]
+c028a003	stb %r0, [%r2 + 0x3]
+da2b6480	stb %r13, [%r13 + 0x480]
+c028a007	stb %r0, [%r2 + 0x7]
+c028a02c	stb %r0, [%r2 + 0x2c]
+cc29a01c	stb %r6, [%r6 + 0x1c]
+ca296902	stb %r5, [%r5 + 0x902]
+c028a02d	stb %r0, [%r2 + 0x2d]
+c028a02e	stb %r0, [%r2 + 0x2e]
+ce29ee02	stb %r7, [%r7 + 0xe02]
+ce29ec41	stb %r7, [%r7 + 0xc41]
+c028e8f0	stb %r0, [%r3 + 0x8f0]
+c028a02f	stb %r0, [%r2 + 0x2f]
+c8292391	stb %r4, [%r4 + 0x391]
+ca29646a	stb %r5, [%r5 + 0x46a]
+c02b2e54	stb %r0, [%r12 + 0xe54]
+c028a2f8	stb %r0, [%r2 + 0x2f8]
+da2b6f41	stb %r13, [%r13 + 0xf41]
+d82b2f42	stb %r12, [%r12 + 0xf42]
+c02b21de	stb %r0, [%r12 + 0x1de]
+c0292ea6	stb %r0, [%r4 + 0xea6]
+d42aa87d	stb %r10, [%r10 + 0x87d]
+c428a25f	stb %r2, [%r2 + 0x25f]
+c0292fc5	stb %r0, [%r4 + 0xfc5]
+c029ed8f	stb %r0, [%r7 + 0xd8f]
+da2b67da	stb %r13, [%r13 + 0x7da]
+c428a3f9	stb %r2, [%r2 + 0x3f9]
+c0292bcf	stb %r0, [%r4 + 0xbcf]
+c428ae77	stb %r2, [%r2 + 0xe77]
+c628ef4f	stb %r3, [%r3 + 0xf4f]
+c02b2fbb	stb %r0, [%r12 + 0xfbb]
+c8292dfb	stb %r4, [%r4 + 0xdfb]
+ca296f5f	stb %r5, [%r5 + 0xf5f]
+c028fc08	stb %r0, [%r3 - 0x3f8]
+c628f811	stb %r3, [%r3 - 0x7ef]
+cc29b412	stb %r6, [%r6 - 0xbee]
+c02ab849	stb %r0, [%r10 - 0x7b7]
+c028f360	stb %r0, [%r3 - 0xca0]
+cc29b158	stb %r6, [%r6 - 0xea8]
+c628f2a2	stb %r3, [%r3 - 0xd5e]
+c0293532	stb %r0, [%r4 - 0xace]
+c029bc58	stb %r0, [%r6 - 0x3a8]
+ca297945	stb %r5, [%r5 - 0x6bb]
+d82b3163	stb %r12, [%r12 - 0xe9d]
+c028f51d	stb %r0, [%r3 - 0xae3]
+c02b34cb	stb %r0, [%r12 - 0xb35]
+da2b7b61	stb %r13, [%r13 - 0x49f]
+d42ab764	stb %r10, [%r10 - 0x89c]
+c02b3b6a	stb %r0, [%r12 - 0x496]
+c02b7e0f	stb %r0, [%r13 - 0x1f1]
+da2b79ab	stb %r13, [%r13 - 0x655]
+cc29b7e2	stb %r6, [%r6 - 0x81e]
+c028b7f8	stb %r0, [%r2 - 0x808]
+c028fbc7	stb %r0, [%r3 - 0x439]
+c8293ecb	stb %r4, [%r4 - 0x135]
+ca297b75	stb %r5, [%r5 - 0x48b]
+c02afe3f	stb %r0, [%r11 - 0x1c1]
+c028ffba	stb %r0, [%r3 - 0x46]
+cc29bf79	stb %r6, [%r6 - 0x87]
+ca297f3d	stb %r5, [%r5 - 0xc3]
+c02b3fff	stb %r0, [%r12 - 0x1]
+c628a000	stb %r3, [%r2 + 0x0]
+c428e004	stb %r2, [%r3 + 0x4]
+c628a001	stb %r3, [%r2 + 0x1]
+d6292021	stb %r11, [%r4 + 0x21]
+c428e003	stb %r2, [%r3 + 0x3]
+da28e10a	stb %r13, [%r3 + 0x10a]
+c428e007	stb %r2, [%r3 + 0x7]
+ca2b2017	stb %r5, [%r12 + 0x17]
+d429a0f0	stb %r10, [%r6 + 0xf0]
+d82aa9a2	stb %r12, [%r10 + 0x9a2]
+da2aeb84	stb %r13, [%r11 + 0xb84]
+da28e563	stb %r13, [%r3 + 0x563]
+c629693c	stb %r3, [%r5 + 0x93c]
+c629a3c7	stb %r3, [%r6 + 0x3c7]
+c62924de	stb %r3, [%r4 + 0x4de]
+c828e66f	stb %r4, [%r3 + 0x66f]
+c62aaf56	stb %r3, [%r10 + 0xf56]
+d829af37	stb %r12, [%r6 + 0xf37]
+ca28aefc	stb %r5, [%r2 + 0xefc]
+d828eff5	stb %r12, [%r3 + 0xff5]
+c82aeff9	stb %r4, [%r11 + 0xff9]
+c628afdf	stb %r3, [%r2 + 0xfdf]
+d62b2ffd	stb %r11, [%r12 + 0xffd]
+ce2b3008	stb %r7, [%r12 - 0xff8]
+c828b440	stb %r4, [%r2 - 0xbc0]
+c629b480	stb %r3, [%r6 - 0xb80]
+cc28b504	stb %r6, [%r2 - 0xafc]
+d428b064	stb %r10, [%r2 - 0xf9c]
+d4293c82	stb %r10, [%r4 - 0x37e]
+c62b74a4	stb %r3, [%r13 - 0xb5c]
+cc2b7a0d	stb %r6, [%r13 - 0x5f3]
+cc29f9c2	stb %r6, [%r7 - 0x63e]
+cc2977c4	stb %r6, [%r5 - 0x83c]
+ca29bf88	stb %r5, [%r6 - 0x78]
+c828b3e3	stb %r4, [%r2 - 0xc1d]
+ca29fd87	stb %r5, [%r7 - 0x279]
+da297bdc	stb %r13, [%r5 - 0x424]
+d829f37e	stb %r12, [%r7 - 0xc82]
+d42b76bf	stb %r10, [%r13 - 0x941]
+da28fa7f	stb %r13, [%r3 - 0x581]
+c62b7bfb	stb %r3, [%r13 - 0x405]
+c828bffc	stb %r4, [%r2 - 0x4]
+c628bffe	stb %r3, [%r2 - 0x2]
+c828bffd	stb %r4, [%r2 - 0x3]
+c428ffff	stb %r2, [%r3 - 0x1]
+c628bfff	stb %r3, [%r2 - 0x1]
+d83818ad	std %r12, [%r0 + %r13]
+ce3815a7	std %r6, [%r0 + %r7]
+da38062c	std %r12, [%r0 + %r12]
+da3b438c	std %r12, [%r13 + %r12]
+da3b1d20	std %r12, [%r12 + %r0]
+d43a984b	std %r10, [%r10 + %r11]
+d83807a4	std %r12, [%r0 + %r4]
+c4380f85	std %r2, [%r0 + %r5]
+da3b42c6	std %r12, [%r13 + %r6]
+ca3957ca	std %r4, [%r5 + %r10]
+c6389726	std %r2, [%r2 + %r6]
+ca390ca6	std %r4, [%r4 + %r6]
+c4390000	std %r2, [%r4 + %r0]
+c43a8000	std %r2, [%r10 + %r0]
+d438c5ab	std %r10, [%r3 + %r11]
+ce3907e7	std %r6, [%r4 + %r7]
+c83b1b84	std %r4, [%r12 + %r4]
+da38c02c	std %r12, [%r3 + %r12]
+da3acc6a	std %r12, [%r11 + %r10]
+ce38c7a4	std %r6, [%r3 + %r4]
+ce39e842	std %r6, [%r7 + 0x842]
+ca396888	std %r4, [%r5 + 0x888]
+d43ae891	std %r10, [%r11 + 0x891]
+da3b680d	std %r12, [%r13 + 0x80d]
+d63aec52	std %r10, [%r11 + 0xc52]
+d83b601f	std %r12, [%r13 + 0x1f]
+da3b6553	std %r12, [%r13 + 0x553]
+c438e533	std %r2, [%r3 + 0x533]
+ce39edc6	std %r6, [%r7 + 0xdc6]
+c638ea5d	std %r2, [%r3 + 0xa5d]
+da3b66af	std %r12, [%r13 + 0x6af]
+c638ed1f	std %r2, [%r3 + 0xd1f]
+c438ebbb	std %r2, [%r3 + 0xbbb]
+cc39ed9f	std %r6, [%r7 + 0xd9f]
+cc39efbf	std %r6, [%r7 + 0xfbf]
+c638f208	std %r2, [%r3 - 0xdf8]
+ce39f243	std %r6, [%r7 - 0xdbd]
+c638f166	std %r2, [%r3 - 0xe9a]
+ca3978a3	std %r4, [%r5 - 0x75d]
+c839739c	std %r4, [%r5 - 0xc64]
+c438f46d	std %r2, [%r3 - 0xb93]
+d83b7373	std %r12, [%r13 - 0xc8d]
+d83b7b56	std %r12, [%r13 - 0x4aa]
+ca397fa6	std %r4, [%r5 - 0x5a]
+da3b7e1f	std %r12, [%r13 - 0x1e1]
+ca3976ef	std %r4, [%r5 - 0x911]
+da3b7fb3	std %r12, [%r13 - 0x4d]
+c638ffe7	std %r2, [%r3 - 0x19]
+da3b7def	std %r12, [%r13 - 0x211]
+c8392840	std %r4, [%r4 + 0x840]
+c8392112	std %r4, [%r4 + 0x112]
+d83b2680	std %r12, [%r12 + 0x680]
+cc39a04d	std %r6, [%r6 + 0x4d]
+d63aa982	std %r10, [%r10 + 0x982]
+c638a5a8	std %r2, [%r2 + 0x5a8]
+c438a5c2	std %r2, [%r2 + 0x5c2]
+c638aca9	std %r2, [%r2 + 0xca9]
+c438aaa9	std %r2, [%r2 + 0xaa9]
+da3b2f16	std %r12, [%r12 + 0xf16]
+d63aa771	std %r10, [%r10 + 0x771]
+ce39a3db	std %r6, [%r6 + 0x3db]
+ce39aef8	std %r6, [%r6 + 0xef8]
+c438a5f7	std %r2, [%r2 + 0x5f7]
+ca392fce	std %r4, [%r4 + 0xfce]
+ce39a9ff	std %r6, [%r6 + 0x9ff]
+c638b880	std %r2, [%r2 - 0x780]
+c438ba08	std %r2, [%r2 - 0x5f8]
+ce39b223	std %r6, [%r6 - 0xddd]
+c638b486	std %r2, [%r2 - 0xb7a]
+cc39b8ca	std %r6, [%r6 - 0x736]
+da3b30e6	std %r12, [%r12 - 0xf1a]
+c839352d	std %r4, [%r4 - 0xad3]
+d43ab4ab	std %r10, [%r10 - 0xb55]
+c83937a9	std %r4, [%r4 - 0x857]
+ca3934be	std %r4, [%r4 - 0xb42]
+da3b3b67	std %r12, [%r12 - 0x499]
+d83b3df4	std %r12, [%r12 - 0x20c]
+ce39bdee	std %r6, [%r6 - 0x212]
+ca3937f7	std %r4, [%r4 - 0x809]
+ce39bffb	std %r6, [%r6 - 0x5]
+d838a000	std %r12, [%r2 + 0x0]
+d438e008	std %r10, [%r3 + 0x8]
+ca38a600	std %r4, [%r2 + 0x600]
+d639e840	std %r10, [%r7 + 0x840]
+ce392205	std %r6, [%r4 + 0x205]
+da39aa20	std %r12, [%r6 + 0xa20]
+d439a614	std %r10, [%r6 + 0x614]
+c43aa0f0	std %r2, [%r10 + 0xf0]
+cc3ae931	std %r6, [%r11 + 0x931]
+d8392193	std %r12, [%r4 + 0x193]
+c639649e	std %r2, [%r5 + 0x49e]
+c838a31b	std %r4, [%r2 + 0x31b]
+ca3b68bb	std %r4, [%r13 + 0x8bb]
+c839e5ce	std %r4, [%r7 + 0x5ce]
+ce3aab9e	std %r6, [%r10 + 0xb9e]
+d43b6fe2	std %r10, [%r13 + 0xfe2]
+c83aabf9	std %r4, [%r10 + 0xbf9]
+d4392bdd	std %r10, [%r4 + 0xbdd]
+c63aedbf	std %r2, [%r11 + 0xdbf]
+c83aae7f	std %r4, [%r10 + 0xe7f]
+c439adff	std %r2, [%r6 + 0xdff]
+c6393800	std %r2, [%r4 - 0x800]
+d8397800	std %r12, [%r5 - 0x800]
+ca3af006	std %r4, [%r11 - 0xffa]
+c6397006	std %r2, [%r5 - 0xffa]
+c639b610	std %r2, [%r6 - 0x9f0]
+ca3ab2a0	std %r4, [%r10 - 0xd60]
+d43b3183	std %r10, [%r12 - 0xe7d]
+da3930ca	std %r12, [%r4 - 0xf36]
+da3af5a2	std %r12, [%r11 - 0xa5e]
+c839b2d2	std %r4, [%r6 - 0xd2e]
+c439b2ab	std %r2, [%r6 - 0xd55]
+ca3b76e8	std %r4, [%r13 - 0x918]
+cc3974bd	std %r6, [%r5 - 0xb43]
+da393aa7	std %r12, [%r4 - 0x559]
+ce39766f	std %r6, [%r5 - 0x991]
+da38b79d	std %r12, [%r2 - 0x863]
+c63b3fa7	std %r2, [%r12 - 0x59]
+c639ff5e	std %r2, [%r7 - 0xa2]
+c43afdef	std %r2, [%r11 - 0x211]
+ca38bff5	std %r4, [%r2 - 0xb]
+c0300942	sth %r0, [%r0 + %r2]
+c630caa0	sth %r3, [%r3 + %r0]
+c032c0a0	sth %r0, [%r11 + %r0]
+ca301987	sth %r5, [%r0 + %r7]
+c4301025	sth %r2, [%r0 + %r5]
+d8330e6d	sth %r12, [%r12 + %r13]
+ce31d766	sth %r7, [%r7 + %r6]
+da310440	sth %r13, [%r4 + %r0]
+cc309460	sth %r6, [%r2 + %r0]
+ca3119a5	sth %r5, [%r4 + %r5]
+ca309bc5	sth %r5, [%r2 + %r5]
+c0314dc4	sth %r0, [%r5 + %r4]
+c030c4e2	sth %r0, [%r3 + %r2]
+c431106c	sth %r2, [%r4 + %r12]
+ce32cac2	sth %r7, [%r11 + %r2]
+c430a801	sth %r2, [%r2 + 0x801]
+c031e202	sth %r0, [%r7 + 0x202]
+c430a023	sth %r2, [%r2 + 0x23]
+c030e244	sth %r0, [%r3 + 0x244]
+d632e60c	sth %r11, [%r11 + 0x60c]
+ce31e4c8	sth %r7, [%r7 + 0x4c8]
+c032e251	sth %r0, [%r11 + 0x251]
+c030a30a	sth %r0, [%r2 + 0x30a]
+c83120f1	sth %r4, [%r4 + 0xf1]
+ce31e685	sth %r7, [%r7 + 0x685]
+c0332c70	sth %r0, [%r12 + 0xc70]
+c032a0e3	sth %r0, [%r10 + 0xe3]
+da336678	sth %r13, [%r13 + 0x678]
+d432a7a4	sth %r10, [%r10 + 0x7a4]
+c032ea8e	sth %r0, [%r11 + 0xa8e]
+c030e9c3	sth %r0, [%r3 + 0x9c3]
+d8332aa7	sth %r12, [%r12 + 0xaa7]
+d8332f0d	sth %r12, [%r12 + 0xf0d]
+c031a1dd	sth %r0, [%r6 + 0x1dd]
+cc31ae8f	sth %r6, [%r6 + 0xe8f]
+d8332bba	sth %r12, [%r12 + 0xbba]
+c03369eb	sth %r0, [%r13 + 0x9eb]
+c0332ab7	sth %r0, [%r12 + 0xab7]
+d632e57f	sth %r11, [%r11 + 0x57f]
+ce31efe5	sth %r7, [%r7 + 0xfe5]
+c0332daf	sth %r0, [%r12 + 0xdaf]
+c430affe	sth %r2, [%r2 + 0xffe]
+da337080	sth %r13, [%r13 - 0xf80]
+c0337180	sth %r0, [%r13 - 0xe80]
+c831301a	sth %r4, [%r4 - 0xfe6]
+cc31b504	sth %r6, [%r6 - 0xafc]
+c031b08a	sth %r0, [%r6 - 0xf76]
+c032f508	sth %r0, [%r11 - 0xaf8]
+d432b10d	sth %r10, [%r10 - 0xef3]
+c8313309	sth %r4, [%r4 - 0xcf7]
+c0317066	sth %r0, [%r5 - 0xf9a]
+c0337093	sth %r0, [%r13 - 0xf6d]
+d632f34c	sth %r11, [%r11 - 0xcb4]
+c831383c	sth %r4, [%r4 - 0x7c4]
+c03138d1	sth %r0, [%r4 - 0x72f]
+c0317724	sth %r0, [%r5 - 0x8dc]
+c630fe25	sth %r3, [%r3 - 0x1db]
+c630f1d5	sth %r3, [%r3 - 0xe2b]
+c0317457	sth %r0, [%r5 - 0xba9]
+c030fe34	sth %r0, [%r3 - 0x1cc]
+d833365b	sth %r12, [%r12 - 0x9a5]
+ca31793d	sth %r5, [%r5 - 0x6c3]
+c031ffe0	sth %r0, [%r7 - 0x20]
+c030bb4e	sth %r0, [%r2 - 0x4b2]
+da337c7e	sth %r13, [%r13 - 0x382]
+ca317fb2	sth %r5, [%r5 - 0x4e]
+c0337e6d	sth %r0, [%r13 - 0x193]
+c030b7ec	sth %r0, [%r2 - 0x814]
+c430b77e	sth %r2, [%r2 - 0x882]
+d432bdf6	sth %r10, [%r10 - 0x20a]
+c030bfbc	sth %r0, [%r2 - 0x44]
+c030bef5	sth %r0, [%r2 - 0x10b]
+d432bbdf	sth %r10, [%r10 - 0x421]
+c030bffe	sth %r0, [%r2 - 0x2]
+d830a080	sth %r12, [%r2 + 0x80]
+ce32e040	sth %r7, [%r11 + 0x40]
+cc30e0a0	sth %r6, [%r3 + 0xa0]
+d830e801	sth %r12, [%r3 + 0x801]
+ce32a190	sth %r7, [%r10 + 0x190]
+c432a424	sth %r2, [%r10 + 0x424]
+c6332522	sth %r3, [%r12 + 0x522]
+c830e382	sth %r4, [%r3 + 0x382]
+cc30e2c6	sth %r6, [%r3 + 0x2c6]
+c830e878	sth %r4, [%r3 + 0x878]
+d4332393	sth %r10, [%r12 + 0x393]
+d8336a4e	sth %r12, [%r13 + 0xa4e]
+ce312676	sth %r7, [%r4 + 0x676]
+d8312c9d	sth %r12, [%r4 + 0xc9d]
+ce30ee4f	sth %r7, [%r3 + 0xe4f]
+d631ede6	sth %r11, [%r7 + 0xde6]
+ca32afab	sth %r5, [%r10 + 0xfab]
+d8312eeb	sth %r12, [%r4 + 0xeeb]
+ca31e5ff	sth %r5, [%r7 + 0x5ff]
+c632aebf	sth %r3, [%r10 + 0xebf]
+d831efbf	sth %r12, [%r7 + 0xfbf]
+c631efff	sth %r3, [%r7 + 0xfff]
+c432f800	sth %r2, [%r11 - 0x800]
+c831b300	sth %r4, [%r6 - 0xd00]
+c6337180	sth %r3, [%r13 - 0xe80]
+ce31b842	sth %r7, [%r6 - 0x7be]
+ce333045	sth %r7, [%r12 - 0xfbb]
+ca31f10d	sth %r5, [%r7 - 0xef3]
+c631f819	sth %r3, [%r7 - 0x7e7]
+ca31f499	sth %r5, [%r7 - 0xb67]
+d830f598	sth %r12, [%r3 - 0xa68]
+d631f9b4	sth %r11, [%r7 - 0x64c]
+c831bb15	sth %r4, [%r6 - 0x4eb]
+c6317772	sth %r3, [%r5 - 0x88e]
+da317e9c	sth %r13, [%r5 - 0x164]
+c8337cbb	sth %r4, [%r13 - 0x345]
+d832ff5c	sth %r12, [%r11 - 0xa4]
+ce32f7cf	sth %r7, [%r11 - 0x831]
+cc333fe6	sth %r6, [%r12 - 0x1a]
+c630bffc	sth %r3, [%r2 - 0x4]
+c431b6ff	sth %r2, [%r6 - 0x901]
+ca337fdf	sth %r5, [%r13 - 0x21]
+c020a000	st %r0, [%r2 + 0x0]
+c0232000	st %r0, [%r12 + 0x0]
+c020a004	st %r0, [%r2 + 0x4]
+c020e004	st %r0, [%r3 + 0x4]
+c420a010	st %r2, [%r2 + 0x10]
+c022a240	st %r0, [%r10 + 0x240]
+c020a00c	st %r0, [%r2 + 0xc]
+c420a014	st %r2, [%r2 + 0x14]
+c020a01c	st %r0, [%r2 + 0x1c]
+c020e01c	st %r0, [%r3 + 0x1c]
+cc21a380	st %r6, [%r6 + 0x380]
+c0232912	st %r0, [%r12 + 0x912]
+c020a078	st %r0, [%r2 + 0x78]
+ce21e4b0	st %r7, [%r7 + 0x4b0]
+c620e285	st %r3, [%r3 + 0x285]
+c02361c3	st %r0, [%r13 + 0x1c3]
+c020e863	st %r0, [%r3 + 0x863]
+ce21ee82	st %r7, [%r7 + 0xe82]
+d82321b4	st %r12, [%r12 + 0x1b4]
+c022e6e4	st %r0, [%r11 + 0x6e4]
+c020ec87	st %r0, [%r3 + 0xc87]
+c620e876	st %r3, [%r3 + 0x876]
+ce21e1ce	st %r7, [%r7 + 0x1ce]
+c020a6b3	st %r0, [%r2 + 0x6b3]
+c0236376	st %r0, [%r13 + 0x376]
+ca2167b4	st %r5, [%r5 + 0x7b4]
+c420abb2	st %r2, [%r2 + 0xbb2]
+c0232dad	st %r0, [%r12 + 0xdad]
+c0236ddc	st %r0, [%r13 + 0xddc]
+d622e5af	st %r11, [%r11 + 0x5af]
+d8232bda	st %r12, [%r12 + 0xbda]
+c8212f79	st %r4, [%r4 + 0xf79]
+cc21a3f7	st %r6, [%r6 + 0x3f7]
+d8232fee	st %r12, [%r12 + 0xfee]
+c022f242	st %r0, [%r11 - 0xdbe]
+c020b80a	st %r0, [%r2 - 0x7f6]
+ca217805	st %r5, [%r5 - 0x7fb]
+c0213152	st %r0, [%r4 - 0xeae]
+c020be04	st %r0, [%r2 - 0x1fc]
+c420b0d4	st %r2, [%r2 - 0xf2c]
+c821380e	st %r4, [%r4 - 0x7f2]
+c020ba51	st %r0, [%r2 - 0x5af]
+c020bc64	st %r0, [%r2 - 0x39c]
+d622f435	st %r11, [%r11 - 0xbcb]
+ce21fec0	st %r7, [%r7 - 0x140]
+c022f60f	st %r0, [%r11 - 0x9f1]
+c021fea8	st %r0, [%r7 - 0x158]
+c620f0de	st %r3, [%r3 - 0xf22]
+c82137b0	st %r4, [%r4 - 0x850]
+c022b9cd	st %r0, [%r10 - 0x633]
+c02332f9	st %r0, [%r12 - 0xd07]
+ce21f99b	st %r7, [%r7 - 0x665]
+d823392f	st %r12, [%r12 - 0x6d1]
+c022f67e	st %r0, [%r11 - 0x982]
+c020bf6c	st %r0, [%r2 - 0x94]
+d422bbdc	st %r10, [%r10 - 0x424]
+c620fed6	st %r3, [%r3 - 0x12a]
+c022f7d7	st %r0, [%r11 - 0x829]
+c020ffad	st %r0, [%r3 - 0x53]
+d422bebb	st %r10, [%r10 - 0x145]
+c620fd7b	st %r3, [%r3 - 0x285]
+c020bffc	st %r0, [%r2 - 0x4]
+d422bef7	st %r10, [%r10 - 0x109]
+c420e000	st %r2, [%r3 + 0x0]
+c4212000	st %r2, [%r4 + 0x0]
+c420e004	st %r2, [%r3 + 0x4]
+c420e010	st %r2, [%r3 + 0x10]
+ce236102	st %r7, [%r13 + 0x102]
+ce232880	st %r7, [%r12 + 0x880]
+d421e601	st %r10, [%r7 + 0x601]
+ce22a141	st %r7, [%r10 + 0x141]
+c6212116	st %r3, [%r4 + 0x116]
+c420e22c	st %r2, [%r3 + 0x22c]
+c620a2a9	st %r3, [%r2 + 0x2a9]
+c422af01	st %r2, [%r10 + 0xf01]
+da20a273	st %r13, [%r2 + 0x273]
+c822a0de	st %r4, [%r10 + 0xde]
+ca212d63	st %r5, [%r4 + 0xd63]
+c42320df	st %r2, [%r12 + 0xdf]
+ca20af8d	st %r5, [%r2 + 0xf8d]
+da21ef4e	st %r13, [%r7 + 0xf4e]
+c621aef6	st %r3, [%r6 + 0xef6]
+ca21a5fb	st %r5, [%r6 + 0x5fb]
+d420e7fd	st %r10, [%r3 + 0x7fd]
+c421aefd	st %r2, [%r6 + 0xefd]
+c8232bff	st %r4, [%r12 + 0xbff]
+cc22b010	st %r6, [%r10 - 0xff0]
+d622b008	st %r11, [%r10 - 0xff8]
+c620b210	st %r3, [%r2 - 0xdf0]
+c6213804	st %r3, [%r4 - 0x7fc]
+c421f424	st %r2, [%r7 - 0xbdc]
+ce20f818	st %r7, [%r3 - 0x7e8]
+c6237710	st %r3, [%r13 - 0x8f0]
+c820fa14	st %r4, [%r3 - 0x5ec]
+d6233954	st %r11, [%r12 - 0x6ac]
+c62370ec	st %r3, [%r13 - 0xf14]
+c620bc5c	st %r3, [%r2 - 0x3a4]
+c820bfa0	st %r4, [%r2 - 0x60]
+ce20b61f	st %r7, [%r2 - 0x9e1]
+d4237d0f	st %r10, [%r13 - 0x2f1]
+da20f5b7	st %r13, [%r3 - 0xa49]
+cc22b4ef	st %r6, [%r10 - 0xb11]
+cc21ffdc	st %r6, [%r7 - 0x24]
+c420ffdc	st %r2, [%r3 - 0x24]
+c420fffc	st %r2, [%r3 - 0x4]
+c4213ffc	st %r2, [%r4 - 0x4]
+98200080	sub %r0, %r0, %r12
+8a2011a0	sub %r0, %r0, %r5
+80231d8c	sub %r12, %r12, %r0
+80208242	sub %r2, %r2, %r0
+84200002	sub %r0, %r2, %r2
+86200003	sub %r0, %r3, %r3
+9a235e80	sub %r13, %r0, %r13
+8e21d1c7	sub %r7, %r7, %r7
+80214907	sub %r5, %r7, %r0
+8020880d	sub %r2, %r13, %r0
+8c201b23	sub %r0, %r3, %r6
+84200003	sub %r0, %r3, %r2
+982103a0	sub %r4, %r0, %r12
+94218800	sub %r6, %r0, %r10
+8e23160c	sub %r12, %r12, %r7
+8820c9a3	sub %r3, %r3, %r4
+84208003	sub %r2, %r3, %r2
+84208004	sub %r2, %r4, %r2
+98214fac	sub %r5, %r12, %r12
+8420c002	sub %r3, %r2, %r2
+88231da5	sub %r12, %r5, %r4
+842110c6	sub %r4, %r6, %r2
+80a00002	cmp %r0, %r2
+80a00003	cmp %r0, %r3
+86a00003	subcc %r0, %r3, %r3
+9aa0000d	subcc %r0, %r13, %r13
+80a08e60	cmp %r2, %r0
+80a145c0	cmp %r5, %r0
+80a2c64b	cmp %r11, %r11
+80a18d06	cmp %r6, %r6
+84a087c2	subcc %r2, %r2, %r2
+84a09f02	subcc %r2, %r2, %r2
+86a0000b	subcc %r0, %r11, %r3
+86a0000d	subcc %r0, %r13, %r3
+88a34380	subcc %r13, %r0, %r4
+9aa2d2a0	subcc %r11, %r0, %r13
+84a31a0c	subcc %r12, %r12, %r2
+96a10d84	subcc %r4, %r4, %r11
+80a11066	cmp %r4, %r6
+80a29d42	cmp %r10, %r2
+8ca28e66	subcc %r10, %r6, %r6
+96a311cb	subcc %r12, %r11, %r11
+84a08003	subcc %r2, %r3, %r2
+84a0800d	subcc %r2, %r13, %r2
+88a2cea2	subcc %r11, %r2, %r4
+8aa299a6	subcc %r10, %r6, %r5
+80a03d3a	cmp %r0, -710
+80a0378b	cmp %r0, -2165
+80a02240	cmp %r0, 576
+80a02bac	cmp %r0, 2988
+9aa02000	subcc %r0, 0, %r13
+8aa03df6	subcc %r0, -522, %r5
+86a03faf	subcc %r0, -81, %r3
+88a03f67	subcc %r0, -153, %r4
+98a03bdd	subcc %r0, -1059, %r12
+94a03c6f	subcc %r0, -913, %r10
+88a03b2e	subcc %r0, -1234, %r4
+8ea035b3	subcc %r0, -2637, %r7
+86a0315e	subcc %r0, -3746, %r3
+94a03e07	subcc %r0, -505, %r10
+94a03333	subcc %r0, -3277, %r10
+8ea03263	subcc %r0, -3485, %r7
+94a03949	subcc %r0, -1719, %r10
+88a03491	subcc %r0, -2927, %r4
+8ea03804	subcc %r0, -2044, %r7
+88a02fc8	subcc %r0, 4040, %r4
+88a0297c	subcc %r0, 2428, %r4
+8ea02a7f	subcc %r0, 2687, %r7
+8ca02080	subcc %r0, 128, %r6
+96a02fe1	subcc %r0, 4065, %r11
+86a023d2	subcc %r0, 978, %r3
+8ca02138	subcc %r0, 312, %r6
+98a02e15	subcc %r0, 3605, %r12
+94a020da	subcc %r0, 218, %r10
+98a020ca	subcc %r0, 202, %r12
+86a02133	subcc %r0, 307, %r3
+98a02113	subcc %r0, 275, %r12
+98a02885	subcc %r0, 2181, %r12
+80a0a000	cmp %r2, 0
+80a0e000	cmp %r3, 0
+80a0a001	cmp %r2, 1
+80a0a002	cmp %r2, 2
+84a0a001	subcc %r2, 1, %r2
+84a0a002	subcc %r2, 2, %r2
+80a0a003	cmp %r2, 3
+80a0a005	cmp %r2, 5
+80a1e281	cmp %r7, 641
+80a0a007	cmp %r2, 7
+8ca1a308	subcc %r6, 776, %r6
+9aa36450	subcc %r13, 1104, %r13
+80a2a232	cmp %r10, 562
+80a0a00f	cmp %r2, 15
+86a0e44a	subcc %r3, 1098, %r3
+84a0a324	subcc %r2, 804, %r2
+80a2ec0d	cmp %r11, 3085
+80a0a01f	cmp %r2, 31
+94a2a952	subcc %r10, 2386, %r10
+86a0e954	subcc %r3, 2388, %r3
+80a0a03f	cmp %r2, 63
+80a0a05f	cmp %r2, 95
+84a0af12	subcc %r2, 3858, %r2
+8aa165e4	subcc %r5, 1508, %r5
+80a1eac7	cmp %r7, 2759
+80a0e759	cmp %r3, 1881
+98a328bb	subcc %r12, 2235, %r12
+94a2ad4d	subcc %r10, 3405, %r10
+80a0a0ff	cmp %r2, 255
+80a0a3f3	cmp %r2, 1011
+8ea1eecd	subcc %r7, 3789, %r7
+94a2a6d7	subcc %r10, 1751, %r10
+80a0a1ff	cmp %r2, 511
+80a0a3fe	cmp %r2, 1022
+98a32ebd	subcc %r12, 3773, %r12
+9aa36fce	subcc %r13, 4046, %r13
+80a0a3ff	cmp %r2, 1023
+80a0a7f7	cmp %r2, 2039
+80a0a7ff	cmp %r2, 2047
+80a0e7ff	cmp %r3, 2047
+94a2afbf	subcc %r10, 4031, %r10
+80a2efff	cmp %r11, 4095
+80a0fc01	cmp %r3, -1023
+80a0fc02	cmp %r3, -1022
+88a13029	subcc %r4, -4055, %r4
+86a0f414	subcc %r3, -3052, %r3
+80a2fc22	cmp %r11, -990
+80a0f03c	cmp %r3, -4036
+86a0f4a1	subcc %r3, -2911, %r3
+8aa17213	subcc %r5, -3565, %r5
+80a1f586	cmp %r7, -2682
+80a13a32	cmp %r4, -1486
+8aa176a4	subcc %r5, -2396, %r5
+96a2f0cd	subcc %r11, -3891, %r11
+80a1f372	cmp %r7, -3214
+80a0bf82	cmp %r2, -126
+8ea1ff84	subcc %r7, -124, %r7
+8aa17ccc	subcc %r5, -820, %r5
+80a2f4d7	cmp %r11, -2857
+80a33b1b	cmp %r12, -1253
+96a2fab9	subcc %r11, -1351, %r11
+98a331dd	subcc %r12, -3619, %r12
+80a0ff63	cmp %r3, -157
+80a0bfd4	cmp %r2, -44
+8aa1778f	subcc %r5, -2161, %r5
+8aa17b73	subcc %r5, -1165, %r5
+80a37df6	cmp %r13, -522
+80a0bfd5	cmp %r2, -43
+96a2f5f7	subcc %r11, -2569, %r11
+8ea1f7bd	subcc %r7, -2115, %r7
+80a0ffd7	cmp %r3, -41
+80a0fff9	cmp %r3, -7
+80a0bffd	cmp %r2, -3
+80a0bffe	cmp %r2, -2
+9aa37f7f	subcc %r13, -129, %r13
+80a0bfff	cmp %r2, -1
+80a0ffff	cmp %r3, -1
+8ca2a040	subcc %r10, 64, %r6
+8ca0a200	subcc %r2, 512, %r6
+8aa1a408	subcc %r6, 1032, %r5
+86a2e402	subcc %r11, 1026, %r3
+8ea128a0	subcc %r4, 2208, %r7
+86a1e884	subcc %r7, 2180, %r3
+94a12921	subcc %r4, 2337, %r10
+98a0a624	subcc %r2, 1572, %r12
+84a1ab06	subcc %r6, 2822, %r2
+8ca12d82	subcc %r4, 3458, %r6
+88a1ed0d	subcc %r7, 3341, %r4
+96a2ad64	subcc %r10, 3428, %r11
+86a2ee55	subcc %r11, 3669, %r3
+94a1aeb8	subcc %r6, 3768, %r10
+86a0adea	subcc %r2, 3562, %r3
+8aa125ed	subcc %r4, 1517, %r5
+8ea169bf	subcc %r5, 2495, %r7
+9aa0ad3f	subcc %r2, 3391, %r13
+94a0efdb	subcc %r3, 4059, %r10
+88a2ed7f	subcc %r11, 3455, %r4
+84a36eff	subcc %r13, 3839, %r2
+8aa37800	subcc %r13, -2048, %r5
+9aa0f210	subcc %r3, -3568, %r13
+96a33006	subcc %r12, -4090, %r11
+94a1b209	subcc %r6, -3575, %r10
+8ea0b803	subcc %r2, -2045, %r7
+96a1b291	subcc %r6, -3439, %r11
+84a1b143	subcc %r6, -3773, %r2
+8ca33392	subcc %r12, -3182, %r6
+84a2f84e	subcc %r11, -1970, %r2
+86a1bca9	subcc %r6, -855, %r3
+88a0f29d	subcc %r3, -3427, %r4
+86a0bf64	subcc %r2, -156, %r3
+84a33ba5	subcc %r12, -1115, %r2
+84a177cb	subcc %r5, -2101, %r2
+8ca0f8df	subcc %r3, -1825, %r6
+94a1fee7	subcc %r7, -281, %r10
+9aa0fef9	subcc %r3, -263, %r13
+9aa0bfbb	subcc %r2, -69, %r13
+86a1fefe	subcc %r7, -258, %r3
+8020368a	sub %r0, -2422, %r0
+80202ac7	sub %r0, 2759, %r0
+9a203dc0	sub %r0, -576, %r13
+84203f38	sub %r0, -200, %r2
+96203f64	sub %r0, -156, %r11
+982032e0	sub %r0, -3360, %r12
+982038e8	sub %r0, -1816, %r12
+842034ef	sub %r0, -2833, %r2
+8c203caa	sub %r0, -854, %r6
+8c2037d1	sub %r0, -2095, %r6
+8a203c53	sub %r0, -941, %r5
+84203267	sub %r0, -3481, %r2
+8e2039a1	sub %r0, -1631, %r7
+88203b41	sub %r0, -1215, %r4
+86203282	sub %r0, -3454, %r3
+98203001	sub %r0, -4095, %r12
+94202fc0	sub %r0, 4032, %r10
+8e202a7f	sub %r0, 2687, %r7
+8a20279e	sub %r0, 1950, %r5
+942029f3	sub %r0, 2547, %r10
+942023b4	sub %r0, 948, %r10
+86202755	sub %r0, 1877, %r3
+9a20255a	sub %r0, 1370, %r13
+96202e49	sub %r0, 3657, %r11
+8a202327	sub %r0, 807, %r5
+84202512	sub %r0, 1298, %r2
+94202c0a	sub %r0, 3082, %r10
+8c202219	sub %r0, 537, %r6
+86202106	sub %r0, 262, %r3
+8a202103	sub %r0, 259, %r5
+8021bcee	sub %r6, -786, %r0
+8020a856	sub %r2, 2134, %r0
+8620e010	sub %r3, 16, %r3
+8a216004	sub %r5, 4, %r5
+98232440	sub %r12, 1088, %r12
+9422a003	sub %r10, 3, %r10
+8821200e	sub %r4, 14, %r4
+8420a411	sub %r2, 1041, %r2
+98232216	sub %r12, 534, %r12
+9a236149	sub %r13, 329, %r13
+8a2162d1	sub %r5, 721, %r5
+9a23623a	sub %r13, 570, %r13
+8e21ecc6	sub %r7, 3270, %r7
+982322ec	sub %r12, 748, %r12
+8420ae33	sub %r2, 3635, %r2
+9622ecf8	sub %r11, 3320, %r11
+9622ea7d	sub %r11, 2685, %r11
+882123fc	sub %r4, 1020, %r4
+8a216aff	sub %r5, 2815, %r5
+88213210	sub %r4, -3568, %r4
+88213a80	sub %r4, -1408, %r4
+88213815	sub %r4, -2027, %r4
+8620fa88	sub %r3, -1400, %r3
+8420b964	sub %r2, -1692, %r2
+8c21ba4c	sub %r6, -1460, %r6
+8620f917	sub %r3, -1769, %r3
+8e21f19e	sub %r7, -3682, %r7
+8420b755	sub %r2, -2219, %r2
+8e21fed4	sub %r7, -300, %r7
+9622fa7b	sub %r11, -1413, %r11
+9622fcd7	sub %r11, -809, %r11
+8620f5fb	sub %r3, -2565, %r3
+9a237f67	sub %r13, -153, %r13
+9a23200c	sub %r12, 12, %r13
+8e21a044	sub %r6, 68, %r7
+8a232a02	sub %r12, 2562, %r5
+8620a043	sub %r2, 67, %r3
+8a22a223	sub %r10, 547, %r5
+8421e542	sub %r7, 1346, %r2
+9822a079	sub %r10, 121, %r12
+8c20ab0a	sub %r2, 2826, %r6
+8c22ab4a	sub %r10, 2890, %r6
+8e23646e	sub %r13, 1134, %r7
+8e20ed8d	sub %r3, 3469, %r7
+8a22e2fa	sub %r11, 762, %r5
+8a236dd3	sub %r13, 3539, %r5
+9a21a7ec	sub %r6, 2028, %r13
+86232b5f	sub %r12, 2911, %r3
+98236e6f	sub %r13, 3695, %r12
+98212ef7	sub %r4, 3831, %r12
+8a236bbf	sub %r13, 3007, %r5
+88236ffe	sub %r13, 4094, %r4
+8e212ffb	sub %r4, 4091, %r7
+94237024	sub %r13, -4060, %r10
+9820b0a0	sub %r2, -3936, %r12
+9420bd00	sub %r2, -768, %r10
+88233a01	sub %r12, -1535, %r4
+8622b0d1	sub %r10, -3887, %r3
+8c21314a	sub %r4, -3766, %r6
+84237523	sub %r13, -2781, %r2
+98213392	sub %r4, -3182, %r12
+8822f5e1	sub %r11, -2591, %r4
+8c20baaa	sub %r2, -1366, %r6
+8822fcdc	sub %r11, -804, %r4
+8c20feb8	sub %r3, -328, %r6
+9a233b67	sub %r12, -1177, %r13
+84237ff0	sub %r13, -16, %r2
+8621fb3f	sub %r7, -1217, %r3
+8a20f7fc	sub %r3, -2052, %r5
+86233fe7	sub %r12, -25, %r3
+8c22bebf	sub %r10, -321, %r6
+8e21bffe	sub %r6, -2, %r7
+80601aa0	subx %r0, %r0, %r0
+80615500	subx %r5, %r0, %r0
+80611d60	subx %r4, %r0, %r0
+84600002	subx %r0, %r2, %r2
+9860000c	subx %r0, %r12, %r12
+8a614440	subx %r5, %r0, %r5
+9a634880	subx %r13, %r0, %r13
+8660d023	subx %r3, %r3, %r3
+8061428d	subx %r5, %r13, %r0
+80618665	subx %r6, %r5, %r0
+986018a3	subx %r0, %r3, %r12
+8460000a	subx %r0, %r10, %r2
+96611300	subx %r4, %r0, %r11
+9660ce40	subx %r3, %r0, %r11
+9860c003	subx %r3, %r3, %r12
+8462950a	subx %r10, %r10, %r2
+8c61808c	subx %r6, %r12, %r6
+84608003	subx %r2, %r3, %r2
+8a61d625	subx %r7, %r5, %r5
+8c6314a6	subx %r12, %r6, %r6
+9861180a	subx %r4, %r10, %r12
+986193cd	subx %r6, %r13, %r12
+8ae00ee0	subxcc %r0, %r0, %r5
+8ae01a05	subxcc %r0, %r5, %r5
+94e01dea	subxcc %r0, %r10, %r10
+80e09060	subxcc %r2, %r0, %r0
+80e09080	subxcc %r2, %r0, %r0
+8ce18760	subxcc %r6, %r0, %r6
+88e11b60	subxcc %r4, %r0, %r4
+80e143e5	subxcc %r5, %r5, %r0
+8ae14b45	subxcc %r5, %r5, %r5
+9ae00c27	subxcc %r0, %r7, %r13
+84e00de4	subxcc %r0, %r4, %r2
+8ee08520	subxcc %r2, %r0, %r7
+8ee0ce80	subxcc %r3, %r0, %r7
+88e187c6	subxcc %r6, %r6, %r4
+96e1da47	subxcc %r7, %r7, %r11
+80e2dec3	subxcc %r11, %r3, %r0
+80e14e87	subxcc %r5, %r7, %r0
+9ae30dad	subxcc %r12, %r13, %r13
+8ce0dde6	subxcc %r3, %r6, %r6
+8ae148c7	subxcc %r5, %r7, %r5
+84e0800c	subxcc %r2, %r12, %r2
+88e1496c	subxcc %r5, %r12, %r4
+84e1096d	subxcc %r4, %r13, %r2
+94e2a000	subxcc %r10, 0, %r10
+80e12310	subxcc %r4, 784, %r0
+94e2aa20	subxcc %r10, 2592, %r10
+84e0a902	subxcc %r2, 2306, %r2
+80e12434	subxcc %r4, 1076, %r0
+80e32c05	subxcc %r12, 3077, %r0
+96e2e41c	subxcc %r11, 1052, %r11
+9ae36035	subxcc %r13, 53, %r13
+80e1e9b0	subxcc %r7, 2480, %r0
+80e32b03	subxcc %r12, 2819, %r0
+9ae364b8	subxcc %r13, 1208, %r13
+98e3225c	subxcc %r12, 604, %r12
+80e0a89e	subxcc %r2, 2206, %r0
+80e361a7	subxcc %r13, 423, %r0
+86e0e96a	subxcc %r3, 2410, %r3
+9ae3616e	subxcc %r13, 366, %r13
+80e325f4	subxcc %r12, 1524, %r0
+80e1e74b	subxcc %r7, 1867, %r0
+8ae16b4d	subxcc %r5, 2893, %r5
+86e0ee8b	subxcc %r3, 3723, %r3
+80e0adc7	subxcc %r2, 3527, %r0
+80e1276e	subxcc %r4, 1902, %r0
+8ce1ac7d	subxcc %r6, 3197, %r6
+94e2ad5d	subxcc %r10, 3421, %r10
+80e163fd	subxcc %r5, 1021, %r0
+80e2edfa	subxcc %r11, 3578, %r0
+86e0ebed	subxcc %r3, 3053, %r3
+96e2f101	subxcc %r11, -3839, %r11
+80e2f450	subxcc %r11, -2992, %r0
+80e37302	subxcc %r13, -3326, %r0
+80e33146	subxcc %r12, -3770, %r0
+80e13462	subxcc %r4, -2974, %r0
+84e0ba42	subxcc %r2, -1470, %r2
+9ae37948	subxcc %r13, -1720, %r13
+80e1b662	subxcc %r6, -2462, %r0
+80e0b349	subxcc %r2, -3255, %r0
+88e13427	subxcc %r4, -3033, %r4
+86e0fb88	subxcc %r3, -1144, %r3
+80e0f2d9	subxcc %r3, -3367, %r0
+80e17b23	subxcc %r5, -1245, %r0
+8ee1fa4e	subxcc %r7, -1458, %r7
+9ae3733a	subxcc %r13, -3270, %r13
+80e13877	subxcc %r4, -1929, %r0
+80e2b6cb	subxcc %r10, -2357, %r0
+9ae377a6	subxcc %r13, -2138, %r13
+84e0b8f6	subxcc %r2, -1802, %r2
+80e378fe	subxcc %r13, -1794, %r0
+80e0bf55	subxcc %r2, -171, %r0
+8ae1755f	subxcc %r5, -2721, %r5
+86e0f1fd	subxcc %r3, -3587, %r3
+80e0fcfd	subxcc %r3, -771, %r0
+80e0f7f6	subxcc %r3, -2058, %r0
+80e037f1	subxcc %r0, -2063, %r0
+80e038d4	subxcc %r0, -1836, %r0
+80e031a1	subxcc %r0, -3679, %r0
+80e02e1c	subxcc %r0, 3612, %r0
+80e021d0	subxcc %r0, 464, %r0
+80e0274a	subxcc %r0, 1866, %r0
+80e02c72	subxcc %r0, 3186, %r0
+80e02cc3	subxcc %r0, 3267, %r0
+80e0208e	subxcc %r0, 142, %r0
+94e1a004	subxcc %r6, 4, %r10
+98e16004	subxcc %r5, 4, %r12
+8ce0e006	subxcc %r3, 6, %r6
+98e0e00c	subxcc %r3, 12, %r12
+98e12b00	subxcc %r4, 2816, %r12
+84e32062	subxcc %r12, 98, %r2
+8ee324b0	subxcc %r12, 1200, %r7
+8ee0a194	subxcc %r2, 404, %r7
+8ce3692a	subxcc %r13, 2346, %r6
+86e0a6e0	subxcc %r2, 1760, %r3
+8ce16b38	subxcc %r5, 2872, %r6
+84e32c87	subxcc %r12, 3207, %r2
+88e3673c	subxcc %r13, 1852, %r4
+84e1ea97	subxcc %r7, 2711, %r2
+98e1637e	subxcc %r5, 894, %r12
+8ae1edd3	subxcc %r7, 3539, %r5
+88e2ecfb	subxcc %r11, 3323, %r4
+86e0af3b	subxcc %r2, 3899, %r3
+8ae32bef	subxcc %r12, 3055, %r5
+94e1af7b	subxcc %r6, 3963, %r10
+88e36f7f	subxcc %r13, 3967, %r4
+8ee0f400	subxcc %r3, -3072, %r7
+8ae1f102	subxcc %r7, -3838, %r5
+86e2f600	subxcc %r11, -2560, %r3
+8ee1b013	subxcc %r6, -4077, %r7
+84e33422	subxcc %r12, -3038, %r2
+88e370d4	subxcc %r13, -3884, %r4
+94e1b485	subxcc %r6, -2939, %r10
+8ce374d1	subxcc %r13, -2863, %r6
+94e37169	subxcc %r13, -3735, %r10
+8ae2f12f	subxcc %r11, -3793, %r5
+84e37a36	subxcc %r13, -1482, %r2
+98e2b9f1	subxcc %r10, -1551, %r12
+8ce2f1ed	subxcc %r11, -3603, %r6
+88e17b3b	subxcc %r5, -1221, %r4
+86e2bcee	subxcc %r10, -786, %r3
+96e17cef	subxcc %r5, -785, %r11
+8ee2bedb	subxcc %r10, -293, %r7
+98e0fdfd	subxcc %r3, -515, %r12
+8ee2b7fe	subxcc %r10, -2050, %r7
+8ae0feff	subxcc %r3, -257, %r5
+86e13ff7	subxcc %r4, -9, %r3
+8ce0377f	subxcc %r0, -2177, %r6
+84e037d0	subxcc %r0, -2096, %r2
+98e0379f	subxcc %r0, -2145, %r12
+94e03ab0	subxcc %r0, -1360, %r10
+9ae035a8	subxcc %r0, -2648, %r13
+8ae03d2e	subxcc %r0, -722, %r5
+98e038f3	subxcc %r0, -1805, %r12
+8ce03aad	subxcc %r0, -1363, %r6
+84e036a5	subxcc %r0, -2395, %r2
+8ee03745	subxcc %r0, -2235, %r7
+8ae0381d	subxcc %r0, -2019, %r5
+8ae03414	subxcc %r0, -3052, %r5
+9ae03084	subxcc %r0, -3964, %r13
+8ce03119	subxcc %r0, -3815, %r6
+86e02f7c	subxcc %r0, 3964, %r3
+8ae026f8	subxcc %r0, 1784, %r5
+8ce0276c	subxcc %r0, 1900, %r6
+8ce023f7	subxcc %r0, 1015, %r6
+8ae029f9	subxcc %r0, 2553, %r5
+8ae02f59	subxcc %r0, 3929, %r5
+96e0270c	subxcc %r0, 1804, %r11
+96e02596	subxcc %r0, 1430, %r11
+98e024e9	subxcc %r0, 1257, %r12
+8ce02c0c	subxcc %r0, 3084, %r6
+9ae02a22	subxcc %r0, 2594, %r13
+98e02159	subxcc %r0, 345, %r12
+94e02411	subxcc %r0, 1041, %r10
+8060232d	subx %r0, 813, %r0
+80602789	subx %r0, 1929, %r0
+80636133	subx %r13, 307, %r0
+8061ea4e	subx %r7, 2638, %r0
+84603fff	subx %r0, -1, %r2
+86603fff	subx %r0, -1, %r3
+88603ef8	subx %r0, -264, %r4
+84603e70	subx %r0, -400, %r2
+886035f7	subx %r0, -2569, %r4
+84603f64	subx %r0, -156, %r2
+886033da	subx %r0, -3110, %r4
+8a6032ee	subx %r0, -3346, %r5
+9a603a79	subx %r0, -1415, %r13
+8a603168	subx %r0, -3736, %r5
+8e603b15	subx %r0, -1259, %r7
+8c60398b	subx %r0, -1653, %r6
+8e60318b	subx %r0, -3701, %r7
+886030a6	subx %r0, -3930, %r4
+88602ffd	subx %r0, 4093, %r4
+8e6027ff	subx %r0, 2047, %r7
+96602dd8	subx %r0, 3544, %r11
+96602b76	subx %r0, 2934, %r11
+96602cfd	subx %r0, 3325, %r11
+84602b6d	subx %r0, 2925, %r2
+9a6026f3	subx %r0, 1779, %r13
+94602d63	subx %r0, 3427, %r10
+98602b8b	subx %r0, 2955, %r12
+96602533	subx %r0, 1331, %r11
+966024ad	subx %r0, 1197, %r11
+846020d5	subx %r0, 213, %r2
+8c6028c9	subx %r0, 2249, %r6
+98602017	subx %r0, 23, %r12
+8a602071	subx %r0, 113, %r5
+96602031	subx %r0, 49, %r11
+94602802	subx %r0, 2050, %r10
+8c602041	subx %r0, 65, %r6
+8460a000	subx %r2, 0, %r2
+8660e000	subx %r3, 0, %r3
+8a616121	subx %r5, 289, %r5
+8460a046	subx %r2, 70, %r2
+8a6164b0	subx %r5, 1200, %r5
+8e61e28a	subx %r7, 650, %r7
+8e61e8e2	subx %r7, 2274, %r7
+986320b5	subx %r12, 181, %r12
+9a63616d	subx %r13, 365, %r13
+9462aa8e	subx %r10, 2702, %r10
+8c61a575	subx %r6, 1397, %r6
+8e61e1fc	subx %r7, 508, %r7
+8a616e67	subx %r5, 3687, %r5
+8c61ab6e	subx %r6, 2926, %r6
+986323fb	subx %r12, 1019, %r12
+8a616cfe	subx %r5, 3326, %r5
+8e61f286	subx %r7, -3450, %r7
+8e61f426	subx %r7, -3034, %r7
+88613874	subx %r4, -1932, %r4
+8a6170d6	subx %r5, -3882, %r5
+88613378	subx %r4, -3208, %r4
+8460b2d9	subx %r2, -3367, %r2
+9662f4b7	subx %r11, -2889, %r11
+8660f4f5	subx %r3, -2827, %r3
+9662ffa9	subx %r11, -87, %r11
+8660f7e6	subx %r3, -2074, %r3
+9662f6fd	subx %r11, -2307, %r11
+8a617df3	subx %r5, -525, %r5
+8460bfff	subx %r2, -1, %r2
+8660ffff	subx %r3, -1, %r3
+8460e000	subx %r3, 0, %r2
+84632000	subx %r12, 0, %r2
+9661a800	subx %r6, 2048, %r11
+8e62a300	subx %r10, 768, %r7
+94616a00	subx %r5, 2560, %r10
+8e60a940	subx %r2, 2368, %r7
+9661ac40	subx %r6, 3136, %r11
+8c60e170	subx %r3, 368, %r6
+8c616682	subx %r5, 1666, %r6
+9660e70c	subx %r3, 1804, %r11
+8e60ac8c	subx %r2, 3212, %r7
+9862ad26	subx %r10, 3366, %r12
+8a62e674	subx %r11, 1652, %r5
+9660a8be	subx %r2, 2238, %r11
+88632b9c	subx %r12, 2972, %r4
+86612bd3	subx %r4, 3027, %r3
+9862a7ab	subx %r10, 1963, %r12
+8a632fc7	subx %r12, 4039, %r5
+86616daf	subx %r5, 3503, %r3
+8c636fbb	subx %r13, 4027, %r6
+9860eb7f	subx %r3, 2943, %r12
+9a61f009	subx %r7, -4087, %r13
+9860b014	subx %r2, -4076, %r12
+9a617482	subx %r5, -2942, %r13
+8e61b448	subx %r6, -3000, %r7
+9862f42c	subx %r11, -3028, %r12
+96617213	subx %r5, -3565, %r11
+9a613ea0	subx %r4, -352, %r13
+9861f0f2	subx %r7, -3854, %r12
+94613734	subx %r4, -2252, %r10
+9a62f4a7	subx %r11, -2905, %r13
+8a613de2	subx %r4, -542, %r5
+9861f70f	subx %r7, -2289, %r12
+9661fdf8	subx %r7, -520, %r11
+9860f7e6	subx %r3, -2074, %r12
+8c62ff57	subx %r11, -169, %r6
+86633fec	subx %r12, -20, %r3
+8c633fb7	subx %r12, -73, %r6
+8a60fddf	subx %r3, -545, %r5
+9462fffb	subx %r11, -5, %r10
+c0790c40	swap [%r4 + %r0], %r0
+c078c100	swap [%r3 + %r0], %r0
+cc781e26	swap [%r0 + %r6], %r6
+ce79cfe0	swap [%r7 + %r0], %r7
+c07a9a85	swap [%r10 + %r5], %r0
+c079cded	swap [%r7 + %r13], %r0
+d4780bed	swap [%r0 + %r13], %r10
+cc78166d	swap [%r0 + %r13], %r6
+cc7b5260	swap [%r13 + %r0], %r6
+d87a8e00	swap [%r10 + %r0], %r12
+ca794982	swap [%r5 + %r2], %r5
+ca794a2d	swap [%r5 + %r13], %r5
+d6789fcb	swap [%r2 + %r11], %r11
+ce7a9087	swap [%r10 + %r7], %r7
+d479c164	swap [%r7 + %r4], %r10
+ce7a8b05	swap [%r10 + %r5], %r7
+c078e008	swap [%r3 + 0x8], %r0
+c0792218	swap [%r4 + 0x218], %r0
+c07920c8	swap [%r4 + 0xc8], %r0
+c07aa264	swap [%r10 + 0x264], %r0
+c0792219	swap [%r4 + 0x219], %r0
+c07b681e	swap [%r13 + 0x81e], %r0
+c07b2616	swap [%r12 + 0x616], %r0
+c079af41	swap [%r6 + 0xf41], %r0
+c078a42f	swap [%r2 + 0x42f], %r0
+c079ec3d	swap [%r7 + 0xc3d], %r0
+c07b6f8a	swap [%r13 + 0xf8a], %r0
+c07aafb4	swap [%r10 + 0xfb4], %r0
+c078edf1	swap [%r3 + 0xdf1], %r0
+c07b7051	swap [%r13 - 0xfaf], %r0
+c079f4c8	swap [%r7 - 0xb38], %r0
+c07b7262	swap [%r13 - 0xd9e], %r0
+c07b7c2c	swap [%r13 - 0x3d4], %r0
+c07975c8	swap [%r5 - 0xa38], %r0
+c078be4a	swap [%r2 - 0x1b6], %r0
+c078b34b	swap [%r2 - 0xcb5], %r0
+c07ab6ab	swap [%r10 - 0x955], %r0
+c079f3c7	swap [%r7 - 0xc39], %r0
+c079fedc	swap [%r7 - 0x124], %r0
+c07976be	swap [%r5 - 0x942], %r0
+c078fbdb	swap [%r3 - 0x425], %r0
+c07af7f5	swap [%r11 - 0x80b], %r0
+c07affbf	swap [%r11 - 0x41], %r0
+d67ae048	swap [%r11 + 0x48], %r11
+c678e0a4	swap [%r3 + 0xa4], %r3
+cc79a444	swap [%r6 + 0x444], %r6
+d67ae24c	swap [%r11 + 0x24c], %r11
+c678e1a1	swap [%r3 + 0x1a1], %r3
+ce79e962	swap [%r7 + 0x962], %r7
+ce79e0cd	swap [%r7 + 0xcd], %r7
+d87b2d43	swap [%r12 + 0xd43], %r12
+d67ae2bc	swap [%r11 + 0x2bc], %r11
+cc79aea5	swap [%r6 + 0xea5], %r6
+c478ac1f	swap [%r2 + 0xc1f], %r2
+c87929bb	swap [%r4 + 0x9bb], %r4
+da7b617f	swap [%r13 + 0x17f], %r13
+c8792d5f	swap [%r4 + 0xd5f], %r4
+da7b6dde	swap [%r13 + 0xdde], %r13
+c478b820	swap [%r2 - 0x7e0], %r2
+d87b310c	swap [%r12 - 0xef4], %r12
+c879330c	swap [%r4 - 0xcf4], %r4
+c8793491	swap [%r4 - 0xb6f], %r4
+cc79b097	swap [%r6 - 0xf69], %r6
+cc79b8d4	swap [%r6 - 0x72c], %r6
+c678f8b3	swap [%r3 - 0x74d], %r3
+d47abad2	swap [%r10 - 0x52e], %r10
+c678fd74	swap [%r3 - 0x28c], %r3
+d87b338f	swap [%r12 - 0xc71], %r12
+da7b7b6d	swap [%r13 - 0x493], %r13
+ce79fe1f	swap [%r7 - 0x1e1], %r7
+c8793fb5	swap [%r4 - 0x4b], %r4
+d87b3b7e	swap [%r12 - 0x482], %r12
+ce79f7df	swap [%r7 - 0x821], %r7
+c67ae003	swap [%r11 + 0x3], %r3
+cc792810	swap [%r4 + 0x810], %r6
+c878aa40	swap [%r2 + 0xa40], %r4
+da7aa424	swap [%r10 + 0x424], %r13
+d8796780	swap [%r5 + 0x780], %r12
+d678a18c	swap [%r2 + 0x18c], %r11
+ce78ea51	swap [%r3 + 0xa51], %r7
+d87aa165	swap [%r10 + 0x165], %r12
+ce7aacb4	swap [%r10 + 0xcb4], %r7
+da79207e	swap [%r4 + 0x7e], %r13
+d87ae673	swap [%r11 + 0x673], %r12
+da79ea3e	swap [%r7 + 0xa3e], %r13
+c4796f5a	swap [%r5 + 0xf5a], %r2
+c67926db	swap [%r4 + 0x6db], %r3
+ce7b6fd6	swap [%r13 + 0xfd6], %r7
+cc78edee	swap [%r3 + 0xdee], %r6
+d479ef7e	swap [%r7 + 0xf7e], %r10
+d8792dfe	swap [%r4 + 0xdfe], %r12
+ca79af7f	swap [%r6 + 0xf7f], %r5
+c479f0a0	swap [%r7 - 0xf60], %r2
+ca7ab011	swap [%r10 - 0xfef], %r5
+c679f092	swap [%r7 - 0xf6e], %r3
+c479f520	swap [%r7 - 0xae0], %r2
+c878f548	swap [%r3 - 0xab8], %r4
+c6793231	swap [%r4 - 0xdcf], %r3
+ca7b3a8c	swap [%r12 - 0x574], %r5
+ca79bb05	swap [%r6 - 0x4fb], %r5
+c678b7b0	swap [%r2 - 0x850], %r3
+c47ab64e	swap [%r10 - 0x9b2], %r2
+ca78f63d	swap [%r3 - 0x9c3], %r5
+da793979	swap [%r4 - 0x687], %r13
+c67abcfa	swap [%r10 - 0x306], %r3
+d879fd75	swap [%r7 - 0x28b], %r12
+c478ff3b	swap [%r3 - 0xc5], %r2
+ca7afedb	swap [%r11 - 0x125], %r5
+d878f77f	swap [%r3 - 0x881], %r12
+ca78bef7	swap [%r2 - 0x109], %r5
+81001b60	taddcc %r0, %r0, %r0
+97000c80	taddcc %r0, %r0, %r11
+8b001100	taddcc %r0, %r0, %r5
+81000ceb	taddcc %r0, %r11, %r0
+81001e6c	taddcc %r0, %r12, %r0
+87001143	taddcc %r0, %r3, %r3
+85009fe0	taddcc %r2, %r0, %r2
+81010ea4	taddcc %r4, %r4, %r0
+81009c42	taddcc %r2, %r2, %r0
+9b000547	taddcc %r0, %r7, %r13
+8d000f24	taddcc %r0, %r4, %r6
+99018680	taddcc %r6, %r0, %r12
+99008ec0	taddcc %r2, %r0, %r12
+89028d0a	taddcc %r10, %r10, %r4
+97019226	taddcc %r6, %r6, %r11
+8102d307	taddcc %r11, %r7, %r0
+81034582	taddcc %r13, %r2, %r0
+8b02d8c5	taddcc %r11, %r5, %r5
+990289cc	taddcc %r10, %r12, %r12
+8d018327	taddcc %r6, %r7, %r6
+9702c724	taddcc %r11, %r4, %r11
+8d00c027	taddcc %r3, %r7, %r6
+87019be5	taddcc %r6, %r5, %r3
+81002b0c	taddcc %r0, 2828, %r0
+8100383c	taddcc %r0, -1988, %r0
+81003810	taddcc %r0, -2032, %r0
+81002392	taddcc %r0, 914, %r0
+81002345	taddcc %r0, 837, %r0
+810034b6	taddcc %r0, -2890, %r0
+81003132	taddcc %r0, -3790, %r0
+97002130	taddcc %r0, 304, %r11
+9900214c	taddcc %r0, 332, %r12
+8900291c	taddcc %r0, 2332, %r4
+8d0023e4	taddcc %r0, 996, %r6
+8f002e1c	taddcc %r0, 3612, %r7
+89002cec	taddcc %r0, 3308, %r4
+99003520	taddcc %r0, -2784, %r12
+9b00381c	taddcc %r0, -2020, %r13
+97003898	taddcc %r0, -1896, %r11
+9500385c	taddcc %r0, -1956, %r10
+8b0032ec	taddcc %r0, -3348, %r5
+970031f4	taddcc %r0, -3596, %r11
+99002181	taddcc %r0, 385, %r12
+8b00201f	taddcc %r0, 31, %r5
+850021d1	taddcc %r0, 465, %r2
+87002b0e	taddcc %r0, 2830, %r3
+870024e9	taddcc %r0, 1257, %r3
+97002e95	taddcc %r0, 3733, %r11
+8f002d59	taddcc %r0, 3417, %r7
+97002de9	taddcc %r0, 3561, %r11
+9500296f	taddcc %r0, 2415, %r10
+89003142	taddcc %r0, -3774, %r4
+99003123	taddcc %r0, -3805, %r12
+87003c06	taddcc %r0, -1018, %r3
+8d003817	taddcc %r0, -2025, %r6
+97003951	taddcc %r0, -1711, %r11
+97003d1a	taddcc %r0, -742, %r11
+99003a65	taddcc %r0, -1435, %r12
+8f0036b9	taddcc %r0, -2375, %r7
+85003d27	taddcc %r0, -729, %r2
+8f003de3	taddcc %r0, -541, %r7
+8f003b1f	taddcc %r0, -1249, %r7
+8f003f5e	taddcc %r0, -162, %r7
+81013fbe	taddcc %r4, -66, %r0
+81017af7	taddcc %r5, -1289, %r0
+8f01f7db	taddcc %r7, -2085, %r7
+8d01be7e	taddcc %r6, -386, %r6
+81017cb7	taddcc %r5, -841, %r0
+8101bfa5	taddcc %r6, -91, %r0
+99033ced	taddcc %r12, -787, %r12
+8500b797	taddcc %r2, -2153, %r2
+8103759b	taddcc %r13, -2661, %r0
+8101fd65	taddcc %r7, -667, %r0
+9b0375d5	taddcc %r13, -2603, %r13
+8b017cae	taddcc %r5, -850, %r5
+810171a7	taddcc %r5, -3673, %r0
+81017d52	taddcc %r5, -686, %r0
+89013c66	taddcc %r4, -922, %r4
+9b037f24	taddcc %r13, -220, %r13
+81037166	taddcc %r13, -3738, %r0
+8101388e	taddcc %r4, -1906, %r0
+8f01f447	taddcc %r7, -3001, %r7
+9502b4e8	taddcc %r10, -2840, %r10
+8100f816	taddcc %r3, -2026, %r0
+8101b498	taddcc %r6, -2920, %r0
+99033289	taddcc %r12, -3447, %r12
+8d01ba11	taddcc %r6, -1519, %r6
+810172c0	taddcc %r5, -3392, %r0
+810331c0	taddcc %r12, -3648, %r0
+8f01f8a0	taddcc %r7, -1888, %r7
+9702f418	taddcc %r11, -3048, %r11
+8101b006	taddcc %r6, -4090, %r0
+99033022	taddcc %r12, -4062, %r12
+9502affa	taddcc %r10, 4090, %r10
+8100addd	taddcc %r2, 3549, %r0
+810163fb	taddcc %r5, 1019, %r0
+8700e5f7	taddcc %r3, 1527, %r3
+9b036eb7	taddcc %r13, 3767, %r13
+810328fe	taddcc %r12, 2302, %r0
+8100edbc	taddcc %r3, 3516, %r0
+99032dda	taddcc %r12, 3546, %r12
+8700ef5a	taddcc %r3, 3930, %r3
+8103258f	taddcc %r12, 1423, %r0
+8100aa2f	taddcc %r2, 2607, %r0
+9702e96d	taddcc %r11, 2413, %r11
+8d01af64	taddcc %r6, 3940, %r6
+8100e396	taddcc %r3, 918, %r0
+8101ea2e	taddcc %r7, 2606, %r0
+9b036dc1	taddcc %r13, 3521, %r13
+9502a15b	taddcc %r10, 347, %r10
+81036923	taddcc %r13, 2339, %r0
+8102e689	taddcc %r11, 1673, %r0
+8500a5a4	taddcc %r2, 1444, %r2
+8700e315	taddcc %r3, 789, %r3
+8103618a	taddcc %r13, 394, %r0
+81032c41	taddcc %r12, 3137, %r0
+8d01a9c0	taddcc %r6, 2496, %r6
+8b016314	taddcc %r5, 788, %r5
+810320a4	taddcc %r12, 164, %r0
+8f01e150	taddcc %r7, 336, %r7
+8d01a405	taddcc %r6, 1029, %r6
+99013fbf	taddcc %r4, -65, %r12
+99013eef	taddcc %r4, -273, %r12
+8701fbdf	taddcc %r7, -1057, %r3
+9b0136fe	taddcc %r4, -2306, %r13
+8700bbee	taddcc %r2, -1042, %r3
+8701bbe6	taddcc %r6, -1050, %r3
+8b00fc77	taddcc %r3, -905, %r5
+8700b6e9	taddcc %r2, -2327, %r3
+9700b5d6	taddcc %r2, -2602, %r11
+9502f2f1	taddcc %r11, -3343, %r10
+9502fa65	taddcc %r11, -1435, %r10
+9501b839	taddcc %r6, -1991, %r10
+8b00be18	taddcc %r2, -488, %r5
+8701328a	taddcc %r4, -3446, %r3
+8d017914	taddcc %r5, -1772, %r6
+9701fa02	taddcc %r7, -1534, %r11
+89033211	taddcc %r12, -3567, %r4
+8b02f110	taddcc %r11, -3824, %r5
+8d013104	taddcc %r4, -3836, %r6
+9902efdf	taddcc %r11, 4063, %r12
+8901edfe	taddcc %r7, 3582, %r4
+8502afcf	taddcc %r10, 4047, %r2
+8501ef57	taddcc %r7, 3927, %r2
+8900eafb	taddcc %r3, 2811, %r4
+85036f66	taddcc %r13, 3942, %r2
+8501ed3d	taddcc %r7, 3389, %r2
+8f00ae35	taddcc %r2, 3637, %r7
+9701accb	taddcc %r6, 3275, %r11
+8702ae32	taddcc %r10, 3634, %r3
+8901e959	taddcc %r7, 2393, %r4
+8501e1e4	taddcc %r7, 484, %r2
+8901e98a	taddcc %r7, 2442, %r4
+85012c48	taddcc %r4, 3144, %r2
+8900e807	taddcc %r3, 2055, %r4
+99012188	taddcc %r4, 392, %r12
+9501a04c	taddcc %r6, 76, %r10
+9901a240	taddcc %r6, 576, %r12
+9500e101	taddcc %r3, 257, %r10
+8500e002	taddcc %r3, 2, %r2
+87101a20	taddcctv %r0, %r0, %r3
+81102608	taddcctv %r0, 1544, %r0
+811029f4	taddcctv %r0, 2548, %r0
+8110341c	taddcctv %r0, -3044, %r0
+85102520	taddcctv %r0, 1312, %r2
+99102828	taddcctv %r0, 2088, %r12
+97102684	taddcctv %r0, 1668, %r11
+8d102c8c	taddcctv %r0, 3212, %r6
+87102554	taddcctv %r0, 1364, %r3
+99102cec	taddcctv %r0, 3308, %r12
+8d102fec	taddcctv %r0, 4076, %r6
+97103038	taddcctv %r0, -4040, %r11
+8b1032f0	taddcctv %r0, -3344, %r5
+8d103278	taddcctv %r0, -3464, %r6
+8f103d70	taddcctv %r0, -656, %r7
+87103d70	taddcctv %r0, -656, %r3
+95103df0	taddcctv %r0, -528, %r10
+89103b6c	taddcctv %r0, -1172, %r4
+81d4c464	tn %r19 + %r4
+81d2c571	tn %r11 + %r17
+81d138bd	tn %r4 + -0x3d
+a1d6a630	tn %r26 + -0x30
+81081180	tsubcc %r0, %r0, %r0
+890813e0	tsubcc %r0, %r0, %r4
+87080180	tsubcc %r0, %r0, %r3
+81080ac3	tsubcc %r0, %r3, %r0
+870815e3	tsubcc %r0, %r3, %r3
+87080383	tsubcc %r0, %r3, %r3
+810900e0	tsubcc %r4, %r0, %r0
+810ac280	tsubcc %r11, %r0, %r0
+990b1f40	tsubcc %r12, %r0, %r12
+9b0b5540	tsubcc %r13, %r0, %r13
+8109c5c7	tsubcc %r7, %r7, %r0
+8d0989c6	tsubcc %r6, %r6, %r6
+890910a4	tsubcc %r4, %r4, %r4
+97081446	tsubcc %r0, %r6, %r11
+89080cac	tsubcc %r0, %r12, %r4
+8909d8e0	tsubcc %r7, %r0, %r4
+9b088820	tsubcc %r2, %r0, %r13
+990a966a	tsubcc %r10, %r10, %r12
+870ac6cb	tsubcc %r11, %r11, %r3
+81089526	tsubcc %r2, %r6, %r0
+810b5d05	tsubcc %r13, %r5, %r0
+8b0b1f65	tsubcc %r12, %r5, %r5
+8709c3e3	tsubcc %r7, %r3, %r3
+8f09d5e6	tsubcc %r7, %r6, %r7
+950a8d6c	tsubcc %r10, %r12, %r10
+9509d98c	tsubcc %r7, %r12, %r10
+8b099603	tsubcc %r6, %r3, %r5
+8108353c	tsubcc %r0, -2756, %r0
+81083fc8	tsubcc %r0, -56, %r0
+810839b7	tsubcc %r0, -1609, %r0
+8108237f	tsubcc %r0, 895, %r0
+810823f5	tsubcc %r0, 1013, %r0
+990832e0	tsubcc %r0, -3360, %r12
+850832e0	tsubcc %r0, -3360, %r2
+89083ab4	tsubcc %r0, -1356, %r4
+8f083c18	tsubcc %r0, -1000, %r7
+8d083a18	tsubcc %r0, -1512, %r6
+95082c9c	tsubcc %r0, 3228, %r10
+85082c58	tsubcc %r0, 3160, %r2
+8f08292c	tsubcc %r0, 2348, %r7
+9b08251c	tsubcc %r0, 1308, %r13
+87083f6a	tsubcc %r0, -150, %r3
+87083a5e	tsubcc %r0, -1442, %r3
+8d0837e2	tsubcc %r0, -2078, %r6
+8708335a	tsubcc %r0, -3238, %r3
+8d083c3b	tsubcc %r0, -965, %r6
+8b083a69	tsubcc %r0, -1431, %r5
+8f0831d3	tsubcc %r0, -3629, %r7
+85083097	tsubcc %r0, -3945, %r2
+8b083689	tsubcc %r0, -2423, %r5
+9b083065	tsubcc %r0, -3995, %r13
+9b083055	tsubcc %r0, -4011, %r13
+8d08279e	tsubcc %r0, 1950, %r6
+89082eae	tsubcc %r0, 3758, %r4
+8708279a	tsubcc %r0, 1946, %r3
+97082eab	tsubcc %r0, 3755, %r11
+9508269b	tsubcc %r0, 1691, %r10
+9508294f	tsubcc %r0, 2383, %r10
+9708251b	tsubcc %r0, 1307, %r11
+8708203e	tsubcc %r0, 62, %r3
+87082c31	tsubcc %r0, 3121, %r3
+87082a85	tsubcc %r0, 2693, %r3
+89082485	tsubcc %r0, 1157, %r4
+95082a02	tsubcc %r0, 2562, %r10
+95082005	tsubcc %r0, 5, %r10
+8708e081	tsubcc %r3, 129, %r3
+8d09a320	tsubcc %r6, 800, %r6
+8f09e301	tsubcc %r7, 769, %r7
+810b2708	tsubcc %r12, 1800, %r0
+810b211c	tsubcc %r12, 284, %r0
+8708e948	tsubcc %r3, 2376, %r3
+970ae816	tsubcc %r11, 2070, %r11
+810ae07c	tsubcc %r11, 124, %r0
+810b252c	tsubcc %r12, 1324, %r0
+990b28ca	tsubcc %r12, 2250, %r12
+8508a6a2	tsubcc %r2, 1698, %r2
+8108acc3	tsubcc %r2, 3267, %r0
+8109e69c	tsubcc %r7, 1692, %r0
+970ae24f	tsubcc %r11, 591, %r11
+990b2d1a	tsubcc %r12, 3354, %r12
+81092bc6	tsubcc %r4, 3014, %r0
+810b6dc6	tsubcc %r13, 3526, %r0
+970ae39b	tsubcc %r11, 923, %r11
+8f09e795	tsubcc %r7, 1941, %r7
+8108ebc7	tsubcc %r3, 3015, %r0
+8108e9e7	tsubcc %r3, 2535, %r0
+8508acbe	tsubcc %r2, 3262, %r2
+9b0b6b7a	tsubcc %r13, 2938, %r13
+8108ad7b	tsubcc %r2, 3451, %r0
+8b0967d7	tsubcc %r5, 2007, %r5
+8508aedb	tsubcc %r2, 3803, %r2
+8109b404	tsubcc %r6, -3068, %r0
+8708f420	tsubcc %r3, -3040, %r3
+8d09b290	tsubcc %r6, -3440, %r6
+8708f01c	tsubcc %r3, -4068, %r3
+8109fa44	tsubcc %r7, -1468, %r0
+8109be40	tsubcc %r6, -448, %r0
+990b3491	tsubcc %r12, -2927, %r12
+990b3a48	tsubcc %r12, -1464, %r12
+8109fcc1	tsubcc %r7, -831, %r0
+810b384e	tsubcc %r12, -1970, %r0
+8708f907	tsubcc %r3, -1785, %r3
+950ab5e0	tsubcc %r10, -2592, %r10
+81097a96	tsubcc %r5, -1386, %r0
+8108fa2b	tsubcc %r3, -1493, %r0
+8f09f86b	tsubcc %r7, -1941, %r7
+8d09b6a9	tsubcc %r6, -2391, %r6
+8108b65b	tsubcc %r2, -2469, %r0
+810b7759	tsubcc %r13, -2215, %r0
+8508b7f0	tsubcc %r2, -2064, %r2
+8f09f25f	tsubcc %r7, -3489, %r7
+8109fe73	tsubcc %r7, -397, %r0
+810af3e7	tsubcc %r11, -3097, %r0
+990b3b73	tsubcc %r12, -1165, %r12
+950abdda	tsubcc %r10, -550, %r10
+8109b6fb	tsubcc %r6, -2309, %r0
+81097fd5	tsubcc %r5, -43, %r0
+8508b9df	tsubcc %r2, -1569, %r2
+8109ffed	tsubcc %r7, -19, %r0
+95092400	tsubcc %r4, 1024, %r10
+850b2008	tsubcc %r12, 8, %r2
+970b6101	tsubcc %r13, 257, %r11
+950b2a00	tsubcc %r12, 2560, %r10
+9909a103	tsubcc %r6, 259, %r12
+85092490	tsubcc %r4, 1168, %r2
+8b0ae225	tsubcc %r11, 549, %r5
+8b09aa21	tsubcc %r6, 2593, %r5
+9509e709	tsubcc %r7, 1801, %r10
+8d09e546	tsubcc %r7, 1350, %r6
+9708e2d3	tsubcc %r3, 723, %r11
+990aeb68	tsubcc %r11, 2920, %r12
+9b0923d6	tsubcc %r4, 982, %r13
+87092679	tsubcc %r4, 1657, %r3
+8d09e57d	tsubcc %r7, 1405, %r6
+8b09aae7	tsubcc %r6, 2791, %r5
+9909afab	tsubcc %r6, 4011, %r12
+8f09a1ff	tsubcc %r6, 511, %r7
+9b096dfb	tsubcc %r5, 3579, %r13
+8f0b27df	tsubcc %r12, 2015, %r7
+8f096ffb	tsubcc %r5, 4091, %r7
+990b7024	tsubcc %r13, -4060, %r12
+8d093300	tsubcc %r4, -3328, %r6
+9708b812	tsubcc %r2, -2030, %r11
+87093c80	tsubcc %r4, -896, %r3
+8d097e02	tsubcc %r5, -510, %r6
+9509f829	tsubcc %r7, -2007, %r10
+850af668	tsubcc %r11, -2456, %r2
+8908f0d5	tsubcc %r3, -3883, %r4
+8f08f0f9	tsubcc %r3, -3847, %r7
+9508fb46	tsubcc %r3, -1210, %r10
+8b0afe2e	tsubcc %r11, -466, %r5
+9508b93e	tsubcc %r2, -1730, %r10
+8b08fb5e	tsubcc %r3, -1186, %r5
+8908b5dd	tsubcc %r2, -2595, %r4
+8f0b777b	tsubcc %r13, -2181, %r7
+8d0b3fe6	tsubcc %r12, -26, %r6
+9508fdfd	tsubcc %r3, -515, %r10
+8f0affdb	tsubcc %r11, -37, %r7
+9b0b3dff	tsubcc %r12, -513, %r13
+8f08bfbf	tsubcc %r2, -65, %r7
+87181440	tsubcctv %r0, %r0, %r3
+99180860	tsubcctv %r0, %r0, %r12
+81182c78	tsubcctv %r0, 3192, %r0
+8b183b70	tsubcctv %r0, -1168, %r5
+95183f90	tsubcctv %r0, -112, %r10
+99183480	tsubcctv %r0, -2944, %r12
+8b1837d4	tsubcctv %r0, -2092, %r5
+8b1836d4	tsubcctv %r0, -2348, %r5
+9b183ca4	tsubcctv %r0, -860, %r13
+97183a4c	tsubcctv %r0, -1460, %r11
+8d183808	tsubcctv %r0, -2040, %r6
+97183904	tsubcctv %r0, -1788, %r11
+8b182a00	tsubcctv %r0, 2560, %r5
+89182bb0	tsubcctv %r0, 2992, %r4
+8d182bd0	tsubcctv %r0, 3024, %r6
+99182e3c	tsubcctv %r0, 3644, %r12
+89182a20	tsubcctv %r0, 2592, %r4
+8d182d94	tsubcctv %r0, 3476, %r6
+9718223c	tsubcctv %r0, 572, %r11
+9918288c	tsubcctv %r0, 2188, %r12
+8518222c	tsubcctv %r0, 556, %r2
+8ef1e164	udivcc %r7, 356, %r7
+8af16446	udivcc %r5, 1094, %r5
+84f0a0b9	udivcc %r2, 185, %r2
+8ef1e6c2	udivcc %r7, 1730, %r7
+94f2a596	udivcc %r10, 1430, %r10
+8ef1eec8	udivcc %r7, 3784, %r7
+88f12e65	udivcc %r4, 3685, %r4
+94f2a23f	udivcc %r10, 575, %r10
+96f2eb97	udivcc %r11, 2967, %r11
+8af162f7	udivcc %r5, 759, %r5
+96f2efda	udivcc %r11, 4058, %r11
+9af36b7f	udivcc %r13, 2943, %r13
+84f0b212	udivcc %r2, -3566, %r2
+8af17501	udivcc %r5, -2815, %r5
+98f33a0a	udivcc %r12, -1526, %r12
+88f13ca0	udivcc %r4, -864, %r4
+8cf1ba85	udivcc %r6, -1403, %r6
+94f2b98c	udivcc %r10, -1652, %r10
+9af37e8a	udivcc %r13, -374, %r13
+84f0b65a	udivcc %r2, -2470, %r2
+8ef1fa97	udivcc %r7, -1385, %r7
+88f133dc	udivcc %r4, -3108, %r4
+8af177dc	udivcc %r5, -2084, %r5
+98f33aed	udivcc %r12, -1299, %r12
+96f0200a	udivcc %r0, 10, %r11
+94f02250	udivcc %r0, 592, %r10
+8cf02c10	udivcc %r0, 3088, %r6
+80f02c14	udivcc %r0, 3092, %r0
+8af02514	udivcc %r0, 1300, %r5
+8ef02245	udivcc %r0, 581, %r7
+94f0254a	udivcc %r0, 1354, %r10
+86f0206d	udivcc %r0, 109, %r3
+80f0244f	udivcc %r0, 1103, %r0
+80f02ee0	udivcc %r0, 3808, %r0
+96f0225b	udivcc %r0, 603, %r11
+8cf025d8	udivcc %r0, 1496, %r6
+80f025b3	udivcc %r0, 1459, %r0
+80f021ed	udivcc %r0, 493, %r0
+8cf02dd8	udivcc %r0, 3544, %r6
+86f027b1	udivcc %r0, 1969, %r3
+94f029f3	udivcc %r0, 2547, %r10
+8af02ccf	udivcc %r0, 3279, %r5
+8af02df9	udivcc %r0, 3577, %r5
+94f02b7d	udivcc %r0, 2941, %r10
+80f03441	udivcc %r0, -3007, %r0
+84f0302a	udivcc %r0, -4054, %r2
+98f03248	udivcc %r0, -3512, %r12
+88f03161	udivcc %r0, -3743, %r4
+88f0344a	udivcc %r0, -2998, %r4
+8af03896	udivcc %r0, -1898, %r5
+9af0394c	udivcc %r0, -1716, %r13
+80f03b16	udivcc %r0, -1258, %r0
+96f0347c	udivcc %r0, -2948, %r11
+84f03da2	udivcc %r0, -606, %r2
+80f03cb3	udivcc %r0, -845, %r0
+94f03fa2	udivcc %r0, -94, %r10
+94f036f8	udivcc %r0, -2312, %r10
+8ef036dd	udivcc %r0, -2339, %r7
+96f037e5	udivcc %r0, -2075, %r11
+84f03cfb	udivcc %r0, -773, %r2
+88f16004	udivcc %r5, 4, %r4
+8af36a00	udivcc %r13, 2560, %r5
+86f1e810	udivcc %r7, 2064, %r3
+80f12510	udivcc %r4, 1296, %r0
+9af1e0e0	udivcc %r7, 224, %r13
+8af0e40a	udivcc %r3, 1034, %r5
+80f0e03a	udivcc %r3, 58, %r0
+80f0a02e	udivcc %r2, 46, %r0
+8af1288a	udivcc %r4, 2186, %r5
+86f2a930	udivcc %r10, 2352, %r3
+80f166c4	udivcc %r5, 1732, %r0
+80f0e05d	udivcc %r3, 93, %r0
+94f12391	udivcc %r4, 913, %r10
+84f1229a	udivcc %r4, 666, %r2
+80f16563	udivcc %r5, 1379, %r0
+80f2a9cc	udivcc %r10, 2508, %r0
+8af32378	udivcc %r12, 888, %r5
+8ef0a09f	udivcc %r2, 159, %r7
+80f163ec	udivcc %r5, 1004, %r0
+80f1ea6b	udivcc %r7, 2667, %r0
+84f0e6c7	udivcc %r3, 1735, %r2
+8ef0a94f	udivcc %r2, 2383, %r7
+80f1a8fd	udivcc %r6, 2301, %r0
+80f0e7b9	udivcc %r3, 1977, %r0
+94f0e9ee	udivcc %r3, 2542, %r10
+86f327b5	udivcc %r12, 1973, %r3
+80f2ed77	udivcc %r11, 3447, %r0
+80f12fc7	udivcc %r4, 4039, %r0
+8ef3277b	udivcc %r12, 1915, %r7
+86f326bf	udivcc %r12, 1727, %r3
+80f16f9f	udivcc %r5, 3999, %r0
+8ef32ff9	udivcc %r12, 4089, %r7
+8cf36ff3	udivcc %r13, 4083, %r6
+98f1afef	udivcc %r6, 4079, %r12
+96f17001	udivcc %r5, -4095, %r11
+80f2f480	udivcc %r11, -2944, %r0
+80f3700a	udivcc %r13, -4086, %r0
+8ef370c0	udivcc %r13, -3904, %r7
+96f1f402	udivcc %r7, -3070, %r11
+80f1f214	udivcc %r7, -3564, %r0
+84f1f442	udivcc %r7, -3006, %r2
+96f37442	udivcc %r13, -3006, %r11
+80f3350c	udivcc %r12, -2804, %r0
+80f0b0b2	udivcc %r2, -3918, %r0
+96f2b0aa	udivcc %r10, -3926, %r11
+8af2f449	udivcc %r11, -2999, %r5
+80f2fb84	udivcc %r11, -1148, %r0
+80f332a3	udivcc %r12, -3421, %r0
+8af13c94	udivcc %r4, -876, %r5
+98f2b526	udivcc %r10, -2778, %r12
+80f1f8e6	udivcc %r7, -1818, %r0
+80f33acc	udivcc %r12, -1332, %r0
+98f0f55a	udivcc %r3, -2726, %r12
+98f1b2ba	udivcc %r6, -3398, %r12
+80f0b5cd	udivcc %r2, -2611, %r0
+80f2b3d9	udivcc %r10, -3111, %r0
+94f138de	udivcc %r4, -1826, %r10
+86f377ca	udivcc %r13, -2102, %r3
+80f17fca	udivcc %r5, -54, %r0
+80f0b5db	udivcc %r2, -2597, %r0
+96f13fcc	udivcc %r4, -52, %r11
+86f1733f	udivcc %r5, -3265, %r3
+80f1fff2	udivcc %r7, -14, %r0
+86f0b5fd	udivcc %r2, -2563, %r3
+8af2b5f7	udivcc %r10, -2569, %r5
+88f1ffee	udivcc %r7, -18, %r4
+86f2b3ff	udivcc %r10, -3073, %r3
+98f1bff7	udivcc %r6, -9, %r12
+96f37bff	udivcc %r13, -1025, %r11
+80702873	udiv %r0, 2163, %r0
+8070223f	udiv %r0, 575, %r0
+9472a848	udiv %r10, 2120, %r10
+8a716206	udiv %r5, 518, %r5
+9873281a	udiv %r12, 2074, %r12
+9472a115	udiv %r10, 277, %r10
+9472a1a3	udiv %r10, 419, %r10
+9a736968	udiv %r13, 2408, %r13
+8a716b26	udiv %r5, 2854, %r5
+8670e5a6	udiv %r3, 1446, %r3
+9a736d47	udiv %r13, 3399, %r13
+9472a6d5	udiv %r10, 1749, %r10
+9672ef56	udiv %r11, 3926, %r11
+88712e79	udiv %r4, 3705, %r4
+9a7365fe	udiv %r13, 1534, %r13
+8670edb7	udiv %r3, 3511, %r3
+8470b224	udiv %r2, -3548, %r2
+8e71f0e0	udiv %r7, -3872, %r7
+8470bc0a	udiv %r2, -1014, %r2
+8e71fa0a	udiv %r7, -1526, %r7
+8c71b2f0	udiv %r6, -3344, %r6
+8c71be84	udiv %r6, -380, %r6
+8a717497	udiv %r5, -2921, %r5
+9672f4e3	udiv %r11, -2845, %r11
+8470b65b	udiv %r2, -2469, %r2
+9672fb9c	udiv %r11, -1124, %r11
+8e71f9be	udiv %r7, -1602, %r7
+8e71fb7c	udiv %r7, -1156, %r7
+9a7377de	udiv %r13, -2082, %r13
+8670f5fe	udiv %r3, -2562, %r3
+86702060	udiv %r0, 96, %r3
+88702c80	udiv %r0, 3200, %r4
+86702244	udiv %r0, 580, %r3
+8470221a	udiv %r0, 538, %r2
+94702618	udiv %r0, 1560, %r10
+8470254c	udiv %r0, 1356, %r2
+8c7023c2	udiv %r0, 962, %r6
+9a7025a9	udiv %r0, 1449, %r13
+9a70218f	udiv %r0, 399, %r13
+8c702eac	udiv %r0, 3756, %r6
+9a702b66	udiv %r0, 2918, %r13
+8e702b76	udiv %r0, 2934, %r7
+8c7027f8	udiv %r0, 2040, %r6
+94702ded	udiv %r0, 3565, %r10
+8e7023bf	udiv %r0, 959, %r7
+96702fed	udiv %r0, 4077, %r11
+9a7027bf	udiv %r0, 1983, %r13
+8a703003	udiv %r0, -4093, %r5
+98703118	udiv %r0, -3816, %r12
+84703d20	udiv %r0, -736, %r2
+947033c0	udiv %r0, -3136, %r10
+987033d0	udiv %r0, -3120, %r12
+8e703c49	udiv %r0, -951, %r7
+94703f90	udiv %r0, -112, %r10
+8a703f24	udiv %r0, -220, %r5
+8a703a3b	udiv %r0, -1477, %r5
+86703fa1	udiv %r0, -95, %r3
+8c703d6d	udiv %r0, -659, %r6
+98703f1d	udiv %r0, -227, %r12
+9a703dde	udiv %r0, -546, %r13
+8a703dee	udiv %r0, -530, %r5
+8071272b	udiv %r4, 1835, %r0
+807362ea	udiv %r13, 746, %r0
+8c71e808	udiv %r7, 2056, %r6
+94712808	udiv %r4, 2056, %r10
+88736105	udiv %r13, 261, %r4
+8e70a250	udiv %r2, 592, %r7
+9a73240d	udiv %r12, 1037, %r13
+8a70e584	udiv %r3, 1412, %r5
+8670a893	udiv %r2, 2195, %r3
+9a70e0d6	udiv %r3, 214, %r13
+9471e4d9	udiv %r7, 1241, %r10
+8870af60	udiv %r2, 3936, %r4
+887363cb	udiv %r13, 971, %r4
+947127a3	udiv %r4, 1955, %r10
+9672a5de	udiv %r10, 1502, %r11
+9872aad7	udiv %r10, 2775, %r12
+96712b9f	udiv %r4, 2975, %r11
+8e71abee	udiv %r6, 3054, %r7
+8c72efdd	udiv %r11, 4061, %r6
+9470aebf	udiv %r2, 3775, %r10
+8a712fbf	udiv %r4, 4031, %r5
+96712ffb	udiv %r4, 4091, %r11
+8a737101	udiv %r13, -3839, %r5
+8470f110	udiv %r3, -3824, %r2
+8a70f980	udiv %r3, -1664, %r5
+9871fa02	udiv %r7, -1534, %r12
+8e72b093	udiv %r10, -3949, %r7
+9a71f2b0	udiv %r7, -3408, %r13
+8470f32c	udiv %r3, -3284, %r2
+94717ec0	udiv %r5, -320, %r10
+8a73723e	udiv %r13, -3522, %r5
+8c70b70d	udiv %r2, -2291, %r6
+8472f85f	udiv %r11, -1953, %r2
+8c71776a	udiv %r5, -2198, %r6
+9671b97d	udiv %r6, -1667, %r11
+9671fc9f	udiv %r7, -865, %r11
+8471bdee	udiv %r6, -530, %r2
+847133ef	udiv %r4, -3089, %r2
+8871befb	udiv %r6, -261, %r4
+8471bfbe	udiv %r6, -66, %r2
+96737f7f	udiv %r13, -129, %r11
+8a501e20	umul %r0, %r0, %r5
+98501c80	umul %r0, %r0, %r12
+805102e0	umul %r4, %r0, %r0
+80518400	umul %r6, %r0, %r0
+8c518b26	umul %r6, %r6, %r6
+98531e0c	umul %r12, %r12, %r12
+945293c0	umul %r10, %r0, %r10
+9a5343a0	umul %r13, %r0, %r13
+9a501c2d	umul %r0, %r13, %r13
+84501fe2	umul %r0, %r2, %r2
+805143c3	umul %r5, %r3, %r0
+805152e3	umul %r5, %r3, %r0
+8852d92b	umul %r11, %r11, %r4
+8a52ca4b	umul %r11, %r11, %r5
+8c535966	umul %r13, %r6, %r6
+8450c002	umul %r3, %r2, %r2
+88528ac0	umul %r10, %r0, %r4
+98529900	umul %r10, %r0, %r12
+86500c2d	umul %r0, %r13, %r3
+8650132d	umul %r0, %r13, %r3
+98531862	umul %r12, %r2, %r12
+84508004	umul %r2, %r4, %r2
+8c529563	umul %r10, %r3, %r6
+94534da5	umul %r13, %r5, %r10
+86d018e0	umulcc %r0, %r0, %r3
+86d017a0	umulcc %r0, %r0, %r3
+80d18f86	umulcc %r6, %r6, %r0
+80d142e5	umulcc %r5, %r5, %r0
+98d30f0c	umulcc %r12, %r12, %r12
+80d31440	umulcc %r12, %r0, %r0
+8ed1cf60	umulcc %r7, %r0, %r7
+80d01fc7	umulcc %r0, %r7, %r0
+80d00ba4	umulcc %r0, %r4, %r0
+98d01a2c	umulcc %r0, %r12, %r12
+94d01caa	umulcc %r0, %r10, %r10
+8ed14445	umulcc %r5, %r5, %r7
+8ad09ce2	umulcc %r2, %r2, %r5
+80d0c74c	umulcc %r3, %r12, %r0
+80d29dc6	umulcc %r10, %r6, %r0
+94d1814a	umulcc %r6, %r10, %r10
+8ad2d3c5	umulcc %r11, %r5, %r5
+94d29582	umulcc %r10, %r2, %r10
+96d2c0e7	umulcc %r11, %r7, %r11
+84d119e0	umulcc %r4, %r0, %r2
+88d28900	umulcc %r10, %r0, %r4
+96d01f45	umulcc %r0, %r5, %r11
+9ad0032c	umulcc %r0, %r12, %r13
+8cd11fc3	umulcc %r4, %r3, %r6
+84d1cb44	umulcc %r7, %r4, %r2
+80d02024	umulcc %r0, 36, %r0
+80d02723	umulcc %r0, 1827, %r0
+9ad03cd0	umulcc %r0, -816, %r13
+86d023c2	umulcc %r0, 962, %r3
+80d3600c	umulcc %r13, 12, %r0
+80d2a081	umulcc %r10, 129, %r0
+94d2a081	umulcc %r10, 129, %r10
+80d0a40a	umulcc %r2, 1034, %r0
+80d0e860	umulcc %r3, 2144, %r0
+9ad3601a	umulcc %r13, 26, %r13
+86d0e910	umulcc %r3, 2320, %r3
+80d0e1e0	umulcc %r3, 480, %r0
+80d0e9c0	umulcc %r3, 2496, %r0
+8cd1a624	umulcc %r6, 1572, %r6
+9ad36b01	umulcc %r13, 2817, %r13
+80d0e31c	umulcc %r3, 796, %r0
+80d2e81d	umulcc %r11, 2077, %r0
+8cd1aa83	umulcc %r6, 2691, %r6
+9ad36525	umulcc %r13, 1317, %r13
+80d0e6b1	umulcc %r3, 1713, %r0
+80d1aa0f	umulcc %r6, 2575, %r0
+94d2a4e5	umulcc %r10, 1253, %r10
+96d2e3b4	umulcc %r11, 948, %r11
+80d3669e	umulcc %r13, 1694, %r0
+80d0a72e	umulcc %r2, 1838, %r0
+94d2a64f	umulcc %r10, 1615, %r10
+84d0a0fe	umulcc %r2, 254, %r2
+80d0e6f5	umulcc %r3, 1781, %r0
+80d0eb9e	umulcc %r3, 2974, %r0
+86d0e3ed	umulcc %r3, 1005, %r3
+94d2a66f	umulcc %r10, 1647, %r10
+80d2eafb	umulcc %r11, 2811, %r0
+80d2efe5	umulcc %r11, 4069, %r0
+94d2a2ff	umulcc %r10, 767, %r10
+96d2efc7	umulcc %r11, 4039, %r11
+80d36bfd	umulcc %r13, 3069, %r0
+86d0ef7f	umulcc %r3, 3967, %r3
+9ad37002	umulcc %r13, -4094, %r13
+8ad17220	umulcc %r5, -3552, %r5
+80d2b105	umulcc %r10, -3835, %r0
+80d0b0c2	umulcc %r2, -3902, %r0
+80d37262	umulcc %r13, -3486, %r0
+80d2fe40	umulcc %r11, -448, %r0
+8ad17232	umulcc %r5, -3534, %r5
+88d130e8	umulcc %r4, -3864, %r4
+80d0b217	umulcc %r2, -3561, %r0
+80d37386	umulcc %r13, -3194, %r0
+96d2f932	umulcc %r11, -1742, %r11
+94d2b5c4	umulcc %r10, -2620, %r10
+80d2ff60	umulcc %r11, -160, %r0
+80d0bba1	umulcc %r2, -1119, %r0
+88d134f2	umulcc %r4, -2830, %r4
+8cd1b6a9	umulcc %r6, -2391, %r6
+80d33f89	umulcc %r12, -119, %r0
+80d37573	umulcc %r13, -2701, %r0
+9ad377c3	umulcc %r13, -2109, %r13
+86d0f0bf	umulcc %r3, -3905, %r3
+80d13d79	umulcc %r4, -647, %r0
+80d17c3f	umulcc %r5, -961, %r0
+88d1367b	umulcc %r4, -2437, %r4
+96d2f9e7	umulcc %r11, -1561, %r11
+80d13eb7	umulcc %r4, -329, %r0
+80d2fdaf	umulcc %r11, -593, %r0
+96d2fdf6	umulcc %r11, -522, %r11
+96d2f7dd	umulcc %r11, -2083, %r11
+8cd0e002	umulcc %r3, 2, %r6
+96d1a040	umulcc %r6, 64, %r11
+8ed1a030	umulcc %r6, 48, %r7
+84d16011	umulcc %r5, 17, %r2
+8ed16444	umulcc %r5, 1092, %r7
+8cd1e007	umulcc %r7, 7, %r6
+8ed12238	umulcc %r4, 568, %r7
+8ad32223	umulcc %r12, 547, %r5
+88d1ea49	umulcc %r7, 2633, %r4
+8ed2e92a	umulcc %r11, 2346, %r7
+8ad1242f	umulcc %r4, 1071, %r5
+98d0e44f	umulcc %r3, 1103, %r12
+9ad0ad87	umulcc %r2, 3463, %r13
+8cd125bc	umulcc %r4, 1468, %r6
+88d2efa3	umulcc %r11, 4003, %r4
+88d32b9d	umulcc %r12, 2973, %r4
+9ad32de7	umulcc %r12, 3559, %r13
+9ad16fcd	umulcc %r5, 4045, %r13
+9ad2ecff	umulcc %r11, 3327, %r13
+8cd0aebf	umulcc %r2, 3775, %r6
+94d33000	umulcc %r12, -4096, %r10
+86d1f001	umulcc %r7, -4095, %r3
+8cd0b044	umulcc %r2, -4028, %r6
+96d33009	umulcc %r12, -4087, %r11
+98d1f809	umulcc %r7, -2039, %r12
+94d33882	umulcc %r12, -1918, %r10
+84d2b0a3	umulcc %r10, -3933, %r2
+8ed336a0	umulcc %r12, -2400, %r7
+96d1fd42	umulcc %r7, -702, %r11
+8cd13615	umulcc %r4, -2539, %r6
+9ad171d9	umulcc %r5, -3623, %r13
+96d370db	umulcc %r13, -3877, %r11
+9ad13f68	umulcc %r4, -152, %r13
+8cd37763	umulcc %r13, -2205, %r6
+86d0b6ee	umulcc %r2, -2322, %r3
+98d1f5f9	umulcc %r7, -2567, %r12
+84d2bedd	umulcc %r10, -291, %r2
+8ed37f76	umulcc %r13, -138, %r7
+8ad37fdd	umulcc %r13, -35, %r5
+8ed13ffa	umulcc %r4, -6, %r7
+80503bd5	umul %r0, -1067, %r0
+8050267e	umul %r0, 1662, %r0
+86503d53	umul %r0, -685, %r3
+8e502a23	umul %r0, 2595, %r7
+805328b1	umul %r12, 2225, %r0
+8051ff7d	umul %r7, -131, %r0
+9a536014	umul %r13, 20, %r13
+8c51a420	umul %r6, 1056, %r6
+8650e207	umul %r3, 519, %r3
+9a536198	umul %r13, 408, %r13
+8e51ea49	umul %r7, 2633, %r7
+8450aea0	umul %r2, 3744, %r2
+8e51e687	umul %r7, 1671, %r7
+9452a8d3	umul %r10, 2259, %r10
+9a536c5b	umul %r13, 3163, %r13
+9a536d9c	umul %r13, 3484, %r13
+9a53665f	umul %r13, 1631, %r13
+8c51a6ee	umul %r6, 1774, %r6
+8a516fad	umul %r5, 4013, %r5
+985330c0	umul %r12, -3904, %r12
+8c51b150	umul %r6, -3760, %r6
+88513015	umul %r4, -4075, %r4
+9a53780d	umul %r13, -2035, %r13
+8650f618	umul %r3, -2536, %r3
+9452b266	umul %r10, -3482, %r10
+9a537827	umul %r13, -2009, %r13
+9a537d45	umul %r13, -699, %r13
+98533cd2	umul %r12, -814, %r12
+8e51fbe8	umul %r7, -1048, %r7
+8450b76a	umul %r2, -2198, %r2
+8650fd76	umul %r3, -650, %r3
+885131fb	umul %r4, -3589, %r4
+8a5177db	umul %r5, -2085, %r5
+9a537e7f	umul %r13, -385, %r13
+8450b7fb	umul %r2, -2053, %r2
+9651e040	umul %r7, 64, %r11
+8e50a002	umul %r2, 2, %r7
+9850a028	umul %r2, 40, %r12
+84512404	umul %r4, 1028, %r2
+9852aa08	umul %r10, 2568, %r12
+8e50e910	umul %r3, 2320, %r7
+8c536a44	umul %r13, 2628, %r6
+8a51e432	umul %r7, 1074, %r5
+965364e2	umul %r13, 1250, %r11
+8a52e41d	umul %r11, 1053, %r5
+9a5168e9	umul %r5, 2281, %r13
+9451eb70	umul %r7, 2928, %r10
+88532bd1	umul %r12, 3025, %r4
+9a516753	umul %r5, 1875, %r13
+86516dad	umul %r5, 3501, %r3
+8a50ad2f	umul %r2, 3375, %r5
+8451eddd	umul %r7, 3549, %r2
+8a52ab6f	umul %r10, 2927, %r5
+8451ef9f	umul %r7, 3999, %r2
+9652affc	umul %r10, 4092, %r11
+9a512fdf	umul %r4, 4063, %r13
+8c50b001	umul %r2, -4095, %r6
+8e51b001	umul %r6, -4095, %r7
+8c52b014	umul %r10, -4076, %r6
+8a537084	umul %r13, -3964, %r5
+9651b882	umul %r6, -1918, %r11
+8850b203	umul %r2, -3581, %r4
+8a51b4a8	umul %r6, -2904, %r5
+8651f503	umul %r7, -2813, %r3
+8e52b4a6	umul %r10, -2906, %r7
+8c52b0e6	umul %r10, -3866, %r6
+96517dd0	umul %r5, -560, %r11
+9452fa95	umul %r11, -1387, %r10
+9851bb36	umul %r6, -1226, %r12
+9a52fa75	umul %r11, -1419, %r13
+9852ff3a	umul %r11, -198, %r12
+8a50fbc7	umul %r3, -1081, %r5
+8a50fb7d	umul %r3, -1155, %r5
+9651faef	umul %r7, -1297, %r11
+8c50fefd	umul %r3, -259, %r6
+9a513edf	umul %r4, -289, %r13
+94513ffe	umul %r4, -2, %r10
+9a52bfef	umul %r10, -17, %r13
+81800920	wr %r0, %r0, %y
+818007c0	wr %r0, %r0, %y
+81831760	wr %r12, %r0, %y
+8180c663	wr %r3, %r3, %y
+81835382	wr %r13, %r2, %y
+8181486b	wr %r5, %r11, %y
+81802195	wr %r0, 405, %y
+8180300d	wr %r0, -4083, %y
+81837160	wr %r13, -3744, %y
+81833a6b	wr %r12, -1429, %y
+843815a0	xnor %r0, %r0, %r2
+84380c00	xnor %r0, %r0, %r2
+8038cae3	xnor %r3, %r3, %r0
+80395c20	xnor %r5, %r0, %r0
+84380002	xnor %r0, %r2, %r2
+86380003	xnor %r0, %r3, %r3
+8638d900	xnor %r3, %r0, %r3
+88391e20	xnor %r4, %r0, %r4
+8a395825	xnor %r5, %r5, %r5
+8c399d46	xnor %r6, %r6, %r6
+80389c2b	xnor %r2, %r11, %r0
+8039c7ec	xnor %r7, %r12, %r0
+8c381bad	xnor %r0, %r13, %r6
+84380003	xnor %r0, %r3, %r2
+963a8000	xnor %r10, %r0, %r11
+863a9da0	xnor %r10, %r0, %r3
+9639d5c7	xnor %r7, %r7, %r11
+8e3b070c	xnor %r12, %r12, %r7
+8638dda7	xnor %r3, %r7, %r3
+8e39c16a	xnor %r7, %r10, %r7
+8a398985	xnor %r6, %r5, %r5
+96394c2b	xnor %r5, %r11, %r11
+9a3ac8a5	xnor %r11, %r5, %r13
+8c3890c4	xnor %r2, %r4, %r6
+94b80e60	xnorcc %r0, %r0, %r10
+80b81e82	xnorcc %r0, %r2, %r0
+96b8082b	xnorcc %r0, %r11, %r11
+8ab81765	xnorcc %r0, %r5, %r5
+80b99e80	xnorcc %r6, %r0, %r0
+80b9cea0	xnorcc %r7, %r0, %r0
+8ab94e60	xnorcc %r5, %r0, %r5
+86b8c463	xnorcc %r3, %r3, %r3
+9abb5ccd	xnorcc %r13, %r13, %r13
+96b8140c	xnorcc %r0, %r12, %r11
+84b81f23	xnorcc %r0, %r3, %r2
+86bb0f80	xnorcc %r12, %r0, %r3
+9ab8c220	xnorcc %r3, %r0, %r13
+88ba844a	xnorcc %r10, %r10, %r4
+84b9d827	xnorcc %r7, %r7, %r2
+80bb0586	xnorcc %r12, %r6, %r0
+80b9dd62	xnorcc %r7, %r2, %r0
+88b903a2	xnorcc %r4, %r2, %r4
+84b88b8a	xnorcc %r2, %r10, %r2
+86bac323	xnorcc %r11, %r3, %r3
+9ab942ed	xnorcc %r5, %r13, %r13
+8ab9d98c	xnorcc %r7, %r12, %r5
+8eb91a02	xnorcc %r4, %r2, %r7
+80b8306a	xnorcc %r0, -3990, %r0
+80b83ef0	xnorcc %r0, -272, %r0
+80b829a4	xnorcc %r0, 2468, %r0
+86b837fa	xnorcc %r0, -2054, %r3
+94b836ef	xnorcc %r0, -2321, %r10
+84b83fe1	xnorcc %r0, -31, %r2
+88b83d93	xnorcc %r0, -621, %r4
+96b83cb5	xnorcc %r0, -843, %r11
+9ab839e4	xnorcc %r0, -1564, %r13
+8ab83d64	xnorcc %r0, -668, %r5
+94b83705	xnorcc %r0, -2299, %r10
+8eb83c4c	xnorcc %r0, -948, %r7
+8cb83780	xnorcc %r0, -2176, %r6
+9ab83918	xnorcc %r0, -1768, %r13
+86b83418	xnorcc %r0, -3048, %r3
+8ab827f9	xnorcc %r0, 2041, %r5
+9ab820ff	xnorcc %r0, 255, %r13
+96b8287f	xnorcc %r0, 2175, %r11
+8cb82f89	xnorcc %r0, 3977, %r6
+8ab82a4f	xnorcc %r0, 2639, %r5
+98b82c8b	xnorcc %r0, 3211, %r12
+84b82e0e	xnorcc %r0, 3598, %r2
+94b8284a	xnorcc %r0, 2122, %r10
+88b82261	xnorcc %r0, 609, %r4
+9ab82814	xnorcc %r0, 2068, %r13
+8cb82034	xnorcc %r0, 52, %r6
+84b82104	xnorcc %r0, 260, %r2
+84b82808	xnorcc %r0, 2056, %r2
+80b97fcf	xnorcc %r5, -49, %r0
+94babfde	xnorcc %r10, -34, %r10
+80b977db	xnorcc %r5, -2085, %r0
+80b8f773	xnorcc %r3, -2189, %r0
+8cb9bf33	xnorcc %r6, -205, %r6
+86b8f27f	xnorcc %r3, -3457, %r3
+80bab3e5	xnorcc %r10, -3099, %r0
+80b8f93b	xnorcc %r3, -1733, %r0
+88b93c73	xnorcc %r4, -909, %r4
+8ab97d72	xnorcc %r5, -654, %r5
+80b939cc	xnorcc %r4, -1588, %r0
+80b9f197	xnorcc %r7, -3689, %r0
+86b8f61d	xnorcc %r3, -2531, %r3
+9abb70eb	xnorcc %r13, -3861, %r13
+80b8b323	xnorcc %r2, -3293, %r0
+80b9f718	xnorcc %r7, -2280, %r0
+96baf11d	xnorcc %r11, -3811, %r11
+84b8b456	xnorcc %r2, -2986, %r2
+80b9f90a	xnorcc %r7, -1782, %r0
+80bb78a8	xnorcc %r13, -1880, %r0
+84b8bca0	xnorcc %r2, -864, %r2
+96baf20b	xnorcc %r11, -3573, %r11
+80baf019	xnorcc %r11, -4071, %r0
+80b93830	xnorcc %r4, -2000, %r0
+86b8f818	xnorcc %r3, -2024, %r3
+86b8f052	xnorcc %r3, -4014, %r3
+94bab00a	xnorcc %r10, -4086, %r10
+80b8afe7	xnorcc %r2, 4071, %r0
+80b9ef3b	xnorcc %r7, 3899, %r0
+80baeee7	xnorcc %r11, 3815, %r0
+8cb9af3b	xnorcc %r6, 3899, %r6
+8ab967be	xnorcc %r5, 1982, %r5
+80b9aef8	xnorcc %r6, 3832, %r0
+80b92b37	xnorcc %r4, 2871, %r0
+9abb6f74	xnorcc %r13, 3956, %r13
+96baef4d	xnorcc %r11, 3917, %r11
+80bb213f	xnorcc %r12, 319, %r0
+80b8adc5	xnorcc %r2, 3525, %r0
+8eb9ec5d	xnorcc %r7, 3165, %r7
+9abb6ab6	xnorcc %r13, 2742, %r13
+80b9e4ab	xnorcc %r7, 1195, %r0
+80b9a574	xnorcc %r6, 1396, %r0
+8cb9a8b9	xnorcc %r6, 2233, %r6
+8eb9e4bc	xnorcc %r7, 1212, %r7
+80bae686	xnorcc %r11, 1670, %r0
+80b92570	xnorcc %r4, 1392, %r0
+8eb9e34c	xnorcc %r7, 844, %r7
+94baab06	xnorcc %r10, 2822, %r10
+80b8e350	xnorcc %r3, 848, %r0
+80bb2216	xnorcc %r12, 534, %r0
+88b9244a	xnorcc %r4, 1098, %r4
+98bb20ac	xnorcc %r12, 172, %r12
+9abb6222	xnorcc %r13, 546, %r13
+8ab96140	xnorcc %r5, 320, %r5
+8cbaf7fd	xnorcc %r11, -2051, %r6
+84b9bd7f	xnorcc %r6, -641, %r2
+88b8fc7f	xnorcc %r3, -897, %r4
+84bab3f7	xnorcc %r10, -3081, %r2
+9ab9bd5e	xnorcc %r6, -674, %r13
+8ab9f6e7	xnorcc %r7, -2329, %r5
+98baf8db	xnorcc %r11, -1829, %r12
+9ababda6	xnorcc %r10, -602, %r13
+9ab932b6	xnorcc %r4, -3402, %r13
+9abb35b1	xnorcc %r12, -2639, %r13
+96bab549	xnorcc %r10, -2743, %r11
+8ab9fda0	xnorcc %r7, -608, %r5
+96bb701e	xnorcc %r13, -4066, %r11
+86bab81a	xnorcc %r10, -2022, %r3
+94b8f214	xnorcc %r3, -3564, %r10
+94baf490	xnorcc %r11, -2928, %r10
+88baf030	xnorcc %r11, -4048, %r4
+9ab97402	xnorcc %r5, -3070, %r13
+96b8f080	xnorcc %r3, -3968, %r11
+86b9afee	xnorcc %r6, 4078, %r3
+94bb2ef7	xnorcc %r12, 3831, %r10
+94b96fb3	xnorcc %r5, 4019, %r10
+8eb96b5f	xnorcc %r5, 2911, %r7
+8eb8e1ef	xnorcc %r3, 495, %r7
+9ab965b7	xnorcc %r5, 1463, %r13
+8abae8bd	xnorcc %r11, 2237, %r5
+8cb8ef68	xnorcc %r3, 3944, %r6
+94bb6a53	xnorcc %r13, 2643, %r10
+98bb632b	xnorcc %r13, 811, %r12
+8abb6c83	xnorcc %r13, 3203, %r5
+94bb690b	xnorcc %r13, 2315, %r10
+96b8a01e	xnorcc %r2, 30, %r11
+8abaa017	xnorcc %r10, 23, %r5
+86b9ac10	xnorcc %r6, 3088, %r3
+8eb8e2a0	xnorcc %r3, 672, %r7
+9ab9a008	xnorcc %r6, 8, %r13
+96baa800	xnorcc %r10, 2048, %r11
+803831b7	xnor %r0, -3657, %r0
+80383481	xnor %r0, -2943, %r0
+88383bf9	xnor %r0, -1031, %r4
+86383d7b	xnor %r0, -645, %r3
+94383cfc	xnor %r0, -772, %r10
+8c383b9e	xnor %r0, -1122, %r6
+943835cd	xnor %r0, -2611, %r10
+98383979	xnor %r0, -1671, %r12
+983831f2	xnor %r0, -3598, %r12
+9a383596	xnor %r0, -2666, %r13
+86383147	xnor %r0, -3769, %r3
+9a383287	xnor %r0, -3449, %r13
+9438308b	xnor %r0, -3957, %r10
+9a383819	xnor %r0, -2023, %r13
+963823ef	xnor %r0, 1007, %r11
+84382cfd	xnor %r0, 3325, %r2
+8a3823b7	xnor %r0, 951, %r5
+8c38277c	xnor %r0, 1916, %r6
+9a382a76	xnor %r0, 2678, %r13
+98382af4	xnor %r0, 2804, %r12
+9838245e	xnor %r0, 1118, %r12
+9a382ac3	xnor %r0, 2755, %r13
+88382916	xnor %r0, 2326, %r4
+883824a3	xnor %r0, 1187, %r4
+94382c50	xnor %r0, 3152, %r10
+943821a1	xnor %r0, 417, %r10
+8a382460	xnor %r0, 1120, %r5
+8438280a	xnor %r0, 2058, %r2
+98382c00	xnor %r0, 3072, %r12
+84382042	xnor %r0, 66, %r2
+8038f85b	xnor %r3, -1957, %r0
+80393c4c	xnor %r4, -948, %r0
+88393dd7	xnor %r4, -553, %r4
+943ab3f5	xnor %r10, -3083, %r10
+8438b2fe	xnor %r2, -3330, %r2
+8c39b1dd	xnor %r6, -3619, %r6
+983b3c97	xnor %r12, -873, %r12
+883936b2	xnor %r4, -2382, %r4
+9a3b7ee0	xnor %r13, -288, %r13
+963af82b	xnor %r11, -2005, %r11
+88393495	xnor %r4, -2923, %r4
+8638f113	xnor %r3, -3821, %r3
+88393948	xnor %r4, -1720, %r4
+963af0e0	xnor %r11, -3872, %r11
+943ab092	xnor %r10, -3950, %r10
+983b2f77	xnor %r12, 3959, %r12
+88392f97	xnor %r4, 3991, %r4
+963aefc7	xnor %r11, 4039, %r11
+8438afc3	xnor %r2, 4035, %r2
+8a396bd5	xnor %r5, 3029, %r5
+943aaf68	xnor %r10, 3944, %r10
+9a3b65d6	xnor %r13, 1494, %r13
+8638eb62	xnor %r3, 2914, %r3
+8a396639	xnor %r5, 1593, %r5
+963aedc0	xnor %r11, 3520, %r11
+8e39e1e1	xnor %r7, 481, %r7
+8e39e423	xnor %r7, 1059, %r7
+8e39e886	xnor %r7, 2182, %r7
+8c39a805	xnor %r6, 2053, %r6
+8c39a201	xnor %r6, 513, %r6
+8e38bfdf	xnor %r2, -33, %r7
+8c3abfdf	xnor %r10, -33, %r6
+8a39bbbf	xnor %r6, -1089, %r5
+84397fd6	xnor %r5, -42, %r2
+9839fd7e	xnor %r7, -642, %r12
+8e38fbf8	xnor %r3, -1032, %r7
+863b7dad	xnor %r13, -595, %r3
+8c3b7d2d	xnor %r13, -723, %r6
+9638f9cb	xnor %r3, -1589, %r11
+9a3933e2	xnor %r4, -3102, %r13
+8a3af175	xnor %r11, -3723, %r5
+9639f354	xnor %r7, -3244, %r11
+883ab463	xnor %r10, -2973, %r4
+9638f3c0	xnor %r3, -3136, %r11
+843ab425	xnor %r10, -3035, %r2
+8c3b7c80	xnor %r13, -896, %r6
+9638f301	xnor %r3, -3327, %r11
+883af820	xnor %r11, -2016, %r4
+943af003	xnor %r11, -4093, %r10
+9439b008	xnor %r6, -4088, %r10
+943b2bff	xnor %r12, 3071, %r10
+8a39ab7f	xnor %r6, 2943, %r5
+8e3aafd7	xnor %r10, 4055, %r7
+8c3aadbe	xnor %r10, 3518, %r6
+8c39ebdd	xnor %r7, 3037, %r6
+94396ebc	xnor %r5, 3772, %r10
+8a3b6a5f	xnor %r13, 2655, %r5
+9639e7e1	xnor %r7, 2017, %r11
+883b619f	xnor %r13, 415, %r4
+86396a59	xnor %r5, 2649, %r3
+8c3b2d15	xnor %r12, 3349, %r6
+9a39a4e4	xnor %r6, 1252, %r13
+8c392325	xnor %r4, 805, %r6
+8a392c82	xnor %r4, 3202, %r5
+843b68c4	xnor %r13, 2244, %r2
+9439a481	xnor %r6, 1153, %r10
+883ae608	xnor %r11, 1544, %r4
+9638a202	xnor %r2, 514, %r11
+98396201	xnor %r5, 513, %r12
+9a392800	xnor %r4, 2048, %r13
+88396040	xnor %r5, 64, %r4
+8a181980	xor %r0, %r0, %r5
+88180800	xor %r0, %r0, %r4
+8018106d	xor %r0, %r13, %r0
+80195c40	xor %r5, %r0, %r0
+941a9320	xor %r10, %r0, %r10
+941a8da0	xor %r10, %r0, %r10
+8a1956e5	xor %r5, %r5, %r5
+941a876a	xor %r10, %r10, %r10
+80199aca	xor %r6, %r10, %r0
+801b1e02	xor %r12, %r2, %r0
+88181eca	xor %r0, %r10, %r4
+96181fac	xor %r0, %r12, %r11
+881b11e0	xor %r12, %r0, %r4
+861b5b00	xor %r13, %r0, %r3
+8e1b110c	xor %r12, %r12, %r7
+881a91ca	xor %r10, %r10, %r4
+941a82ad	xor %r10, %r13, %r10
+8c199067	xor %r6, %r7, %r6
+8a1984a5	xor %r6, %r5, %r5
+8c19d786	xor %r7, %r6, %r6
+8e1b0785	xor %r12, %r5, %r7
+981a9045	xor %r10, %r5, %r12
+8e980440	xorcc %r0, %r0, %r7
+88980480	xorcc %r0, %r0, %r4
+80981b64	xorcc %r0, %r4, %r0
+809800c2	xorcc %r0, %r2, %r0
+9a9812ad	xorcc %r0, %r13, %r13
+9a981fed	xorcc %r0, %r13, %r13
+80998840	xorcc %r6, %r0, %r0
+809ad580	xorcc %r11, %r0, %r0
+8698d660	xorcc %r3, %r0, %r3
+949a9f80	xorcc %r10, %r0, %r10
+84988a62	xorcc %r2, %r2, %r2
+84989742	xorcc %r2, %r2, %r2
+94981ba4	xorcc %r0, %r4, %r10
+8e981aaa	xorcc %r0, %r10, %r7
+9899d420	xorcc %r7, %r0, %r12
+9499dfe0	xorcc %r7, %r0, %r10
+889b488d	xorcc %r13, %r13, %r4
+8a99da27	xorcc %r7, %r7, %r5
+809b1c26	xorcc %r12, %r6, %r0
+80990243	xorcc %r4, %r3, %r0
+969ac945	xorcc %r11, %r5, %r11
+9a9b5f65	xorcc %r13, %r5, %r13
+9899864c	xorcc %r6, %r12, %r12
+869b0823	xorcc %r12, %r3, %r3
+989952c3	xorcc %r5, %r3, %r12
+869b0e66	xorcc %r12, %r6, %r3
+809826b8	xorcc %r0, 1720, %r0
+80982d21	xorcc %r0, 3361, %r0
+80983f94	xorcc %r0, -108, %r0
+809839f3	xorcc %r0, -1549, %r0
+96982061	xorcc %r0, 97, %r11
+8c98210c	xorcc %r0, 268, %r6
+98982843	xorcc %r0, 2115, %r12
+8698224c	xorcc %r0, 588, %r3
+88982d12	xorcc %r0, 3346, %r4
+949824b1	xorcc %r0, 1201, %r10
+94982333	xorcc %r0, 819, %r10
+849825aa	xorcc %r0, 1450, %r2
+88982637	xorcc %r0, 1591, %r4
+8a9823dc	xorcc %r0, 988, %r5
+849821fe	xorcc %r0, 510, %r2
+8e982be6	xorcc %r0, 3046, %r7
+989827bd	xorcc %r0, 1981, %r12
+96982eee	xorcc %r0, 3822, %r11
+84983448	xorcc %r0, -3000, %r2
+98983898	xorcc %r0, -1896, %r12
+84983d40	xorcc %r0, -704, %r2
+8a9831cc	xorcc %r0, -3636, %r5
+94983227	xorcc %r0, -3545, %r10
+949833b2	xorcc %r0, -3150, %r10
+949837c8	xorcc %r0, -2104, %r10
+889838af	xorcc %r0, -1873, %r4
+8a9839b5	xorcc %r0, -1611, %r5
+8a983c9f	xorcc %r0, -865, %r5
+84983ae7	xorcc %r0, -1305, %r2
+96983d77	xorcc %r0, -649, %r11
+989837de	xorcc %r0, -2082, %r12
+8099e403	xorcc %r7, 1027, %r0
+949aa098	xorcc %r10, 152, %r10
+969ae340	xorcc %r11, 832, %r11
+8099a1c1	xorcc %r6, 449, %r0
+809ae185	xorcc %r11, 389, %r0
+88992d01	xorcc %r4, 3329, %r4
+8a99601d	xorcc %r5, 29, %r5
+809924ca	xorcc %r4, 1226, %r0
+8098e645	xorcc %r3, 1605, %r0
+989b207c	xorcc %r12, 124, %r12
+969ae03e	xorcc %r11, 62, %r11
+809926a9	xorcc %r4, 1705, %r0
+8098af48	xorcc %r2, 3912, %r0
+969ae671	xorcc %r11, 1649, %r11
+989b224f	xorcc %r12, 591, %r12
+8099e4ed	xorcc %r7, 1261, %r0
+809b2a9e	xorcc %r12, 2718, %r0
+889928f9	xorcc %r4, 2297, %r4
+8a996d99	xorcc %r5, 3481, %r5
+8099a4fd	xorcc %r6, 1277, %r0
+809aae1f	xorcc %r10, 3615, %r0
+949aaef1	xorcc %r10, 3825, %r10
+949aaf69	xorcc %r10, 3945, %r10
+80996f67	xorcc %r5, 3943, %r0
+8098abfc	xorcc %r2, 3068, %r0
+88992f7a	xorcc %r4, 3962, %r4
+8498ae6f	xorcc %r2, 3695, %r2
+8a9967fd	xorcc %r5, 2045, %r5
+809ab022	xorcc %r10, -4062, %r0
+809b3032	xorcc %r12, -4046, %r0
+8099fa10	xorcc %r7, -1520, %r0
+989b3409	xorcc %r12, -3063, %r12
+809b3c03	xorcc %r12, -1021, %r0
+8098f02d	xorcc %r3, -4051, %r0
+8698fc06	xorcc %r3, -1018, %r3
+9a9b71a2	xorcc %r13, -3678, %r13
+80997658	xorcc %r5, -2472, %r0
+809ab50d	xorcc %r10, -2803, %r0
+889931a3	xorcc %r4, -3677, %r4
+8498b436	xorcc %r2, -3018, %r2
+809afe32	xorcc %r11, -462, %r0
+809b71e9	xorcc %r13, -3607, %r0
+8a99732d	xorcc %r5, -3283, %r5
+8a997e8a	xorcc %r5, -374, %r5
+809b3a57	xorcc %r12, -1449, %r0
+809937e4	xorcc %r4, -2076, %r0
+88993f0e	xorcc %r4, -242, %r4
+9a9b7bb2	xorcc %r13, -1102, %r13
+8099bbba	xorcc %r6, -1094, %r0
+8099f7d6	xorcc %r7, -2090, %r0
+969aff72	xorcc %r11, -142, %r11
+8e99ffd2	xorcc %r7, -46, %r7
+8098f76f	xorcc %r3, -2193, %r0
+80993f3e	xorcc %r4, -194, %r0
+989b3fd6	xorcc %r12, -42, %r12
+9a9b777d	xorcc %r13, -2179, %r13
+809b7fed	xorcc %r13, -19, %r0
+9a98a004	xorcc %r2, 4, %r13
+8a99e004	xorcc %r7, 4, %r5
+8698a840	xorcc %r2, 2112, %r3
+86992044	xorcc %r4, 68, %r3
+8499ea01	xorcc %r7, 2561, %r2
+9898a01a	xorcc %r2, 26, %r12
+8c98a02e	xorcc %r2, 46, %r6
+969960a9	xorcc %r5, 169, %r11
+8a9aea58	xorcc %r11, 2648, %r5
+8499a2d8	xorcc %r6, 728, %r2
+869b6752	xorcc %r13, 1874, %r3
+989aa99c	xorcc %r10, 2460, %r12
+86996d65	xorcc %r5, 3429, %r3
+8499ab99	xorcc %r6, 2969, %r2
+949b69ed	xorcc %r13, 2541, %r10
+9899aceb	xorcc %r6, 3307, %r12
+8e98ef5d	xorcc %r3, 3933, %r7
+8e9aa5fb	xorcc %r10, 1531, %r7
+9498efbe	xorcc %r3, 4030, %r10
+9898aebf	xorcc %r2, 3775, %r12
+949aeffe	xorcc %r11, 4094, %r10
+8c993800	xorcc %r4, -2048, %r6
+9698fa00	xorcc %r3, -1536, %r11
+96993880	xorcc %r4, -1920, %r11
+8a9b7881	xorcc %r13, -1919, %r5
+9a99f460	xorcc %r7, -2976, %r13
+8a993314	xorcc %r4, -3308, %r5
+8699f606	xorcc %r7, -2554, %r3
+8e9b3554	xorcc %r12, -2732, %r7
+9a993847	xorcc %r4, -1977, %r13
+9699b7c2	xorcc %r6, -2110, %r11
+949b3476	xorcc %r12, -2954, %r10
+8e9b75ae	xorcc %r13, -2642, %r7
+9a99bd2e	xorcc %r6, -722, %r13
+9a997e57	xorcc %r5, -425, %r13
+949935b7	xorcc %r4, -2633, %r10
+9698fbdb	xorcc %r3, -1061, %r11
+969abfb6	xorcc %r10, -74, %r11
+8698b5ff	xorcc %r2, -2561, %r3
+9a98bbf7	xorcc %r2, -1033, %r13
+9698fbff	xorcc %r3, -1025, %r11
+9498b7ff	xorcc %r2, -2049, %r10
+801824eb	xor %r0, 1259, %r0
+801834e1	xor %r0, -2847, %r0
+96182802	xor %r0, 2050, %r11
+8e182112	xor %r0, 274, %r7
+94182244	xor %r0, 580, %r10
+8c1820a9	xor %r0, 169, %r6
+98182815	xor %r0, 2069, %r12
+88182247	xor %r0, 583, %r4
+8418254a	xor %r0, 1354, %r2
+88182267	xor %r0, 615, %r4
+88182273	xor %r0, 627, %r4
+96182d69	xor %r0, 3433, %r11
+8a182d6a	xor %r0, 3434, %r5
+9a1826eb	xor %r0, 1771, %r13
+86182b67	xor %r0, 2919, %r3
+881826fb	xor %r0, 1787, %r4
+98182f3b	xor %r0, 3899, %r12
+8c183802	xor %r0, -2046, %r6
+98183842	xor %r0, -1982, %r12
+96183150	xor %r0, -3760, %r11
+96183541	xor %r0, -2751, %r11
+841834b0	xor %r0, -2896, %r2
+88183c31	xor %r0, -975, %r4
+96183e41	xor %r0, -447, %r11
+8a183725	xor %r0, -2267, %r5
+88183d46	xor %r0, -698, %r4
+88183da3	xor %r0, -605, %r4
+96183e47	xor %r0, -441, %r11
+9a183e6e	xor %r0, -402, %r13
+8e183af5	xor %r0, -1291, %r7
+8e183bee	xor %r0, -1042, %r7
+801ae611	xor %r11, 1553, %r0
+8019aaca	xor %r6, 2762, %r0
+8418a000	xor %r2, 0, %r2
+961ae000	xor %r11, 0, %r11
+8418a001	xor %r2, 1, %r2
+8418a010	xor %r2, 16, %r2
+8418a003	xor %r2, 3, %r2
+8418a009	xor %r2, 9, %r2
+8418a016	xor %r2, 22, %r2
+8418a023	xor %r2, 35, %r2
+8418a02e	xor %r2, 46, %r2
+8418a03a	xor %r2, 58, %r2
+8418a02f	xor %r2, 47, %r2
+8418a03b	xor %r2, 59, %r2
+9a1b69ca	xor %r13, 2506, %r13
+8618e03f	xor %r3, 63, %r3
+88192579	xor %r4, 1401, %r4
+9a1b60ef	xor %r13, 239, %r13
+981b27e3	xor %r12, 2019, %r12
+881922fd	xor %r4, 765, %r4
+9a1b67dd	xor %r13, 2013, %r13
+8e19eadf	xor %r7, 2783, %r7
+8c19b4a0	xor %r6, -2912, %r6
+8618f061	xor %r3, -3999, %r3
+941ab981	xor %r10, -1663, %r10
+8618fb08	xor %r3, -1272, %r3
+8418b455	xor %r2, -2987, %r2
+981b3709	xor %r12, -2295, %r12
+8c19b99a	xor %r6, -1638, %r6
+8a197371	xor %r5, -3215, %r5
+9a1b733b	xor %r13, -3269, %r13
+941ab9b5	xor %r10, -1611, %r10
+981b3775	xor %r12, -2187, %r12
+8a197f5c	xor %r5, -164, %r5
+8418e001	xor %r3, 1, %r2
+84192001	xor %r4, 1, %r2
+8618a024	xor %r2, 36, %r3
+8818a006	xor %r2, 6, %r4
+8c1b6482	xor %r13, 1154, %r6
+9618e128	xor %r3, 296, %r11
+861b214c	xor %r12, 332, %r3
+8c196283	xor %r5, 643, %r6
+9619a29a	xor %r6, 666, %r11
+84196651	xor %r5, 1617, %r2
+8e19ae46	xor %r6, 3654, %r7
+96196c6a	xor %r5, 3178, %r11
+94192bd1	xor %r4, 3025, %r10
+8a1ae36e	xor %r11, 878, %r5
+8819ab1f	xor %r6, 2847, %r4
+8e19ab7a	xor %r6, 2938, %r7
+861b6fae	xor %r13, 4014, %r3
+8c1aabfc	xor %r10, 3068, %r6
+8c19e6ff	xor %r7, 1791, %r6
+8e19adef	xor %r6, 3567, %r7
+961ab000	xor %r10, -4096, %r11
+941b3004	xor %r12, -4092, %r10
+9818f080	xor %r3, -3968, %r12
+881b3600	xor %r12, -2560, %r4
+861b3202	xor %r12, -3582, %r3
+9418f290	xor %r3, -3440, %r10
+941b7a20	xor %r13, -1504, %r10
+981abe10	xor %r10, -496, %r12
+8419b468	xor %r6, -2968, %r2
+8e18f0b5	xor %r3, -3915, %r7
+8e19303e	xor %r4, -4034, %r7
+861af1d5	xor %r11, -3627, %r3
+98197b26	xor %r5, -1242, %r12
+861977c9	xor %r5, -2103, %r3
+9619365d	xor %r4, -2467, %r11
+8c18bcd7	xor %r2, -809, %r6
+841af3f3	xor %r11, -3085, %r2
+8819f77e	xor %r7, -2178, %r4
+8818f7bb	xor %r3, -2117, %r4
+9819b3ff	xor %r6, -3073, %r12
+9a1b33ff	xor %r12, -3073, %r13
+8618bffe	xor %r2, -2, %r3
+8a193dff	xor %r4, -513, %r5
