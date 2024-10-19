@@ -300,7 +300,31 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   void wrasr(unsigned, U32) { throw 0; }
 
   bool InvalidWindow(int) { return false; }
-  void RotateWindow(int) { throw 0; }
+  void RotateWindow(int x) {
+    /* always acts as if the old window were saved in the stack */
+    /* it is a way to abstract away the complexity of windows which
+       mix both exception and kernel handler */
+    if (x < 0) { /* save operation */
+      U32 s = GetGPR(GPR::o6);
+      for (int i = 0; i < 16; i += 1) {
+	MemWrite( ASI::user_data, s + U32(4 * i),
+		  GetGPR( GPR::l0 + i ) );
+      }
+      for (int i = 0; i < 8; i += 1) {
+	SetGPR( GPR::i0 + i, GetGPR( GPR::o0 + i ) );
+	SetGPR( GPR::l0 + i, U32(0) );
+	SetGPR( GPR::o0 + i, U32(0) );
+      }
+    } else { /* restore operation */
+      U32 s = GetGPR(GPR::i6);
+      for (int i = 0; i < 8; i += 1) {
+	SetGPR( GPR::o0 + i, GetGPR( GPR::i0 + i ) );
+      }
+      for (int i = 0; i < 16; i += 1) {
+	SetGPR( GPR::l0 + i, MemRead( U32(), ASI::user_data, s + U32(4 * i) ) );
+      }
+    }
+  }
   unsigned nwindows() { throw 0; return 0; }
 
   bool IsSuper() const { return false; }
