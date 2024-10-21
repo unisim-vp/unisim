@@ -22,6 +22,7 @@ build_unisim:
       - coverage.txt
       - orphans.txt
       - unisim-*.tar.gz
+      - libieee1666-*.tar.gz
   script: |
     # Nodejs pkg-config file
     cat << EOF > /usr/lib/x86_64-linux-gnu/pkgconfig/nodejs.pc
@@ -91,6 +92,8 @@ build_unisim:
     mkdir build
     pushd build
     ../configure --prefix="$(realpath "$(pwd)/../install")"
+    make dist-gzip
+    mv libieee1666-*.tar.gz ../../../.
     make -j ${NPROC} V=0
     make install
     popd
@@ -231,13 +234,13 @@ build_unisim:
         dist_dir: $(pwd)/workspace/${NAME}/source
         enabled: true
         command: |
-          INSTALL_DIR="\$(pwd)/../../install/${FLAVOR}" &&
-          mkdir -p "\${INSTALL_DIR}" &&
-          ../../source/configure --prefix="\${INSTALL_DIR}"${OPTIONS} &&
-          make dist-gzip &&
-          mv ${NAME}-${VERSION}.tar.gz $(pwd)/. &&
-          make -j ${NPROC} V=0 &&
-          make install &&
+          INSTALL_DIR="\$(pwd)/../../install/${FLAVOR}"
+          mkdir -p "\${INSTALL_DIR}"
+          ../../source/configure --prefix="\${INSTALL_DIR}"${OPTIONS}
+          make dist-gzip
+          mv ${NAME}-${VERSION}.tar.gz $(pwd)/.
+          make -j ${NPROC} V=0
+          make install
           make clean
     EOF
           else
@@ -248,11 +251,11 @@ build_unisim:
         dist_dir: $(pwd)/workspace/${NAME}/source
         enabled: true
         command: |
-          INSTALL_DIR="\$(pwd)/../../install/${FLAVOR}" &&
-          mkdir -p "\${INSTALL_DIR}" &&
-          ../../source/configure --prefix="\${INSTALL_DIR}"${OPTIONS} &&
-          make -j ${NPROC} V=0 &&
-          make install &&
+          INSTALL_DIR="\$(pwd)/../../install/${FLAVOR}"
+          mkdir -p "\${INSTALL_DIR}"
+          ../../source/configure --prefix="\${INSTALL_DIR}"${OPTIONS}
+          make -j ${NPROC} V=0
+          make install
           make clean
     EOF
           fi
