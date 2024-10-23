@@ -256,6 +256,8 @@ namespace symbolic {
     typedef long double f80_t;
     typedef unisim::util::arithmetic::Integer<4,false> uint128_t;
     typedef unisim::util::arithmetic::Integer<4,true>  int128_t;
+    typedef unisim::util::arithmetic::Integer<8,false> uint256_t;
+    typedef unisim::util::arithmetic::Integer<8,true>  int256_t;
 
     static Expr  F32Zero = make_const    <float>(0);
     static Expr  F64Zero = make_const   <double>(0);
@@ -265,11 +267,13 @@ namespace symbolic {
     static Expr  U32Zero = make_const <uint32_t>(0);
     static Expr  U64Zero = make_const <uint64_t>(0);
     static Expr U128Zero = make_const (uint128_t(0));
+    static Expr U256Zero = make_const (uint256_t(0));
     static Expr   S8Zero = make_const   <int8_t>(0);
     static Expr  S16Zero = make_const  <int16_t>(0);
     static Expr  S32Zero = make_const  <int32_t>(0);
     static Expr  S64Zero = make_const  <int64_t>(0);
     static Expr S128Zero = make_const  (int128_t(0));
+    static Expr S256Zero = make_const  (int256_t(0));
     static Expr BOOLZero = make_const     <bool>(0);
 
     ExprNode const* node = 0;
@@ -290,6 +294,7 @@ namespace symbolic {
         case  32: node =  U32Zero.node; break;
         case  64: node =  U64Zero.node; break;
         case 128: node =  U128Zero.node; break;
+	case 256: node =  U256Zero.node; break;
         } break;
       case ValueType::SIGNED:
         switch (type.bitsize) {
@@ -299,6 +304,7 @@ namespace symbolic {
         case  32: node =  S32Zero.node; break;
         case  64: node =  S64Zero.node; break;
         case 128: node =  S128Zero.node; break;
+	case 256: node =  S256Zero.node; break;
         } break;
       case ValueType::BOOL:
         if (type.bitsize == 1)
