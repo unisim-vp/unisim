@@ -206,6 +206,7 @@ aarch64dba.cc aarch64dba.ml \
 ppc64dba.cc ppc64dba.ml \
 sparcdba.cc sparcdba.ml \
 amd64dba.cc amd64dba.ml \
+util.ml \
 unittest.ml \
 unittest.expected \
 "
@@ -395,14 +396,17 @@ cat <<EOF >> "${DEST_DIR}/dune"
 (subdir
  unisim/util
  (include_subdirs unqualified)
- (library
-  (package unisim_archisec)
-  (name util)
-  (foreign_stubs
-   (language cxx)
-   (names :standard)
-   (flags :standard -I../..)
-   (extra_deps ${UTIL_INCLUDES}))))
+ (foreign_library
+  (archive_name util)
+  (language cxx)
+  (names :standard)
+  (flags :standard -I../..)
+  (extra_deps ${UTIL_INCLUDES})))
+(library
+ (package unisim_archisec)
+ (name util)
+ (modules util)
+ (foreign_archives unisim/util/util))
 EOF
 
 echo >> "${DEST_DIR}/dune"
