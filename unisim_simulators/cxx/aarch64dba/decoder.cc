@@ -252,11 +252,17 @@ struct Processor
   //   =                      Control Transfer methods                     =
   //   =====================================================================
 
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
-  void BranchTo(U64 const& npc, branch_type_t bt)
+  enum branch_type_t { B_JMP = 0, B_COND, B_CALL, B_RET };
+  void BranchTo( U64 const& npc, branch_type_t bt ) { BranchTo(true, npc, branch_type, B_DIRECT); }
+  void BranchTo( U64 const& npc, branch_type_t bt, branch_mode_t bm ) { BranchTo(true, npc, bt, bm); }
+  void BranchTo( bool predicate, U64 const& npc, branch_type_t bt ) { BranchTo( predicate, npc, bt, B_DIRECT); }
+  void BranchTo( bool predicate, U64 const& npc, branch_type_t bt, branch_mode_t bm )
   {
-    next_instruction_address = npc;
-    branch_type = bt;
+    if(predicate)
+    {
+      next_instruction_address = npc;
+      branch_type = bt;
+    }
   }
 
   void CallSupervisor( uint32_t imm ) { throw 0; }

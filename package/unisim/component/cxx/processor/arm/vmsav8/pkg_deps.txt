@@ -6,6 +6,7 @@ std/iosfwd
 std/map
 std/set
 std/stdexcept
+std/unordered_map
 unisim/component/cxx/processor/arm
 unisim/component/cxx/processor/arm/isa/arm64
 unisim/component/cxx/processor/arm/regs64
@@ -15,6 +16,7 @@ unisim/kernel/logger
 unisim/kernel/variable
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly
+unisim/service/interfaces/instruction_collecting
 unisim/service/interfaces/linux_os
 unisim/service/interfaces/memory
 unisim/service/interfaces/memory_access_reporting

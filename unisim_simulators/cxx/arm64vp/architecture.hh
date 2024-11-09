@@ -644,10 +644,16 @@ struct AArch64
   }
 
   /** Set the next Program Counter */
-  void BranchTo( U64 addr, branch_type_t branch_type )
+  void BranchTo( U64 addr, branch_type_t branch_type ) { BranchTo(true, addr, branch_type, B_DIRECT); }
+  void BranchTo( U64 addr, branch_type_t branch_type, branch_mode_t branch_mode ) { BranchTo(true, addr, branch_type, branch_mode); }
+  void BranchTo( bool predicate, U64 addr, branch_type_t branch_type ) { BranchTo( predicate, addr, branch_type, B_DIRECT); }
+  void BranchTo( bool predicate, U64 addr, branch_type_t branch_type, branch_mode_t branch_mode )
   {
-    uint64_t target_addr = untaint(AddrTV(), addr);
-    next_insn_addr = BranchAddr( target_addr );
+    if(predicate)
+    {
+      uint64_t target_addr = untaint(AddrTV(), addr);
+      next_insn_addr = BranchAddr( target_addr );
+    }
   }
 
   bool Test( bool cond ) { return cond; }

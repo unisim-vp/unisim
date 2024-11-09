@@ -1523,8 +1523,7 @@ b_cond.execute = {
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::S64 S64;
   
-  if (CheckCondition(cpu, cond))
-    cpu.BranchTo( cpu.GetPC() + U64(S64(imm)), ARCH::B_JMP );
+  cpu.BranchTo( CheckCondition(cpu, cond), cpu.GetPC() + U64(S64(imm)), ARCH::B_COND );
 };
 
 /*
@@ -1895,7 +1894,7 @@ blr.execute = {
   U64 target_addr( cpu.GetGZR(rn) );
   U64 return_addr( cpu.GetNPC() );
   cpu.SetGZR(30, return_addr);
-  cpu.BranchTo( target_addr, ARCH::B_CALL );
+  cpu.BranchTo( target_addr, ARCH::B_CALL, ARCH::B_INDIRECT );
 };
 
 /*
@@ -1919,7 +1918,7 @@ br.execute = {
   typedef typename ARCH::U64 U64;
   
   U64 target_addr( cpu.GetGZR(rn) );
-  cpu.BranchTo( target_addr, ARCH::B_JMP );
+  cpu.BranchTo( target_addr, ARCH::B_JMP, ARCH::B_INDIRECT );
 };
 
 /*
@@ -1969,8 +1968,7 @@ cbnz_wlit.execute = {
   
   U32 op1( cpu.GetGZR(rt) );
   
-  if (cpu.Test( op1 != U32(0) ))
-    cpu.BranchTo( cpu.GetPC() + U64(S64(imm)), ARCH::B_JMP );
+  cpu.BranchTo( cpu.Test( op1 != U32(0) ), cpu.GetPC() + U64(S64(imm)), ARCH::B_COND );
 };
 
 op cbnz_xlit( 0b10110101[8] : shl<2> sext imm[19] : rt[5] );
@@ -1986,8 +1984,7 @@ cbnz_xlit.execute = {
   
   U64 op1( cpu.GetGZR(rt) );
   
-  if (cpu.Test( op1 != U64(0) ))
-    cpu.BranchTo( cpu.GetPC() + U64(S64(imm)), ARCH::B_JMP );
+  cpu.BranchTo( cpu.Test( op1 != U64(0) ), cpu.GetPC() + U64(S64(imm)), ARCH::B_COND );
 };
 
 /*
@@ -2016,8 +2013,7 @@ cbz_wlit.execute = {
   
   U32 op1( cpu.GetGZR(rt) );
   
-  if (cpu.Test( op1 == U32(0) ))
-    cpu.BranchTo( cpu.GetPC() + U64(S64(imm)), ARCH::B_JMP );
+  cpu.BranchTo( cpu.Test( op1 == U32(0) ), cpu.GetPC() + U64(S64(imm)), ARCH::B_COND );
 };
 
 op cbz_xlit( 0b10110100[8] : shl<2> sext imm[19] : rt[5] );
@@ -2033,8 +2029,7 @@ cbz_xlit.execute = {
   
   U64 op1( cpu.GetGZR(rt) );
   
-  if (cpu.Test( op1 == U64(0) ))
-    cpu.BranchTo( cpu.GetPC() + U64(S64(imm)), ARCH::B_JMP );
+  cpu.BranchTo( cpu.Test( op1 == U64(0) ), cpu.GetPC() + U64(S64(imm)), ARCH::B_COND );
 };
 
 /*
@@ -8300,8 +8295,7 @@ tb.execute = {
   typedef typename ARCH::S64 S64;
   
   U64 operand( cpu.GetGZR(rt) );
-  if (cpu.Test( ((operand >> pos) & U64(1)) == U64(bitval) ))
-    cpu.BranchTo( cpu.GetPC() + U64(S64(imm)), ARCH::B_JMP );
+  cpu.BranchTo( cpu.Test( ((operand >> pos) & U64(1)) == U64(bitval) ), cpu.GetPC() + U64(S64(imm)), ARCH::B_COND );
 };
 
 /*

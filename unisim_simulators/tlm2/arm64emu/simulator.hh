@@ -58,6 +58,7 @@
 #include <unisim/service/debug/profiler/profiler.hh>
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/service/analysis/cfg/cfg.hh>
 
 struct Simulator
   : public unisim::kernel::tlm2::Simulator
@@ -80,7 +81,17 @@ struct Simulator
     typedef sc_core::sc_time TIME_TYPE;
     static const unsigned int NUM_PROCESSORS = 1;
     /* gdb_server, inline_debugger */
-    static const unsigned int MAX_FRONT_ENDS = 3;
+    static const unsigned int MAX_FRONT_ENDS = 4;
+  };
+  
+  struct CFG_BUILDER_CONFIG
+  {
+    typedef uint64_t ADDRESS;
+    enum { MIN_OPCODE_SIZE = 4 };
+    enum { MAX_OPCODE_SIZE = 4 };
+    enum { CACHE_SIZE = 8 };
+    enum { DEBUG = 0 };
+    enum { CHECK = 0 };
   };
   
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
@@ -89,6 +100,7 @@ struct Simulator
   typedef unisim::service::debug::profiler::Profiler<uint64_t> PROFILER;
   typedef unisim::service::http_server::HttpServer HTTP_SERVER;
   typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+  typedef unisim::service::analysis::cfg::Builder<CFG_BUILDER_CONFIG> CFG_BUILDER;
   typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
   typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
   typedef unisim::kernel::logger::http::Writer LOGGER_HTTP_WRITER;
@@ -109,6 +121,7 @@ struct Simulator
   PROFILER*                                  profiler;
   HTTP_SERVER*                               http_server;
   INSTRUMENTER*                              instrumenter;
+  CFG_BUILDER*                               cfg_builder;
   LOGGER_CONSOLE_PRINTER*                    logger_console_printer;
   LOGGER_TEXT_FILE_WRITER*                   logger_text_file_writer;
   LOGGER_HTTP_WRITER*                        logger_http_writer;
@@ -121,6 +134,8 @@ struct Simulator
   unisim::kernel::variable::Parameter<bool>   param_enable_inline_debugger;
   bool                                       enable_profiler;
   unisim::kernel::variable::Parameter<bool>   param_enable_profiler;
+  bool                                       enable_cfg_builder;
+  unisim::kernel::variable::Parameter<bool>   param_enable_cfg_builder;
 };
 
 #endif /* SIMULATOR_HH_ */

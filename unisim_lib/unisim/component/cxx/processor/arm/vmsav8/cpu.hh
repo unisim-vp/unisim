@@ -48,6 +48,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
+#include <unisim/util/likely/likely.hh>
 #include <unisim/util/debug/simple_register_registry.hh>
 #if HAVE_SOFTFLOAT_EMU
 #include <unisim/util/floating_point/softfloat_emu/softfloat_emu.hh>
@@ -62,7 +63,9 @@
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
+#include <unisim/service/interfaces/instruction_collecting.hh>
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <stdexcept>
 #include <iosfwd>
@@ -123,6 +126,7 @@ struct CPU
   , public unisim::kernel::Client<unisim::service::interfaces::Memory<uint64_t> >
   , public unisim::kernel::Client<unisim::service::interfaces::LinuxOS>
   , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
+  , public unisim::kernel::Client<unisim::service::interfaces::InstructionCollecting<uint64_t> >
   , public unisim::kernel::Service<unisim::service::interfaces::Registers>
   , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t> >
   , public unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >
@@ -144,6 +148,13 @@ struct CPU
   typedef this_type DisasmState;
 
   using typename regs64::CPU<CPU_IMPL, ArchTypes>::branch_type_t;
+  using typename regs64::CPU<CPU_IMPL, ArchTypes>::branch_mode_t;
+  using          regs64::CPU<CPU_IMPL, ArchTypes>::B_JMP;
+  using          regs64::CPU<CPU_IMPL, ArchTypes>::B_COND;
+  using          regs64::CPU<CPU_IMPL, ArchTypes>::B_CALL;
+  using          regs64::CPU<CPU_IMPL, ArchTypes>::B_RET;
+  using          regs64::CPU<CPU_IMPL, ArchTypes>::B_DIRECT;
+  using          regs64::CPU<CPU_IMPL, ArchTypes>::B_INDIRECT;
   using          regs64::CPU<CPU_IMPL, ArchTypes>::gpr;
 
   /**********************************************************************
@@ -208,6 +219,7 @@ struct CPU
   unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<uint64_t> >                memory_import;
   unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
   unisim::kernel::ServiceImport<unisim::service::interfaces::LinuxOS>                          linux_os_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::InstructionCollecting<uint64_t> > instruction_collecting_import;
 
   /**********************************************************************
    ***                Functional methods and members                  ***
@@ -325,7 +337,15 @@ struct CPU
   //=====================================================================
 
   /** Set the next Program Counter */
-  void BranchTo( uint64_t addr, branch_type_t branch_type ) { next_insn_addr = addr; }
+  void BranchTo( U64 addr, branch_type_t branch_type ) { BranchTo(true, addr, branch_type, B_DIRECT); }
+  void BranchTo( U64 addr, branch_type_t branch_type, branch_mode_t branch_mode ) { BranchTo(true, addr, branch_type, branch_mode); }
+  void BranchTo( bool predicate, U64 addr, branch_type_t branch_type ) { BranchTo( predicate, addr, branch_type, B_DIRECT); }
+  void BranchTo( bool predicate, U64 addr, branch_type_t branch_type, branch_mode_t branch_mode )
+  {
+    if(unlikely(instruction_collecting_import)) CollectBranch(addr, next_insn_addr, branch_type, branch_mode);
+
+    if(predicate) next_insn_addr = addr;
+  }
   bool Test( bool cond ) { return cond; }
   void SoftwareBreakpoint( uint32_t imm );
   void CallSupervisor( uint32_t imm );
@@ -426,6 +446,11 @@ protected:
   U32 fpsr;
   uint64_t current_insn_addr, next_insn_addr;
 
+  unisim::service::interfaces::InstructionInfo<uint64_t> instr_info;
+
+  void CollectBranch(uint64_t target, uint64_t fallthrough, branch_type_t branch_type, branch_mode_t branch_mode);
+  void CollectInstruction(Operation *op);
+
   uint64_t TPIDRURW; //< User Read/Write Thread ID Register
 
   virtual void          ResetSystemRegisters();
@@ -439,14 +464,35 @@ protected:
 
   struct IPB
   {
-    static unsigned const LINE_SIZE = 32; //< IPB: Instruction prefetch buffer
-    uint8_t bytes[LINE_SIZE];             //< The instruction prefetch buffer
-    uint64_t base_address;                //< base address of IPB content (cache line size aligned if valid)
-    IPB() : bytes(), base_address( -1 ) {}
-    uint8_t* get(this_type& core, U64 address);
-  } ipb;
+    IPB();
+    ~IPB();
+    Operation *access(this_type& core, uint64_t addr);
+    void invalidate();
 
-  void ReadInsn( uint64_t address, isa::arm64::CodeType& insn );
+  private:
+    enum { LINE_SIZE = 64 }; //< IPB size
+    enum { BUCKETS = 2048 }; //< Number of buckets in hashtable
+    struct Block
+    {
+      Block();
+      Block(uint64_t base_address);
+
+      uint64_t base_address;         //< base address of block
+      Operation *ops[LINE_SIZE / 4]; //< Decoded instructions
+      Block *next;                   //< next block (next sequential block)
+      Block *remote;                 //< remote block (last branch target)
+      uint8_t  bytes[LINE_SIZE];     //< block content
+    };
+
+    typedef std::unordered_map<uint64_t, Block *> Blocks; // hashtable
+    typedef std::vector<Block *> FreeBlocks;
+
+    Block *current_block;            //< current block
+    Blocks blocks;                   //< block cache
+    FreeBlocks free_blocks;          //< free blocks ready for reuse
+
+    Block *allocate_block( uint64_t base_address );
+  } ipb;
 
   /** Decoder for the ARM32 instruction set. */
   Decoder decoder;

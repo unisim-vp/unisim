@@ -57,7 +57,8 @@ struct CPU
   //================ General Configuration and Constants ===============
 
   /// Control Transfer Type enumeration
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_ERET, B_DBG };
+  enum branch_type_t { B_JMP = 0, B_COND, B_CALL, B_RET, B_EXC, B_ERET, B_DBG };
+  enum branch_mode_t { B_DIRECT = 0, B_INDIRECT };
 
   /// Advanced SIMD layout
   struct VUConfig

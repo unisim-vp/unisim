@@ -1790,6 +1790,8 @@ unisim/service/Fault/BFI.tcc
 unisim/service/Fault/MFI.cc
 unisim/service/Fault/MFI.hh
 unisim/service/Fault/MFI.tcc
+unisim/service/analysis/cfg/cfg.hh
+unisim/service/analysis/cfg/cfg.tcc
 unisim/service/debug/debugger/debugger.hh
 unisim/service/debug/debugger/debugger.tcc
 unisim/service/debug/gdb_server/gdb_aarch64.xml
@@ -2000,6 +2002,7 @@ unisim/service/interfaces/debug_yielding.hh
 unisim/service/interfaces/disassembly.hh
 unisim/service/interfaces/hooking.hh
 unisim/service/interfaces/http_server.hh
+unisim/service/interfaces/instruction_collecting.hh
 unisim/service/interfaces/instruction_stats.hh
 unisim/service/interfaces/interface.hh
 unisim/service/interfaces/keyboard.hh
@@ -2233,6 +2236,9 @@ unisim/util/blob/segment32.cc
 unisim/util/blob/segment64.cc
 unisim/util/cache/cache.hh
 unisim/util/cache/testbench/testbench.cc
+unisim/util/cfg/cfg.cc
+unisim/util/cfg/cfg.hh
+unisim/util/cfg/cfg.tcc
 unisim/util/converter/convert.hh
 unisim/util/dbgate/client/client.cc
 unisim/util/dbgate/client/client.hh

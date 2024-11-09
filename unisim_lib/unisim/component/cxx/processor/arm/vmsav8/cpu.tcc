@@ -82,6 +82,7 @@ CPU<CPU_IMPL>::CPU(const char *name, Object *parent)
   , Client<unisim::service::interfaces::Memory<uint64_t> >(name, parent)
   , Client<unisim::service::interfaces::LinuxOS>(name, parent)
   , Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >(name, parent)
+  , Client<unisim::service::interfaces::InstructionCollecting<uint64_t> >(name, parent)
   , Service<unisim::service::interfaces::Registers>(name, parent)
   , Service<unisim::service::interfaces::Memory<uint64_t> >(name, parent)
   , Service<unisim::service::interfaces::Disassembly<uint64_t> >(name, parent)
@@ -100,9 +101,19 @@ CPU<CPU_IMPL>::CPU(const char *name, Object *parent)
   , memory_import("memory-import", this)
   , memory_access_reporting_import("memory-access-reporting-import", this)
   , linux_os_import("linux-os-import", this)
+  , instruction_collecting_import("instruction-collecting-import", this)
   /* privates */
   , logger(*this)
   , verbose(false)
+  , registers_registry()
+  , variable_register_pool()
+  , nzcv()
+  , fpcr()
+  , fpsr()
+  , current_insn_addr()
+  , next_insn_addr()
+  , instr_info()
+  , TPIDRURW()
   , ipb()
   , requires_memory_access_reporting(false)
   , requires_fetch_instruction_reporting(false)
@@ -222,6 +233,7 @@ CPU<CPU_IMPL>::CPU(const char *name, Object *parent)
 template <class CPU_IMPL>
 CPU<CPU_IMPL>::~CPU()
 {
+  for(auto var_reg : variable_register_pool) delete var_reg;
 }
 
 /** Get a register by its name.
@@ -443,12 +455,8 @@ CPU<CPU_IMPL>::StepInstruction()
     // known as synchronous aborts since their occurences are a direct
     // consequence of the instruction execution).
 
-    /* fetch instruction word from memory */
-    isa::arm64::CodeType insn;
-    ReadInsn(insn_addr, insn);
-
-    /* Decode current PC */
-    isa::arm64::Operation<CPU_IMPL>* op = decoder.Decode(insn_addr, insn);
+    /*** Fetch and decode instruction ***/
+    Operation* op = ipb.access(*this, insn_addr);
 
     this->next_insn_addr += 4;
 
@@ -459,6 +467,9 @@ CPU<CPU_IMPL>::StepInstruction()
     /* Execute instruction */
     asm volatile( "arm64_operation_execute:" );
     op->execute( *static_cast<CPU_IMPL*>(this) );
+
+    if(unlikely(instruction_collecting_import))
+      CollectInstruction(op);
 
     if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
       memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
@@ -513,46 +524,179 @@ CPU<CPU_IMPL>::StepInstruction()
 }
 
 template <class CPU_IMPL>
-uint8_t*
-CPU<CPU_IMPL>::IPB::get(CPU<CPU_IMPL>& core, U64 address)
+void
+CPU<CPU_IMPL>::CollectBranch(uint64_t target, uint64_t fallthrough, branch_type_t branch_type, branch_mode_t branch_mode)
 {
-  unsigned idx = address % LINE_SIZE;
-  uint64_t req_base_address = address & -LINE_SIZE;
-
-  if (base_address != req_base_address)
-    {
-      // No instruction cache present, just request the insn to the
-      // memory system.
-      if (not static_cast<CPU_IMPL&>(core).PhysicalReadMemory(req_base_address, &bytes[0], LINE_SIZE))
-        {
-          base_address = -1;
-          return 0;
-        }
-      base_address = req_base_address;
-
-      core.ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, LINE_SIZE);
-    }
-
-  return &bytes[idx];
-
+  switch(branch_type)
+  {
+    case B_JMP : instr_info.type = unisim::service::interfaces::InstructionInfoBase::JUMP;   break;
+    case B_COND: instr_info.type = unisim::service::interfaces::InstructionInfoBase::BRANCH; break;
+    case B_CALL: instr_info.type = unisim::service::interfaces::InstructionInfoBase::CALL;   break;
+    case B_RET : instr_info.type = unisim::service::interfaces::InstructionInfoBase::RETURN; break;
+    default: return; // ignore
+  }
+  instr_info.target = target;
+  instr_info.fallthrough = fallthrough;
+  instr_info.mode = (branch_mode == B_DIRECT) ? unisim::service::interfaces::InstructionInfoBase::DIRECT : unisim::service::interfaces::InstructionInfoBase::INDIRECT;
 }
-/** Reads ARM32 instructions from the memory system
- * This method allows the user to read instructions from the memory system,
- *   that is, it tries to read from the pertinent caches and if failed from
- *   the external memory system.
- *
- * @param address the address to read data from
- * @param val the buffer to fill with the read data
- */
+
 template <class CPU_IMPL>
 void
-CPU<CPU_IMPL>::ReadInsn( uint64_t address, isa::arm64::CodeType& insn )
+CPU<CPU_IMPL>::CollectInstruction(Operation *op)
 {
-  // ARMv8 instruction streams are always little endian
-  uint32_t word = 0;
-  for (uint8_t *beg = ipb.get(*this, address), *itr = &beg[4]; --itr >= beg;)
-    word = word << 8 | *itr;
-  insn = word;
+  uint32_t opcode_word = unisim::util::endian::LittleEndian2Host(op->GetEncoding());
+  instr_info.size = op->GetLength() / 8;
+  instr_info.opcode = (const uint8_t *) &opcode_word;
+  instr_info.addr = this->current_insn_addr;
+  instruction_collecting_import->CollectInstruction(instr_info);
+  instr_info.type = unisim::service::interfaces::InstructionInfoBase::STANDARD;
+}
+
+template <class CPU_IMPL>
+CPU<CPU_IMPL>::IPB::IPB()
+  : current_block(0)
+  , blocks()
+  , free_blocks()
+{
+  blocks.rehash(BUCKETS);
+}
+
+template <class CPU_IMPL>
+CPU<CPU_IMPL>::IPB::~IPB()
+{
+  invalidate();
+  for (auto free_block : free_blocks) delete free_block;
+}
+
+template <class CPU_IMPL>
+CPU<CPU_IMPL>::IPB::Block::Block()
+  : base_address( -1 )
+  , ops()
+  , next(0)
+  , remote(0)
+  , bytes()
+{
+}
+
+template <class CPU_IMPL>
+CPU<CPU_IMPL>::IPB::Block::Block(uint64_t _base_address)
+  : base_address( _base_address )
+  , ops()
+  , next(0)
+  , remote(0)
+  , bytes()
+{
+}
+
+template <class CPU_IMPL>
+typename CPU<CPU_IMPL>::Operation*
+CPU<CPU_IMPL>::IPB::access(CPU<CPU_IMPL>& core, uint64_t addr)
+{
+  uint64_t base_address = addr & -uint64_t(LINE_SIZE);
+  unsigned idx = addr % LINE_SIZE;
+  Block *block = current_block;
+  if (unlikely(not block or (block->base_address != base_address)))
+    {
+      // Current block mismatch
+      if (unlikely(not block or not block->next or (base_address != (block->base_address + LINE_SIZE))))
+        {
+          // Next block mismatch
+          if (unlikely(not block or not block->remote or (base_address != block->remote->base_address)))
+            {
+              // Remote block mismatch
+
+              // Retrieve block from cache
+              typename Blocks::iterator itr = blocks.find(base_address);
+
+              if (unlikely(itr == blocks.end()))
+                {
+                  // Block was never encountered
+
+                  // Allocate a new block
+                  block = allocate_block(base_address);
+
+                  // Fetch block
+                  if (not static_cast<CPU_IMPL&>(core).PhysicalReadMemory(base_address, &block->bytes[0], LINE_SIZE))
+                    { struct Bad {}; throw Bad(); }
+
+                  // Add block into cache
+                  blocks.emplace(base_address, block);
+                }
+              else
+                {
+                  // Block was already encountered
+                  block = (*itr).second;
+                }
+
+              // Chain current block to the retrieved block or newly allocated block
+              if (likely(current_block))
+                {
+                  if (likely(base_address == (current_block->base_address + LINE_SIZE)))
+                    {
+                      // blocks are contiguous
+                      if (unlikely(not current_block->next))
+                        current_block->next = block;
+                    }
+                  else
+                    {
+                      // blocks are far from each other
+                      if (unlikely(not current_block->remote))
+                        current_block->remote = block;
+                    }
+                }
+            }
+          else
+            {
+              // Remote block address match: go to the remote block
+              block = block->remote;
+            }
+        }
+      else
+        {
+          // Next block address match: go to the next block
+          block = block->next;
+        }
+
+      // Update the current block
+      current_block = block;
+    }
+
+  Operation *& op = block->ops[idx / 4];
+  return op ? op : (op = core.decoder.Decode( addr, unisim::util::endian::LittleEndian2Host(*(uint32_t *) &block->bytes[idx]) ));
+}
+
+template <class CPU_IMPL>
+typename CPU<CPU_IMPL>::IPB::Block *
+CPU<CPU_IMPL>::IPB::allocate_block( uint64_t base_address )
+{
+  Block *block;
+  if (likely(free_blocks.size()))
+    {
+      // There are some free blocks
+      block = free_blocks.back();
+      free_blocks.pop_back();
+      block->base_address = base_address;
+      block->next = block->remote = 0;
+      ::memset(block->ops, 0, sizeof(block->ops));
+    }
+  else
+    {
+      // There are no free block: allocate a new one
+      block = new Block(base_address);
+    }
+  return block;
+}
+
+template <class CPU_IMPL>
+void CPU<CPU_IMPL>::IPB::invalidate()
+{
+  current_block = 0;
+  for (typename Blocks::iterator itr = blocks.begin(); itr != blocks.end(); ++itr)
+    {
+      Block *block = (*itr).second;
+      free_blocks.push_back(block);
+    }
+  blocks.clear();
 }
 
 /** Signal an undefined instruction with an associated instruction

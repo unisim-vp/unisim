@@ -244,14 +244,23 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 					break;
 				}
 				
+				if(!stream.good())
+				{
+					token_loc = loc;
+					token = TOK_IO_ERROR;
+					break;
+				}
+
 				if(stream.get(c).eof())
 				{
 					eof = true;
 					token_loc = loc;
 					token = TOK_EOF;
+					stream.clear(stream.rdstate() & ~(std::ios_base::eofbit | std::ios_base::failbit)); // clear eof and fail
 					break;
 				}
-				if(stream.bad())
+				
+				if(!stream.good())
 				{
 					token_loc = loc;
 					token = TOK_IO_ERROR;
@@ -860,9 +869,8 @@ void JSON_Lexer<VISITOR>::Error(std::istream& stream, VISITOR& visitor, const st
 	{
 		char c;
 		
-		if(stream.get(c).eof()) break;
-		
-		if(stream.bad()) break;
+		stream.get(c);
+		if(!stream.good()) break;
 		
 		if(c == '\n') break;
 		

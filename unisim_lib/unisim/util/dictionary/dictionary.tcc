@@ -198,7 +198,13 @@ DictionaryEntry<TYPE> *Dictionary<TYPE>::FindDictionaryEntry(std::istream& strea
 		DictionaryEntry<TYPE> *entry = root;
 		
 		char c = 0;
-		if(stream.get(c).eof() || stream.fail()) return 0;
+		if(stream.get(c).eof() || stream.fail())
+		{
+			stream.clear(stream.rdstate() & ~(std::ios_base::eofbit | std::ios_base::failbit)); // clear eof and fail
+			return 0;
+		}
+		if(stream.bad()) return 0;
+		
 		if(debug)
 		{
 			(*debug_info_stream) << "get '" << c << "'" << std::endl;
@@ -220,12 +226,7 @@ DictionaryEntry<TYPE> *Dictionary<TYPE>::FindDictionaryEntry(std::istream& strea
 			{
 				last_match = entry;
 				
-				if(stream.eof()) // relative to fetch of next_c
-				{
-					break;
-				}
-				
-				if(stream.fail()) break; // relative to fetch of next_c
+				if(!stream.good()) break; // relative to fetch of next_c
 				
 				DictionaryEntry<TYPE> *right_entry = entry->right;
 				
@@ -252,14 +253,19 @@ DictionaryEntry<TYPE> *Dictionary<TYPE>::FindDictionaryEntry(std::istream& strea
 		}
 		while(entry);
 
-		if(!stream.fail() && !stream.eof())
+		if(stream.good())
 		{
 			if(debug)
 			{
 				(*debug_info_stream) << "putback '" << next_c << "'" << std::endl;
 			}
 			stream.putback(next_c);
-			if(stream.fail()) return 0;
+			if(!stream.good()) return 0;
+		}
+		
+		if(stream.eof() || stream.fail())
+		{
+			stream.clear(stream.rdstate() & ~(std::ios_base::eofbit | std::ios_base::failbit)); // clear eof and fail
 		}
 		
 		if(last_match)

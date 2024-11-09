@@ -108,7 +108,16 @@ struct Runner
   U64 GetPC() { return current_insn_addr; }
   U64 GetNPC() { return next_insn_addr; }
 
-  void BranchTo( U64 addr, branch_type_t branch_type ) { next_insn_addr = addr; }
+  void BranchTo( U64 addr, branch_type_t branch_type ) { BranchTo(true, addr, branch_type, B_DIRECT); }
+  void BranchTo( U64 addr, branch_type_t branch_type, branch_mode_t branch_mode ) { BranchTo(true, addr, branch_type, branch_mode); }
+  void BranchTo( bool predicate, U64 addr, branch_type_t branch_type ) { BranchTo( predicate, addr, branch_type, B_DIRECT); }
+  void BranchTo( bool predicate, U64 addr, branch_type_t branch_type, branch_mode_t branch_mode )
+  {
+    if(predicate)
+    {
+      next_insn_addr = addr;
+    }
+  }
   bool Test( bool cond ) { return cond; }
 
   void SoftwareBreakpoint( uint32_t imm ) { dont("system"); }

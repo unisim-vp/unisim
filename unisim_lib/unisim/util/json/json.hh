@@ -297,6 +297,7 @@ struct JSON_Number : JSON_Value
 	virtual operator unsigned long long () const = 0;
 	virtual operator float () const = 0;
 	virtual operator double () const = 0;
+	virtual JSON_Number& operator = (float v) = 0;
 	virtual JSON_Number& operator = (double v) = 0;
 protected:
 	JSON_Number(JSON_ValueType type) : JSON_Value(type) {}
@@ -308,8 +309,19 @@ struct IntValue
 {
 	IntValue() : sign(false), abs_value(0) {}
 	IntValue(const IntValue& o) : sign(o.sign), abs_value(o.abs_value) {}
-	IntValue(int64_t v) : sign(v < 0), abs_value((v >= 0) ? v : -v) {}
-	IntValue(uint64_t v) : sign(false), abs_value(v) {}
+	IntValue(char v) { FromScalar<char>(v); }
+	IntValue(signed char v) { FromScalar<signed char>(v); }
+	IntValue(short v) { FromScalar<short>(v); }
+	IntValue(int v) { FromScalar<int>(v); }
+	IntValue(long v) { FromScalar<long>(v); }
+	IntValue(long long v) { FromScalar<long long>(v); }
+	IntValue(unsigned char v) { FromScalar<unsigned char>(v); }
+	IntValue(unsigned short v) { FromScalar<unsigned short>(v); }
+	IntValue(unsigned int v) { FromScalar<unsigned int>(v); }
+	IntValue(unsigned long v) { FromScalar<unsigned long>(v); }
+	IntValue(unsigned long long v) { FromScalar<unsigned long long>(v); }
+	IntValue(float v) { FromScalar<float>(v); }
+	IntValue(double v) { FromScalar<double>(v); }
 	IntValue(bool _sign, uint64_t _abs_value) : sign(_sign), abs_value(_abs_value) {}
 	
 	bool IsSigned() const { return sign; }
@@ -327,15 +339,26 @@ struct IntValue
 	operator unsigned long long () const { return ToScalar<unsigned long long>(); }
 	operator float () const { return ToScalar<float>(); }
 	operator double () const { return ToScalar<double>(); }
-	
-	IntValue& operator = (int64_t v) { sign = v < 0; abs_value = (v >= 0) ? v : -v; return *this; }
-	IntValue& operator = (uint64_t v) { sign = false; abs_value = v; return *this; }
-	IntValue& operator = (double v) { sign = v < 0.0; abs_value = (v >= 0.0) ? v : -v; return *this; }
+
+	IntValue& operator = (char v) { FromScalar<char>(v); return *this; }
+	IntValue& operator = (signed char v) { FromScalar<signed char>(v); return *this; }
+	IntValue& operator = (short v) { FromScalar<short>(v); return *this; }
+	IntValue& operator = (int v) { FromScalar<int>(v); return *this; }
+	IntValue& operator = (long v) { FromScalar<long>(v); return *this; }
+	IntValue& operator = (long long v) { FromScalar<long long>(v); return *this; }
+	IntValue& operator = (unsigned char v) { FromScalar<unsigned char>(v); return *this; }
+	IntValue& operator = (unsigned short v) { FromScalar<unsigned short>(v); return *this; }
+	IntValue& operator = (unsigned int v) { FromScalar<unsigned int>(v); return *this; }
+	IntValue& operator = (unsigned long v) { FromScalar<unsigned long>(v); return *this; }
+	IntValue& operator = (unsigned long long v) { FromScalar<unsigned long long>(v); return *this; }
+	IntValue& operator = (float v) { FromScalar<float>(v); return *this; }
+	IntValue& operator = (double v) { FromScalar<double>(v); return *this; }
 	IntValue& operator = (const IntValue& o) { sign = o.sign; abs_value = o.abs_value; return *this; }
 private:
 	bool sign;
 	uint64_t abs_value;
 	
+	template <typename T> void FromScalar(T v) { sign = v < 0; abs_value = (v >= 0) ? v : -v; }
 	template <typename T> T ToScalar() const { return sign ? -T(abs_value) : T(abs_value); }
 };
 
@@ -344,8 +367,17 @@ inline std::ostream& operator << (std::ostream& os, const IntValue& int_value) {
 // JSON integer number
 struct JSON_Integer : JSON_Number
 {
-	JSON_Integer(int64_t v) : JSON_Number(JSON_INT), int_value(v) {}
-	JSON_Integer(uint64_t v) : JSON_Number(JSON_INT), int_value(v) {}
+	JSON_Integer(char v) : JSON_Number(JSON_INT), int_value(v) {}
+	JSON_Integer(signed char v) : JSON_Number(JSON_INT), int_value(v) {}
+	JSON_Integer(short v) : JSON_Number(JSON_INT), int_value(v) {}
+	JSON_Integer(int v) : JSON_Number(JSON_INT), int_value(v) {}
+	JSON_Integer(long v) : JSON_Number(JSON_INT), int_value(v) {}
+	JSON_Integer(long long v) : JSON_Number(JSON_INT), int_value(v) {}
+	JSON_Integer(unsigned char v) : JSON_Number(JSON_INT), int_value(v) {}
+	JSON_Integer(unsigned short v) : JSON_Number(JSON_INT), int_value(v) {}
+	JSON_Integer(unsigned int v) : JSON_Number(JSON_INT), int_value(v) {}
+	JSON_Integer(unsigned long v) : JSON_Number(JSON_INT), int_value(v) {}
+	JSON_Integer(unsigned long long v) : JSON_Number(JSON_INT), int_value(v) {}
 	JSON_Integer(const IntValue& _int_value) : JSON_Number(JSON_INT), int_value(_int_value) {}
 	JSON_Integer(const IntValue& _int_value, const Location& _loc) : JSON_Number(JSON_INT, _loc), int_value(_int_value) {}
 	virtual JSON_Value *Clone() const { return new JSON_Integer(int_value, GetLocation()); }
@@ -362,9 +394,19 @@ struct JSON_Integer : JSON_Number
 	virtual operator unsigned long long () const { return int_value; }
 	virtual operator float () const { return int_value; }
 	virtual operator double () const { return int_value; }
+	virtual JSON_Number& operator = (float v) { int_value = v; return *this; }
 	virtual JSON_Number& operator = (double v) { int_value = v; return *this; }
-	JSON_Integer& operator = (int64_t v) { int_value = v; return *this; }
-	JSON_Integer& operator = (uint64_t v) { int_value = v; return *this; }
+	JSON_Integer& operator = (char v) { int_value = v; return *this; }
+	JSON_Integer& operator = (signed char v) { int_value = v; return *this; }
+	JSON_Integer& operator = (short v) { int_value = v; return *this; }
+	JSON_Integer& operator = (int v) { int_value = v; return *this; }
+	JSON_Integer& operator = (long v) { int_value = v; return *this; }
+	JSON_Integer& operator = (long long v) { int_value = v; return *this; }
+	JSON_Integer& operator = (unsigned char v) { int_value = v; return *this; }
+	JSON_Integer& operator = (unsigned short v) { int_value = v; return *this; }
+	JSON_Integer& operator = (unsigned int v) { int_value = v; return *this; }
+	JSON_Integer& operator = (unsigned long v) { int_value = v; return *this; }
+	JSON_Integer& operator = (unsigned long long v) { int_value = v; return *this; }
 protected:
 	friend std::ostream& operator << (std::ostream& os, const JSON_Integer& value);
 	IntValue int_value;
@@ -375,6 +417,7 @@ inline std::ostream& operator << (std::ostream& os, const JSON_Integer& value) {
 // JSON floating-point number
 struct JSON_Float : JSON_Number
 {
+	JSON_Float(float v) : JSON_Number(JSON_FLOAT), value(v) {}
 	JSON_Float(double v) : JSON_Number(JSON_FLOAT), value(v) {}
 	JSON_Float(double v, const Location& _loc) : JSON_Number(JSON_FLOAT, _loc), value(v) {}
 	virtual JSON_Value *Clone() const { return new JSON_Float(value, GetLocation()); }
@@ -391,10 +434,12 @@ struct JSON_Float : JSON_Number
 	virtual operator unsigned long long () const { return ToScalar<unsigned long long>(); }
 	virtual operator float () const { return ToScalar<float>(); }
 	virtual operator double () const { return ToScalar<double>(); }
+	virtual JSON_Number& operator = (float v) { value = v; return *this; }
 	virtual JSON_Number& operator = (double v) { value = v; return *this; }
 protected:
 	double value;
 private:
+	template <typename T> void FromScalar(T v) { value = v; }
 	template <typename T> T ToScalar() const { return value; }
 };
 
@@ -630,6 +675,7 @@ struct JSON_MemberRef
 	void AssertIsBoolean() const { member->GetValue().AssertIsBoolean(); }
 	void AssertIsNull() const { member->GetValue().AssertIsNull(); }
 	
+	const JSON_Value& AsValue() const { return member->GetValue(); }
 	const JSON_String& AsString() const { return member->GetValue().AsString(); }
 	const JSON_Number& AsNumber() const { return member->GetValue().AsNumber(); }
 	const JSON_Integer& AsInteger() const { return member->GetValue().AsInteger(); }
@@ -639,6 +685,7 @@ struct JSON_MemberRef
 	const JSON_Boolean& AsBoolean() const { return member->GetValue().AsBoolean(); }
 	const JSON_Null& AsNull() const { return member->GetValue().AsNull(); }
 
+	JSON_Value& AsValue() { return member->GetValue(); }
 	JSON_String& AsString() { return member->GetValue().AsString(); }
 	JSON_Number& AsNumber() { return member->GetValue().AsNumber(); }
 	JSON_Integer& AsInteger() { return member->GetValue().AsInteger(); }
@@ -701,6 +748,7 @@ struct JSON_MemberConstRef
 	void AssertIsBoolean() const { member->GetValue().AssertIsBoolean(); }
 	void AssertIsNull() const { member->GetValue().AssertIsNull(); }
 	
+	const JSON_Value& AsValue() const { return member->GetValue(); }
 	const JSON_String& AsString() const { return member->GetValue().AsString(); }
 	const JSON_Number& AsNumber() const { return member->GetValue().AsNumber(); }
 	const JSON_Integer& AsInteger() const { return member->GetValue().AsInteger(); }
@@ -730,6 +778,7 @@ struct JSON_Object : JSON_Value
 	JSON_Object& Add(JSON_Member *member);
 	const Members& GetMembers() const { return members; }
 	bool HasProperty(const char *member_name) const { return FindMember(member_name) != 0; }
+	bool HasProperty(const std::string& member_name) const { return FindMember(member_name.c_str()) != 0; }
 	KeysType Keys() const;
 	JSON_MemberRef operator [] (const char *member_name);
 	JSON_MemberConstRef operator [] (const char *member_name) const;
