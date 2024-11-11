@@ -58,8 +58,7 @@ private:
 	sc_process_handle process_handle;
 
 	sc_sensitive();
-    ~sc_sensitive();
-	
+	~sc_sensitive();
 };
 
 } // end of namespace sc_core

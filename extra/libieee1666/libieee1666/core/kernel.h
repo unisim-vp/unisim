@@ -319,7 +319,8 @@ private:
 	
 	static sc_kernel *kernel;
 
-	sc_object *find_object(sc_object *parent_object, const char* name);	
+	sc_object *find_object(sc_object *parent_object, const char* name);
+	inline void check_wait() ALWAYS_INLINE;
 };
 
 void sc_start();
@@ -426,7 +427,7 @@ inline sc_timed_kernel_event *sc_kernel::notify(sc_event *e, const sc_time& t)
 
 inline void sc_kernel::wait()
 {
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	check_wait();
 	if(__LIBIEEE1666_UNLIKELY__(debug))
 	{
 		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait()" << std::endl;
@@ -436,7 +437,7 @@ inline void sc_kernel::wait()
 
 inline void sc_kernel::wait(int n)
 {
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	check_wait();
 	if(__LIBIEEE1666_UNLIKELY__(debug))
 	{
 		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(" << n << ")" << std::endl;
@@ -446,7 +447,7 @@ inline void sc_kernel::wait(int n)
 
 inline void sc_kernel::wait(const sc_event& e)
 {
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	check_wait();
 	if(__LIBIEEE1666_UNLIKELY__(debug))
 	{
 		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(" << e.name() << ")" << std::endl;
@@ -456,7 +457,7 @@ inline void sc_kernel::wait(const sc_event& e)
 
 inline void sc_kernel::wait(const sc_event_and_list& el)
 {
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	check_wait();
 	if(__LIBIEEE1666_UNLIKELY__(debug))
 	{
 		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(sc_event_and_list)" << std::endl;
@@ -466,7 +467,7 @@ inline void sc_kernel::wait(const sc_event_and_list& el)
 
 inline void sc_kernel::wait(const sc_event_or_list& el)
 {
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	check_wait();
 	if(__LIBIEEE1666_UNLIKELY__(debug))
 	{
 		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(sc_event_or_list)" << std::endl;
@@ -476,7 +477,7 @@ inline void sc_kernel::wait(const sc_event_or_list& el)
 
 inline void sc_kernel::wait(const sc_time& t)
 {
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	check_wait();
 	if(__LIBIEEE1666_UNLIKELY__(debug))
 	{
 		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(" << t << ")" << std::endl;
@@ -486,7 +487,7 @@ inline void sc_kernel::wait(const sc_time& t)
 
 inline void sc_kernel::wait(const sc_time& t, const sc_event& e)
 {
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	check_wait();
 	if(__LIBIEEE1666_UNLIKELY__(debug))
 	{
 		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(" << t << ", " << e.name() << ")" << std::endl;
@@ -496,7 +497,7 @@ inline void sc_kernel::wait(const sc_time& t, const sc_event& e)
 
 inline void sc_kernel::wait(const sc_time& t, const sc_event_and_list& el)
 {
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	check_wait();
 	if(__LIBIEEE1666_UNLIKELY__(debug))
 	{
 		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(" << t << ", sc_event_and_list)" << std::endl;
@@ -506,12 +507,20 @@ inline void sc_kernel::wait(const sc_time& t, const sc_event_and_list& el)
 
 inline void sc_kernel::wait(const sc_time& t, const sc_event_or_list& el)
 {
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	check_wait();
 	if(__LIBIEEE1666_UNLIKELY__(debug))
 	{
 		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(" << t << ", sc_event_or_list)" << std::endl;
 	}
 	current_thread_process->wait(t, el);
+}
+
+inline void sc_kernel::check_wait()
+{
+	if(!current_thread_process)
+	{
+		throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	}
 }
 
 inline void sc_kernel::next_trigger()

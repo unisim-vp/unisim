@@ -11,6 +11,7 @@ sc_pthread_coroutine::sc_pthread_coroutine()
 	, thrd()
 	, cond(false)
 	, condm(false)
+	, stack_size(0)
 	, fn(0)
 	, arg(0)
 {
@@ -35,6 +36,7 @@ sc_pthread_coroutine::sc_pthread_coroutine(std::size_t _stack_size, void (*_fn)(
 
 	pthread_attr_t thrd_attr;
 	pthread_attr_init(&thrd_attr);
+	pthread_attr_setdetachstate(&thrd_attr, PTHREAD_CREATE_DETACHED);
 	
 	if(stack_size)
 	{
@@ -110,7 +112,7 @@ void sc_pthread_coroutine::yield(sc_coroutine *next_coroutine)
 void sc_pthread_coroutine::abort(sc_coroutine *next_coroutine)
 {
 	sc_pthread_coroutine *next_pthread_coroutine = static_cast<sc_pthread_coroutine *>(next_coroutine);
-	
+
 	pthread_mutex_lock(&next_pthread_coroutine->thrd_mutex);
 	next_pthread_coroutine->cond = true;
 	pthread_cond_signal(&next_pthread_coroutine->thrd_cond);

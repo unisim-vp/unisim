@@ -264,13 +264,6 @@ sc_kernel::~sc_kernel()
 	runnable_thread_processes.clear();
 	runnable_method_processes.clear();
 	
-	for(process_handle_table_t::iterator it = process_handle_table.begin(); it != process_handle_table.end(); ++it)
-	{
-		sc_process_handle process_handle = *it;
-			
-		process_handle.kill();
-	}
-	
 	process_handle_table.clear();
 	
 	for(delta_events_t::iterator it = delta_events.begin(); it != delta_events.end(); ++it)
@@ -293,13 +286,8 @@ sc_kernel::~sc_kernel()
 		}
 		while(++it != schedule.end());
 	}
-
-	for(top_level_events_t::iterator it = top_level_events.begin(); it != top_level_events.end(); ++it)
-	{
-		sc_event *top_level_event = *it;
-		unregister_event(top_level_event);
-		top_level_event->kernel = 0;
-	}
+	
+	top_level_events.clear();
 	
 	for(trace_files_t::iterator it = trace_files.begin(); it != trace_files.end(); ++it)
 	{
