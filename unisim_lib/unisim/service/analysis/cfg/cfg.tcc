@@ -37,6 +37,7 @@
 
 #include <unisim/service/analysis/cfg/cfg.hh>
 #include <unisim/util/cfg/cfg.tcc>
+#include <unisim/util/cfg/dominance/dominance.tcc>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <io.h>
@@ -69,10 +70,15 @@ Builder<CONFIG>::Builder(const char *name, unisim::kernel::Object *parent)
 	, graphviz_file()
 	, graphviz_dir()
 	, verbose(false)
+	, enable_dominance_analysis(false)
+	, enable_post_dominance_analysis(false)
+	, enable_dominance_frontier_analysis(false)
+	, enable_post_dominance_frontier_analysis(false)
 	, param_analysis_file("analysis-file", this, analysis_file, "JSON file (input/output) to incrementally save the control flow graph analysis")
 	, param_graphviz_file("graphviz-file", this, graphviz_file, "Graphviz .dot file (output) for rendering the control flow graph analysis")
 	, param_graphviz_dir("graphviz-dir", this, graphviz_dir, "Directory (output) for Graphviz .dot files (one per CFG) for rendering the control flow graph analysis")
 	, param_graphviz_color("graphviz-color", this, this->config.graphviz_color, "Default color")
+	, param_graphviz_fillcolor("graphviz-fillcolor", this, this->config.graphviz_fillcolor, "Fill color for blocks and phantoms")
 	, param_graphviz_branch_target_color("graphviz-branch-target-color", this, this->config.graphviz_branch_target_color, "Edge color for target branch outcome when rendering the control flow graph analysis")
 	, param_graphviz_branch_fallthrough_color("graphviz-branch-fallthrough-color", this, this->config.graphviz_branch_fallthrough_color, "Edge color for fallthrough branch outcome when rendering the control flow graph analysis")
 	, param_graphviz_call_color("graphviz-call-color", this, this->config.graphviz_call_color, "Edge color for calls when rendering the control flow graph analysis")
@@ -81,6 +87,10 @@ Builder<CONFIG>::Builder(const char *name, unisim::kernel::Object *parent)
 	, param_graphviz_phantom_fontname("graphviz-phantom-fontname", this, this->config.graphviz_phantom_fontname, "Font name for phantoms when rendering the control flow graph analysis")
 	, param_graphviz_enable_call_edges("graphviz-enable-call-edges", this, this->config.graphviz_enable_call_edges, "Enable generating edges for calls when rendering the control flow graph analysis")
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, param_enable_dominance_analysis("enable-dominance-analysis", this, enable_dominance_analysis, "Enable/Disable dominance analysis")
+	, param_enable_post_dominance_analysis("enable-post-dominance-analysis", this, enable_post_dominance_analysis, "Enable/Disable post-dominance analysis")
+	, param_enable_dominance_frontier_analysis("enable-dominance-frontier-analysis", this, enable_dominance_frontier_analysis, "Enable/Disable dominance frontier analysis")
+	, param_enable_post_dominance_frontier_analysis("enable-post-dominance-frontier-analysis", this, enable_post_dominance_frontier_analysis, "Enable/Disable post-dominance frontier analysis")
 	, write_output(false)
 {
 }
@@ -89,6 +99,11 @@ template <typename CONFIG>
 Builder<CONFIG>::~Builder()
 {
 	this->End();
+	
+	if(enable_dominance_analysis) AnalyzeDominance<unisim::util::cfg::dominance::DOMINANCE>();
+	if(enable_post_dominance_analysis) AnalyzeDominance<unisim::util::cfg::dominance::POST_DOMINANCE>();
+	if(enable_dominance_frontier_analysis) AnalyzeDominanceFrontier<unisim::util::cfg::dominance::DOMINANCE>();
+	if(enable_post_dominance_frontier_analysis) AnalyzeDominanceFrontier<unisim::util::cfg::dominance::POST_DOMINANCE>();
 	
 	if(write_output)
 	{
@@ -193,6 +208,54 @@ Builder<CONFIG>::~Builder()
 }
 
 template <typename CONFIG>
+template <unisim::util::cfg::dominance::DominanceType DOMINANCE_TYPE>
+void Builder<CONFIG>::AnalyzeDominance()
+{
+	if(verbose)
+	{
+		logger << DebugInfo << "Analyzing " << ((DOMINANCE_TYPE == unisim::util::cfg::dominance::POST_DOMINANCE) ? "dominance" : "post-dominance") << EndDebugInfo;
+	}
+	
+	const unisim::util::cfg::Mapping<CONFIG>& mapping = this->GetMapping();
+	
+	struct CFGVisitor
+	{
+		bool Visit(unisim::util::cfg::CFG<CONFIG> *cfg)
+		{
+			unisim::util::cfg::dominance::BuildDominatorTree<CONFIG, DOMINANCE_TYPE>(*cfg);
+			return false; // keep scanning CFGs
+		}
+	};
+	
+	CFGVisitor cfg_visitor;
+	mapping.ScanCFGs(cfg_visitor);
+}
+
+template <typename CONFIG>
+template <unisim::util::cfg::dominance::DominanceType DOMINANCE_TYPE>
+void Builder<CONFIG>::AnalyzeDominanceFrontier()
+{
+	if(verbose)
+	{
+		logger << DebugInfo << "Analyzing " << ((DOMINANCE_TYPE == unisim::util::cfg::dominance::POST_DOMINANCE) ? "dominance" : "post-dominance") << " frontier" << EndDebugInfo;
+	}
+
+	const unisim::util::cfg::Mapping<CONFIG>& mapping = this->GetMapping();
+	
+	struct CFGVisitor
+	{
+		bool Visit(unisim::util::cfg::CFG<CONFIG> *cfg)
+		{
+			unisim::util::cfg::dominance::BuildDominanceFrontierSets<CONFIG, DOMINANCE_TYPE>(*cfg);
+			return false; // keep scanning CFGs
+		}
+	};
+	
+	CFGVisitor cfg_visitor;
+	mapping.ScanCFGs(cfg_visitor);
+}
+
+template <typename CONFIG>
 bool Builder<CONFIG>::EndSetup()
 {
 	this->SetDisasmInterface(disasm_import);
@@ -203,7 +266,9 @@ bool Builder<CONFIG>::EndSetup()
 		std::ifstream file(analysis_file);
     if(file)
 		{
-			if(file >> (*this))
+			unisim::util::cfg::dominance::DominanceExtensionFactory<CONFIG> dom_tree_extension_factory;
+			this->Load(file, { &dom_tree_extension_factory });
+			if(file)
 			{
 				if(verbose) logger << DebugInfo << "File \"" << analysis_file << "\" loaded" << EndDebugInfo;
 			}

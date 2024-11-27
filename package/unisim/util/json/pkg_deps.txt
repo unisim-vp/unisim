@@ -8,5 +8,7 @@ std/sstream
 std/stdexcept
 std/string
 std/vector
+unisim/util/backtrace
 unisim/util/dictionary
+unisim/util/ostream
 unisim/util/unicode

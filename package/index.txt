@@ -2239,6 +2239,9 @@ unisim/util/cache/testbench/testbench.cc
 unisim/util/cfg/cfg.cc
 unisim/util/cfg/cfg.hh
 unisim/util/cfg/cfg.tcc
+unisim/util/cfg/dominance/dominance.cc
+unisim/util/cfg/dominance/dominance.hh
+unisim/util/cfg/dominance/dominance.tcc
 unisim/util/converter/convert.hh
 unisim/util/dbgate/client/client.cc
 unisim/util/dbgate/client/client.hh

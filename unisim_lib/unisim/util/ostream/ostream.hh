@@ -83,6 +83,29 @@ private:
 typedef Scope<std::ostream> OutputStreamScope;
 typedef Scope<std::wostream> WideOutputStreamScope;
 
+// Scope (automatic save and restore) printing format modifications of a ostream
+template <typename OSTREAM = std::ostream>
+struct FScope
+{
+	FScope(OSTREAM& _stream)
+		: stream(_stream)
+		, flags(stream.flags())
+	{
+	}
+	
+	~FScope()
+	{
+		stream.flags(flags);
+	}
+	
+private:
+	OSTREAM& stream;
+	std::ios_base::fmtflags flags;
+};
+
+typedef Scope<std::ostream> OutputStreamFScope;
+typedef Scope<std::wostream> WideOutputStreamFScope;
+
 } // end of namespace ostream
 } // end of namespace util
 } // end of namespace unisim

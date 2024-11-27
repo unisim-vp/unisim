@@ -5,3 +5,4 @@ unisim/kernel/logger
 unisim/kernel/variable
 unisim/service/interfaces/instruction_collecting
 unisim/util/cfg
+unisim/util/cfg/dominance

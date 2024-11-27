@@ -40,6 +40,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/instruction_collecting.hh>
 #include <unisim/util/cfg/cfg.hh>
+#include <unisim/util/cfg/dominance/dominance.hh>
 #include <string>
 
 namespace unisim {
@@ -75,11 +76,16 @@ private:
 	std::string graphviz_file;
 	std::string graphviz_dir;
 	bool verbose;
+	bool enable_dominance_analysis;
+	bool enable_post_dominance_analysis;
+	bool enable_dominance_frontier_analysis;
+	bool enable_post_dominance_frontier_analysis;
 	
 	unisim::kernel::variable::Parameter<std::string> param_analysis_file;
 	unisim::kernel::variable::Parameter<std::string> param_graphviz_file;
 	unisim::kernel::variable::Parameter<std::string> param_graphviz_dir;
 	unisim::kernel::variable::Parameter<std::string> param_graphviz_color;
+	unisim::kernel::variable::Parameter<std::string> param_graphviz_fillcolor;
 	unisim::kernel::variable::Parameter<std::string> param_graphviz_branch_target_color;
 	unisim::kernel::variable::Parameter<std::string> param_graphviz_branch_fallthrough_color;
 	unisim::kernel::variable::Parameter<std::string> param_graphviz_call_color;
@@ -88,8 +94,18 @@ private:
 	unisim::kernel::variable::Parameter<std::string> param_graphviz_phantom_fontname;
 	unisim::kernel::variable::Parameter<bool>        param_graphviz_enable_call_edges;
 	unisim::kernel::variable::Parameter<bool>        param_verbose;
+	unisim::kernel::variable::Parameter<bool>        param_enable_dominance_analysis;
+	unisim::kernel::variable::Parameter<bool>        param_enable_post_dominance_analysis;
+	unisim::kernel::variable::Parameter<bool>        param_enable_dominance_frontier_analysis;
+	unisim::kernel::variable::Parameter<bool>        param_enable_post_dominance_frontier_analysis;
 	
 	bool write_output;
+
+	template <unisim::util::cfg::dominance::DominanceType DOMINANCE_TYPE>
+	void AnalyzeDominance();
+	
+	template <unisim::util::cfg::dominance::DominanceType DOMINANCE_TYPE>
+	void AnalyzeDominanceFrontier();
 };
 
 } // end of namespace cfg

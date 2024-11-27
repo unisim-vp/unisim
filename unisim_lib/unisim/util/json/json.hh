@@ -37,6 +37,8 @@
 
 #include <unisim/util/dictionary/dictionary.hh>
 #include <unisim/util/unicode/unicode.hh>
+#include <unisim/util/backtrace/backtrace.hh>
+#include <unisim/util/ostream/ostream.hh>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -70,16 +72,11 @@ template <typename VISITOR> struct JSON_Lexer;
 template <typename VISITOR> struct JSON_Parser;
 struct JSON_Parser_Printer;
 
-// Utility functions
+using unisim::util::backtrace::BackTrace;
+using unisim::util::ostream::ToString;
+using unisim::util::ostream::FScope;
 
-// convert something into a string using the ostream << operator
-template <typename T>
-std::string ToString(const T& v)
-{
-	std::ostringstream sstr;
-	sstr << v;
-	return sstr.str();
-}
+// Utility functions
 
 // bare string to JSON string
 std::string Escape(const std::string& s);
@@ -118,8 +115,19 @@ std::ostream& operator << (std::ostream& stream, const Location& loc);
 struct Exception : public std::runtime_error
 {
 public:
-	Exception(const char *msg, const Location& loc) : std::runtime_error(loc.IsDefined() ? (std::string("At ") + ToString(loc) + ", " + msg).c_str() : msg) {}
-	Exception(const std::string& msg, const Location& loc) : std::runtime_error(loc.IsDefined() ? (std::string("At ") + ToString(loc) + ", " + msg).c_str() : msg.c_str()) {};
+	Exception(const char *msg, const Location& loc)
+		: std::runtime_error(
+			loc.IsDefined() ? (std::string("At ") + ToString(loc) + ", " + msg + ":\n" + ToString(BackTrace())).c_str()
+			                : (std::string(msg) + ":\n" + ToString(ToString(BackTrace()))).c_str())
+	{
+	}
+	
+	Exception(const std::string& msg, const Location& loc)
+		: std::runtime_error(
+			loc.IsDefined() ? (std::string("At ") + ToString(loc) + ", " + msg + ":\n" + ToString(BackTrace())).c_str()
+			                : (msg + ":\n" + ToString(ToString(BackTrace()))).c_str())
+	{
+	}
 };
 
 // JSON type error
@@ -177,6 +185,27 @@ struct NotNullTypeError : TypeError
 	NotNullTypeError(const Location& loc) : TypeError("null", loc) {}
 };
 
+// JSON Bad value error
+struct BadValueError : Exception
+{
+	BadValueError(const char *msg, const Location& loc) : Exception(std::string("Bad value error: ") + msg, loc) {}
+	BadValueError(const std::string& msg, const Location& loc) : Exception(std::string("Bad value error: ") + msg, loc) {}
+};
+
+// JSON Subscript out of range error
+struct ArraySubscriptOutOfRangeError : Exception
+{
+	ArraySubscriptOutOfRangeError(const char *msg, const Location& loc) : Exception(std::string("Array subscript out of range error: ") + msg, loc) {}
+	ArraySubscriptOutOfRangeError(const std::string& msg, const Location& loc) : Exception(std::string("Array subscript out of range error: ") + msg, loc) {}
+};
+
+// JSON No such property error
+struct NoSuchPropertyError : Exception
+{
+	NoSuchPropertyError(const char *msg, const Location& loc) : Exception(std::string("No such property error: ") + msg, loc) {}
+	NoSuchPropertyError(const std::string& msg, const Location& loc) : Exception(std::string("No such property error: ") + msg, loc) {}
+};
+
 // JSON undefined value
 extern JSON_Value undefined;
 
@@ -213,6 +242,9 @@ struct JSON_Value
 	void AssertIsArray() const { if(!IsArray()) throw NotAnArrayTypeError(loc); }
 	void AssertIsBoolean() const { if(!IsBoolean()) throw NotABooleanTypeError(loc); }
 	void AssertIsNull() const { if(!IsNull()) throw NotNullTypeError(loc); }
+	
+	void Bad(const char *msg) const { throw BadValueError(msg, loc); }
+	void Bad(const std::string& msg) const { throw BadValueError(msg, loc); }
 	
 	const JSON_String& AsString() const { AssertIsString(); return *(const JSON_String *) this; }
 	const JSON_Number& AsNumber() const { AssertIsNumber(); return *(const JSON_Number *) this; }
@@ -362,7 +394,7 @@ private:
 	template <typename T> T ToScalar() const { return sign ? -T(abs_value) : T(abs_value); }
 };
 
-inline std::ostream& operator << (std::ostream& os, const IntValue& int_value) { if(int_value.IsSigned()) { os << '-'; } return os << int_value.AbsValue(); }
+inline std::ostream& operator << (std::ostream& os, const IntValue& int_value) { FScope<std::ostream> fscope(os); if(int_value.IsSigned()) { os << '-'; } return os << std::dec << int_value.AbsValue(); }
 
 // JSON integer number
 struct JSON_Integer : JSON_Number
@@ -503,6 +535,10 @@ struct JSON_ValueRef
 	void AssertIsBoolean() const { value->AssertIsBoolean(); }
 	void AssertIsNull() const { value->AssertIsNull(); }
 	
+	void Bad(const char *msg) const { value->Bad(msg); }
+	void Bad(const std::string& msg) const { value->Bad(msg); }
+	
+	const JSON_Value& AsValue() const { return *value; }
 	const JSON_String& AsString() const { return value->AsString(); }
 	const JSON_Number& AsNumber() const { return value->AsNumber(); }
 	const JSON_Integer& AsInteger() const { return value->AsInteger(); }
@@ -512,6 +548,7 @@ struct JSON_ValueRef
 	const JSON_Boolean& AsBoolean() const { return value->AsBoolean(); }
 	const JSON_Null& AsNull() const { return value->AsNull(); }
 
+	JSON_Value& AsValue() { return *value; }
 	JSON_String& AsString() { return value->AsString(); }
 	JSON_Number& AsNumber() { return value->AsNumber(); }
 	JSON_Integer& AsInteger() { return value->AsInteger(); }
@@ -569,6 +606,10 @@ struct JSON_ValueConstRef
 	void AssertIsBoolean() const { value->AssertIsBoolean(); }
 	void AssertIsNull() const { value->AssertIsNull(); }
 	
+	void Bad(const char *msg) const { value->Bad(msg); }
+	void Bad(const std::string& msg) const { value->Bad(msg); }
+	
+	const JSON_Value& AsValue() const { return *value; }
 	const JSON_String& AsString() const { return value->AsString(); }
 	const JSON_Number& AsNumber() const { return value->AsNumber(); }
 	const JSON_Integer& AsInteger() const { return value->AsInteger(); }
@@ -577,15 +618,6 @@ struct JSON_ValueConstRef
 	const JSON_Array& AsArray() const { return value->AsArray(); }
 	const JSON_Boolean& AsBoolean() const { return value->AsBoolean(); }
 	const JSON_Null& AsNull() const { return value->AsNull(); }
-
-	const JSON_String& AsString() { return value->AsString(); }
-	const JSON_Number& AsNumber() { return value->AsNumber(); }
-	const JSON_Integer& AsInteger() { return value->AsInteger(); }
-	const JSON_Float& AsFloat() { return value->AsFloat(); }
-	const JSON_Object& AsObject() { return value->AsObject(); }
-	const JSON_Array& AsArray() { return value->AsArray(); }
-	const JSON_Boolean& AsBoolean() { return value->AsBoolean(); }
-	const JSON_Null& AsNull() { return value->AsNull(); }
 	
 private:
 	JSON_Value *value;
@@ -665,6 +697,9 @@ struct JSON_MemberRef
 	bool IsArray() const { return member->GetValue().IsArray(); }
 	bool IsBoolean() const { return member->GetValue().IsBoolean(); }
 	bool IsNull() const { return member->GetValue().IsNull(); }
+	
+	void Bad(const char *msg) const { member->GetValue().Bad(msg); }
+	void Bad(const std::string& msg) const { member->GetValue().Bad(msg); }
 	
 	void AssertIsString() const { member->GetValue().AssertIsString(); }
 	void AssertIsNumber() const { member->GetValue().AssertIsNumber(); }
@@ -748,6 +783,9 @@ struct JSON_MemberConstRef
 	void AssertIsBoolean() const { member->GetValue().AssertIsBoolean(); }
 	void AssertIsNull() const { member->GetValue().AssertIsNull(); }
 	
+	void Bad(const char *msg) const { member->GetValue().Bad(msg); }
+	void Bad(const std::string& msg) const { member->GetValue().Bad(msg); }
+	
 	const JSON_Value& AsValue() const { return member->GetValue(); }
 	const JSON_String& AsString() const { return member->GetValue().AsString(); }
 	const JSON_Number& AsNumber() const { return member->GetValue().AsNumber(); }
@@ -772,6 +810,8 @@ struct JSON_Object : JSON_Value
 	JSON_Object(const Location& _loc) : JSON_Value(JSON_OBJECT, _loc), members() {}
 	JSON_Object(const Members& _members) : JSON_Value(JSON_OBJECT), members(_members) {}
 	JSON_Object(const Members& _members, const Location& _loc) : JSON_Value(JSON_OBJECT, _loc), members(_members) {}
+	JSON_Object(const std::initializer_list<JSON_Member *>& _members) : JSON_Value(JSON_OBJECT), members() { for(JSON_Member *member : _members) if(member) Add(member); }
+	template <typename Iterator> JSON_Object(Iterator first, Iterator last) : JSON_Value(JSON_OBJECT), members() { for(; first != last; ++first) { if(*first) Add(*first); } }
 	virtual ~JSON_Object() {}
 	virtual JSON_Value *Clone() const;
 
@@ -807,13 +847,15 @@ struct JSON_Array : JSON_Value
 	JSON_Array(const Location& _loc) : JSON_Value(JSON_ARRAY, _loc), elements() {}
 	JSON_Array(const Elements& _elements) : JSON_Value(JSON_ARRAY), elements(_elements) {}
 	JSON_Array(const Elements& _elements, const Location& _loc) : JSON_Value(JSON_ARRAY, _loc), elements(_elements) {}
+	JSON_Array(const std::initializer_list<JSON_Value *>& _elements) : JSON_Value(JSON_ARRAY), elements() { for(JSON_Value *element : _elements) Push(element); }
+	template <typename Iterator> JSON_Array(Iterator first, Iterator last) : JSON_Value(JSON_ARRAY), elements() { for(; first != last; ++first) { Push(*first); } }
 	virtual ~JSON_Array() {}
 	virtual JSON_Value *Clone() const;
 	
 	JSON_Array& Push(JSON_Value *value) { elements.push_back(value); return *this; }
 	const Elements& GetElements() const { return elements; }
-	JSON_ValueRef& operator [] (size_type index) { if(index >= elements.size()) elements.resize(index + 1); return elements[index]; }
-	JSON_ValueConstRef operator [] (size_type index) const { return (index >= elements.size()) ? JSON_ValueConstRef(&undefined) : JSON_ValueConstRef(elements[index]); }
+	JSON_ValueRef& operator [] (size_type index);
+	JSON_ValueConstRef operator [] (size_type index) const;
 	size_type Length() const { return elements.size(); }
 	
 	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;

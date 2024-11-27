@@ -191,7 +191,8 @@ JSON_MemberRef JSON_Object::operator [] (const char *member_name)
 JSON_MemberConstRef JSON_Object::operator [] (const char *member_name) const
 {
 	const JSON_Member *member = FindMember(member_name);
-	return member ? JSON_MemberConstRef(member) : JSON_MemberConstRef(new JSON_Member(member_name, &undefined));
+	if(!member) throw NoSuchPropertyError(member_name, loc);
+	return JSON_MemberConstRef(member);
 }
 
 JSON_Member *JSON_Object::FindMember(const char *member_name)
@@ -239,6 +240,18 @@ JSON_Value *JSON_Array::Clone() const
 	JSON_Array *array = new JSON_Array(GetLocation());
 	for(Elements::const_iterator it = elements.begin(); it != elements.end(); ++it) array->Push((*it).Clone());
 	return array;
+}
+
+JSON_ValueRef& JSON_Array::operator [] (size_type index)
+{
+	if(index >= elements.size()) elements.resize(index + 1);
+	return elements[index];
+}
+
+JSON_ValueConstRef JSON_Array::operator [] (size_type index) const
+{
+	if(index >= elements.size()) throw ArraySubscriptOutOfRangeError(ToString(index), loc);
+	return JSON_ValueConstRef(elements[index]);
 }
 
 std::ostream& operator << (std::ostream& os, const JSON_Array& array)

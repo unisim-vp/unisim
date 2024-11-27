@@ -33,14 +33,44 @@
  */
 
 #include <unisim/util/cfg/cfg.hh>
+#include <unisim/util/json/json.tcc>
 
 namespace unisim {
 namespace util {
 namespace cfg {
 
+using unisim::util::json::JSON_Value;
+using unisim::util::json::JSON_String;
+using unisim::util::json::JSON_Number;
+using unisim::util::json::JSON_Integer;
+using unisim::util::json::JSON_Float;
+using unisim::util::json::JSON_Boolean;
+using unisim::util::json::JSON_Null;
+using unisim::util::json::JSON_Object;
+using unisim::util::json::JSON_Member;
+using unisim::util::json::JSON_Array;
+
+//==============================================================================
+//                               Static variables
+//==============================================================================
+
+static unsigned next_extension_id[3] = { 0, 0, 0 };
+
 //==============================================================================
 //                               Definitions
 //==============================================================================
+
+// Allocate an extension ID of a particular extension type
+unsigned AllocateExtensionId(ExtensionType ext_type)
+{
+	return next_extension_id[ext_type]++;
+}
+
+// Get number of extension IDs for a particular extension type
+unsigned ExtensionIds(ExtensionType ext_type)
+{
+	return next_extension_id[ext_type];
+}
 
 // Helper function to convert a string to HTML
 std::string StringToHTML(const std::string& s)
@@ -143,6 +173,54 @@ void EdgeTag::Set(const std::string& s)
 	if(s == "empty") value = EMPTY;
 	else if(s == "target") value = TARGET;
 	else if(s == "fallthrough") value = FALLTHROUGH;
+}
+
+//////////////////////////////// ExtensionBase ////////////////////////////////
+
+ExtensionBase::~ExtensionBase()
+{
+}
+
+void ExtensionBase::Free()
+{
+	delete this;
+}
+
+///////////////////////////////// EdgeValueBase ///////////////////////////////
+
+EdgeValueBase::EdgeValueBase(const JSON_Value& value)
+	: count(0)
+	, tag(EMPTY)
+{
+	const JSON_Object& edge_object = value.AsObject();
+	if((const std::string&) edge_object["kind"].AsString() != "edge") throw std::runtime_error("Expected \"edge\" as \"kind\"");
+	
+	count = edge_object["count"].AsInteger();
+	
+	if(edge_object.HasProperty("tag"))
+	{
+		const std::string& edge_tag_name = (const std::string&) edge_object["tag"].AsString();
+		EdgeTag edge_tag_struct(edge_tag_name);
+		tag = edge_tag_struct;
+	}
+}
+
+void EdgeValueBase::Save(JSON_Value& value) const
+{
+	JSON_Object& edge_object = value.AsObject();
+	
+	edge_object.Add(new JSON_Member("count", new JSON_Integer(count)));
+	if(tag != EMPTY) edge_object.Add(new JSON_Member("tag", new JSON_String(ToString(EdgeTag(tag)))));
+}
+
+////////////////////////////////// NodeBase ///////////////////////////////////
+
+JSON_Object *NodeBase::SaveAsObject() const
+{
+	JSON_Object *object = new JSON_Object();
+	object->Add(new JSON_Member("kind", new JSON_String("node")));
+	object->Add(new JSON_Member("category", new JSON_String(ToString(Category(GetCategory())))));
+	return object;
 }
 
 } // end of namespace cfg

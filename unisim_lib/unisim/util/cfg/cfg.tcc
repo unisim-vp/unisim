@@ -68,6 +68,7 @@ Config<CONFIG>::Config()
 	: disassembly_if(0)
 	, symbol_table_lookup_if(0)
 	, graphviz_color("black")
+	, graphviz_fillcolor("white")
 	, graphviz_branch_target_color("#008000")      // green
 	, graphviz_branch_fallthrough_color("#cd0000") // red
 	, graphviz_call_color("#0000cd")               // blue
@@ -246,6 +247,7 @@ bool Instruction<CONFIG>::DeepCompare(const Instruction<CONFIG>& other) const
 template <typename CONFIG>
 void Instruction<CONFIG>::Print(std::ostream& stream) const
 {
+	FScope<std::ostream> fscope(stream);
 	stream << "Instruction(addr=@0x" << std::hex << addr << std::dec << ", type=" << Type(type) << ", size=" << size << ", opcode=[";
 	for(unsigned idx = 0; idx < size; ++idx)
 	{
@@ -274,7 +276,7 @@ JSON_Value *Instruction<CONFIG>::Save(const Config<CONFIG>& config) const
 	JSON_Object *object = new JSON_Object();
 	object->Add(new JSON_Member("kind", new JSON_String("instruction")));
 	object->Add(new JSON_Member("type", new JSON_String(ToString(Type(type)))));
-	object->Add(new JSON_Member("addr", new JSON_Integer(addr)));
+	object->Add(new JSON_Member("address", new JSON_Integer(addr)));
 	object->Add(new JSON_Member("size", new JSON_Integer(size)));
 	if((type == JUMP) || (type == BRANCH) || (type == CALL))
 	{
@@ -309,13 +311,14 @@ Instruction<CONFIG> *Instruction<CONFIG>::Load(const JSON_Value& value)
 	{
 		const JSON_Object& object = value.AsObject();
 		
-		if(((const std::string&) object["kind"].AsString()) != "instruction") throw std::runtime_error("Expected \"instruction\" as \"kind\"");
-		const std::string& type_string = object["type"].AsString();
-		Type _type(type_string);
-		if(!_type.Valid()) throw std::runtime_error("Invalid type");
-		unsigned type = _type;
+		const JSON_String& kind = object["kind"].AsString();
+		if((const std::string&) kind != "instruction") kind.Bad("Expected \"instruction\" as \"kind\"");
+		const JSON_String& type_string = object["type"].AsString();
+		Type type_struct((const std::string&) type_string);
+		if(!type_struct.Valid()) type_string.Bad("Invalid type");
+		unsigned type = type_struct;
 		
-		ADDRESS addr = object["addr"].AsInteger();
+		ADDRESS addr = object["address"].AsInteger();
 		
 		unsigned size = object["size"].AsInteger();
 		
@@ -326,15 +329,15 @@ Instruction<CONFIG> *Instruction<CONFIG>::Load(const JSON_Value& value)
 		unsigned mode = DIRECT;
 		if((type == JUMP) || (type == BRANCH) || (type == CALL))
 		{
-			const std::string& mode_string = object["mode"].AsString();
-			Mode mode_struct(mode_string);
-			if(!mode_struct.Valid()) throw std::runtime_error("Invalid mode");
+			const JSON_String& mode_string = object["mode"].AsString();
+			Mode mode_struct((const std::string&) mode_string);
+			if(!mode_struct.Valid()) mode_string.Bad("Invalid mode");
 			mode = mode_struct;
 		}
 		
 		std::vector<uint8_t> opcode(size);
 		const JSON_Array& opcode_array = object["opcode"].AsArray();
-		if(opcode_array.Length() != size) throw std::runtime_error("bad opcode size");
+		if(opcode_array.Length() != size) opcode_array.Bad("bad opcode size");
 		for(unsigned idx = 0; idx < size; ++idx)
 		{
 			const JSON_Integer& byte = opcode_array[idx].AsInteger();
@@ -554,11 +557,188 @@ void Cache<CONFIG>::FlushCounts(Node<CONFIG> *src)
 	}
 }
 
+////////////////////////////// TypedExtension<> ///////////////////////////////
+
+template <typename CONFIG>
+const ExtensionType TypedExtension<CONFIG, NODE_EXT>::Type = NODE_EXT;
+
+template <typename CONFIG>
+const ExtensionType TypedExtension<CONFIG, EDGE_EXT>::Type = EDGE_EXT;
+
+template <typename CONFIG>
+const ExtensionType TypedExtension<CONFIG, CFG_EXT>::Type = CFG_EXT;
+
+///////////////////////////////// Extension<> /////////////////////////////////
+
+template <typename CONFIG, ExtensionType EXT_TYPE, typename T>
+const unsigned Extension<CONFIG, EXT_TYPE, T>::ID = AllocateExtensionId(EXT_TYPE);
+
+/////////////////////////////// EdgeValue<> ///////////////////////////////////
+
+template <typename CONFIG>
+EdgeValue<CONFIG>::EdgeValue(const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories)
+	: EdgeValueBase(value)
+	, extensions(ExtensionIds(EDGE_EXT))
+{
+	const JSON_Object& edge_object = value.AsObject();
+	
+	if(edge_object.HasProperty("extensions"))
+	{
+		const JSON_Object& extensions_object = edge_object["extensions"].AsObject();
+		
+		struct MemberVisitor
+		{
+			EdgeValue<CONFIG>& self;
+			const std::initializer_list<ExtensionFactory *>& extension_factories;
+			
+			MemberVisitor(EdgeValue<CONFIG>& _self, const std::initializer_list<ExtensionFactory *>& _extension_factories) : self(_self), extension_factories(_extension_factories) {}
+			
+			bool Visit(const JSON_Member& member)
+			{
+				const std::string& name = member.GetName();
+				for(ExtensionFactory *extension_factory : extension_factories)
+				{
+					ExtensionBase *ext = extension_factory->LoadExtension(EDGE_EXT, name, member.GetValue());
+					if(ext)
+					{
+						self.SetExtension(ext->GetId(), ext);
+						return false; // keep scanning members
+					}
+				}
+				
+				std::cerr << "WARNING! can't load edge extension " << name << std::endl;
+				return false; // keep scanning members
+			}
+		};
+		
+		MemberVisitor member_visitor(*this, extension_factories);
+		extensions_object.Scan(member_visitor);
+	}
+}
+
+template <typename CONFIG>
+EdgeValue<CONFIG>::~EdgeValue()
+{
+	InvalidateExtensions();
+}
+
+template <typename CONFIG>
+void EdgeValue<CONFIG>::Save(JSON_Value& value) const
+{
+	EdgeValueBase::Save(value);
+	
+	JSON_Object& edge_object = value.AsObject();
+	
+	if(!extensions.empty())
+	{
+		JSON_Object *extensions_object = new JSON_Object();
+		
+		for(typename Extensions::const_iterator itr = extensions.begin(); itr != extensions.end(); ++itr)
+		{
+			EdgeExtensionBase<CONFIG> *ext = *itr;
+			if(ext)
+			{
+				extensions_object->Add(new JSON_Member(ext->GetName(), ext->Save()));
+			}
+		}
+		
+		edge_object.Add(new JSON_Member("extensions", extensions_object));
+	}
+}
+
+template <typename CONFIG>
+void EdgeValue<CONFIG>::Fix(const Mapping<CONFIG>& mapping, const CFG<CONFIG>& cfg, const Node<CONFIG>& node, const JSON_Value& value)
+{
+	const JSON_Object& edge_object = value.AsObject();
+	
+	if(edge_object.HasProperty("extensions"))
+	{
+		const JSON_Object& extensions_object = edge_object["extensions"].AsObject();
+		
+		for(typename Extensions::iterator itr = extensions.begin(); itr != extensions.end(); ++itr)
+		{
+			EdgeExtensionBase<CONFIG> *ext = *itr;
+			if(ext)
+			{
+				const JSON_Value& ext_value = extensions_object[ext->GetName()].AsValue();
+				ext->Fix(mapping, cfg, node, *this, ext_value);
+			}
+		}
+	}
+}
+
+template <typename CONFIG>
+template <typename T>
+T *EdgeValue<CONFIG>::SetExtension(T *ext)
+{
+	EdgeExtensionBase<CONFIG> *old_ext = extensions[T::ID];
+	extensions[T::ID] = ext;
+	return static_cast<T *>(old_ext);
+}
+
+template <typename CONFIG>
+template <typename T>
+void EdgeValue<CONFIG>::GetExtension(T *& ext) const
+{
+	ext = this->template GetExtension<T>();
+}
+
+template <typename CONFIG>
+template <typename T>
+T *EdgeValue<CONFIG>::GetExtension() const
+{
+	return static_cast<T *>(extensions[T::ID]);
+}
+
+template <typename CONFIG>
+EdgeExtensionBase<CONFIG> *EdgeValue<CONFIG>::SetExtension(unsigned ext_id, ExtensionBase *ext)
+{
+	EdgeExtensionBase<CONFIG> *old_ext = (ext_id < extensions.size()) ? extensions[ext_id] : 0;
+	EdgeExtensionBase<CONFIG> *edge_ext = dynamic_cast<EdgeExtensionBase<CONFIG> *>(ext);
+	assert(edge_ext != 0);
+	extensions[ext_id] = edge_ext;
+	return old_ext;
+}
+
+template <typename CONFIG>
+void EdgeValue<CONFIG>::InvalidateExtensions()
+{
+	for(typename Extensions::iterator itr = extensions.begin(); itr != extensions.end(); ++itr)
+	{
+		EdgeExtensionBase<CONFIG> *ext = *itr;
+		if(ext) ext->Free();
+		*itr = 0;
+	}
+}
+
+template <typename CONFIG>
+void EdgeValue<CONFIG>::OutputGraphEdgeExtensions(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const
+{
+	for(typename Extensions::const_iterator itr = extensions.begin(); itr != extensions.end(); ++itr)
+	{
+		EdgeExtensionBase<CONFIG> *extension = *itr;
+		
+		if(extension)
+		{
+			stream << indent << "\t\t<TR>" << std::endl
+			       << indent << "\t\t\t<TD>" << StringToHTML(ToString(*extension)) << "</TD>" << std::endl
+			       << indent << "\t\t</TR>" << std::endl;
+		}
+	}
+}
+
 /////////////////////////////////// Node<> ////////////////////////////////////
 
 template <typename CONFIG>
-void Node<CONFIG>::ConnectTo(Node<CONFIG> *successor, const EdgeValue& edge_value)
+Node<CONFIG>::~Node()
 {
+	InvalidateExtensions();
+}
+
+template <typename CONFIG>
+void Node<CONFIG>::ConnectTo(Node<CONFIG> *successor, EdgeValue<CONFIG>&& edge_value)
+{
+	assert((GetCategory() == ENTRY) || (GetCategory() == BLOCK));
 	typename Edges::iterator itr = edges.find(successor);
 	if(itr != edges.end())
 	{
@@ -566,12 +746,33 @@ void Node<CONFIG>::ConnectTo(Node<CONFIG> *successor, const EdgeValue& edge_valu
 	}
 	else
 	{
-		edges.emplace(successor, edge_value);
+		edges.emplace(successor, std::move(edge_value));
 		successor->predecessors.push_back(this);
 		if(successor->GetCategory() == UNKNOWN)
 		{
-			assert(!has_unknowns);
-			has_unknowns = true;
+			assert(!has_unknown_successor);
+			has_unknown_successor = true;
+		}
+	}
+}
+
+template <typename CONFIG>
+void Node<CONFIG>::ConnectTo(Node<CONFIG> *successor, uint64_t count, unsigned tag)
+{
+	assert((GetCategory() == ENTRY) || (GetCategory() == BLOCK));
+	typename Edges::iterator itr = edges.find(successor);
+	if(itr != edges.end())
+	{
+		(*itr).second.Update(count);
+	}
+	else
+	{
+		edges.emplace(successor, EdgeValue<CONFIG>(count, tag));
+		successor->predecessors.push_back(this);
+		if(successor->GetCategory() == UNKNOWN)
+		{
+			assert(!has_unknown_successor);
+			has_unknown_successor = true;
 		}
 	}
 }
@@ -579,11 +780,14 @@ void Node<CONFIG>::ConnectTo(Node<CONFIG> *successor, const EdgeValue& edge_valu
 template <typename CONFIG>
 uint64_t Node<CONFIG>::Reconnect(Node<CONFIG> *node, Node<CONFIG> *new_node)
 {
+	assert((GetCategory() == ENTRY) || (GetCategory() == BLOCK));
+	assert((node->GetCategory() == BLOCK) || (node->GetCategory() == PHANTOM));
 	uint64_t count = 0;
 	typename Edges::iterator itr = edges.find(node);
 	if(itr != edges.end())
 	{
-		EdgeValue edge_value((*itr).second);
+		EdgeValue<CONFIG> edge_value((*itr).second);
+		count = edge_value.GetCount();
 		edges.erase(itr);
 		edges.emplace(new_node, edge_value);
 		new_node->predecessors.push_back(this);
@@ -592,7 +796,7 @@ uint64_t Node<CONFIG>::Reconnect(Node<CONFIG> *node, Node<CONFIG> *new_node)
 }
 
 template <typename CONFIG>
-bool Node<CONFIG>::HasPhantoms() const
+bool Node<CONFIG>::HasPhantomSuccessor() const
 {
 	for(typename Edges::const_iterator itr = edges.begin(); itr != edges.end(); ++itr)
 	{
@@ -610,7 +814,7 @@ void Node<CONFIG>::PrintEdges(std::ostream& stream) const
 	{
 		if(itr != edges.begin()) stream << ",";
 		Node<CONFIG> *node = (*itr).first;
-		const EdgeValue& edge_value = (*itr).second;
+		const EdgeValue<CONFIG>& edge_value = (*itr).second;
 		stream << "Edge(node=" << node->GetName() << ",edge_value=" << edge_value << ")";
 	}
 	stream << ")";
@@ -623,8 +827,7 @@ void Node<CONFIG>::FlushCounts(Group<CONFIG>& group, Node<CONFIG> *dst, uint64_t
 	for(typename Edges::iterator itr = edges.begin(); itr != edges.end(); ++itr)
 	{
 		Node<CONFIG> *node = (*itr).first;
-		EdgeValue& edge_value = (*itr).second;
-		uint64_t& edge_count = edge_value.count;
+		EdgeValue<CONFIG>& edge_value = (*itr).second;
 		if(node->GetCategory() == BLOCK)
 		{
 			Block<CONFIG>& block = node->AsBlock();
@@ -633,7 +836,7 @@ void Node<CONFIG>::FlushCounts(Group<CONFIG>& group, Node<CONFIG> *dst, uint64_t
 			typename Block<CONFIG>::const_iterator itr = block.begin();
 			if(leader == group.Leader())
 			{
-				edge_count += count;
+				edge_value.Update(count);
 				const Instruction<CONFIG> *instr = &leader;
 				do
 				{
@@ -668,25 +871,28 @@ void Node<CONFIG>::OutputGraphEdges(std::ostream& stream, const std::string& ind
     const std::string& indent;
 		const CFG<CONFIG>& cfg;
 		const Config<CONFIG>& config;
+		bool subgraph;
 		
 		EdgeVisitor(
 			const Node<CONFIG>& _self,
 			std::ostream& _stream,
 			const std::string& _indent,
 			const CFG<CONFIG>& _cfg,
-			const Config<CONFIG>& _config)
+			const Config<CONFIG>& _config,
+			bool _subgraph)
 			: self(_self)
 			, stream(_stream)
 			, indent(_indent)
 			, cfg(_cfg)
 			, config(_config)
+			, subgraph(_subgraph)
 		{
 		}
 		
-		bool Visit(Node<CONFIG> *node, const EdgeValue& edge_value)
+		bool Visit(Node<CONFIG> *node, const EdgeValue<CONFIG>& edge_value)
 		{
-			uint64_t count = edge_value.count;
-			unsigned tag = edge_value.tag;
+			uint64_t count = edge_value.GetCount();
+			unsigned tag = edge_value.GetTag();
 			const std::string& color = (tag == TARGET) ? config.graphviz_branch_target_color
 			                                           : ((tag == FALLTHROUGH) ? config.graphviz_branch_fallthrough_color
 			                                                                   : config.graphviz_color);
@@ -705,7 +911,16 @@ void Node<CONFIG>::OutputGraphEdges(std::ostream& stream, const std::string& ind
 			
 			if(node->GetCategory() != UNKNOWN)
 			{
-				stream << "<<TABLE CELLPADDING=\"2\" BORDER=\"0\" CELLBORDER=\"0\"><TR><TD>" << std::dec << count << "</TD></TR></TABLE>>";
+				stream << "<" << std::endl
+				       << indent << "\t<TABLE CELLPADDING=\"2\" BORDER=\"0\" CELLBORDER=\"0\">" << std::endl
+				       << indent << "\t\t<TR>" << std::endl
+				       << indent << "\t\t\t<TD>" << std::dec << count << "</TD>" << std::endl
+				       << indent << "\t\t</TR>" << std::endl;
+				
+				edge_value.OutputGraphEdgeExtensions(stream, indent, cfg, config, subgraph);
+				
+				stream << indent << "\t</TABLE>" << std::endl
+				       << indent << ">";
 			}
 			else
 			{
@@ -716,17 +931,36 @@ void Node<CONFIG>::OutputGraphEdges(std::ostream& stream, const std::string& ind
 		}
 	};
 	
-	EdgeVisitor edge_visitor(*this, stream, indent, cfg, config);
+	EdgeVisitor edge_visitor(*this, stream, indent, cfg, config, subgraph);
 	ScanEdgesOrdered(edge_visitor);
 }
 
 template <typename CONFIG>
-JSON_Object *Node<CONFIG>::SaveEdge(Node<CONFIG> *node, const EdgeValue& edge_value) const
+void Node<CONFIG>::OutputGraphNodeExtensions(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const
+{
+	for(typename Extensions::const_iterator itr = extensions.begin(); itr != extensions.end(); ++itr)
+	{
+		NodeExtensionBase<CONFIG> *extension = *itr;
+		
+		if(extension)
+		{
+			stream << indent << "\t\t<HR/>" << std::endl
+			       << indent << "\t\t<TR>" << std::endl
+			       << indent << "\t\t\t<TD ALIGN=\"LEFT\"><B>[" << StringToHTML(extension->GetName()) << "]</B></TD>" << std::endl
+			       << indent << "\t\t</TR>" << std::endl
+			       << indent << "\t\t<TR>" << std::endl
+			       << indent << "\t\t\t<TD ALIGN=\"LEFT\">" << StringToHTML(ToString(*extension)) << "</TD>" << std::endl
+			       << indent << "\t\t</TR>" << std::endl;
+		}
+	}
+}
+
+template <typename CONFIG>
+JSON_Object *Node<CONFIG>::SaveEdge(Node<CONFIG> *node, const EdgeValue<CONFIG>& edge_value) const
 {
 	JSON_Object *edge_object = new JSON_Object();
 	edge_object->Add(new JSON_Member("kind", new JSON_String("edge")));
-	edge_object->Add(new JSON_Member("count", new JSON_Integer(edge_value.count)));
-	if(edge_value.tag != EMPTY) edge_object->Add(new JSON_Member("tag", new JSON_String(ToString(EdgeTag(edge_value.tag)))));
+	edge_value.Save(*edge_object);
 	JSON_Object *ref_object = new JSON_Object();
 	if((node->GetCategory() == BLOCK) || (node->GetCategory() == PHANTOM))
 	{
@@ -753,9 +987,7 @@ JSON_Object *Node<CONFIG>::SaveEdge(Node<CONFIG> *node, const EdgeValue& edge_va
 template <typename CONFIG>
 JSON_Object *Node<CONFIG>::SaveAsObject() const
 {
-	JSON_Object *object = new JSON_Object();
-	object->Add(new JSON_Member("kind", new JSON_String("node")));
-	object->Add(new JSON_Member("category", new JSON_String(ToString(Category(GetCategory())))));
+	JSON_Object *object = NodeBase::SaveAsObject();
 	
 	if(!edges.empty())
 	{
@@ -770,7 +1002,7 @@ JSON_Object *Node<CONFIG>::SaveAsObject() const
 			
 			EdgeVisitor(const Node<CONFIG>& _self, JSON_Array *_edges_array) : self(_self), edges_array(_edges_array) {}
 			
-			bool Visit(Node<CONFIG> *node, const EdgeValue& edge_value)
+			bool Visit(Node<CONFIG> *node, const EdgeValue<CONFIG>& edge_value)
 			{
 				edges_array->Push(self.SaveEdge(node, edge_value));
 				return false; // keep scanning edges
@@ -783,6 +1015,22 @@ JSON_Object *Node<CONFIG>::SaveAsObject() const
 		object->Add(new JSON_Member("edges", edges_array));
 	}
 	
+	if(!extensions.empty())
+	{
+		JSON_Object *extensions_object = new JSON_Object();
+		
+		for(typename Extensions::const_iterator itr = extensions.begin(); itr != extensions.end(); ++itr)
+		{
+			NodeExtensionBase<CONFIG> *ext = *itr;
+			if(ext)
+			{
+				extensions_object->Add(new JSON_Member(ext->GetName(), ext->Save()));
+			}
+		}
+		
+		object->Add(new JSON_Member("extensions", extensions_object));
+	}
+	
 	return object;
 }
 
@@ -793,35 +1041,81 @@ JSON_Value *Node<CONFIG>::Save(const Config<CONFIG>& config) const
 }
 
 template <typename CONFIG>
-Node<CONFIG> *Node<CONFIG>::Load(const JSON_Value& value)
+Node<CONFIG> *Node<CONFIG>::Load(const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories)
 {
+	Node<CONFIG> *node = 0;
 	try
 	{
 		const JSON_Object& object = value.AsObject();
 		
-		if(((const std::string&) object["kind"].AsString()) != "node") throw std::runtime_error("Expected \"node\" as \"kind\"");
-		const std::string& category_string = (const std::string&) object["category"].AsString();
-		Category category_struct(category_string);
-		if(!category_struct.Valid()) throw std::runtime_error("Invalid category");
+		const JSON_String& kind = object["kind"].AsString();
+		if((const std::string&) kind != "node") kind.Bad("Expected \"node\" as \"kind\"");
+		const JSON_String& category_string = object["category"].AsString();
+		Category category_struct((const std::string&) category_string);
+		if(!category_struct.Valid()) category_string.Bad("Invalid category");
 		unsigned category = category_struct;
-		if(category == BLOCK)
-			return Block<CONFIG>::Load(value);
+		if(category == ENTRY)
+			node = new Entry<CONFIG>();
+		else if(category == EXIT)
+			node = new Exit<CONFIG>();
+		else if(category == HALT)
+			node = new Halt<CONFIG>();
+		else if(category == BLOCK)
+			node = Block<CONFIG>::Load(value);
 		else if(category == PHANTOM)
-			return Phantom<CONFIG>::Load(value);
+			node = Phantom<CONFIG>::Load(value);
 		else if(category == UNKNOWN)
-			return Unknown<CONFIG>::Load(value);
+			node = Unknown<CONFIG>::Load(value);
 		else
 			throw std::runtime_error("Internal error!");
+		
+		if(object.HasProperty("extensions"))
+		{
+			const JSON_Object& extensions_object = object["extensions"].AsObject();
+			
+			struct MemberVisitor
+			{
+				Node<CONFIG>& self;
+				const std::initializer_list<ExtensionFactory *>& extension_factories;
+				
+				MemberVisitor(Node<CONFIG>& _self, const std::initializer_list<ExtensionFactory *>& _extension_factories) : self(_self), extension_factories(_extension_factories) {}
+				
+				bool Visit(const JSON_Member& member)
+				{
+					const std::string& name = member.GetName();
+					for(ExtensionFactory *extension_factory : extension_factories)
+					{
+						ExtensionBase *ext = extension_factory->LoadExtension(NODE_EXT, name, member.GetValue());
+						if(ext)
+						{
+							self.SetExtension(ext->GetId(), ext);
+							return false; // keep scanning members
+						}
+					}
+					
+					std::cerr << "WARNING! can't load node extension " << name << std::endl;
+					return false; // keep scanning members
+				}
+			};
+			
+			MemberVisitor member_visitor(*node, extension_factories);
+			extensions_object.Scan(member_visitor);
+		}
 	}
 	catch(std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
+		if(node)
+		{
+			delete node;
+			node = 0;
+		}
 	}
-	return 0;
+	return node;
 }
 
 template <typename CONFIG>
-bool Node<CONFIG>::Fix(Mapping<CONFIG>& mapping, CFG<CONFIG>& cfg, const JSON_Value& value)
+bool Node<CONFIG>::Fix(Mapping<CONFIG>& mapping, CFG<CONFIG>& cfg, const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories)
 {
 	try
 	{
@@ -833,49 +1127,68 @@ bool Node<CONFIG>::Fix(Mapping<CONFIG>& mapping, CFG<CONFIG>& cfg, const JSON_Va
 			for(JSON_Array::size_type idx = 0; idx < edges_array.Length(); ++idx)
 			{
 				const JSON_Object& edge_object = edges_array[idx].AsObject();
-				if((const std::string&) edge_object["kind"].AsString() != "edge") throw std::runtime_error("Expected \"edge\" as \"kind\"");
-				
-				uint64_t edge_count = edge_object["count"].AsInteger();
-				
-				unsigned edge_tag = EMPTY;
-				if(edge_object.HasProperty("tag"))
-				{
-					const std::string& edge_tag_name = (const std::string&) edge_object["tag"].AsString();
-					EdgeTag edge_tag_struct(edge_tag_name);
-					edge_tag = edge_tag_struct;
-				}
+				const JSON_String& edge_kind = edge_object["kind"].AsString();
+				if((const std::string&) edge_kind != "edge") edge_kind.Bad("Expected \"edge\" as \"kind\"");
 				
 				const JSON_Object& edge_ref = edge_object["ref"].AsObject();
-				const std::string& edge_ref_kind = (const std::string&) edge_ref["kind"].AsString();
-				if(edge_ref_kind == "address")
+				const JSON_String& edge_ref_kind = edge_ref["kind"].AsString();
+				if((const std::string&) edge_ref_kind == "address")
 				{
-					ADDRESS successor_addr = ADDRESS(edge_ref["address"].AsInteger());
+					const JSON_Integer& edge_ref_address = edge_ref["address"].AsInteger();
+					ADDRESS successor_addr = ADDRESS(edge_ref_address);
 					Node<CONFIG> *successor = cfg.FindNodeWithAddr(successor_addr);
-					if(!successor)
-					{
-						throw std::runtime_error("successor of category block or phantom not found");
-					}
-					cfg.AddEdge(this, successor, EdgeValue(edge_count, edge_tag));
+					if(!successor) edge_ref_address.Bad("successor of category block or phantom not found");
+					cfg.AddEdge(this, successor, EdgeValue<CONFIG>(edge_object, extension_factories));
 				}
-				else if(edge_ref_kind == "id")
+				else if((const std::string&) edge_ref_kind == "id")
 				{
-					unsigned unknown_id = unsigned(edge_ref["id"].AsInteger());
+					const JSON_Integer& edge_ref_id = edge_ref["id"].AsInteger();
+					unsigned unknown_id = unsigned(edge_ref_id);
 					Node<CONFIG> *successor = cfg.FindUnknownWithId(unknown_id);
-					if(!successor)
-					{
-						throw std::runtime_error("successor of category unknown not found");
-					}
-					cfg.AddEdge(this, successor, EdgeValue(edge_count, edge_tag));
+					if(!successor) edge_ref_id.Bad("successor of category unknown not found");
+					cfg.AddEdge(this, successor, EdgeValue<CONFIG>(edge_object, extension_factories));
 				}
-				else if(edge_ref_kind == "name")
+				else if((const std::string&) edge_ref_kind == "name")
 				{
-					const std::string& successor_name = (const std::string&) edge_ref["name"].AsString();
+					const JSON_String& edge_ref_name = edge_ref["name"].AsString();
+					const std::string& successor_name = (const std::string&) edge_ref_name;
 					Category successor_category_struct(successor_name);
 					unsigned successor_category = successor_category_struct;
-					if(successor_category == EXIT) cfg.AddEdge(this, cfg.GetExit(), EdgeValue(edge_count, edge_tag));
-					else if(successor_category == HALT) cfg.AddEdge(this, cfg.GetHalt(), EdgeValue(edge_count, edge_tag));
-					else throw std::runtime_error("successor is not of category exit or halt");
+					if(successor_category == EXIT) cfg.AddEdge(this, cfg.GetExit(), EdgeValue<CONFIG>(edge_object, extension_factories));
+					else if(successor_category == HALT) cfg.AddEdge(this, cfg.GetHalt(), EdgeValue<CONFIG>(edge_object, extension_factories));
+					else edge_ref_name.Bad("successor is not of category exit or halt");
 				}
+				else
+				{
+					edge_ref_kind.Bad("Invalid kind");
+				}
+			}
+		}
+		
+		if(object.HasProperty("extensions"))
+		{
+			const JSON_Object& extensions_object = object["extensions"].AsObject();
+			
+			for(typename Extensions::iterator itr = extensions.begin(); itr != extensions.end(); ++itr)
+			{
+				NodeExtensionBase<CONFIG> *ext = *itr;
+				if(ext)
+				{
+					const JSON_Value& ext_value = extensions_object[ext->GetName()].AsValue();
+					ext->Fix(mapping, cfg, *this, ext_value);
+				}
+			}
+		}
+		
+		if(object.HasProperty("edges"))
+		{
+			const JSON_Array& edges_array = object["edges"].AsArray();
+			JSON_Array::size_type idx = 0;
+			for(typename Edges::iterator itr = edges.begin(); itr != edges.end(); ++itr, ++idx)
+			{
+				EdgeValue<CONFIG>& edge_value = (*itr).second;
+				const JSON_Value& edge_value_value = edges_array[idx].AsValue();
+				edge_value.Fix(mapping, cfg, *this, edge_value_value);
 			}
 		}
 		
@@ -892,20 +1205,22 @@ bool Node<CONFIG>::Fix(Mapping<CONFIG>& mapping, CFG<CONFIG>& cfg, const JSON_Va
 template <typename CONFIG>
 void Node<CONFIG>::Check() const
 {
-	bool check_in_out_count = false;
-	
-	for(typename Edges::const_iterator itr = edges.begin(); itr != edges.end(); ++itr)
+	if((GetCategory() != ENTRY) && (GetCategory() != EXIT) && (GetCategory() != HALT))
 	{
-		const Node<CONFIG> *node = (*itr).first;
-		if(node->GetCategory() != PHANTOM)
+		bool check_in_out_count = false;
+		
+		for(typename Edges::const_iterator itr = edges.begin(); itr != edges.end(); ++itr)
 		{
-			check_in_out_count = true;
-			break;
+			const Node<CONFIG> *node = (*itr).first;
+			if((node->GetCategory() != PHANTOM) && (node->GetCategory() != UNKNOWN))
+			{
+				check_in_out_count = true;
+				break;
+			}
 		}
-	}
 	
-	if(check_in_out_count)
-	{
+		if(check_in_out_count)
+		{
 			uint64_t in_count = 0;
 			for(typename Predecessors::const_iterator p_itr = predecessors.begin(); p_itr != predecessors.end(); ++p_itr)
 			{
@@ -913,10 +1228,10 @@ void Node<CONFIG>::Check() const
 				for(typename Edges::const_iterator itr = predecessor->edges.begin(); itr != predecessor->edges.end(); ++itr)
 				{
 					const Node<CONFIG> *node = (*itr).first;
-					const EdgeValue& edge_value = (*itr).second;
+					const EdgeValue<CONFIG>& edge_value = (*itr).second;
 					if(node == this)
 					{
-						uint64_t count = edge_value.count;
+						uint64_t count = edge_value.GetCount();
 						in_count += count;
 					}
 				}
@@ -925,8 +1240,8 @@ void Node<CONFIG>::Check() const
 			uint32_t out_count = 0;
 			for(typename Edges::const_iterator itr = edges.begin(); itr != edges.end(); ++itr)
 			{
-				const EdgeValue& edge_value = (*itr).second;
-				uint64_t count = edge_value.count;
+				const EdgeValue<CONFIG>& edge_value = (*itr).second;
+				uint64_t count = edge_value.GetCount();
 				out_count += count;
 			}
 			
@@ -937,6 +1252,24 @@ void Node<CONFIG>::Check() const
 			}
 			assert(in_count == out_count);
 		}
+	}
+}
+
+template <typename CONFIG>
+void Node<CONFIG>::InvalidateExtensions()
+{
+	for(typename Edges::iterator itr = edges.begin(); itr != edges.end(); ++itr)
+	{
+		EdgeValue<CONFIG>& edge_value = (*itr).second;
+		edge_value.InvalidateExtensions();
+	}
+	
+	for(typename Extensions::iterator itr = extensions.begin(); itr != extensions.end(); ++itr)
+	{
+		NodeExtensionBase<CONFIG> *ext = *itr;
+		if(ext) ext->Free();
+		*itr = 0;
+	}
 }
 
 template <typename CONFIG>
@@ -961,7 +1294,7 @@ T Node<CONFIG>::ScanEdgesOrdered(VISITOR& visitor) const
 		for(typename Edges::const_iterator itr = edges.begin(); itr != edges.end(); ++itr)
 		{
 			Node<CONFIG> *node = (*itr).first;
-			const EdgeValue& edge_value = (*itr).second;
+			const EdgeValue<CONFIG>& edge_value = (*itr).second;
 			if(node->GetCategory() == node_category)
 			{
 				T ret = visitor.Visit(node, edge_value);
@@ -988,7 +1321,7 @@ T Node<CONFIG>::ScanEdgesOrdered(VISITOR& visitor) const
 	{
 		typename Edges::value_type pair = (*itr).second;
 		Node<CONFIG> *node = pair.first;
-		const EdgeValue& edge_value = pair.second;
+		const EdgeValue<CONFIG>& edge_value = pair.second;
 		
 		T ret = visitor.Visit(node, edge_value);
 		if(ret) return ret;
@@ -1019,6 +1352,37 @@ T Node<CONFIG>::ScanPredecessors(VISITOR& visitor) const
 		if(ret) return ret;
 	}
 	return T();
+}
+
+template <typename CONFIG>
+template <typename T>
+T *Node<CONFIG>::SetExtension(T *ext)
+{
+	return static_cast<T *>(SetExtension(T::ID, ext));
+}
+
+template <typename CONFIG>
+template <typename T>
+void Node<CONFIG>::GetExtension(T *& ext) const
+{
+	ext = this->template GetExtension<T>();
+}
+
+template <typename CONFIG>
+template <typename T>
+T *Node<CONFIG>::GetExtension() const
+{
+	return static_cast<T *>(extensions[T::ID]);
+}
+
+template <typename CONFIG>
+NodeExtensionBase<CONFIG> *Node<CONFIG>::SetExtension(unsigned ext_id, ExtensionBase *ext)
+{
+	NodeExtensionBase<CONFIG> *old_ext = (ext_id < extensions.size()) ? extensions[ext_id] : 0;
+	NodeExtensionBase<CONFIG> *node_ext = dynamic_cast<NodeExtensionBase<CONFIG> *>(ext);
+	assert(node_ext != 0);
+	extensions[ext_id] = node_ext;
+	return old_ext;
 }
 
 /////////////////////////////////// Block<> ///////////////////////////////////
@@ -1079,7 +1443,9 @@ void Block<CONFIG>::Print(std::ostream& stream) const
 template <typename CONFIG>
 void Block<CONFIG>::OutputGraphNode(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const
 {
-	stream << indent << GetGraphNodeName(cfg) << " [shape=none,margin=0,style=filled,fillcolor=white,fontname=\"" << config.graphviz_block_fontname << "\",label=<" << std::endl
+	stream << indent << GetGraphNodeName(cfg)
+	       << " [shape=none,margin=0,style=filled,color=\"" << config.graphviz_color << "\",fillcolor=\"" << config.graphviz_fillcolor << "\""
+	       << ",fontname=\"" << config.graphviz_block_fontname << "\",label=<" << std::endl
 	       << indent << "\t<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\">" << std::endl
 	       << indent << "\t\t<TR>" << std::endl
 	       << indent << "\t\t\t<TD ALIGN=\"LEFT\"><B>block</B></TD>" << std::endl
@@ -1196,6 +1562,8 @@ void Block<CONFIG>::OutputGraphNode(std::ostream& stream, const std::string& ind
 		       << indent << "\t\t</TR>" << std::endl;
 	}
 	
+	this->OutputGraphNodeExtensions(stream, indent, cfg, config, subgraph);
+	
 	stream << indent << "\t</TABLE>" << std::endl
 	       << indent << ">];" << std::endl;
 }
@@ -1228,7 +1596,7 @@ template <typename CONFIG>
 JSON_Value *Block<CONFIG>::Save(const Config<CONFIG>& config) const
 {
 	JSON_Object *object = this->SaveAsObject();
-	object->Add(new JSON_Member("addr", new JSON_Integer(group->GetAddress())));
+	object->Add(new JSON_Member("address", new JSON_Integer(group->GetAddress())));
 	object->Add(new JSON_Member("group", group->Save(config)));
 	
 	if(!call_map.empty())
@@ -1240,7 +1608,7 @@ JSON_Value *Block<CONFIG>::Save(const Config<CONFIG>& config) const
 			ADDRESS cfg_addr = call_map_entry.cfg->GetAddress();
 			JSON_Object *call_map_entry_object = new JSON_Object();
 			call_map_entry_object->Add(new JSON_Member("kind", new JSON_String("call")));
-			call_map_entry_object->Add(new JSON_Member("addr", new JSON_Integer(cfg_addr)));
+			call_map_entry_object->Add(new JSON_Member("address", new JSON_Integer(cfg_addr)));
 			if(config.symbol_table_lookup_if)
 			{
 				const unisim::util::debug::Symbol<ADDRESS> *symbol = config.symbol_table_lookup_if->FindSymbolByAddr(cfg_addr, unisim::util::debug::SymbolBase::SYM_FUNC);
@@ -1266,7 +1634,7 @@ JSON_Value *Block<CONFIG>::Save(const Config<CONFIG>& config) const
 			JSON_Object *signal_map_entry_object = new JSON_Object();
 			signal_map_entry_object->Add(new JSON_Member("kind", new JSON_String("signal")));
 			signal_map_entry_object->Add(new JSON_Member("sigid", new JSON_Integer(sigid)));
-			signal_map_entry_object->Add(new JSON_Member("addr", new JSON_Integer(cfg_addr)));
+			signal_map_entry_object->Add(new JSON_Member("address", new JSON_Integer(cfg_addr)));
 			if(config.symbol_table_lookup_if)
 			{
 				const unisim::util::debug::Symbol<ADDRESS> *symbol = config.symbol_table_lookup_if->FindSymbolByAddr(cfg_addr, unisim::util::debug::SymbolBase::SYM_FUNC);
@@ -1291,11 +1659,11 @@ Block<CONFIG> *Block<CONFIG>::Load(const JSON_Value& value)
 	{
 		const JSON_Object& object = value.AsObject();
 		
-		ADDRESS addr = object["addr"].AsInteger();
+		ADDRESS addr = object["address"].AsInteger();
 		
-		Group<CONFIG> *group = Group<CONFIG>::Load(object["group"].AsValue());
+		Group<CONFIG> *group = Group<CONFIG>::Load(object["group"].AsArray());
 		if(!group) throw std::runtime_error("Block loading aborted");
-		if(group->GetAddress() != addr) throw std::runtime_error("Bad block address");
+		if(group->GetAddress() != addr) throw std::runtime_error("Internal error!");
 		Block<CONFIG> *block = new Block<CONFIG>(group);
 		return block;
 	}
@@ -1307,9 +1675,9 @@ Block<CONFIG> *Block<CONFIG>::Load(const JSON_Value& value)
 }
 
 template <typename CONFIG>
-bool Block<CONFIG>::Fix(Mapping<CONFIG>& mapping, CFG<CONFIG>& cfg, const JSON_Value& value)
+bool Block<CONFIG>::Fix(Mapping<CONFIG>& mapping, CFG<CONFIG>& cfg, const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories)
 {
-	if(!Node<CONFIG>::Fix(mapping, cfg, value)) return false;
+	if(!Node<CONFIG>::Fix(mapping, cfg, value, extension_factories)) return false;
 	
 	try
 	{
@@ -1321,8 +1689,9 @@ bool Block<CONFIG>::Fix(Mapping<CONFIG>& mapping, CFG<CONFIG>& cfg, const JSON_V
 			for(JSON_Array::size_type idx = 0; idx < call_map_array.Length(); ++idx)
 			{
 				const JSON_Object& call_map_entry_object = call_map_array[idx].AsObject();
-				if((const std::string&) call_map_entry_object["kind"].AsString() != "call") throw std::runtime_error("Expected \"call\" as \"kind\"");
-				ADDRESS cfg_addr = call_map_entry_object["addr"].AsInteger();
+				const JSON_String& kind = call_map_entry_object["kind"].AsString();
+				if((const std::string&) kind != "call") kind.Bad("Expected \"call\" as \"kind\"");
+				ADDRESS cfg_addr = call_map_entry_object["address"].AsInteger();
 				CFG<CONFIG> *cfg = mapping.Get(cfg_addr);
 				uint64_t count = call_map_entry_object["count"].AsInteger();
 				AddCall(cfg, count);
@@ -1335,9 +1704,10 @@ bool Block<CONFIG>::Fix(Mapping<CONFIG>& mapping, CFG<CONFIG>& cfg, const JSON_V
 			for(JSON_Array::size_type idx = 0; idx < signal_map_array.Length(); ++idx)
 			{
 				const JSON_Object& signal_map_entry_object = signal_map_array[idx].AsObject();
-				if((const std::string&) signal_map_entry_object["kind"].AsString() != "signal") throw std::runtime_error("Expected \"signal\" as \"kind\"");
+				const JSON_String& kind = signal_map_entry_object["kind"].AsString();
+				if((const std::string&) kind != "signal") kind.Bad("Expected \"signal\" as \"kind\"");
 				unsigned sigid = signal_map_entry_object["sigid"].AsInteger();
-				ADDRESS cfg_addr = signal_map_entry_object["addr"].AsInteger();
+				ADDRESS cfg_addr = signal_map_entry_object["address"].AsInteger();
 				CFG<CONFIG> *cfg = mapping.Get(cfg_addr);
 				uint64_t count = signal_map_entry_object["count"].AsInteger();
 				AddSignal(sigid, cfg, count);
@@ -1377,7 +1747,9 @@ void Phantom<CONFIG>::Print(std::ostream& stream) const
 template <typename CONFIG>
 void Phantom<CONFIG>::OutputGraphNode(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const
 {
-	stream << indent << GetGraphNodeName(cfg) << " [shape=none,margin=0,style=dashed,fontname=\"" << config.graphviz_phantom_fontname << "\",label=<" << std::endl
+	FScope<std::ostream> fscope(stream);
+	stream << indent << GetGraphNodeName(cfg) << " [shape=none,margin=0,style=\"dashed,filled\",color=\"" << config.graphviz_color << "\","
+	       << "fillcolor=\"" << config.graphviz_fillcolor << "\",fontname=\"" << config.graphviz_phantom_fontname << "\",label=<" << std::endl
 	       << indent << "\t<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" STYLE=\"DASHED\">" << std::endl
 	       << indent << "\t\t<TR>" << std::endl
 	       << indent << "\t\t\t<TD ALIGN=\"LEFT\" BORDER=\"1\" SIDES=\"B\" STYLE=\"DASHED\"><B>phantom</B></TD>" << std::endl
@@ -1396,7 +1768,7 @@ template <typename CONFIG>
 JSON_Value *Phantom<CONFIG>::Save(const Config<CONFIG>& config) const
 {
 	JSON_Object *object = this->SaveAsObject();
-	object->Add(new JSON_Member("addr", new JSON_Integer(addr)));
+	object->Add(new JSON_Member("address", new JSON_Integer(addr)));
 	return object;
 }
 
@@ -1407,7 +1779,7 @@ Phantom<CONFIG> *Phantom<CONFIG>::Load(const JSON_Value& value)
 	{
 		const JSON_Object& object = value.AsObject();
 		
-		ADDRESS addr = object["addr"].AsInteger();
+		ADDRESS addr = object["address"].AsInteger();
 		
 		Phantom<CONFIG> *phantom = new Phantom<CONFIG>(addr);
 		return phantom;
@@ -1433,7 +1805,7 @@ template <typename CONFIG>
 void Entry<CONFIG>::OutputGraphNode(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const
 {
 	stream << indent << "{ rank=\"source\"; " << this->GetGraphNodeName(cfg)
-	       << " [shape=circle,style=filled,fillcolor=\"" << config.graphviz_color << "\""
+	       << " [shape=circle,style=filled,color=\"" << config.graphviz_color << "\",fillcolor=\"" << config.graphviz_color << "\""
 	       << ",width=0.3,height=0.3,fixedsize=true,label=\"\"]; }" << std::endl;
 }
 
@@ -1449,7 +1821,7 @@ template <typename CONFIG>
 void Exit<CONFIG>::OutputGraphNode(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const
 {
 	stream << indent << "{ rank=\"sink\"; " << this->GetGraphNodeName(cfg)
-	       << " [shape=doublecircle,style=filled,fillcolor=\"" << config.graphviz_color << "\""
+	       << " [shape=doublecircle,style=filled,color=\"" << config.graphviz_color << "\",fillcolor=\"" << config.graphviz_color << "\""
 	       << ",width=0.3,height=0.3,fixedsize=true,label=\"\"]; }" << std::endl;
 }
 
@@ -1465,7 +1837,7 @@ template <typename CONFIG>
 void Halt<CONFIG>::OutputGraphNode(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const
 {
 	stream << indent << "{ rank=\"sink\"; " << this->GetGraphNodeName(cfg)
-	       << " [shape=square,style=filled,fillcolor=\"" << config.graphviz_color << "\""
+	       << " [shape=square,style=filled,color=\"" << config.graphviz_color << "\",fillcolor=\"" << config.graphviz_color << "\""
 	       << ",width=0.3,height=0.3,fixedsize=true,peripheries=2,label=\"\"]; }" << std::endl;
 }
 
@@ -1493,7 +1865,7 @@ template <typename CONFIG>
 void Unknown<CONFIG>::OutputGraphNode(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const
 {
 	stream << indent << this->GetGraphNodeName(cfg)
-	       << " [shape=plaintext,fontname=\"" << config.graphviz_fontname << "\""
+	       << " [shape=plaintext,color=\"" << config.graphviz_color << "\",fontname=\"" << config.graphviz_fontname << "\""
 	       << ",label=<?>];" << std::endl;
 }
 
@@ -1529,6 +1901,8 @@ Unknown<CONFIG> *Unknown<CONFIG>::Load(const JSON_Value& value)
 template <typename CONFIG>
 CFG<CONFIG>::~CFG()
 {
+	InvalidateExtensions();
+	
 	for(Node<CONFIG> *node : { (Node<CONFIG> *) entry, (Node<CONFIG> *) exit, (Node<CONFIG> *) halt })
 	{
 		if(node) delete node;
@@ -1626,39 +2000,64 @@ Unknown<CONFIG> *CFG<CONFIG>::AddNode(Unknown<CONFIG> *unknown)
 }
 
 template <typename CONFIG>
-void CFG<CONFIG>::AddEdge(Node<CONFIG> *src, Node<CONFIG> *dst, const EdgeValue& edge_value)
+bool CFG<CONFIG>::HasNode(Node<CONFIG> *node) const
+{
+	if(node->GetCategory() == ENTRY) return entry && (node == entry);
+	if(node->GetCategory() == EXIT) return exit && (node == exit);
+	if(node->GetCategory() == HALT) return halt && (node == halt);
+	for(typename Nodes::const_iterator itr = nodes.begin(); itr != nodes.end(); ++itr)
+	{
+		Node<CONFIG> *existing_node = (*itr).second;
+		if(existing_node == node) return true;
+	}
+	for(typename Unknowns::const_iterator itr = unknowns.begin(); itr != unknowns.end(); ++itr)
+	{
+		Node<CONFIG> *existing_node = *itr;
+		if(existing_node == node) return true;
+	}
+	return false;
+}
+
+template <typename CONFIG>
+void CFG<CONFIG>::AddEdge(Node<CONFIG> *src, Node<CONFIG> *dst, EdgeValue<CONFIG>&& edge_value)
 {
 	if(CONFIG::DEBUG)
 	{
-		std::cerr << *this << "->AddEdge(src=" << *src << ", dst=" << *dst << ",edge_value=" << edge_value << ")" << std::endl;
+		std::cerr << *this << "->AddEdge(src=" << *src << ", dst=" << *dst << ", edge_value=" << edge_value << ")" << std::endl;
 	}
 	if(CONFIG::CHECK)
 	{
 		for(Node<CONFIG> *node: { src, dst })
 		{
-			if(node->GetCategory() == ENTRY) assert(entry && (node == entry));
-			if(node->GetCategory() == EXIT) assert(exit && (node == exit));
-			if(node->GetCategory() == HALT) assert(halt && (node == halt));
+			assert(HasNode(node));
 		}
-		bool found_src = (src->GetCategory() != BLOCK) && (src->GetCategory() != PHANTOM);
-		bool found_dst = (dst->GetCategory() != BLOCK) && (dst->GetCategory() != PHANTOM);
-		for(typename Nodes::iterator itr = nodes.begin(); (!found_src || !found_dst) && (itr != nodes.end()); ++itr)
-		{
-			Node<CONFIG> *node = (*itr).second;
-			if(!found_src && (node == src)) found_src = true;
-			if(!found_dst && (node == dst)) found_dst = true;
-		}
-		assert(found_src);
-		assert(found_dst);
 	}
 	
-	src->ConnectTo(dst, edge_value);
+	src->ConnectTo(dst, std::move(edge_value));
+}
+
+template <typename CONFIG>
+void CFG<CONFIG>::AddEdge(Node<CONFIG> *src, Node<CONFIG> *dst, uint64_t count, unsigned tag)
+{
+	if(CONFIG::DEBUG)
+	{
+		std::cerr << *this << "->AddEdge(src=" << *src << ", dst=" << *dst << ", count=" << count << ", tag=" << EdgeTag(tag) << ")" << std::endl;
+	}
+	if(CONFIG::CHECK)
+	{
+		for(Node<CONFIG> *node: { src, dst })
+		{
+			assert(HasNode(node));
+		}
+	}
+	
+	src->ConnectTo(dst, count, tag);
 }
 
 template <typename CONFIG>
 Node<CONFIG> *CFG<CONFIG>::FindNodeWithAddr(ADDRESS node_addr) const
 {
-	if(CONFIG::DEBUG) std::cerr << *this << "->FindNodeWithAddr(addr=@0x" << std::hex << node_addr << std::dec << ")" << std::endl;
+	if(CONFIG::DEBUG) { FScope<std::ostream> fscope(std::cerr); std::cerr << *this << "->FindNodeWithAddr(addr=@0x" << std::hex << node_addr << std::dec << ")" << std::endl; }
 	
 	typename Nodes::const_iterator itr = nodes.lower_bound(node_addr);
 	if(itr != nodes.end())
@@ -1720,15 +2119,15 @@ Block<CONFIG> *CFG<CONFIG>::PhantomToBlock(Phantom<CONFIG> *phantom, Block<CONFI
 	delete phantom;
 	// add the replacing block
 	AddNode(block);
-	if(CONFIG::CHECK && (CONFIG::CACHE_SIZE > 0)) block->Check();
+	if(CONFIG::CHECK && !(CONFIG::CACHE_SIZE > 0)) block->Check();
 	return block;
 }
 
 template <typename CONFIG>
 Block<CONFIG> *CFG<CONFIG>::SplitBlock(Block<CONFIG> *block, ADDRESS instr_addr)
 {
-	if(CONFIG::DEBUG) std::cerr << *this << "->SplitBlock(block=" << *block << ", instr_addr=@0x" << std::hex << instr_addr << std::dec << ")" << std::endl;
-	if(CONFIG::CHECK && (CONFIG::CACHE_SIZE > 0)) block->Check();
+	if(CONFIG::DEBUG) { FScope<std::ostream> fscope(std::cerr); std::cerr << *this << "->SplitBlock(block=" << *block << ", instr_addr=@0x" << std::hex << instr_addr << std::dec << ")" << std::endl; }
+	if(CONFIG::CHECK && !(CONFIG::CACHE_SIZE > 0)) block->Check();
 	
 	// remove block
 	typename Nodes::iterator itr = nodes.find(block->GetAddress());
@@ -1762,8 +2161,8 @@ Block<CONFIG> *CFG<CONFIG>::SplitBlock(Block<CONFIG> *block, ADDRESS instr_addr)
 	AddNode(new_block);
 	AddNode(block);
 	// make an edge between the blocks
-	AddEdge(new_block, block, EdgeValue(visitor.count));
-	if(CONFIG::CHECK && (CONFIG::CACHE_SIZE > 0))
+	AddEdge(new_block, block, visitor.count);
+	if(CONFIG::CHECK && !(CONFIG::CACHE_SIZE > 0))
 	{
 		new_block->Check();
 		block->Check();
@@ -1772,8 +2171,37 @@ Block<CONFIG> *CFG<CONFIG>::SplitBlock(Block<CONFIG> *block, ADDRESS instr_addr)
 }
 
 template <typename CONFIG>
+void CFG<CONFIG>::InvalidateExtensions()
+{
+	for(Node<CONFIG> *node : { (Node<CONFIG> *) entry, (Node<CONFIG> *) exit, (Node<CONFIG> *) halt })
+	{
+		if(node) node->InvalidateExtensions();
+	}
+	
+	for(typename Nodes::const_iterator itr = nodes.begin(); itr != nodes.end(); ++itr)
+	{
+		Node<CONFIG> *node = (*itr).second;
+		node->InvalidateExtensions();
+	}
+	
+	for(typename Unknowns::const_iterator itr = unknowns.begin(); itr != unknowns.end(); ++itr)
+	{
+		Unknown<CONFIG> *node = *itr;
+		node->InvalidateExtensions();
+	}
+	
+	for(typename Extensions::iterator itr = extensions.begin(); itr != extensions.end(); ++itr)
+	{
+		CFGExtensionBase<CONFIG> *ext = *itr;
+		if(ext) ext->Free();
+		*itr = 0;
+	}
+}
+
+template <typename CONFIG>
 void CFG<CONFIG>::Print(std::ostream& stream) const
 {
+	FScope<std::ostream> fscope(stream);
 	stream << "CFG(";
 	if(has_addr) stream << "addr=@" << std::hex << "0x" << addr << std::dec;
 	stream << ")";
@@ -1813,6 +2241,7 @@ void CFG<CONFIG>::OutputGraphEdges(std::ostream& stream, const std::string& inde
 template <typename CONFIG>
 void CFG<CONFIG>::OutputGraph(std::ostream& stream, const std::string& indent, const Config<CONFIG>& config, bool subgraph, unsigned filter) const
 {
+	FScope<std::ostream> fscope(stream);
 	std::string next_indent(indent);
 	
 	if(filter & GRAPH)
@@ -1855,11 +2284,13 @@ void CFG<CONFIG>::OutputGraph(std::ostream& stream, const std::string& indent, c
 	
 	if(filter & NODES)
 	{
+		stream << next_indent << std::endl << next_indent << "//////////////////////////////////// nodes ////////////////////////////////////" << std::endl << next_indent << std::endl;
 		OutputGraphNodes(stream, next_indent, config, subgraph);
 	}
 	
 	if(filter & EDGES)
 	{
+		stream << next_indent << std::endl << next_indent << "//////////////////////////////////// edges ////////////////////////////////////" << std::endl << next_indent << std::endl;
 		OutputGraphEdges(stream, next_indent, config, subgraph);
 	}
 	
@@ -1876,7 +2307,7 @@ JSON_Value *CFG<CONFIG>::Save(const Config<CONFIG>& config) const
 	object->Add(new JSON_Member("kind", new JSON_String("cfg")));
 	if(has_addr)
 	{
-		object->Add(new JSON_Member("addr", new JSON_Integer(addr)));
+		object->Add(new JSON_Member("address", new JSON_Integer(addr)));
 		if(config.symbol_table_lookup_if)
 		{
 			const unisim::util::debug::Symbol<ADDRESS> *symbol = config.symbol_table_lookup_if->FindSymbolByAddr(addr, unisim::util::debug::SymbolBase::SYM_FUNC);
@@ -1886,11 +2317,13 @@ JSON_Value *CFG<CONFIG>::Save(const Config<CONFIG>& config) const
 			}
 		}
 	}
+	
 	object->Add(new JSON_Member("is_complete", new JSON_Boolean(IsComplete())));
-	if(entry) object->Add(new JSON_Member(ToString(Category(entry->GetCategory())), entry->Save(config)));
-	if(exit) object->Add(new JSON_Member(ToString(Category(exit->GetCategory())), exit->Save(config)));
-	if(halt) object->Add(new JSON_Member(ToString(Category(halt->GetCategory())), halt->Save(config)));
+	
 	JSON_Array *nodes_array = new JSON_Array();
+	if(entry) nodes_array->Push(entry->Save(config));
+	if(exit) nodes_array->Push(exit->Save(config));
+	if(halt) nodes_array->Push(halt->Save(config));
 	for(typename Nodes::const_iterator itr = nodes.begin(); itr != nodes.end(); ++itr)
 	{
 		Node<CONFIG> *node = (*itr).second;
@@ -1902,38 +2335,67 @@ JSON_Value *CFG<CONFIG>::Save(const Config<CONFIG>& config) const
 		nodes_array->Push(node->Save(config));
 	}
 	object->Add(new JSON_Member("nodes", nodes_array));
+	
+	if(!extensions.empty())
+	{
+		JSON_Object *extensions_object = new JSON_Object();
+		
+		for(typename Extensions::const_iterator itr = extensions.begin(); itr != extensions.end(); ++itr)
+		{
+			CFGExtensionBase<CONFIG> *ext = *itr;
+			if(ext)
+			{
+				extensions_object->Add(new JSON_Member(ext->GetName(), ext->Save()));
+			}
+		}
+		
+		object->Add(new JSON_Member("extensions", extensions_object));
+	}
+	
 	return object;
 }
 
 template <typename CONFIG>
-CFG<CONFIG> *CFG<CONFIG>::Load(const JSON_Value& value)
+CFG<CONFIG> *CFG<CONFIG>::Load(const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories)
 {
+	CFG<CONFIG> *cfg = 0;
 	try
 	{
 		const JSON_Object& object = value.AsObject();
 		
-		if((const std::string&) object["kind"].AsString() != "cfg") throw std::runtime_error("Expected \"cfg\" as \"kind\"");
+		const JSON_String& kind = object["kind"].AsString();
+		if((const std::string&) kind != "cfg") kind.Bad("Expected \"cfg\" as \"kind\"");
 		
-		ADDRESS addr = object["addr"].AsInteger();
+		ADDRESS addr = object["address"].AsInteger();
 		
-		CFG<CONFIG> *cfg = new CFG<CONFIG>(addr);
-		
-		if(object.HasProperty(ToString(Category(ENTRY)))) cfg->GetEntry();
-		if(object.HasProperty(ToString(Category(EXIT)))) cfg->GetExit();
-		if(object.HasProperty(ToString(Category(HALT)))) cfg->GetHalt();
+		cfg = new CFG<CONFIG>(addr);
 		
 		const JSON_Array& nodes_array = object["nodes"].AsArray();
 		
 		for(JSON_Array::size_type idx = 0; idx < nodes_array.Length(); ++idx)
 		{
 			const JSON_Value& node_value = nodes_array[idx];
-			Node<CONFIG> *node = Node<CONFIG>::Load(node_value);
+			Node<CONFIG> *node = Node<CONFIG>::Load(node_value, extension_factories);
 			if(!node)
 			{
-				delete cfg;
 				throw std::runtime_error("CFG loading aborted");
 			}
-			if(node->GetCategory() == BLOCK)
+			if(node->GetCategory() == ENTRY)
+			{
+				if(cfg->entry) node_value.Bad("Duplicated entry node");
+				cfg->entry = node;
+			}
+			else if(node->GetCategory() == EXIT)
+			{
+				if(cfg->exit) node_value.Bad("Duplicated exit node");
+				cfg->exit = node;
+			}
+			else if(node->GetCategory() == HALT)
+			{
+				if(cfg->halt) node_value.Bad("Duplicated halt node");
+				cfg->halt = node;
+			}
+			else if(node->GetCategory() == BLOCK)
 				cfg->AddNode(static_cast<Block<CONFIG> *>(node));
 			else if(node->GetCategory() == PHANTOM)
 				cfg->AddNode(static_cast<Phantom<CONFIG> *>(node));
@@ -1943,13 +2405,50 @@ CFG<CONFIG> *CFG<CONFIG>::Load(const JSON_Value& value)
 				throw std::runtime_error("Internal error!");
 		}
 		
-		return cfg;
+		// cfg->LoadExtensions(object, extension_factories);
+		if(object.HasProperty("extensions"))
+		{
+			const JSON_Object& extensions_object = object["extensions"].AsObject();
+			
+			struct MemberVisitor
+			{
+				CFG<CONFIG>& self;
+				const std::initializer_list<ExtensionFactory *>& extension_factories;
+				
+				MemberVisitor(CFG<CONFIG>& _self, const std::initializer_list<ExtensionFactory *>& _extension_factories) : self(_self), extension_factories(_extension_factories) {}
+				
+				bool Visit(const JSON_Member& member)
+				{
+					const std::string& name = member.GetName();
+					for(ExtensionFactory *extension_factory : extension_factories)
+					{
+						ExtensionBase *ext = extension_factory->LoadExtension(CFG_EXT, name, member.GetValue());
+						if(ext)
+						{
+							self.SetExtension(ext->GetId(), ext);
+							return false; // keep scanning members
+						}
+					}
+					
+					std::cerr << "WARNING! can't load CFG extension " << name << std::endl;
+					return false; // keep scanning members
+				}
+			};
+			
+			MemberVisitor member_visitor(*cfg, extension_factories);
+			extensions_object.Scan(member_visitor);
+		}
 	}
 	catch(std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
+		if(cfg)
+		{
+			delete cfg;
+			cfg = 0;
+		}
 	}
-	return 0;
+	return cfg;
 }
 
 template <typename CONFIG>
@@ -1978,20 +2477,62 @@ T CFG<CONFIG>::ScanNodes(VISITOR& visitor) const
 }
 
 template <typename CONFIG>
-bool CFG<CONFIG>::Fix(Mapping<CONFIG>& mapping, const JSON_Value& value)
+bool CFG<CONFIG>::Fix(Mapping<CONFIG>& mapping, const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories)
 {
 	try
 	{
 		const JSON_Object& object = value.AsObject();
-		if(entry && !entry->Fix(mapping, *this, object[ToString(Category(ENTRY))].AsValue())) return false;
 		const JSON_Array& nodes_array = object["nodes"].AsArray();
-		typename Nodes::iterator itr;
-		JSON_Array::size_type idx;
-		for(itr = nodes.begin(), idx = 0; itr != nodes.end(); ++itr, ++idx)
+		for(JSON_Array::size_type idx = 0, len = nodes_array.Length(); idx < len; ++idx)
 		{
-			Node<CONFIG> *node = (*itr).second;
-			const JSON_Value& node_value = nodes_array[idx];
-			if(!node->Fix(mapping, *this, node_value)) return false;
+			const JSON_Object& node_object = nodes_array[idx].AsObject();
+			const JSON_String& category_string = node_object["category"].AsString();
+			Category category_struct((const std::string&) category_string);
+			if(!category_struct.Valid()) category_string.Bad("Invalid category");
+			unsigned category = category_struct;
+			Node<CONFIG> *node = 0;
+			if(category == ENTRY)
+			{
+				node = entry;
+			}
+			else if(category == EXIT)
+			{
+				node = exit;
+			}
+			else if(category == HALT)
+			{
+				node = halt;
+			}
+			else if((category == BLOCK) || (category == PHANTOM))
+			{
+				ADDRESS node_addr = ADDRESS(node_object["address"].AsInteger());
+				node = FindNodeWithAddr(node_addr);
+			}
+			else if(category == UNKNOWN)
+			{
+				unsigned unknown_id = unsigned(node_object["id"].AsInteger());
+				node = FindUnknownWithId(unknown_id);
+			}
+			else
+				throw std::runtime_error("Internal error!");
+			
+			assert(node != 0);
+			if(!node->Fix(mapping, *this, node_object, extension_factories)) return false;
+		}
+		
+		if(object.HasProperty("extensions"))
+		{
+			const JSON_Object& extensions_object = object["extensions"].AsObject();
+			
+			for(typename Extensions::iterator itr = extensions.begin(); itr != extensions.end(); ++itr)
+			{
+				CFGExtensionBase<CONFIG> *ext = *itr;
+				if(ext)
+				{
+					const JSON_Value& ext_value = extensions_object[ext->GetName()].AsValue();
+					ext->Fix(mapping, *this, ext_value);
+				}
+			}
 		}
 		
 		return true;
@@ -2031,6 +2572,39 @@ void CFG<CONFIG>::Check()
 			}
 		}
 	}
+}
+
+template <typename CONFIG>
+template <typename T>
+T *CFG<CONFIG>::SetExtension(T *ext)
+{
+	CFGExtensionBase<CONFIG> *old_ext = extensions[T::ID];
+	extensions[T::ID] = ext;
+	return static_cast<T *>(old_ext);
+}
+
+template <typename CONFIG>
+template <typename T>
+void CFG<CONFIG>::GetExtension(T *& ext) const
+{
+	ext = this->template GetExtension<T>();
+}
+
+template <typename CONFIG>
+template <typename T>
+T *CFG<CONFIG>::GetExtension() const
+{
+	return static_cast<T *>(extensions[T::ID]);
+}
+
+template <typename CONFIG>
+CFGExtensionBase<CONFIG> *CFG<CONFIG>::SetExtension(unsigned ext_id, ExtensionBase *ext)
+{
+	CFGExtensionBase<CONFIG> *old_ext = (ext_id < extensions.size()) ? extensions[ext_id] : 0;
+	CFGExtensionBase<CONFIG> *node_ext = dynamic_cast<CFGExtensionBase<CONFIG> *>(ext);
+	assert(node_ext != 0);
+	extensions[ext_id] = node_ext;
+	return old_ext;
 }
 
 /////////////////////////////////// Mapping<> /////////////////////////////////
@@ -2101,7 +2675,7 @@ JSON_Value *Mapping<CONFIG>::Save(const Config<CONFIG>& config) const
 }
 
 template <typename CONFIG>
-bool Mapping<CONFIG>::Load(const JSON_Value& value)
+bool Mapping<CONFIG>::Load(const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories)
 {
 	Clear();
 	try
@@ -2109,21 +2683,20 @@ bool Mapping<CONFIG>::Load(const JSON_Value& value)
 		const JSON_Array& array = value.AsArray();
 		
 		std::vector<CFG<CONFIG> *> cfgs;
-		JSON_Array::size_type idx;
-		for(idx = 0; idx < array.Length(); ++idx)
+		for(JSON_Array::size_type idx = 0, len = array.Length(); idx < len; ++idx)
 		{
 			const JSON_Value& cfg_value = array[idx];
-			CFG<CONFIG> *cfg = CFG<CONFIG>::Load(cfg_value);
+			CFG<CONFIG> *cfg = CFG<CONFIG>::Load(cfg_value, extension_factories);
 			if(!cfg) throw std::runtime_error("Mapping loading aborted");
 			Put(cfg->GetAddress(), cfg);
 			cfgs.push_back(cfg);
 		}
 	
-		for(idx = 0; idx < array.Length(); ++idx)
+		for(JSON_Array::size_type idx = 0, len = array.Length(); idx < len; ++idx)
 		{
 			CFG<CONFIG> *cfg = cfgs[idx];
 			const JSON_Value& cfg_value = array[idx];
-			if(!cfg->Fix(*this, cfg_value)) return false;
+			if(!cfg->Fix(*this, cfg_value, extension_factories)) return false;
 		}
 		
 		return true;
@@ -2143,6 +2716,16 @@ void Mapping<CONFIG>::Check()
 	{
 		CFG<CONFIG> *cfg = (*itr).second;
 		cfg->Check();
+	}
+}
+
+template <typename CONFIG>
+void Mapping<CONFIG>::InvalidateExtensions()
+{
+	for(typename Map::const_iterator itr = map.begin(); itr != map.end(); ++itr)
+	{
+		CFG<CONFIG> *cfg = (*itr).second;
+		cfg->InvalidateExtensions();
 	}
 }
 
@@ -2209,6 +2792,7 @@ Builder<CONFIG>::Builder()
 	, mapping()
 	, new_group()
 	, next_unknown_id(0)
+	, under_construction(false)
 	, config()
 {
 }
@@ -2251,6 +2835,11 @@ void Builder<CONFIG>::Process(const Group<CONFIG>& group)
 {
 	if(CONFIG::DEBUG) std::cerr << "Process(group=" << group << ")" << std::endl;
 	
+	if(!under_construction)
+	{
+		InvalidateExtensions();
+		under_construction = true;
+	}
 	unsigned tag = EMPTY;
 	ADDRESS addr = group.GetAddress();
 	if(!state.current)
@@ -2297,50 +2886,55 @@ void Builder<CONFIG>::Process(const Group<CONFIG>& group)
 template <typename CONFIG>
 void Builder<CONFIG>::End()
 {
-	if(CONFIG::CACHE_SIZE > 0)
+	if(under_construction)
 	{
-		struct CFGVisitor
+		if(CONFIG::CACHE_SIZE > 0)
 		{
-			bool Visit(CFG<CONFIG> *cfg)
+			struct CFGVisitor
 			{
-				struct NodeVisitor
+				bool Visit(CFG<CONFIG> *cfg)
 				{
-					CFG<CONFIG>& cfg;
-					
-					NodeVisitor(CFG<CONFIG>& _cfg) : cfg(_cfg) {}
-					
-					bool Visit(Node<CONFIG> *src)
+					struct NodeVisitor
 					{
-						src->FlushCounts();
-						return false; // keep scanning nodes
-					}
-				};
-				
-				NodeVisitor node_visitor(*cfg);
-				cfg->ScanNodes(node_visitor);
-				return false; // keep scanning CFGs
-			}
-		};
+						CFG<CONFIG>& cfg;
+						
+						NodeVisitor(CFG<CONFIG>& _cfg) : cfg(_cfg) {}
+						
+						bool Visit(Node<CONFIG> *src)
+						{
+							src->FlushCounts();
+							return false; // keep scanning nodes
+						}
+					};
+					
+					NodeVisitor node_visitor(*cfg);
+					cfg->ScanNodes(node_visitor);
+					return false; // keep scanning CFGs
+				}
+			};
+			
+			CFGVisitor cfg_visitor;
+			mapping.ScanCFGs(cfg_visitor);
+		}
 		
-		CFGVisitor cfg_visitor;
-		mapping.ScanCFGs(cfg_visitor);
-	}
-	
-	while(state.current)
-	{
-		state.current.cfg->AddEdge(state.current.working, state.current.cfg->GetHalt(), EdgeValue(1));
-		if(state.callstack.Empty())
+		while(state.current)
 		{
-			state.current = Current<CONFIG>();
+			state.current.cfg->AddEdge(state.current.working, state.current.cfg->GetHalt(), 1);
+			if(state.callstack.Empty())
+			{
+				state.current = Current<CONFIG>();
+			}
+			else
+			{
+				state.current = state.callstack.Top().current;
+				state.callstack.Pop();
+			}
 		}
-		else
-		{
-			state.current = state.callstack.Top().current;
-			state.callstack.Pop();
-		}
-	}
+		
+		if(CONFIG::CHECK) mapping.Check();
 	
-	if(CONFIG::CHECK) mapping.Check();
+		under_construction = false;
+	}
 }
 
 template <typename CONFIG>
@@ -2378,7 +2972,7 @@ void Builder<CONFIG>::Save(std::ostream& stream) const
 }
 
 template <typename CONFIG>
-bool Builder<CONFIG>::Load(const JSON_Value& value)
+bool Builder<CONFIG>::Load(const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories)
 {
 	new_group.Clear();
 	state.Clear();
@@ -2387,7 +2981,7 @@ bool Builder<CONFIG>::Load(const JSON_Value& value)
 		const JSON_Object& object = value.AsObject();
 		if(object.HasProperty("mapping"))
 		{
-			if(!mapping.Load(object["mapping"].AsValue())) return false;
+			if(!mapping.Load(object["mapping"].AsValue(), extension_factories)) return false;
 		}
 	}
 	catch(std::exception& e)
@@ -2440,7 +3034,7 @@ bool Builder<CONFIG>::Load(const JSON_Value& value)
 }
 
 template <typename CONFIG>
-void Builder<CONFIG>::Load(std::istream& stream)
+void Builder<CONFIG>::Load(std::istream& stream, const std::initializer_list<ExtensionFactory *>& extension_factories)
 {
 	JSON_Parser<JSON_AST_Builder> json_parser;
 	JSON_AST_Builder json_ast_builder;
@@ -2449,7 +3043,7 @@ void Builder<CONFIG>::Load(std::istream& stream)
 	
 	if(backup)
 	{
-		bool load_status = Load(*backup);
+		bool load_status = Load(*backup, extension_factories);
 		delete backup;
 		if(load_status) return;
 	}
@@ -2460,12 +3054,12 @@ void Builder<CONFIG>::Load(std::istream& stream)
 template <typename CONFIG>
 unsigned /* tag */ Builder<CONFIG>::ProcessTail(const Instruction<CONFIG>& tail, ADDRESS target_addr) // see PROCESS_TYPE
 {
-	if(CONFIG::DEBUG) std::cerr << "ProcessTail(tail=" << tail << ", target_addr=@0x" << std::hex << target_addr << std::dec << ")" << std::endl;
+	if(CONFIG::DEBUG) { FScope<std::ostream> fscope(std::cerr); std::cerr << "ProcessTail(tail=" << tail << ", target_addr=@0x" << std::hex << target_addr << std::dec << ")" << std::endl; }
 	unsigned tag = EMPTY;
 	unsigned type = tail.GetType();
-	if((tail.GetMode() == INDIRECT) && !state.current.working->HasUnknowns() && ((type == JUMP) || (type == BRANCH) || (type == CALL)))
+	if((tail.GetMode() == INDIRECT) && !state.current.working->HasUnknownSuccessor() && ((type == JUMP) || (type == BRANCH) || (type == CALL)))
 	{
-		state.current.cfg->AddEdge(state.current.working, state.current.cfg->AddNode(new Unknown<CONFIG>(next_unknown_id++)), EdgeValue(0));
+		state.current.cfg->AddEdge(state.current.working, state.current.cfg->AddNode(new Unknown<CONFIG>(next_unknown_id++)), 0);
 	}
 	if(type == JUMP)
 	{
@@ -2498,7 +3092,7 @@ unsigned /* tag */ Builder<CONFIG>::ProcessTail(const Instruction<CONFIG>& tail,
 			{
 				CallStackEntry<CONFIG>& call_stack_entry = state.callstack.Top();
 				ADDRESS ret_addr = call_stack_entry.ret_addr;
-				state.current.cfg->AddEdge(state.current.working, state.current.cfg->GetExit(), EdgeValue(1));
+				state.current.cfg->AddEdge(state.current.working, state.current.cfg->GetExit(), 1);
 				state.current = call_stack_entry.current;
 				state.callstack.Pop();
 				if(ret_addr == target_addr) break;
@@ -2522,7 +3116,7 @@ template <typename CONFIG>
 void Builder<CONFIG>::ProcessBranch(ADDRESS addr, ADDRESS target_addr, unsigned tag)
 {
 	assert(addr != target_addr);
-	if(CONFIG::DEBUG) std::cerr << "ProcessBranch(addr=@0x" << std::hex << addr << std::dec << ", target_addr=@0x" << std::hex << target_addr << std::dec << ")" << std::endl;
+	if(CONFIG::DEBUG) { FScope<std::ostream> fscope(std::cerr); std::cerr << "ProcessBranch(addr=@0x" << std::hex << addr << std::dec << ", target_addr=@0x" << std::hex << target_addr << std::dec << ")" << std::endl; }
 	Node<CONFIG> *node = state.current.cfg->FindNodeWithAddr(addr);
 	if(node)
 	{
@@ -2539,7 +3133,7 @@ void Builder<CONFIG>::ProcessBranch(ADDRESS addr, ADDRESS target_addr, unsigned 
 	{
 		node = state.current.cfg->AddNode(new Phantom<CONFIG>(addr));
 	}
-	state.current.cfg->AddEdge(state.current.working, node, EdgeValue(0, tag));
+	state.current.cfg->AddEdge(state.current.working, node, 0, tag);
 }
 
 template <typename CONFIG>
@@ -2577,7 +3171,7 @@ Block<CONFIG> *Builder<CONFIG>::ProcessGroup(CFG<CONFIG> *cfg, Node<CONFIG> *wor
 					}
 					assert(block->GetAddress() == instr.GetAddress());
 				}
-				cfg->AddEdge(working, block, EdgeValue(1, tag));
+				cfg->AddEdge(working, block, 1, tag);
 				working = block;
 				itr = block->begin();
 			}
@@ -2597,7 +3191,7 @@ Block<CONFIG> *Builder<CONFIG>::ProcessGroup(CFG<CONFIG> *cfg, Node<CONFIG> *wor
 				else
 				{
 					Block<CONFIG> *block = cfg->AddNode(new Block<CONFIG>(new Group<CONFIG>(instr)));
-					cfg->AddEdge(working, block, EdgeValue(1, tag));
+					cfg->AddEdge(working, block, 1, tag);
 					working = block;
 					itr = block->begin();
 				}
@@ -2612,6 +3206,12 @@ Block<CONFIG> *Builder<CONFIG>::ProcessGroup(CFG<CONFIG> *cfg, Node<CONFIG> *wor
 	
 	if(CONFIG::DEBUG) std::cerr << "ProcessGroup returns " << *working_block << std::endl;
 	return working_block;
+}
+
+template <typename CONFIG>
+void Builder<CONFIG>::InvalidateExtensions()
+{
+	mapping.InvalidateExtensions();
 }
 
 } // end of namespace cfg

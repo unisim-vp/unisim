@@ -45,7 +45,7 @@ int sc_main(int argc, char *argv[])
   switch (simulator.Setup())
     {
     case unisim::kernel::Simulator::ST_ERROR:
-      std::cerr << "ERROR: Can't start simulation because of previous erros" << std::endl;
+      std::cerr << "ERROR: Can't start simulation because of previous errors" << std::endl;
       ret = -1;
       break;
     case unisim::kernel::Simulator::ST_OK_DONT_START:

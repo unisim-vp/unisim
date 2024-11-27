@@ -36,10 +36,10 @@
 //
 // This is an implementation of algorithms from the following paper:
 //
-//      Andrei Rimsa, José Nelson Amaral, and Fernando Magno Quintão Pereira:
-//      Practical dynamic reconstruction of control flow graphs.
-//      In Journal of Software Practice and Experience, Volume 51, Number 2,
-//      February 2021.
+//   Andrei Rimsa, José Nelson Amaral, and Fernando Magno Quintão Pereira:
+//   Practical dynamic reconstruction of control flow graphs.
+//   In Journal of Software Practice and Experience, Volume 51, Number 2,
+//   February 2021.
 
 #ifndef __UNISIM_UTIL_CFG_CFG_HH__
 #define __UNISIM_UTIL_CFG_CFG_HH__
@@ -95,51 +95,6 @@ backup_file << cfg_builder;
 std::ostream graphviz_file("cfgs.dot")
 cfg_builder.OutputGraph(graphviz_file);
 #endif
-
-///////////////////////////////////////////////////////////////////////////////
-//                          Forward declarations                             //
-///////////////////////////////////////////////////////////////////////////////
-
-struct Type;
-struct Mode;
-struct Category;
-template <typename CONFIG> struct Config;
-struct InstructionBase;
-template <unsigned MAX_OPCODE_SIZE> struct Opcode;
-template <typename CONFIG> struct Instruction;
-template <typename CONFIG> struct StandardInstruction;
-template <typename CONFIG> struct JumpInstruction;
-template <typename CONFIG> struct BranchInstruction;
-template <typename CONFIG> struct CallInstruction;
-template <typename CONFIG> struct ReturnInstruction;
-template <typename CONFIG> struct Group;
-template <typename CONFIG> struct CacheAccess;
-template <typename CONFIG> struct CacheEntry;
-template <typename CONFIG> struct Cache;
-struct NodeBase;
-template <typename CONFIG> struct Node;
-template <typename CONFIG> struct CallMapEntry;
-template <typename CONFIG> struct SignalMapEntry;
-template <typename CONFIG> struct Block;
-template <typename CONFIG> struct Phantom;
-template <typename CONFIG> struct Entry;
-template <typename CONFIG> struct Exit;
-template <typename CONFIG> struct Halt;
-template <typename CONFIG> struct Unknown;
-struct CFGBase;
-template <typename CONFIG> struct CFG;
-template <typename CONFIG> struct Mapping;
-template <typename CONFIG> struct Current;
-template <typename CONFIG> struct Call;
-template <typename CONFIG> struct CallStack;
-template <typename CONFIG> struct State;
-template <typename CONFIG> struct Builder;
-
-using unisim::util::ostream::ToString;
-using unisim::util::json::JSON_Value;
-using unisim::util::json::JSON_Object;
-using unisim::util::json::JSON_Member;
-using unisim::util::json::JSON_Array;
 
 ///////////////////////////////////////////////////////////////////////////////
 //                            Enumeration types                              //
@@ -207,9 +162,78 @@ enum
 	FALLTHROUGH = 2  // fallthrough branch outcome
 };
 
+// Extension type
+enum ExtensionType
+{
+	NODE_EXT = 0, // node extension
+	EDGE_EXT = 1, // edge extension
+	CFG_EXT  = 2  // CFG extension
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//                          Forward declarations                             //
+///////////////////////////////////////////////////////////////////////////////
+
+struct Type;
+struct Mode;
+struct Category;
+template <typename CONFIG> struct Config;
+struct InstructionBase;
+template <unsigned MAX_OPCODE_SIZE> struct Opcode;
+template <typename CONFIG> struct Instruction;
+template <typename CONFIG> struct StandardInstruction;
+template <typename CONFIG> struct JumpInstruction;
+template <typename CONFIG> struct BranchInstruction;
+template <typename CONFIG> struct CallInstruction;
+template <typename CONFIG> struct ReturnInstruction;
+template <typename CONFIG> struct Group;
+template <typename CONFIG> struct CacheAccess;
+template <typename CONFIG> struct CacheEntry;
+template <typename CONFIG> struct Cache;
+struct ExtensionBase;
+template <typename CONFIG, ExtensionType EXT_TYPE> struct TypedExtension;
+template <typename CONFIG, ExtensionType EXT_TYPE, typename T> struct Extension;
+template <typename CONFIG, typename T> struct NodeExtension;
+template <typename CONFIG, typename T> struct EdgeExtension;
+template <typename CONFIG, typename T> struct CFGExtension;
+struct ExtensionFactory;
+struct NodeBase;
+struct EdgeValueBase;
+template <typename CONFIG> struct EdgeValue;
+template <typename CONFIG> struct Node;
+template <typename CONFIG> struct CallMapEntry;
+template <typename CONFIG> struct SignalMapEntry;
+template <typename CONFIG> struct Block;
+template <typename CONFIG> struct Phantom;
+template <typename CONFIG> struct Entry;
+template <typename CONFIG> struct Exit;
+template <typename CONFIG> struct Halt;
+template <typename CONFIG> struct Unknown;
+struct CFGBase;
+template <typename CONFIG> struct CFG;
+template <typename CONFIG> struct Mapping;
+template <typename CONFIG> struct Current;
+template <typename CONFIG> struct Call;
+template <typename CONFIG> struct CallStack;
+template <typename CONFIG> struct State;
+template <typename CONFIG> struct Builder;
+
+using unisim::util::ostream::ToString;
+using unisim::util::ostream::FScope;
+using unisim::util::json::JSON_Value;
+using unisim::util::json::JSON_Object;
+using unisim::util::json::JSON_Member;
+using unisim::util::json::JSON_Array;
+
 ///////////////////////////////////////////////////////////////////////////////
 //                               Declarations                                //
 ///////////////////////////////////////////////////////////////////////////////
+
+// Allocate an extension ID of a particular extension type
+unsigned AllocateExtensionId(ExtensionType ext_type);
+
+// Get number of extension IDs for a particular extension type
+unsigned ExtensionIds(ExtensionType ext_type);
 
 // Helper function to convert a string to HTML
 std::string StringToHTML(const std::string& s);
@@ -301,6 +325,7 @@ struct Config
 	unisim::service::interfaces::Disassembly<ADDRESS> *disassembly_if;
 	unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if;
 	std::string graphviz_color;
+	std::string graphviz_fillcolor;
 	std::string graphviz_branch_target_color;
 	std::string graphviz_branch_fallthrough_color;
 	std::string graphviz_call_color;
@@ -590,12 +615,93 @@ private:
 	CacheEntries cache_entries;
 };
 
+//////////////////////////////// ExtensionBase ////////////////////////////////
+
+struct ExtensionBase
+{
+	virtual void Free();
+	virtual unsigned GetId() const = 0;
+	virtual const char *GetName() const = 0;
+	virtual JSON_Value *Save() const = 0;
+	virtual void Print(std::ostream& stream) const = 0;
+protected:
+	virtual ~ExtensionBase();
+};
+
+inline std::ostream& operator << (std::ostream& stream, const ExtensionBase& ext) { ext.Print(stream); return stream; }
+
+////////////////////////////// TypedExtension<> ///////////////////////////////
+
+template <typename CONFIG, ExtensionType EXT_TYPE> struct TypedExtension {};
+
+template <typename CONFIG>
+struct TypedExtension<CONFIG, NODE_EXT> : ExtensionBase
+{
+	static const ExtensionType Type;
+	
+	virtual void Fix(const Mapping<CONFIG>& mapping, const CFG<CONFIG>& cfg, const Node<CONFIG>& node, const JSON_Value& value) {};
+};
+
+template <typename CONFIG>
+struct TypedExtension<CONFIG, EDGE_EXT> : ExtensionBase
+{
+	static const ExtensionType Type;
+	
+	virtual void Fix(const Mapping<CONFIG>& mapping, const CFG<CONFIG>& cfg, const Node<CONFIG>& node, const EdgeValue<CONFIG>& edge_value, const JSON_Value& value) {};
+};
+
+template <typename CONFIG>
+struct TypedExtension<CONFIG, CFG_EXT> : ExtensionBase
+{
+	static const ExtensionType Type;
+	
+	virtual void Fix(const Mapping<CONFIG>& mapping, const CFG<CONFIG>& cfg, const JSON_Value& value) {};
+};
+
+//////////////////////////// NodeExtensionBase<> //////////////////////////////
+
+template <typename CONFIG>
+using NodeExtensionBase = TypedExtension<CONFIG, NODE_EXT>;
+
+//////////////////////////// EdgeExtensionBase<> //////////////////////////////
+
+template <typename CONFIG>
+using EdgeExtensionBase = TypedExtension<CONFIG, EDGE_EXT>;
+
+//////////////////////////// CFGExtensionBase<> ///////////////////////////////
+
+template <typename CONFIG>
+using CFGExtensionBase = TypedExtension<CONFIG, CFG_EXT>;
+
+///////////////////////////////// Extension<> /////////////////////////////////
+
+template <typename CONFIG, ExtensionType EXT_TYPE, typename T>
+struct Extension : TypedExtension<CONFIG, EXT_TYPE>
+{
+	const static unsigned ID;
+	virtual unsigned GetId() const { return T::ID; }
+	virtual const char *GetName() const { return T::NAME; }
+};
+
+template <typename CONFIG, typename T> struct NodeExtension : Extension<CONFIG, NODE_EXT, T> {};
+template <typename CONFIG, typename T> struct EdgeExtension : Extension<CONFIG, EDGE_EXT, T> {};
+template <typename CONFIG, typename T> struct CFGExtension  : Extension<CONFIG, CFG_EXT , T> {};
+
+////////////////////////////// ExtensionFactory ///////////////////////////////
+
+struct ExtensionFactory
+{
+	virtual ~ExtensionFactory() {}
+	virtual ExtensionBase *LoadExtension(ExtensionType ext_type, const std::string& ext_name, const JSON_Value& value) const = 0;
+};
+
 ////////////////////////////////// CFGBase ////////////////////////////////////
 
 struct CFGBase
 {
 	CFGBase() {}
 	virtual ~CFGBase() {}
+	
 	virtual std::string GetName() const = 0;
 	virtual std::string GetGraphName() const = 0;
 };
@@ -611,6 +717,7 @@ struct NodeBase
 	virtual std::string GetName() const { return ToString(Category(category)); }
 	virtual std::string GetGraphNodeName(const CFGBase& cfg) const { return cfg.GetGraphName() + "_" + ToString(Category(category)); }
 	virtual void Print(std::ostream& stream) const = 0;
+	JSON_Object *SaveAsObject() const;
 	
 private:
 	unsigned category; // one of { ENTRY, BLOCK, PHANTOM, EXIT, HALT }
@@ -618,27 +725,73 @@ private:
 
 inline std::ostream& operator << (std::ostream& stream, const NodeBase& node) { node.Print(stream); return stream; }
 
-////////////////////////////////// EdgeValue<> ////////////////////////////////
+///////////////////////////////// EdgeValueBase ///////////////////////////////
 
 // Value on a edge: (count, tag)
-struct EdgeValue
+struct EdgeValueBase
 {
+	EdgeValueBase() : count(0), tag(EMPTY) {}
+	EdgeValueBase(uint64_t _count) : count(_count), tag(EMPTY) {}
+	EdgeValueBase(uint64_t _count, unsigned _tag) : count(_count), tag(_tag) {}
+	EdgeValueBase(const EdgeValueBase& other) : count(other.count), tag(other.tag) {}
+	EdgeValueBase(const JSON_Value& value);
+	
+	uint64_t GetCount() const { return count; }
+	unsigned GetTag() const { return tag; }
+	
+	EdgeValueBase& operator = (const EdgeValueBase& other) { count = other.count; tag = other.tag; return *this; }
+	
+	void Update(const EdgeValueBase& other) { count += other.count; }
+	void Update(uint64_t _count) { count += _count; }
+	
+	void Print(std::ostream& stream) const { stream << "EdgeValueBase(count=" << std::dec << count << ",tag=" << EdgeTag(tag) << ")"; }
+	
+	void Save(JSON_Value& value) const;
+	
+private:
 	uint64_t count; // profiling information: how many times this edge was visited during execution
 	unsigned tag;   // one of { EMPTY, TARGET, FALLTHROUGH }
-	
-	EdgeValue() : count(0), tag(0) {}
-	EdgeValue(uint64_t _count) : count(_count), tag(0) {}
-	EdgeValue(uint64_t _count, unsigned _tag) : count(_count), tag(_tag) {}
-	EdgeValue(const EdgeValue& other) : count(other.count), tag(other.tag) {}
-	
-	EdgeValue& operator = (const EdgeValue& other) { count = other.count; tag = other.tag; return *this; }
-	
-	void Update(const EdgeValue& other) { count += other.count; }
-	
-	void Print(std::ostream& stream) const { stream << "EdgeValue(count=" << std::dec << count << ",tag=" << EdgeTag(tag) << ")"; }
 };
 
-inline std::ostream& operator << (std::ostream& stream, const EdgeValue& edge_value) { edge_value.Print(stream); return stream; }
+inline std::ostream& operator << (std::ostream& stream, const EdgeValueBase& edge_value) { edge_value.Print(stream); return stream; }
+
+////////////////////////////////// EdgeValue<> ////////////////////////////////
+
+template <typename CONFIG>
+struct EdgeValue : EdgeValueBase
+{
+	EdgeValue() : EdgeValueBase(), extensions(ExtensionIds(EDGE_EXT)) {}
+	EdgeValue(uint64_t _count) : EdgeValueBase(_count), extensions(ExtensionIds(EDGE_EXT)) {}
+	EdgeValue(uint64_t _count, unsigned _tag) : EdgeValueBase(_count, _tag), extensions(ExtensionIds(EDGE_EXT)) {}
+	EdgeValue(const EdgeValue& other) : EdgeValueBase(other), extensions(ExtensionIds(EDGE_EXT)) {}
+	EdgeValue(const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories = {});
+	~EdgeValue();
+	
+	EdgeValue<CONFIG>& operator = (const EdgeValue<CONFIG>& other) { EdgeValueBase::operator = (other); return *this; }
+	
+	void Save(JSON_Value& value) const;
+	
+	template <typename T> T *SetExtension(T *ext);
+	template <typename T> void GetExtension(T *& ext) const;
+	template <typename T> T *GetExtension() const;
+	
+	void InvalidateExtensions();
+	void OutputGraphEdgeExtensions(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const;
+private:
+	friend struct Node<CONFIG>;
+	
+	typedef std::vector<EdgeExtensionBase<CONFIG> *> Extensions;
+	Extensions extensions; // extensions
+	
+	EdgeExtensionBase<CONFIG> *SetExtension(unsigned ext_id, ExtensionBase *ext);
+	
+	void Load(const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories);
+	
+	void Fix(const Mapping<CONFIG>& mapping, const CFG<CONFIG>& cfg, const Node<CONFIG>& node, const JSON_Value& value);
+};
+
+template <typename CONFIG>
+std::ostream& operator << (std::ostream& stream, const EdgeValue<CONFIG>& edge_value) { edge_value.Print(stream); return stream; }
 
 /////////////////////////////////// Node<> ////////////////////////////////////
 
@@ -651,7 +804,8 @@ struct Node : NodeBase
 	friend struct CFG<CONFIG>;
 	friend struct Builder<CONFIG>;
 	
-	Node(unsigned _category) : NodeBase(_category), edges(), predecessors(), has_unknowns(false), cache() {}
+	Node(unsigned _category) : NodeBase(_category), edges(), predecessors(), has_unknown_successor(false), cache(), extensions(ExtensionIds(NODE_EXT)) {}
+	virtual ~Node();
 	
 	Block<CONFIG>& AsBlock() { assert(this->GetCategory() == BLOCK); return *static_cast<Block<CONFIG> *>(this); }
 	const Block<CONFIG>& AsBlock() const { assert(this->GetCategory() == BLOCK); return *static_cast<const Block<CONFIG> *>(this); }
@@ -659,11 +813,14 @@ struct Node : NodeBase
 	const Phantom<CONFIG>& AsPhantom() const { assert(this->GetCategory() == PHANTOM); return *static_cast<const Phantom<CONFIG> *>(this); }
 	Unknown<CONFIG>& AsUnknown() { assert(this->GetCategory() == UNKNOWN); return *static_cast<Unknown<CONFIG> *>(this); }
 	const Unknown<CONFIG>& AsUnknown() const { assert(this->GetCategory() == UNKNOWN); return *static_cast<const Unknown<CONFIG> *>(this); }
-	void ConnectTo(Node<CONFIG> *successor, const EdgeValue& edge_value);
+	void ConnectTo(Node<CONFIG> *successor, EdgeValue<CONFIG>&& edge_value);
+	void ConnectTo(Node<CONFIG> *successor, uint64_t count = 0, unsigned tag = EMPTY);
+	std::size_t SuccessorCount() const { return edges.size(); }
+	std::size_t PredecessorCount() const { return predecessors.size(); }
 	bool HasSuccessors() const { return !edges.empty(); }
 	bool HasPredecessors() const { return !predecessors.empty(); }
-	bool HasPhantoms() const;
-	bool HasUnknowns() const { return has_unknowns; }
+	bool HasPhantomSuccessor() const;
+	bool HasUnknownSuccessor() const { return has_unknown_successor; }
 	uint64_t Reconnect(Node<CONFIG> *old_node, Node<CONFIG> *node);
 	void PrintEdges(std::ostream& stream) const;
 	virtual bool HasGroup(const Group<CONFIG>& group) const { return false; }
@@ -673,25 +830,34 @@ struct Node : NodeBase
 	void ReplaceCache(CacheAccess<CONFIG>& cache_access, Node<CONFIG> *working, uint64_t count) { cache.Replace(cache_access, working, count); }
 	virtual void OutputGraphNode(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const = 0;
 	virtual void OutputGraphEdges(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const;
-	JSON_Object *SaveEdge(Node<CONFIG> *node, const EdgeValue& edge_value) const;
+	virtual void OutputGraphNodeExtensions(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const;
+	JSON_Object *SaveEdge(Node<CONFIG> *node, const EdgeValue<CONFIG>& edge_value) const;
 	JSON_Object *SaveAsObject() const;
 	virtual JSON_Value *Save(const Config<CONFIG>& config) const;
-	static Node<CONFIG> *Load(const JSON_Value& value);
-	virtual bool Fix(Mapping<CONFIG>& mapping, CFG<CONFIG>& cfg, const JSON_Value& value);
+	static Node<CONFIG> *Load(const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories = {});
+	virtual bool Fix(Mapping<CONFIG>& mapping, CFG<CONFIG>& cfg, const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories = {});
 	virtual void Check() const;
+	bool HasExtensions() const { for(auto extension : extensions) { if(extension) return true; } return false; }
+	void InvalidateExtensions();
 	template <typename VISITOR, typename T = bool> T ScanEdges(VISITOR& visitor) const;
 	template <typename VISITOR, typename T = bool> T ScanEdgesOrdered(VISITOR& visitor) const;
 	template <typename VISITOR, typename T = bool> T ScanSuccessors(VISITOR& visitor) const;
 	template <typename VISITOR, typename T = bool> T ScanPredecessors(VISITOR& visitor) const;
 	
+	template <typename T> T *SetExtension(T *ext);
+	template <typename T> void GetExtension(T *& ext) const;
+	template <typename T> T *GetExtension() const;
 private:
-	// typedef std::map<Node<CONFIG> *, uint64_t> Edges;
-	typedef std::map<Node<CONFIG> *, EdgeValue> Edges;
+	typedef std::map<Node<CONFIG> *, EdgeValue<CONFIG> > Edges;
 	typedef std::vector<Node<CONFIG> *> Predecessors;
-	Edges edges;               // edges: (node, count)
-	Predecessors predecessors; // predecessor nodes
-	bool has_unknowns;         // Whether there is an edge toward an unknown node (i.e. toward an indirect target node)
-	Cache<CONFIG> cache;       // per node cache of the next working node based on the current working node and the incoming group of instructions
+	Edges edges;                // edges: (node, count)
+	Predecessors predecessors;  // predecessor nodes
+	bool has_unknown_successor; // Whether there is an edge toward an unknown node (i.e. toward an indirect target node)
+	Cache<CONFIG> cache;        // per node cache of the next working node based on the current working node and the incoming group of instructions
+	typedef std::vector<NodeExtensionBase<CONFIG> *> Extensions;
+	Extensions extensions; // extensions
+
+	NodeExtensionBase<CONFIG> *SetExtension(unsigned ext_id, ExtensionBase *ext);
 };
 
 /////////////////////////////// CallMapEntry<> ////////////////////////////////
@@ -767,7 +933,7 @@ struct Block : Node<CONFIG>
 	virtual void OutputGraphEdges(std::ostream& stream, const std::string& indent, const CFG<CONFIG>& cfg, const Config<CONFIG>& config, bool subgraph) const;
 	virtual JSON_Value *Save(const Config<CONFIG>& config) const;
 	static Block<CONFIG> *Load(const JSON_Value& value);
-	virtual bool Fix(Mapping<CONFIG>& mapping, CFG<CONFIG>& cfg, const JSON_Value& value);
+	virtual bool Fix(Mapping<CONFIG>& mapping, CFG<CONFIG>& cfg, const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories = {});
 private:
 	typedef std::map<ADDRESS, CallMapEntry<CONFIG> > CallMap;
 	typedef std::map<unsigned, SignalMapEntry<CONFIG> > SignalMap;
@@ -869,8 +1035,8 @@ struct CFG : CFGBase
 {
 	typedef typename CONFIG::ADDRESS ADDRESS;
 
-	CFG() : CFGBase(), has_addr(false), addr(0), nodes(), unknowns(), entry(0), exit(0), halt(0) {}
-	CFG(ADDRESS _addr) : CFGBase(), has_addr(true), addr(_addr), nodes(), unknowns(), entry(0), exit(0), halt(0) {}
+	CFG() : CFGBase(), has_addr(false), addr(0), nodes(), unknowns(), entry(0), exit(0), halt(0), extensions(ExtensionIds(CFG_EXT)) {}
+	CFG(ADDRESS _addr) : CFGBase(), has_addr(true), addr(_addr), nodes(), unknowns(), entry(0), exit(0), halt(0), extensions(ExtensionIds(CFG_EXT)) {}
 	virtual ~CFG();
 	
 	virtual std::string GetName() const;
@@ -881,27 +1047,36 @@ struct CFG : CFGBase
 	Block<CONFIG> *AddNode(Block<CONFIG> *block);
 	Phantom<CONFIG> *AddNode(Phantom<CONFIG> *phantom);
 	Unknown<CONFIG> *AddNode(Unknown<CONFIG> *unknown);
-	void AddEdge(Node<CONFIG> *src, Node<CONFIG> *dst, const EdgeValue& edge_value);
+	bool HasNode(Node<CONFIG> *node) const;
+	void AddEdge(Node<CONFIG> *src, Node<CONFIG> *dst, EdgeValue<CONFIG>&& edge_value);
+	void AddEdge(Node<CONFIG> *src, Node<CONFIG> *dst, uint64_t count = 0, unsigned tag = EMPTY);
 	Node<CONFIG> *FindNodeWithAddr(ADDRESS node_addr) const;
 	Node<CONFIG> *FindUnknownWithId(unsigned id) const;
 	Block<CONFIG> *PhantomToBlock(Phantom<CONFIG> *phantom, Block<CONFIG> *block);
 	Block<CONFIG> *SplitBlock(Block<CONFIG> *block, ADDRESS instr_addr);
-	Entry<CONFIG> *GetEntry() const { return entry ? entry : (entry = new Entry<CONFIG>()); }
-	Exit<CONFIG> *GetExit() const { return exit ? exit : (exit = new Exit<CONFIG>()); }
-	Halt<CONFIG> *GetHalt() const { return halt ? halt : (halt = new Halt<CONFIG>()); }
+	bool HasEntry() const { return entry != 0; }
+	Node<CONFIG> *GetEntry() const { return entry ? entry : (entry = new Entry<CONFIG>()); }
+	bool HasExit() const { return exit != 0; }
+	Node<CONFIG> *GetExit() const { return exit ? exit : (exit = new Exit<CONFIG>()); }
+	bool HasHalt() const { return halt != 0; }
+	Node<CONFIG> *GetHalt() const { return halt ? halt : (halt = new Halt<CONFIG>()); }
 	void Check();
+	void InvalidateExtensions();
 	void Print(std::ostream& stream) const;
 	void OutputGraphNodes(std::ostream& stream, const std::string& indent, const Config<CONFIG>& config, bool subgraph) const;
 	void OutputGraphEdges(std::ostream& stream, const std::string& indent, const Config<CONFIG>& config, bool subgraph) const;
 	void OutputGraph(std::ostream& stream, const std::string& indent, const Config<CONFIG>& config, bool subgraph = false, unsigned filter = GRAPH | NODES | EDGES) const;
 	JSON_Value *Save(const Config<CONFIG>& config) const;
-	static CFG<CONFIG> *Load(const JSON_Value& value);
+	static CFG<CONFIG> *Load(const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories = {});
 	template <typename VISITOR, typename T = bool> T ScanNodes(VISITOR& visitor) const;
 	
+	template <typename T> T *SetExtension(T *ext);
+	template <typename T> void GetExtension(T *& ext) const;
+	template <typename T> T *GetExtension() const;
 private:
 	friend struct Mapping<CONFIG>;
 	
-	bool Fix(Mapping<CONFIG>& mapping, const JSON_Value& value);
+	bool Fix(Mapping<CONFIG>& mapping, const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories = {});
 	
 	struct ReversedAddressCompare { bool operator() (ADDRESS a, ADDRESS b) const { return a > b; } };
 	typedef std::map<ADDRESS, Node<CONFIG> *, ReversedAddressCompare> Nodes;
@@ -912,9 +1087,13 @@ private:
 	ADDRESS addr;                 // address of CFG
 	Nodes nodes;                  // Block and phantom nodes ordered backwards by address
 	Unknowns unknowns;            // Unknown nodes
-	mutable Entry<CONFIG> *entry; // Entry node of CFG
-	mutable Exit<CONFIG> *exit;   // Exit node of CFG
-	mutable Halt<CONFIG> *halt;   // Halt node of CFG
+	mutable Node<CONFIG> *entry; // Entry node of CFG
+	mutable Node<CONFIG> *exit;   // Exit node of CFG
+	mutable Node<CONFIG> *halt;   // Halt node of CFG
+	typedef std::vector<CFGExtensionBase<CONFIG> *> Extensions;
+	Extensions extensions; // extensions
+	
+	CFGExtensionBase<CONFIG> *SetExtension(unsigned ext_id, ExtensionBase *ext);
 };
 
 template <typename CONFIG>
@@ -936,11 +1115,11 @@ struct Mapping
 	void Put(ADDRESS addr, CFG<CONFIG> *cfg) { map.emplace(addr, cfg); }
 	void OutputGraph(std::ostream& stream, const Config<CONFIG>& config) const;
 	JSON_Value *Save(const Config<CONFIG>& config) const;
-	bool Load(const JSON_Value& value);
+	bool Load(const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories = {});
 	void Check();
+	void InvalidateExtensions();
 	template <typename VISITOR, typename T = bool> T ScanCFGs(VISITOR& visitor) const;
 	template <typename VISITOR, typename T = bool> T ScanCFGsOrdered(VISITOR& visitor) const;
-	
 private:
 	typedef std::unordered_map<ADDRESS, CFG<CONFIG> *> Map;
 	Map map;
@@ -1024,11 +1203,16 @@ struct Builder
 	// run-time configuration
 	void SetDisasmInterface(unisim::service::interfaces::Disassembly<ADDRESS> *disassembly_if) { config.disassembly_if = disassembly_if; }
 	void SetSymbolTableLookupInterface(unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if) { config.symbol_table_lookup_if = symbol_table_lookup_if; }
+	void SetColor(const std::string& graphviz_color) { config.graphviz_color = graphviz_color; }
+	void SetFillColor(const std::string& graphviz_fillcolor) { config.graphviz_fillcolor = graphviz_fillcolor; }
 	void SetBranchTargetColor(const std::string& graphviz_branch_target_color) { config.graphviz_branch_target_color = graphviz_branch_target_color; }
 	void SetBranchFallthroughColor(const std::string& graphviz_branch_fallthrough_color) { config.graphviz_branch_fallthrough_color = graphviz_branch_fallthrough_color; }
+	void SetCallColor(const std::string& graphviz_call_color) { config.graphviz_call_color = graphviz_call_color; }
 	void SetFontName(const std::string& graphviz_fontname) { config.graphviz_fontname = graphviz_fontname; }
 	void SetBlockFontName(const std::string& graphviz_block_fontname) { config.graphviz_block_fontname = graphviz_block_fontname; }
 	void SetPhantomFontName(const std::string& graphviz_phantom_fontname) { config.graphviz_phantom_fontname = graphviz_phantom_fontname; }
+	void EnableCallEdges(bool flag = true) { config.graphviz_enable_call_edges = flag; }
+	const Config<CONFIG>& GetConfig() const { return config; }
 	
 	// Convenient methods for implicitely building groups from executed instructions and process them
 	void Standard(ADDRESS _addr, unsigned _size, const uint8_t *_opcode) { Process(StandardInstruction<CONFIG>(_addr, _size, _opcode)); }
@@ -1051,13 +1235,14 @@ struct Builder
 	void OutputGraph(std::ostream& stream) const; // output all CFGs in a .dot file for further use with Graphviz
 	JSON_Value *Save() const;                     // saving (as JSON value) for incremental construction of CFGs
 	void Save(std::ostream& stream) const;        // saving (as "textual" JSON) for incremental construction of CFGs
-	bool Load(const JSON_Value& value);           // loading (from a JSON value) for incremental construction of CFGs
-	void Load(std::istream& stream);              // loading (from "textual" JSON) for incremental construction of CFGs
+	bool Load(const JSON_Value& value, const std::initializer_list<ExtensionFactory *>& extension_factories = {}); // loading (from a JSON value) for incremental construction of CFGs
+	void Load(std::istream& stream, const std::initializer_list<ExtensionFactory *>& extension_factories = {});    // loading (from "textual" JSON) for incremental construction of CFGs
 	
 private:
 	unsigned /* tag */ ProcessTail(const Instruction<CONFIG>& tail, ADDRESS target_addr); // see algorithm 2 (PROCESS_TYPE) of paper
 	void ProcessBranch(ADDRESS addr, ADDRESS target_addr, unsigned tag); // see algorithm 2 (PROCESS_TYPE) of paper
 	Block<CONFIG> *ProcessGroup(CFG<CONFIG> *cfg, Node<CONFIG> *working, const Group<CONFIG>& group, unsigned tag); // see algorithm 3 (PROCESS_GROUP) of paper
+	void InvalidateExtensions();
 	
 	State<CONFIG> state;     // S = (current, callstack)
 	                         // callstack = (current, ret_addr)
@@ -1065,6 +1250,7 @@ private:
 	Mapping<CONFIG> mapping; // CFG mapping: @addr -> CFG
 	Group<CONFIG> new_group; // implicit built group
 	unsigned next_unknown_id;
+	bool under_construction;
 protected:
 	Config<CONFIG> config;
 };
