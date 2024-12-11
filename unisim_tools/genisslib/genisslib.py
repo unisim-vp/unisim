@@ -1010,7 +1010,7 @@ class Scanner:
     def parse_error(self, msg):
         raise Abort( 'parse error:\n{}: {}'.format(self.getFileLoc(), msg) )
 
-def parse(filename, app, isa):
+def parse(filename, app, isa, excluded_attributes=[]):
     app.opening(filename)
     isa.includes.append(filename)
     source = Scanner(filename)
@@ -1084,7 +1084,13 @@ def parse(filename, app, isa):
             root = source.getLexeme()
 
         elif root == 'include':
-            filename = source.getLexeme()
+            xattr_list = []
+            while True:
+                l = source.getLexeme()
+                if l != '^':
+                    filename = l
+                    break
+                xattr_list.append(source.getLexeme())
             if filename[0] != '"':
                 source.parse_error( 'expected a string here (got {!r})'.format(filename) )
             filename = app.locate( eval(filename) )
@@ -1092,7 +1098,7 @@ def parse(filename, app, isa):
             if not os.path.isabs(filename):
                 filename = os.getcwd() + '/' + filename
             try:
-                parse(filename, app, isa)
+                parse(filename, app, isa, xattr_list)
             except Abort as abort:
                 raise Abort( 'From {}\n'.format(source.getFileLoc()) + abort.msg )
             root = source.getLexeme()
@@ -1278,7 +1284,8 @@ def parse(filename, app, isa):
                         if prev is not None:
                             redef = "action '{}.{}' redefined\n{}: previously defined here"
                             source.parse_error( redef.format(name, attribute, prev.fileloc) )
-                        op.actions[ap.name] = Action(op, ap, sc, attrfl)
+                        if ap.name not in excluded_attributes:
+                            op.actions[ap.name] = Action(op, ap, sc, attrfl)
                 except isa.NotFound:
                     source.parse_error('unknown operation or group {!r}'.format(name))
                 root = source.getLexeme()

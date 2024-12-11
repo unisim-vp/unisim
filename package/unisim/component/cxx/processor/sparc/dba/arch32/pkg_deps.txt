@@ -1,0 +1,12 @@
+am/isa_to_hh_tcc
+libc/inttypes
+std/cstdlib
+std/iomanip
+std/iosfwd
+std/iostream
+std/set
+unisim/component/cxx/processor/sparc
+unisim/component/cxx/processor/sparc/dba/sv8
+unisim/component/cxx/processor/sparc/isa/sv8
+unisim/util/symbolic
+unisim/util/symbolic/binsec

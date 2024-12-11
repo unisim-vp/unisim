@@ -364,21 +364,21 @@ namespace binsec {
 
         for (auto const& sink : action_tree->get_sinks())
           {
-            Assignment const& assignment = dynamic_cast<Assignment const&>( *sink.node );
+            SideEffect const& side_effect = dynamic_cast<SideEffect const&>( *sink.node );
 
-            for (unsigned idx = 0, end = assignment.SubCount(); idx < end; ++idx)
+            for (unsigned idx = 0, end = side_effect.SubCount(); idx < end; ++idx)
               {
-                Expr const& value = assignment.GetSub(idx);
+                Expr const& value = side_effect.GetSub(idx);
                 if (not value->AsConstNode() and not this->vars.count(value))
                   GenTempCode(value, head);
               }
 
-            if (Branch const* branch = dynamic_cast<Branch const*>( &assignment ))
+            if (Branch const* branch = dynamic_cast<Branch const*>( &side_effect ))
               nia = branch;
             else
               {
                 std::ostringstream buffer;
-                assignment.GenerateCode(buffer, vars);
+                side_effect.GenerateCode(buffer, vars);
                 tail.prepend( new Statement( buffer.str() ) );
               }
           }
@@ -603,16 +603,16 @@ namespace binsec {
               case Op::BSF:
                 {
                   unsigned bitsize = node->GetType().bitsize;
-		  sink << "(";
-		  for (unsigned i = 0; i < bitsize - 1; i += 1) {
-		    sink << "if " << GetCode(node->GetSub(0), vars, head)
-		         << '{' << i << "} then "
-		         << i << '<' << bitsize << "> else (";
-		  }
-		  sink << bitsize - 1 << '<' << bitsize << '>';
-		  for (unsigned i = 0; i < bitsize; i += 1) {
-		    sink << ')';
-		  }
+                  sink << "(";
+                  for (unsigned i = 0; i < bitsize - 1; i += 1) {
+                    sink << "if " << GetCode(node->GetSub(0), vars, head)
+                         << '{' << i << "} then "
+                         << i << '<' << bitsize << "> else (";
+                  }
+                  sink << bitsize - 1 << '<' << bitsize << '>';
+                  for (unsigned i = 0; i < bitsize; i += 1) {
+                    sink << ')';
+                  }
 
                   // Point exit(new Nop());
 
@@ -648,18 +648,18 @@ namespace binsec {
               case Op::BSR:
                 {
                   unsigned bitsize = node->GetType().bitsize;
-		  sink << "(";
-		  for (unsigned i = bitsize - 1; i > 1; i -= 1) {
-		    sink << "if " << GetCode(node->GetSub(0), vars, head)
-		         << '{' << i << "} then "
-		         << i << '<' << bitsize << "> else (";
-		  }
-		  sink << "extu ("
-		       << GetCode(node->GetSub(0), vars, head)
-		       << "{1}) " << bitsize;
-		  for (unsigned i = bitsize; i > 1; i -= 1) {
-		    sink << ')';
-		  }
+                  sink << "(";
+                  for (unsigned i = bitsize - 1; i > 1; i -= 1) {
+                    sink << "if " << GetCode(node->GetSub(0), vars, head)
+                         << '{' << i << "} then "
+                         << i << '<' << bitsize << "> else (";
+                  }
+                  sink << "extu ("
+                       << GetCode(node->GetSub(0), vars, head)
+                       << "{1}) " << bitsize;
+                  for (unsigned i = bitsize; i > 1; i -= 1) {
+                    sink << ')';
+                  }
 
                   // Point exit(new Nop());
 
@@ -753,22 +753,18 @@ namespace binsec {
           sink << GetCode(vt->src, vars, head);
         return dstsize;
       }
-    else if (auto mix = dynamic_cast<vector::VMix const*>( expr.node ))
+    else if (auto vc = dynamic_cast<vector::VCatBase const*>( expr.node ))
       {
-        decltype(mix) prev;
         sink << "(";
-        int retsize = 0;
-        do
+        unsigned subsize = 8*vc->subsize;
+        char const* sep = "";
+        for (unsigned idx = vc->inputs.size(); idx-- > 0;)
           {
-            prev = mix;
-            retsize += GenerateCode( mix->l, sink, vars, head );
-            sink << " :: ";
-            mix = dynamic_cast<vector::VMix const*>( mix->r.node );
+            sink << sep << GetCode(vc->inputs[idx], vars, head, subsize);
+            sep = " :: ";
           }
-        while (mix);
-        retsize += GenerateCode( prev->r, sink, vars, head );
         sink << ")";
-        return retsize;
+        return subsize * vc->inputs.size();
       }
     else if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
       {
@@ -956,6 +952,46 @@ namespace binsec {
   {
     struct ShouldNotBeHere {};
     throw ShouldNotBeHere ();
+  }
+
+  void
+  CallBase::Repr( std::ostream& sink ) const
+  {
+    sink << "Call(";
+    Branch::Repr(sink);
+    sink << ", " << PrintRA() << ")";
+  }
+
+  void
+  CallBase::annotate(std::ostream& sink) const
+  {
+    sink << " // call (" << PrintRA() << ",0)";
+  }
+
+  void
+  Ret::Repr(std::ostream& sink) const
+  {
+    sink << "Ret(";
+    Branch::Repr(sink);
+    sink << ")";
+  }
+
+  void
+  Ret::annotate(std::ostream& sink) const
+  {
+    sink << " // ret";
+  }
+
+  void
+  AssertFalse::Repr( std::ostream& sink ) const
+  {
+    sink << "AssertFalse()";
+  }
+
+  void
+  AssertFalse::GenerateCode( std::ostream& sink, Variables& vars ) const
+  {
+    sink << "assert (false)";
   }
 
   void

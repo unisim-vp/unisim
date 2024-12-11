@@ -167,7 +167,7 @@ namespace binsec {
   struct GetCode
   {
     GetCode(Expr const& _expr, Variables& _vars, Point& _head, int _expected=-1)
-      : expr(_expr), vars(_vars), head(_head), expected(-1)
+      : expr(_expr), vars(_vars), head(_head), expected(_expected)
     {}
 
     friend std::ostream& operator << ( std::ostream& sink, GetCode const& gc )
@@ -205,14 +205,18 @@ namespace binsec {
     RID id;
   };
 
-  struct Assignment : public ExprNode
+  struct SideEffect : public ExprNode
+  {
+    virtual void GenerateCode( std::ostream& sink, Variables& vars ) const = 0;
+  };
+
+  struct Assignment : public SideEffect
   {
     Assignment( Expr const& _value ) : value(_value) {}
 
     virtual ValueType GetType() const override { return NoValueType(); }
     virtual unsigned SubCount() const override { return 1; }
     virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-    virtual void GenerateCode( std::ostream& sink, Variables& vars ) const = 0;
     virtual Expr SourceRead() const = 0;
     static int GenInputCode( Expr const& input, Variables& vars, std::ostream& sink );
 
@@ -267,64 +271,45 @@ namespace binsec {
     virtual Expr SourceRead() const override { return Expr(); }
   };
 
+  struct CallBase : public Branch
+  {
+    CallBase(Expr const& target) : Branch(target) {}
+    virtual dbx PrintRA() const = 0;
+    virtual void annotate(std::ostream& sink) const override;
+    virtual void Repr( std::ostream& sink ) const override;
+  };
+
   template <typename T>
-  struct Call : public Branch
+  struct Call : public CallBase
   {
     typedef Call<T> this_type;
-    Call( Expr const& target, T ra ) : Branch(target), return_address(ra) {}
+    Call( Expr const& target, T ra ) : CallBase(target), return_address(ra) {}
     virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual void annotate(std::ostream& sink) const override
-    {
-      sink << " // call (" << binsec::dbx(sizeof(T), return_address) << ",0)";
-    }
-    virtual void Repr( std::ostream& sink ) const
-    {
-      sink << "Call(";
-      Branch::Repr(sink);
-      sink << ", " << binsec::dbx(sizeof(T), return_address) << ")";
-    }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
-    int compare( this_type const& rhs ) const
-    {
-      if (return_address < rhs.return_address) return -1;
-      return int(return_address > rhs.return_address);
-    }
+    int compare( this_type const& rhs ) const { return return_address < rhs.return_address ? -1 : return_address > rhs.return_address ? +1 : 0; }
+    virtual dbx PrintRA() const override { return dbx(sizeof(T), return_address); }
 
     T return_address;
   };
 
-  template <typename T>
   struct Ret : public Branch
   {
-    typedef Ret<T> this_type;
     Ret( Expr const& target ) : Branch(target) {}
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual void annotate(std::ostream& sink) const override
-    {
-      sink << " // ret";
-    }
-    virtual void Repr( std::ostream& sink ) const
-    {
-      sink << "Ret(";
-      Branch::Repr(sink);
-      sink << ")";
-    }
+    virtual Ret* Mutate() const override { return new Ret( *this ); }
+    virtual void Repr( std::ostream& sink ) const override;
+    virtual void annotate(std::ostream& sink) const override;
   };
 
-  struct AssertFalse : public ASExprNode
+  struct AssertFalse : public SideEffect
   {
     AssertFalse() {}
     virtual AssertFalse* Mutate() const override { return new AssertFalse( *this ); }
-    virtual int GenCode( std::ostream& sink, Variables& vars, Point& head ) const override
-    {
-      sink << "assert (false)";
-      return 0;
-    }
+    virtual void GenerateCode( std::ostream& sink, Variables& vars ) const override;
     virtual ValueType GetType() const override{ return NoValueType(); }
 
     virtual int cmp( ExprNode const& brhs ) const override { return 0; }
     virtual unsigned SubCount() const override { return 0; }
-    virtual void Repr( std::ostream& sink ) const override { sink << "assert (false)"; }
+    virtual void Repr( std::ostream& sink ) const override;
   };
 
   struct MemAccess

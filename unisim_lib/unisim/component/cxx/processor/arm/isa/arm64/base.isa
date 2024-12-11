@@ -9668,3 +9668,16 @@ ldstuminh_w.execute = {
   /*END ATOMIC*/;
 };
 
+op bti( 0b110101010000001100100100[24] : tt[2] : 0b011111[6] );
+
+bti.disasm = {
+  sink << "bti";
+  if (tt) {
+    sink << '\t';
+    if (tt & 0b10) sink << 'j';
+    if (tt & 0b01) sink << 'c';
+  }
+};
+
+bti.execute = { /* NOP */ };
+
