@@ -1,6 +1,7 @@
 am/isa_to_hh_tcc
 libc/inttypes
 std/cstring
+std/memory
 std/sstream
 std/stdexcept
 std/string

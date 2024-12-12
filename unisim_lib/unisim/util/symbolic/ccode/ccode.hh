@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_SYMBOLIC_CCODE_CCODE_HH__
 
 #include <unisim/util/symbolic/symbolic.hh>
+#include <map>
 #include <set>
 
 namespace unisim {

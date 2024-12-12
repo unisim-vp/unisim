@@ -51,6 +51,7 @@ using unisim::util::arithmetic::RotateRight;
 #include <unisim/util/os/linux_os/arm.hh>
 #include <unisim/util/simfloat/floating.tcc>
 
+#include <memory>
 #include <sstream>
 #include <string>
 #include <cstring>
@@ -607,7 +608,7 @@ CPU<CPU_IMPL>::StepInstruction()
     if (cpsr.Get( T )) {
       /* Thumb state */
       isa::thumb::CodeType insn;
-      ReadInsn(insn_addr, insn);
+      ReadInsnT(insn_addr, insn);
 
       /* Decode current PC */
       isa::thumb::Operation<CPU_IMPL>* op = thumb_decoder.Decode(insn_addr, insn);
@@ -632,7 +633,7 @@ CPU<CPU_IMPL>::StepInstruction()
 
       /* fetch instruction word from memory */
       isa::arm32::CodeType insn;
-      ReadInsn(insn_addr, insn);
+      ReadInsnA(insn_addr, insn);
 
       /* Decode current PC */
       isa::arm32::Operation<CPU_IMPL>* op = arm32_decoder.Decode(insn_addr, insn);
@@ -878,66 +879,41 @@ CPU<CPU_IMPL>::Disasm(uint32_t addr, uint32_t& next_addr)
 {
   std::stringstream buffer;
   try {
-    if (cpsr.Get( T ))
+    bool is_thumb = cpsr.Get( T );
+    buffer << (is_thumb ? "[THUMB2]" : "[ARM32]");
+
+    uint32_t insn;
+    if (not ReadMemory(addr, (void*)&insn, 4))
       {
-        buffer << "[THUMB2]";
+        buffer << "??";
+        return buffer.str();
+      }
 
-        uint8_t insn_bytes[4];
-        isa::thumb::CodeType insn;
+    // In ARMv7am, instruction fetch ignores "Endianness execution state bit"
+    insn = util::endian::LittleEndian2Host(insn);
 
-        if (not ReadMemory(addr, &insn_bytes[0], 4))
-          {
-            buffer << "??";
-            return buffer.str();
-          }
+    if (is_thumb)
+      {
+        typedef isa::thumb::Operation<CPU_IMPL> Operation;
+        auto op = std::unique_ptr<Operation>(thumb_decoder.NCDecode(addr, insn));
+        unsigned insn_length = op->GetLength();
 
-        // Instruction fetch ignores "Endianness execution state bit"
-        insn.str[0] = insn_bytes[0];
-        insn.str[1] = insn_bytes[1];
-        insn.str[2] = insn_bytes[2];
-        insn.str[3] = insn_bytes[3];
-        insn.size = 32;
+        if      (insn_length == 16) insn &= 0xffff;
+        else if (insn_length != 32) throw std::logic_error("Bad T2 instruction size");
 
-        struct OP {
-          OP() : ptr(0) {} isa::thumb::Operation<CPU_IMPL>* ptr;
-          ~OP() { delete ptr; }
-        } op;
-        op.ptr = thumb_decoder.NCDecode(addr, insn);
-        unsigned insn_length = op.ptr->GetLength();
-        if (insn_length % 16) throw std::logic_error("Bad T2 instruction size");
-
-        buffer << "0x";
-        buffer << op.ptr->GetEncoding() << " ";
-        op.ptr->disasm(buffer);
-
+        buffer << "0x" << std::hex << std::setw(insn_length/4) << std::setfill('0') << insn << std::dec << " ";
+        op->disasm(*static_cast<CPU_IMPL*>(this), buffer);
         next_addr = addr + (insn_length / 8);
       }
     else
       {
-        buffer << "[ARM32]";
+        typedef isa::arm32::Operation<CPU_IMPL> Operation;
+        auto op = std::unique_ptr<Operation>(arm32_decoder.NCDecode(addr, insn));
+        unsigned insn_length = op->GetLength();
 
-        uint32_t insn;
-        if (not ReadMemory(addr, &insn, 4))
-          {
-            buffer << "??";
-            return buffer.str();
-          }
-        if (GetEndianness() == util::endian::E_BIG_ENDIAN)
-          insn = util::endian::BigEndian2Host(insn);
-        else
-          insn = util::endian::LittleEndian2Host(insn);
-
-        struct OP {
-          OP() : ptr(0) {} isa::arm32::Operation<CPU_IMPL>* ptr;
-          ~OP() { delete ptr; }
-        } op;
-        op.ptr = arm32_decoder.NCDecode(addr, insn);
-        buffer << "0x" << std::hex;
-        buffer.fill('0'); buffer.width(8);
-        buffer << op.ptr->GetEncoding() << std::dec << " ";
-        op.ptr->disasm(buffer);
-
-        next_addr = addr + 4;
+        buffer << "0x" << std::hex << std::setw(insn_length/4) << std::setfill('0') << insn << std::dec << " ";
+        op->disasm(*static_cast<CPU_IMPL*>(this), buffer);
+        next_addr = addr + (insn_length / 8);
       }
   }
 
@@ -998,7 +974,7 @@ CPU<CPU_IMPL>::RefillInsnPrefetchBuffer(uint32_t mva, AddressDescriptor const& l
  */
 template <class CPU_IMPL>
 void
-CPU<CPU_IMPL>::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
+CPU<CPU_IMPL>::ReadInsnA(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
   AddressDescriptor loc(address & -(IPB_LINE_SIZE));
   TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
@@ -1011,7 +987,7 @@ CPU<CPU_IMPL>::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm
 
   uint32_t word;
   memcpy( &word, &ipb_bytes[buffer_index], 4 );
-  // In ARMv7, instruction fetch ignores "Endianness execution state bit"
+  // In ARMv7am, instruction fetch ignores "Endianness execution state bit"
   insn = Target2Host(unisim::util::endian::E_LITTLE_ENDIAN, word);
 }
 
@@ -1025,12 +1001,13 @@ CPU<CPU_IMPL>::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm
  */
 template <class CPU_IMPL>
 void
-CPU<CPU_IMPL>::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn)
+CPU<CPU_IMPL>::ReadInsnT(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn)
 {
   AddressDescriptor loc(address & -(IPB_LINE_SIZE));
   bool ispriv = cpsr.Get(M) != USER_MODE;
   TranslateAddress<PlainAccess>( loc, ispriv, mat_exec, IPB_LINE_SIZE );
   intptr_t buffer_index = address % (IPB_LINE_SIZE);
+  uint8_t bytes[4];
 
   if (unlikely(ipb_base_address != loc.address))
     {
@@ -1038,17 +1015,20 @@ CPU<CPU_IMPL>::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm
     }
 
   // In ARMv7, instruction fetch ignores "Endianness execution state bit"
-  insn.str[0] = ipb_bytes[buffer_index+0];
-  insn.str[1] = ipb_bytes[buffer_index+1];
+  bytes[0] = ipb_bytes[buffer_index+0];
+  bytes[1] = ipb_bytes[buffer_index+1];
   if (unlikely((buffer_index+2) >= IPB_LINE_SIZE)) {
     address = loc.address = address + 2;
     TranslateAddress<PlainAccess>( loc, ispriv, mat_exec, IPB_LINE_SIZE );
     RefillInsnPrefetchBuffer( address, loc );
     buffer_index = intptr_t(-2);
   }
-  insn.str[2] = ipb_bytes[buffer_index+2];
-  insn.str[3] = ipb_bytes[buffer_index+3];
-  insn.size = 32;
+  bytes[2] = ipb_bytes[buffer_index+2];
+  bytes[3] = ipb_bytes[buffer_index+3];
+  uint32_t word;
+  memcpy( &word, &bytes[0], 4 );
+  // In ARMv7, instruction fetch ignores "Endianness execution state bit"
+  insn = Target2Host(unisim::util::endian::E_LITTLE_ENDIAN, word);
 }
 
 /** CallSupervisor
@@ -1114,7 +1094,7 @@ void
 CPU<CPU_IMPL>::UndefinedInstruction( isa::arm32::Operation<CPU_IMPL>* insn )
 {
   std::ostringstream disasm;
-  insn->disasm( disasm );
+  insn->disasm( *static_cast<CPU_IMPL*>(this), disasm );
 
   logger << DebugWarning << "Undefined instruction @" << std::hex << current_insn_addr << std::dec
          << ": " << disasm.str() << " ; (" << insn->GetName() << ")" << EndDebugWarning;
@@ -1130,7 +1110,7 @@ void
 CPU<CPU_IMPL>::UndefinedInstruction( isa::thumb::Operation<CPU_IMPL>* insn )
 {
   std::ostringstream disasm;
-  insn->disasm( disasm );
+  insn->disasm( *static_cast<CPU_IMPL*>(this), disasm );
 
   logger << DebugWarning << "Undefined instruction @" << std::hex << current_insn_addr << std::dec
          << ": " << disasm.str() << " ; (" << insn->GetName() << ")" << EndDebugWarning;

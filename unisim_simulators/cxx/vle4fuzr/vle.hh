@@ -13,11 +13,11 @@
 #define __VLE4FUZR_VLE_HH__
 
 #include "emu.hh"
-#include "xvalue.hh"
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
 #include <unisim/component/cxx/processor/powerpc/cpu.hh>
+#include <unisim/util/cfg/intro/xvalue.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <map>
@@ -25,7 +25,7 @@
 typedef Processor EmuProcessor;
 
 namespace vle {
-  
+
   struct PPCBase
   {
     struct ProgramInterrupt
@@ -40,13 +40,13 @@ namespace vle {
     {
       struct SystemCall { void SetELEV(unsigned x) {} };
     };
-    
+
     struct AlignmentInterrupt
     {
       struct UnalignedLoadStoreMultiple {};
     };
   };
-  
+
 namespace concrete
 {
   class Operation;
@@ -77,7 +77,7 @@ namespace concrete
     operator U32 () { return xer_value; }
     XER& operator= ( U32 value ) { xer_value = value; return *this; }
     XER& GetXER() { return *this; }
-    
+
     XER() : xer_value() {}
     U32 xer_value;
   };
@@ -98,11 +98,11 @@ namespace concrete
     operator U32 () { return cr_value; }
     CR& operator= ( U32 const& value ) { cr_value = value; return *this; }
     CR& GetCR() { return *this; }
-    
+
     CR() : cr_value() {}
     U32 cr_value;
   };
-  
+
   struct LR
   {
     operator U32 () { return lr_value; }
@@ -112,7 +112,7 @@ namespace concrete
     LR() : lr_value() {}
     U32 lr_value;
   };
-  
+
   struct CTR
   {
     operator U32 () { return ctr_value; }
@@ -122,13 +122,13 @@ namespace concrete
     CTR() : ctr_value() {}
     U32 ctr_value;
   };
-  
+
   struct MSR
   {
     struct PR {};
     struct EE {};
     struct TODO {};
-    
+
     template <typename P> void Set( U32 value ) { throw TODO(); }
     template <typename PART> U32 Get() { throw TODO(); return U32(); }
     operator U32 () { throw TODO(); return U32(); }
@@ -141,7 +141,7 @@ namespace concrete
     , public XER, public CR, public MSR, public LR, public CTR
   {
     struct TODO {};
-    
+
     template <class T> T ThrowException() { return DispatchException( T() ); }
 
     template <class T> T DispatchException( T const& exc ) { throw TODO(); return T(); }
@@ -156,18 +156,18 @@ namespace concrete
         Processor* proc;
       };
     };
-    
+
     SystemCallInterrupt::SystemCall DispatchException( SystemCallInterrupt::SystemCall const& exc )
     {
       return SystemCallInterrupt::SystemCall(this);
     }
-    
+
     Processor();
 
     static Processor& Self( EmuProcessor& proc ) { return dynamic_cast<Processor&>( proc ); }
-  
+
     EmuProcessor::RegView const* get_reg(char const* id, uintptr_t size, int regid) override;
-    
+
     enum { OPPAGESIZE = 4096 };
     typedef vle::concrete::Operation Operation;
     typedef OpPage<Operation,OPPAGESIZE> InsnPage;
@@ -175,10 +175,10 @@ namespace concrete
     std::map< uint32_t, InsnPage > insn_cache;
 
     bool Cond(bool c) { return c; }
-    
+
     U32          reg_values[32];
     U32          cia, nia;
-    
+
     U32 GetGPR(unsigned n) { return reg_values[n]; };
     void SetGPR(unsigned n, U32 value) { reg_values[n] = value; }
     U32 GetCIA() { return cia; };
@@ -191,7 +191,7 @@ namespace concrete
       PhysicalFetchMemory( address, 4, 3, &value );
       return value;
     }
-    
+
     U32 MemRead(U32 address, unsigned size, bool sext, bool bigendian)
     {
       unsigned mask = size-1;
@@ -211,17 +211,17 @@ namespace concrete
       if (size > 4 or mask & size) { throw "illegal size"; }
       PhysicalWriteMemory( address, size, bigendian*mask, value );
     }
-    
+
     bool Int8Load(unsigned n, U32 address) { SetGPR(n, MemRead(address, 1, false, true)); return true; }
     bool Int16Load(unsigned n, U32 address) { SetGPR(n, MemRead(address, 2, false, true)); return true; }
     bool Int32Load(unsigned n, U32 address) { SetGPR(n, MemRead(address, 4, false, true)); return true; }
-    
+
     bool SInt8Load(unsigned n, U32 address) { SetGPR(n, MemRead(address, 1, true, true)); return true; }
     bool SInt16Load(unsigned n, U32 address) { SetGPR(n, MemRead(address, 2, true, true)); return true; }
 
     bool Int16LoadByteReverse(unsigned n, U32 address) { SetGPR(n, MemRead(address, 2, false, false)); return true; }
     bool Int32LoadByteReverse(unsigned n, U32 address) { SetGPR(n, MemRead(address, 4, false, false)); return true; }
-    
+
     bool Int8Store(unsigned n, U32 address ) { MemWrite(address, 1, GetGPR(n),true); return true; }
     bool Int16Store(unsigned n, U32 address ) { MemWrite(address, 2, GetGPR(n), true); return true; }
     bool Int32Store(unsigned n, U32 address ) { MemWrite(address, 4, GetGPR(n), true); return true; }
@@ -241,13 +241,13 @@ namespace concrete
     bool Dcbi(U32 const& addr) { throw TODO(); return false; }
     bool Icbi(U32 const& addr) { throw TODO(); return false; }
     bool Icbt(U32 const& addr) { throw TODO(); return false; }
-    
+
     bool Msync() { throw TODO(); return false; }
     bool Isync() { throw TODO(); return false; }
     bool Mpure() { throw TODO(); return false; }
     bool Mpuwe() { throw TODO(); return false; }
     bool Mpusync() { throw TODO(); return false; }
-    
+
     bool Lbarx(unsigned n, U32 const& addr) { throw TODO(); return false; }
     bool Lharx(unsigned n, U32 const& addr) { throw TODO(); return false; }
     bool Lwarx(unsigned n, U32 const& addr) { throw TODO(); return false; }
@@ -257,16 +257,16 @@ namespace concrete
     bool MoveFromDCR(unsigned dcrn, U32& result) { throw TODO(); return false; }
     bool MoveFromSPR(unsigned dcrn, U32& result) { throw TODO(); return false; }
     bool MoveToSPR(unsigned dcrn, U32 const& result) { throw TODO(); return false; }
-    
+
     bool CheckSPV() { return true; }
     bool Wait() { throw TODO(); return false; }
-    
+
     virtual void run( uint64_t begin, uint64_t until, uint64_t count ) override;
     virtual unsigned endian_mask(unsigned size) const override { return size-1; }
     virtual char const* get_asm() override;
-    
+
   };
-  
+
   using unisim::util::arithmetic::BitScanReverse;
   using unisim::util::arithmetic::RotateLeft;
 
@@ -282,21 +282,21 @@ namespace concrete
 
 namespace branch
 {
+  typedef unisim::util::cfg::intro::XValue<bool>     BOOL;
+  typedef unisim::util::cfg::intro::XValue<uint8_t>  U8;
+  typedef unisim::util::cfg::intro::XValue<uint16_t> U16;
+  typedef unisim::util::cfg::intro::XValue<uint32_t> U32;
+  typedef unisim::util::cfg::intro::XValue<uint64_t> U64;
+  typedef unisim::util::cfg::intro::XValue<int8_t>   S8;
+  typedef unisim::util::cfg::intro::XValue<int16_t>  S16;
+  typedef unisim::util::cfg::intro::XValue<int32_t>  S32;
+  typedef unisim::util::cfg::intro::XValue<int64_t>  S64;
+
+  typedef unisim::util::cfg::intro::XValue<uint32_t> UINT;
+  typedef unisim::util::cfg::intro::XValue<int32_t>  SINT;
+  typedef unisim::util::cfg::intro::XValue<uint32_t> ADDRESS;
+
   class Operation;
-
-  typedef x::XValue<bool>     BOOL;
-  typedef x::XValue<uint8_t>  U8;
-  typedef x::XValue<uint16_t> U16;
-  typedef x::XValue<uint32_t> U32;
-  typedef x::XValue<uint64_t> U64;
-  typedef x::XValue<int8_t>   S8;
-  typedef x::XValue<int16_t>  S16;
-  typedef x::XValue<int32_t>  S32;
-  typedef x::XValue<int64_t>  S64;
-
-  typedef x::XValue<uint32_t> UINT;
-  typedef x::XValue<int32_t>  SINT;
-  typedef x::XValue<uint32_t> ADDRESS;
 
   struct XER
   {
@@ -329,7 +329,7 @@ namespace branch
     CR& operator= ( U32 const& value ) { return *this; }
     CR& GetCR() { return *this; }
   };
-  
+
   struct LR
   {
     template <typename PART> void Set( unsigned ) {}
@@ -339,7 +339,7 @@ namespace branch
     LR& GetLR() { return *this; }
     void SetLR(U32 const& v) {}
   };
-  
+
   struct CTR
   {
     template <typename PART> void Set( unsigned ) {}
@@ -349,12 +349,12 @@ namespace branch
     CTR& GetCTR() { return *this; }
     void SetCTR(U32 const& v) {}
   };
-  
+
   struct MSR
   {
     struct PR {};
     struct EE {};
-    
+
     template <typename P, typename T> void Set( T value ) {}
     template <typename PART> U32 Get() { return U32(); }
     operator U32 () { return U32(); }
@@ -363,7 +363,7 @@ namespace branch
   };
 
   struct ActionNode : public unisim::util::symbolic::Choice<ActionNode> {};
-  
+
   struct Processor
     : public PPCBase
     , public XER, public CR, public MSR, public LR, public CTR
@@ -373,10 +373,10 @@ namespace branch
     Processor( ActionNode& root, uint32_t addr, uint32_t length );
 
     static Processor& Self( EmuProcessor& proc ) { return dynamic_cast<Processor&>( proc ); }
-  
+
     bool Cond(bool c) { return c; }
     template <typename T>
-    bool Cond( x::XValue<T> const& cond )
+    bool Cond( unisim::util::cfg::intro::XValue<T> const& cond )
     {
       BOOL c = BOOL(cond);
       if (c.determined) return c.value;
@@ -388,27 +388,27 @@ namespace branch
       path = path->next( predicate );
       return predicate;
     }
-    
+
     ActionNode*   path;
     U32           reg_values[32];
     U32           cia, nia;
     bool          has_branch;
-    
+
     U32 GetGPR(unsigned n) { return reg_values[n]; };
     void SetGPR(unsigned n, U32 value) { reg_values[n] = value; }
     U32 GetCIA() { return cia; };
     void Branch(U32 addr) { nia = addr; has_branch = true; }
-    
+
     bool Int8Load(unsigned n, U32 address) { SetGPR(n, U32()); return true; }
     bool Int16Load(unsigned n, U32 address) { SetGPR(n, U32()); return true; }
     bool Int32Load(unsigned n, U32 address) { SetGPR(n, U32()); return true; }
-    
+
     bool SInt8Load(unsigned n, U32 address) { SetGPR(n, U32()); return true; }
     bool SInt16Load(unsigned n, U32 address) { SetGPR(n, U32()); return true; }
 
     bool Int16LoadByteReverse(unsigned n, U32 address) { SetGPR(n, U32()); return true; }
     bool Int32LoadByteReverse(unsigned n, U32 address) { SetGPR(n, U32()); return true; }
-    
+
     bool Int8Store(unsigned n, U32 address ) { return true; }
     bool Int16Store(unsigned n, U32 address ) { return true; }
     bool Int32Store(unsigned n, U32 address ) { return true; }
@@ -428,13 +428,13 @@ namespace branch
     bool Dcbi(U32 const& addr) { return true; }
     bool Icbi(U32 const& addr) { return true; }
     bool Icbt(U32 const& addr) { return true; }
-    
+
     bool Msync() { return true; }
     bool Isync() { return true; }
     bool Mpure() { return true; }
     bool Mpuwe() { return true; }
     bool Mpusync() { return true; }
-    
+
     bool Lbarx(unsigned n, U32 const& addr) { return true; }
     bool Lharx(unsigned n, U32 const& addr) { return true; }
     bool Lwarx(unsigned n, U32 const& addr) { return true; }
@@ -444,13 +444,13 @@ namespace branch
     bool MoveFromDCR(unsigned dcrn, U32& result) { return true; }
     bool MoveFromSPR(unsigned dcrn, U32& result) { return true; }
     bool MoveToSPR(unsigned dcrn, U32 const& result) { return true; }
-    
+
     bool CheckSPV() { return true; }
     bool Wait() { return true; }
   };
-  
-} // end of namespace branch
-  
+
+}
+
 } // end of namespace vle
 
 #endif /* __VLE4FUZR_VLE_HH__ */

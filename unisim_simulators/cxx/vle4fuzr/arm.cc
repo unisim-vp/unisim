@@ -9,7 +9,7 @@
  */
 
 #include "arm.hh"
-#include "xvalue.hh"
+#include <unisim/util/cfg/intro/xvalue.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
 #include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
@@ -70,22 +70,29 @@ ArmProcessor::get_reg(char const* id, uintptr_t size, int regid)
 
 struct ActionNode : public unisim::util::symbolic::Choice<ActionNode> {};
 
+namespace unisim { namespace util { namespace cfg { namespace intro {
+  template <class OP> XValue<OP> NeonSHL( XValue<OP> op, XValue<int8_t> sh )
+  {
+    return XValue<OP>( unisim::component::cxx::processor::arm::NeonSHL( op.value, sh.value ), op.determined and sh.determined );
+  }
+}}}}
+
 struct ArmBranch
 {
   typedef ArmProcessor::Config Config;
   struct InsnBranch {};
 
-  typedef x::XValue<double>   F64;
-  typedef x::XValue<float>    F32;
-  typedef x::XValue<bool>     BOOL;
-  typedef x::XValue<uint8_t>  U8;
-  typedef x::XValue<uint16_t> U16;
-  typedef x::XValue<uint32_t> U32;
-  typedef x::XValue<uint64_t> U64;
-  typedef x::XValue<int8_t>   S8;
-  typedef x::XValue<int16_t>  S16;
-  typedef x::XValue<int32_t>  S32;
-  typedef x::XValue<int64_t>  S64;
+  typedef unisim::util::cfg::intro::XValue<double>   F64;
+  typedef unisim::util::cfg::intro::XValue<float>    F32;
+  typedef unisim::util::cfg::intro::XValue<bool>     BOOL;
+  typedef unisim::util::cfg::intro::XValue<uint8_t>  U8;
+  typedef unisim::util::cfg::intro::XValue<uint16_t> U16;
+  typedef unisim::util::cfg::intro::XValue<uint32_t> U32;
+  typedef unisim::util::cfg::intro::XValue<uint64_t> U64;
+  typedef unisim::util::cfg::intro::XValue<int8_t>   S8;
+  typedef unisim::util::cfg::intro::XValue<int16_t>  S16;
+  typedef unisim::util::cfg::intro::XValue<int32_t>  S32;
+  typedef unisim::util::cfg::intro::XValue<int64_t>  S64;
 
   ArmBranch( ActionNode& root, uint32_t addr, uint32_t length, bool _thumb )
     : path(&root), r15(addr + (_thumb?4:8)), insn_addr(addr), next_insn_addr(addr+length), thumb(_thumb), has_branch(false)
@@ -173,7 +180,7 @@ struct ArmBranch
   void ITSetState(uint8_t, uint8_t) {}
 
   template <typename T>
-  bool Test( x::XValue<T> const& cond )
+  bool Test( unisim::util::cfg::intro::XValue<T> const& cond )
   {
     BOOL c = BOOL(cond);
     if (c.determined) return c.value;
@@ -353,7 +360,7 @@ ArmProcessor::Step( Decoder& decoder )
   // Monitor
   if (this->disasm)
     {
-      op->disasm(std::cerr << std::hex << insn_addr << ": (" << ("AT"[AMO<Decoder>::thumb]) << ") " );
+      op->disasm(*this, std::cerr << std::hex << insn_addr << ": (" << ("AT"[AMO<Decoder>::thumb]) << ") " );
       std::cerr << std::endl;
     }
 
@@ -395,7 +402,7 @@ ArmProcessor::Disasm( Decoder& decoder )
   if (Operation* op = page.ops[insn_offset])
     {
       std::ostringstream buf;
-      op->disasm(buf);
+      op->disasm(*this, buf);
       std::cerr << std::endl;
       asmbuf = buf.str();
     }
@@ -441,7 +448,7 @@ ArmProcessor::ReadInsn(uint32_t address)
 void
 ArmProcessor::UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor>* insn )
 {
-  insn->disasm(std::cerr << "Undefined instruction @" << std::hex << current_insn_addr << std::dec << ": " );
+  insn->disasm(*this, std::cerr << "Undefined instruction @" << std::hex << current_insn_addr << std::dec << ": ");
   std::cerr << std::endl;
   abort("ProcessorException('undefined instruction')");
 }
@@ -449,7 +456,7 @@ ArmProcessor::UndefinedInstruction( unisim::component::cxx::processor::arm::isa:
 void
 ArmProcessor::UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor>* insn )
 {
-  insn->disasm(std::cerr << "Undefined instruction @" << std::hex << current_insn_addr << std::dec << ": " );
+  insn->disasm(*this, std::cerr << "Undefined instruction @" << std::hex << current_insn_addr << std::dec << ": ");
   std::cerr << std::endl;
   abort("ProcessorException('undefined instruction')");
 }

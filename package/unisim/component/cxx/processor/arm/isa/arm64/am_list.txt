@@ -7,4 +7,10 @@ unisim/component/cxx/processor/arm/isa/arm64/arm64.hh: unisim/component/cxx/proc
 unisim/component/cxx/processor/arm/isa/arm64/arm64.hh: unisim/component/cxx/processor/arm/isa/execute.hh
 unisim/component/cxx/processor/arm/isa/arm64/arm64.hh: unisim/util/arithmetic/arithmetic.hh
 unisim/component/cxx/processor/arm/isa/arm64/arm64.hh: unisim/util/floating_point/floating_point.hh
-unisim/component/cxx/processor/arm/isa/arm64/arm64.hh: unisim/util/likely/likely.hh
+unisim/component/cxx/processor/arm/isa/arm64/dba.hh: unisim/component/cxx/processor/arm/isa/arm64/base.isa
+unisim/component/cxx/processor/arm/isa/arm64/dba.hh: unisim/component/cxx/processor/arm/isa/arm64/decode.hh
+unisim/component/cxx/processor/arm/isa/arm64/dba.hh: unisim/component/cxx/processor/arm/isa/arm64/disasm.hh
+unisim/component/cxx/processor/arm/isa/arm64/dba.hh: unisim/component/cxx/processor/arm/isa/arm64/execute.hh
+unisim/component/cxx/processor/arm/isa/arm64/dba.hh: unisim/component/cxx/processor/arm/isa/arm64/simd.isa
+unisim/component/cxx/processor/arm/isa/arm64/dba.hh: unisim/component/cxx/processor/arm/isa/execute.hh
+unisim/component/cxx/processor/arm/isa/arm64/dba.hh: unisim/util/arithmetic/arithmetic.hh

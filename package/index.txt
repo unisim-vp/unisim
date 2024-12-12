@@ -136,6 +136,10 @@ unisim/component/cxx/pci/video/display_64.cc
 unisim/component/cxx/processor/arm/cp15.hh
 unisim/component/cxx/processor/arm/cpu.hh
 unisim/component/cxx/processor/arm/cpu.tcc
+unisim/component/cxx/processor/arm/dba/aarch32/decoder.cc
+unisim/component/cxx/processor/arm/dba/aarch32/decoder.hh
+unisim/component/cxx/processor/arm/dba/aarch64/decoder.cc
+unisim/component/cxx/processor/arm/dba/aarch64/decoder.hh
 unisim/component/cxx/processor/arm/exception.hh
 unisim/component/cxx/processor/arm/extregbank.hh
 unisim/component/cxx/processor/arm/hostfloat.hh
@@ -160,6 +164,7 @@ unisim/component/cxx/processor/arm/isa/arm32/xscale.isa
 unisim/component/cxx/processor/arm/isa/arm64/arm64.isa
 unisim/component/cxx/processor/arm/isa/arm64/at.isa
 unisim/component/cxx/processor/arm/isa/arm64/base.isa
+unisim/component/cxx/processor/arm/isa/arm64/dba.isa
 unisim/component/cxx/processor/arm/isa/arm64/decode.hh
 unisim/component/cxx/processor/arm/isa/arm64/disasm.cc
 unisim/component/cxx/processor/arm/isa/arm64/disasm.hh
@@ -267,6 +272,11 @@ unisim/component/cxx/processor/hcs12x/xgate.cc
 unisim/component/cxx/processor/hcs12x/xgate.hh
 unisim/component/cxx/processor/intel/arch32/arch.cc
 unisim/component/cxx/processor/intel/arch32/arch.hh
+unisim/component/cxx/processor/intel/dba/arch.cc
+unisim/component/cxx/processor/intel/dba/arch.hh
+unisim/component/cxx/processor/intel/dba/decode.cc
+unisim/component/cxx/processor/intel/dba/decoder.cc
+unisim/component/cxx/processor/intel/dba/decoder.hh
 unisim/component/cxx/processor/intel/disasm.cc
 unisim/component/cxx/processor/intel/disasm.hh
 unisim/component/cxx/processor/intel/execute.hh
@@ -308,6 +318,12 @@ unisim/component/cxx/processor/powerpc/config.cc
 unisim/component/cxx/processor/powerpc/config.hh
 unisim/component/cxx/processor/powerpc/cpu.hh
 unisim/component/cxx/processor/powerpc/cpu.tcc
+unisim/component/cxx/processor/powerpc/dba/arch64/arch.cc
+unisim/component/cxx/processor/powerpc/dba/arch64/arch.hh
+unisim/component/cxx/processor/powerpc/dba/arch64/decoder.cc
+unisim/component/cxx/processor/powerpc/dba/arch64/decoder.hh
+unisim/component/cxx/processor/powerpc/dba/ppc64/ppc64.isa
+unisim/component/cxx/processor/powerpc/dba/types.hh
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.hh
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.tcc
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/dmem.hh
@@ -1439,6 +1455,9 @@ unisim/component/cxx/processor/riscv/isa/disasm.cc
 unisim/component/cxx/processor/riscv/isa/disasm.hh
 unisim/component/cxx/processor/riscv/isa/rv64/riscv.isa
 unisim/component/cxx/processor/sparc/asi.hh
+unisim/component/cxx/processor/sparc/dba/arch32/decoder.cc
+unisim/component/cxx/processor/sparc/dba/arch32/decoder.hh
+unisim/component/cxx/processor/sparc/dba/sv8/sparc.isa
 unisim/component/cxx/processor/sparc/isa/sv8/arch.hh
 unisim/component/cxx/processor/sparc/isa/sv8/control.isa
 unisim/component/cxx/processor/sparc/isa/sv8/disasm.cc
@@ -2242,6 +2261,7 @@ unisim/util/cfg/cfg.tcc
 unisim/util/cfg/dominance/dominance.cc
 unisim/util/cfg/dominance/dominance.hh
 unisim/util/cfg/dominance/dominance.tcc
+unisim/util/cfg/intro/xvalue.hh
 unisim/util/converter/convert.hh
 unisim/util/dbgate/client/client.cc
 unisim/util/dbgate/client/client.hh

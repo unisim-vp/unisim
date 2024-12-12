@@ -2,7 +2,7 @@
  *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
- *  
+ *
  * FUZR RENAULT CEA FILE
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard <gilles.mouchard@cea.fr>
@@ -15,14 +15,15 @@
 #include <iostream>
 
 namespace vle {
+
 namespace branch {
   Processor::Processor( ActionNode& root, uint32_t addr, uint32_t length )
     : path(&root), reg_values(), cia(addr), nia(addr+length), has_branch(false)
   {}
-  
 } // end of namespace branch
+
 namespace concrete {
-  
+
   Processor::Processor()
     : reg_values(), cia(), nia()
   {}
@@ -70,7 +71,7 @@ namespace concrete {
     uint32_t insn_addr = this->cia, insn_idx = insn_addr/2,
       insn_tag = insn_idx / Processor::OPPAGESIZE,
       insn_offset = insn_idx % Processor::OPPAGESIZE;
-    
+
     if (Operation* op = insn_cache[insn_tag].ops[insn_offset])
       {
         std::ostringstream buf;
@@ -92,14 +93,14 @@ namespace concrete {
       {
         // Go to the next instruction
         uint32_t insn_addr = this->cia = this->nia, insn_length = 0;
-        
+
         // Fetch
         CodeType insn = this->Fetch(insn_addr);
 
         // Decode
         uint32_t insn_idx = insn_addr/2,
           insn_tag = insn_idx / Processor::OPPAGESIZE, insn_offset = insn_idx % Processor::OPPAGESIZE;
-        
+
         InsnPage& page = insn_cache[insn_tag];
         Operation* op = page.ops[insn_offset];
         if (op and op->GetEncoding() == insn)
@@ -110,11 +111,11 @@ namespace concrete {
             static Decoder decoder;
             op = page.ops[insn_offset] = decoder.NCDecode(insn_addr, insn);
             insn_length = op->GetLength() / 8;
-            
+
             {
               static branch::Decoder bdecoder;
               auto bop = bdecoder.NCDecode( insn_addr, insn );
-          
+
               branch::ActionNode root;
               for (bool end = false; not end;)
                 {
@@ -123,12 +124,12 @@ namespace concrete {
                   op->branch.update( bp.has_branch, bp.nia );
                   end = bp.path->close();
                 }
-    
+
               delete bop;
             }
-            
+
           }
-        
+
         // Monitor
         if (unlikely(this->disasm))
           {
@@ -137,9 +138,9 @@ namespace concrete {
           }
 
         insn_hooks(insn_addr, insn_length);
-        
+
         this->nia = this->cia + insn_length;
-        
+
         /* execute the instruction */
         if (not op->execute(this))
           {
@@ -159,7 +160,7 @@ namespace concrete {
       }
     while (this->nia != until and --count != 0);
   }
-  
+
 } // end of namespace concrete
 } // end of namespace vle
 
