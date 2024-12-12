@@ -40,7 +40,7 @@
 #include <unisim/util/symbolic/symbolic.hh>
 #include <unisim/util/floating_point/floating_point.hh>
 
-#include <unisim/component/cxx/processor/arm/isa/arm64/dba.tcc>
+#include <unisim/component/cxx/processor/arm/dba/arm64/arm64.tcc>
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
@@ -134,7 +134,7 @@ struct Processor
       vector_write(reg, NeonValue( newRegRead( VRegID(reg) ) ));
   }
 
-  typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<Processor> Operation;
+  typedef unisim::component::cxx::processor::arm::dba::arm64::Operation<Processor> Operation;
 
   void step(Operation const& operation)
   {
@@ -564,8 +564,8 @@ struct Processor
 
 struct Translator
 {
-  typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<Processor> Decoder;
-  typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<Processor> Operation;
+  typedef unisim::component::cxx::processor::arm::dba::arm64::Decoder<Processor> Decoder;
+  typedef unisim::component::cxx::processor::arm::dba::arm64::Operation<Processor> Operation;
 
   typedef unisim::util::symbolic::binsec::ActionNode ActionNode;
 

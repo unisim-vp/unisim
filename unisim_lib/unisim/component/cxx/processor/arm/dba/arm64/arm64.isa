@@ -38,7 +38,7 @@
 
 **********************************************/
 
-namespace unisim::component::cxx::processor::arm::isa::arm64
+namespace unisim::component::cxx::processor::arm::dba::arm64
 set endianness little
 set addressclass {uint64_t}
 template <{typename} {ARCH}>
@@ -59,6 +59,9 @@ using unisim::util::arithmetic::BitScanReverse;
 
 #include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
+
+using namespace unisim::component::cxx::processor::arm::isa;
+using namespace unisim::component::cxx::processor::arm::isa::arm64;
 }
 
 action {void} execute({ARCH &} {cpu}) const {
@@ -68,9 +71,6 @@ action {void} execute({ARCH &} {cpu}) const {
 action {void} disasm({ARCH &} {cpu}, {std::ostream&} {sink}) const {
   sink << "; Unknown AARCH64 instruction";
 }
-
-impl {
-} // end of impl
 
 include "unisim/component/cxx/processor/arm/isa/arm64/base.isa"
 include "unisim/component/cxx/processor/arm/isa/arm64/simd.isa"

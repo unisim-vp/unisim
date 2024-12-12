@@ -784,13 +784,11 @@ namespace binsec {
   Expr
   BitFilter::mksimple( Expr const& input, unsigned source, unsigned rshift, unsigned select, unsigned extend, bool sxtend )
   {
-    BitFilter bf( input, source, rshift, select, extend, sxtend );
+    Expr sbf( new BitFilter( input, source, rshift, select, extend, sxtend ) );
 
-    bf.Retain(); // Prevent deletion of this stack-allocated object
-
-    Expr sbf = &bf;
     BitSimplify::Do(sbf);
-    return (sbf.node == &bf) ? new BitFilter( bf ) : sbf.node;
+
+    return sbf;
   }
 
   int
@@ -811,17 +809,17 @@ namespace binsec {
     //   scratch = make_operation(Op::Lsr, scratch, make_const<shift_type>(rshift));
 
     int shift = extend - (rshift+select);
-    Zero dz(GetType()); dz.Retain(); // Prevent deletion of this stack-allocated object
+    Expr dz( new Zero(GetType()) );
     if (shift >= 0)
       {
-        scratch = make_operation( Op::ReinterpretAs, &dz, scratch );
+        scratch = make_operation( Op::ReinterpretAs, dz, scratch );
         if (shift)
           scratch = make_operation( Op::Lsl, scratch, make_const<shift_type>(shift) );
       }
     else
       {
         scratch = make_operation( Op::Lsr, scratch, make_const<shift_type>(-shift) );
-        scratch = make_operation( Op::ReinterpretAs, &dz, scratch );
+        scratch = make_operation( Op::ReinterpretAs, dz, scratch );
       }
 
     Expr xshift =  make_const<shift_type>(extend - select);

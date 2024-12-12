@@ -5,7 +5,7 @@ std/iomanip
 std/iosfwd
 std/iostream
 std/set
-unisim/component/cxx/processor/arm/isa/arm64
+unisim/component/cxx/processor/arm/dba/arm64
 unisim/component/cxx/processor/arm/regs64
 unisim/util/floating_point
 unisim/util/symbolic

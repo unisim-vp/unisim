@@ -140,6 +140,7 @@ unisim/component/cxx/processor/arm/dba/aarch32/decoder.cc
 unisim/component/cxx/processor/arm/dba/aarch32/decoder.hh
 unisim/component/cxx/processor/arm/dba/aarch64/decoder.cc
 unisim/component/cxx/processor/arm/dba/aarch64/decoder.hh
+unisim/component/cxx/processor/arm/dba/arm64/arm64.isa
 unisim/component/cxx/processor/arm/exception.hh
 unisim/component/cxx/processor/arm/extregbank.hh
 unisim/component/cxx/processor/arm/hostfloat.hh
@@ -164,7 +165,6 @@ unisim/component/cxx/processor/arm/isa/arm32/xscale.isa
 unisim/component/cxx/processor/arm/isa/arm64/arm64.isa
 unisim/component/cxx/processor/arm/isa/arm64/at.isa
 unisim/component/cxx/processor/arm/isa/arm64/base.isa
-unisim/component/cxx/processor/arm/isa/arm64/dba.isa
 unisim/component/cxx/processor/arm/isa/arm64/decode.hh
 unisim/component/cxx/processor/arm/isa/arm64/disasm.cc
 unisim/component/cxx/processor/arm/isa/arm64/disasm.hh
