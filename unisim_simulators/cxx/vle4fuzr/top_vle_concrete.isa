@@ -10,7 +10,7 @@
 
 namespace vle::concrete
 
-var branch : {BranchInfo};
+var stat : { struct Stat { BranchInfo branch; } };
 
 impl
 {

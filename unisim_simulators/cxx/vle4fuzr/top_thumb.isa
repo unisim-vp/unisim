@@ -10,10 +10,4 @@
 
 include "unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa"
 
-set codetype scalar;
-
-decl {
-  #include <emu.hh>
-}
-
-var branch : {typename ARCH::InsnBranch};
+var stat : {typename ARCH::OpStat};

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017-2024,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -39,7 +39,7 @@
 **********************************************/
 
 namespace unisim::component::cxx::processor::arm::isa::arm64
-set endianness little;
+set endianness little
 set addressclass {uint64_t}
 template <{typename} {ARCH}>
 

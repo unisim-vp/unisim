@@ -103,31 +103,30 @@ namespace concrete {
 
         InsnPage& page = insn_cache[insn_tag];
         Operation* op = page.ops[insn_offset];
-        if (op and op->GetEncoding() == insn)
-          { insn_length = op->GetLength() / 8; }
-        else
+        if (not op or op->GetEncoding() != insn)
           {
             delete op;
             static Decoder decoder;
             op = page.ops[insn_offset] = decoder.NCDecode(insn_addr, insn);
-            insn_length = op->GetLength() / 8;
+          }
 
-            {
-              static branch::Decoder bdecoder;
-              auto bop = bdecoder.NCDecode( insn_addr, insn );
+        insn_length = op->GetLength() / 8;
 
-              branch::ActionNode root;
-              for (bool end = false; not end;)
-                {
-                  branch::Processor bp( root, insn_addr, insn_length );
-                  bop->execute( &bp );
-                  op->branch.update( bp.has_branch, bp.nia );
-                  end = bp.path->close();
-                }
+        if (op->stat.branch.startupdate())
+          {
+            static branch::Decoder bdecoder;
+            auto bop = bdecoder.NCDecode( insn_addr, insn );
 
-              delete bop;
-            }
+            branch::ActionNode root;
+            for (bool end = false; not end;)
+              {
+                branch::Processor bp( root, insn_addr, insn_length );
+                bop->execute( &bp );
+                op->stat.branch.update( bp.has_branch, bp.nia );
+                end = bp.path->close();
+              }
 
+            delete bop;
           }
 
         // Monitor
@@ -156,7 +155,7 @@ namespace concrete {
             DebugBranch(-1);
           }
         else
-          this->bblock = (op->branch.target != op->branch.BNone);
+          this->bblock = (op->stat.branch.has_branch());
       }
     while (this->nia != until and --count != 0);
   }

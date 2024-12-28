@@ -13,6 +13,8 @@
 #include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
 #include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
+#include <memory>
 
 ArmProcessor::ArmProcessor( char const* name, bool is_thumb )
   : unisim::kernel::Object( name, 0 )
@@ -80,7 +82,7 @@ namespace unisim { namespace util { namespace cfg { namespace intro {
 struct ArmBranch
 {
   typedef ArmProcessor::Config Config;
-  struct InsnBranch {};
+  struct OpStat {};
 
   typedef unisim::util::cfg::intro::XValue<double>   F64;
   typedef unisim::util::cfg::intro::XValue<float>    F32;
@@ -286,94 +288,84 @@ template <class T> struct AMO {};
 template <class CPU> using Arm32Decoder = unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU>;
 template <class CPU> using ThumbDecoder = unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU>;
 
-template <> struct AMO< Arm32Decoder<ArmProcessor> >
+template <> struct AMO<typename Arm32Decoder<ArmProcessor>::operation_type>
 {
-  typedef unisim::component::cxx::processor::arm::isa::arm32::CodeType CodeType;
-  typedef unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor> Operation;
   enum { thumb = 0 };
-  typedef ArmProcessor::AOpPage OpPage;
-  static OpPage& GetOpPage(ArmProcessor& ap, uint32_t tag) { return ap.arm32_op_cache[tag]; }
-  static Arm32Decoder<ArmBranch> bdecoder;
+  typedef Arm32Decoder<ArmBranch> BDecoder;
+  typedef std::unique_ptr<typename BDecoder::operation_type> unique_op_ptr;
 };
 
-Arm32Decoder<ArmProcessor> ArmProcessor::arm32_decoder;
-Arm32Decoder<ArmBranch> AMO< Arm32Decoder<ArmProcessor> >::bdecoder;
-
-template <> struct AMO< ThumbDecoder<ArmProcessor> >
+template <> struct AMO<typename ThumbDecoder<ArmProcessor>::operation_type>
 {
-  typedef unisim::component::cxx::processor::arm::isa::thumb::CodeType CodeType;
-  typedef unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor> Operation;
   enum { thumb = 1 };
-  typedef ArmProcessor::TOpPage OpPage;
-  static OpPage& GetOpPage(ArmProcessor& ap, uint32_t tag) { return ap.thumb_op_cache[tag]; }
-  static ThumbDecoder<ArmBranch> bdecoder;
+  typedef ThumbDecoder<ArmBranch> BDecoder;
+  typedef std::unique_ptr<typename BDecoder::operation_type> unique_op_ptr;
 };
 
-ThumbDecoder<ArmProcessor> ArmProcessor::thumb_decoder;
-ThumbDecoder<ArmBranch> AMO< ThumbDecoder<ArmProcessor> >::bdecoder;
+template <class Insn>
+void
+ArmProcessor::ComputeBranchInfo(Insn* op)
+{
+  if (not op->stat.branch.startupdate())
+    return; // Already computed
+
+  uint32_t insn_addr = op->GetAddr(), insn = op->GetEncoding(), insn_length = op->GetLength();
+  bool const is_thumb = AMO<Insn>::thumb;
+
+  static typename AMO<Insn>::BDecoder bdecoder;
+  auto bop = typename AMO<Insn>::unique_op_ptr(bdecoder.NCDecode( insn_addr, insn ));
+
+  ActionNode root;
+
+  for (bool end = false; not end;)
+    {
+      ArmBranch ab( root, insn_addr, insn_length/8, is_thumb );
+      using unisim::component::cxx::processor::arm::CheckCondition;
+      if (is_thumb ? CheckCondition(ab, ab.itcond()) : CheckCondition(ab, insn >> 28))
+        bop->execute( ab );
+      op->stat.branch.update( ab.has_branch, ab.next_insn_addr );
+      end = ab.path->close();
+    }
+}
 
 template <typename Decoder>
 void
 ArmProcessor::Step( Decoder& decoder )
 {
-  typedef typename AMO<Decoder>::CodeType CodeType;
-  typedef typename AMO<Decoder>::Operation Operation;
-  typedef typename AMO<Decoder>::OpPage OpPage;
+  typedef typename Decoder::operation_type Operation;
+  typedef typename Decoder::code_type      CodeType;
+  bool const is_thumb = AMO<Operation>::thumb;
 
   // Instruction boundary next_insn_addr becomes current_insn_addr
-  uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr, insn_length = 0;
+  uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
 
   // Fetch
   CodeType insn = ReadInsn(insn_addr);
 
   // Decode
-  uint32_t insn_idx = insn_addr/(AMO<Decoder>::thumb ? 2 : 4),
-    insn_tag = insn_idx / ArmProcessor::OPPAGESIZE, insn_offset = insn_idx % ArmProcessor::OPPAGESIZE;
-  OpPage& page = AMO<Decoder>::GetOpPage(*this, insn_tag);
-  Operation* op = page.ops[insn_offset];
-  if (op and op->GetEncoding() == insn)
-    { insn_length = op->GetLength() / 8; }
-  else
-    {
-      delete op;
-      op = page.ops[insn_offset] = decoder.NCDecode( insn_addr, insn );
-      insn_length = op->GetLength() / 8;
+  Operation* op = decoder.Decode(insn_addr, insn);
+  SetCurrent(op);
 
-      {
-        auto bop = AMO<Decoder>::bdecoder.NCDecode( insn_addr, insn );
-
-        ActionNode root;
-        for (bool end = false; not end;)
-          {
-            ArmBranch ab( root, insn_addr, insn_length, AMO<Decoder>::thumb );
-            using unisim::component::cxx::processor::arm::CheckCondition;
-            if (AMO<Decoder>::thumb ? CheckCondition(ab, ab.itcond()) : CheckCondition(ab, op->GetEncoding() >> 28))
-              bop->execute( ab );
-            op->branch.update( ab.has_branch, ab.next_insn_addr );
-            end = ab.path->close();
-          }
-
-        delete bop;
-      }
-    }
+  ComputeBranchInfo(op);
 
   // Monitor
   if (this->disasm)
     {
-      op->disasm(*this, std::cerr << std::hex << insn_addr << ": (" << ("AT"[AMO<Decoder>::thumb]) << ") " );
+      op->disasm(*this, std::cerr << std::hex << insn_addr << ": (" << (is_thumb?'T':'A') << ") " );
       std::cerr << std::endl;
     }
 
+  uint32_t insn_length = op->GetLength() / 8;
   insn_hooks(insn_addr, insn_length);
 
   // Execute
-  this->gpr[15] = insn_addr + (AMO<Decoder>::thumb ? 4 : 8);
+  this->gpr[15] = insn_addr + (is_thumb ? 4 : 8);
   this->next_insn_addr = insn_addr + insn_length;
 
-  if (CheckCondition(*this, AMO<Decoder>::thumb ? itcond() : op->GetEncoding() >> 28))
+  if (CheckCondition(*this, is_thumb ? itcond() : op->GetEncoding() >> 28))
     op->execute( *this );
 
-  if (AMO<Decoder>::thumb)
+  if (is_thumb)
     this->ITAdvance();
 
   if (debug_branch != uint64_t(-1))
@@ -383,23 +375,14 @@ ArmProcessor::Step( Decoder& decoder )
       DebugBranch(-1);
     }
   else
-    this->bblock = (op->branch.target != op->branch.BNone);
+    this->bblock = (op->stat.branch.has_branch());
 }
 
-template <typename Decoder>
+template <typename Insn>
 void
-ArmProcessor::Disasm( Decoder& decoder )
+ArmProcessor::Disasm( Insn* op )
 {
-  typedef typename AMO<Decoder>::Operation Operation;
-  typedef typename AMO<Decoder>::OpPage OpPage;
-
-  // Fetch
-  uint32_t insn_addr = this->current_insn_addr, insn_idx = insn_addr/(AMO<Decoder>::thumb ? 2 : 4),
-    insn_tag = insn_idx / ArmProcessor::OPPAGESIZE,
-    insn_offset = insn_idx % ArmProcessor::OPPAGESIZE;
-  OpPage& page = AMO<Decoder>::GetOpPage(*this, insn_tag);
-
-  if (Operation* op = page.ops[insn_offset])
+  if (op)
     {
       std::ostringstream buf;
       op->disasm(*this, buf);
@@ -414,9 +397,9 @@ char const*
 ArmProcessor::get_asm()
 {
   if (cpsr.Get( unisim::component::cxx::processor::arm::T ))
-    Disasm(thumb_decoder);
+    Disasm(current_thumb_operation);
   else
-    Disasm(arm32_decoder);
+    Disasm(current_arm32_operation);
 
   return asmbuf.c_str();
 }
@@ -446,7 +429,7 @@ ArmProcessor::ReadInsn(uint32_t address)
 }
 
 void
-ArmProcessor::UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor>* insn )
+ArmProcessor::UndefinedInstruction( ArmProcessor::AOperation* insn )
 {
   insn->disasm(*this, std::cerr << "Undefined instruction @" << std::hex << current_insn_addr << std::dec << ": ");
   std::cerr << std::endl;
@@ -454,7 +437,7 @@ ArmProcessor::UndefinedInstruction( unisim::component::cxx::processor::arm::isa:
 }
 
 void
-ArmProcessor::UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor>* insn )
+ArmProcessor::UndefinedInstruction( ArmProcessor::TOperation* insn )
 {
   insn->disasm(*this, std::cerr << "Undefined instruction @" << std::hex << current_insn_addr << std::dec << ": ");
   std::cerr << std::endl;

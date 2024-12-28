@@ -10,9 +10,5 @@
 
 include "unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
-decl {
-  #include <emu.hh>
-}
-
-var branch : {typename ARCH::InsnBranch};
+var stat : {typename ARCH::OpStat};
 

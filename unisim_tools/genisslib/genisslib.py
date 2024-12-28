@@ -239,7 +239,7 @@ class Operation:
         self.name, self.bitfields, self.fileloc = name, bitfields, fileloc
         self.actions, self.variables, self.condition = {}, {}, None
 
-        
+
         self.cname = 'Op' + self.name[0].upper() + self.name[1:]
 
     def match_info(self, little_endian):
@@ -1579,7 +1579,7 @@ class Generator:
 
         for variable in self.source.variables.values():
             if variable.c_init is None: continue
-            product.write( ' ' + variable.name ).usercode( variable.c_init ).write( "),\n" )
+            product.write( f" {variable.name}(" ).usercode( variable.c_init ).write( "),\n" )
 
         product.code( " encoding(_code),\n" )
         product.code( " addr(_addr),\n" )
@@ -2190,7 +2190,7 @@ class ScalarGenerator(Generator):
         vlen = len(self.source.insnsizes) != 1
         mask = '0x{:x}{}'.format( (1 << maxsize)-1, self.insn_cpostfix )
         skipmask = maxsize == self.insn_ctype_size
-        
+
         if     self.source.little_endian and vlen:
             delta = '({} << ({} - this->GetLength()))'.format(delta, maxsize)
             skipmask = False # Defensive programming against C type promotions
@@ -2199,7 +2199,7 @@ class ScalarGenerator(Generator):
         if not self.source.little_endian and vlen:
             delta = '({} >> ({} - this->GetLength()))'.format(delta, maxsize)
         product.code( '%s == 0', delta )
-        
+
     def insn_id_expr(self, addrname):
         # TODO: generic method: addr / (gcd/8)
         if len(self.source.insnsizes) != 1:
@@ -2560,7 +2560,7 @@ class BufferGenerator(Generator):
                     component = '(%s & 0x%x)' % (component, mask)
                     if dst: component = '(%s << %u)' % (component, dst)
                     product.code( sep ).write( component )
-                    
+
                     src = nsrc
                     sep = ' | '
 

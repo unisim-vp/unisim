@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2023,
+ *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -19,6 +19,7 @@
 #include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 
 struct ArmProcessor
@@ -49,28 +50,29 @@ struct ArmProcessor
 
 
   //  typedef typename CP15CPU::CP15Reg CP15Reg;
-  typedef BranchInfo InsnBranch;
+  struct OpStat { BranchInfo branch; };
 
   ArmProcessor( char const* name, bool is_thumb );
   ~ArmProcessor();
 
   virtual void Sync() override { struct No {}; throw No(); }
 
-  static unisim::component::cxx::processor::arm::isa::arm32::Decoder<ArmProcessor> arm32_decoder;
-  static unisim::component::cxx::processor::arm::isa::thumb::Decoder<ArmProcessor> thumb_decoder;
-
   static ArmProcessor& Self( Processor& proc ) { return dynamic_cast<ArmProcessor&>( proc ); }
 
   Processor::RegView const* get_reg(char const* id, uintptr_t size, int regid) override;
 
-  enum { OPPAGESIZE = 4096 };
+  typedef unisim::component::cxx::processor::arm::isa::arm32::Decoder<ArmProcessor>   ADecoder;
   typedef unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor> AOperation;
-  typedef OpPage<AOperation,OPPAGESIZE> AOpPage;
+  typedef unisim::component::cxx::processor::arm::isa::thumb::Decoder<ArmProcessor>   TDecoder;
   typedef unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor> TOperation;
-  typedef OpPage<TOperation,OPPAGESIZE> TOpPage;
 
-  std::map< uint32_t, AOpPage > arm32_op_cache;
-  std::map< uint32_t, TOpPage > thumb_op_cache;
+  unisim::component::cxx::processor::opcache::OpCache<ADecoder> arm32_decoder;
+  unisim::component::cxx::processor::opcache::OpCache<TDecoder> thumb_decoder;
+  AOperation* current_arm32_operation;
+  TOperation* current_thumb_operation;
+
+  void     SetCurrent(AOperation* op) { current_arm32_operation = op; }
+  void     SetCurrent(TOperation* op) { current_thumb_operation = op; }
 
   enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
 
@@ -104,21 +106,17 @@ struct ArmProcessor
   { return (size-1)*(GetEndianness() == unisim::util::endian::E_BIG_ENDIAN); }
   virtual char const* get_asm() override;
 
+  template <class Insn> void ComputeBranchInfo(Insn*);
   template <class Decoder> void Step(Decoder&);
-  template <class Decoder> void Disasm(Decoder&);
+  template <class Insn> void Disasm(Insn*);
 
-  void     UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor>* insn );
-  void     UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor>* insn );
+  void     UndefinedInstruction(AOperation*);
+  void     UndefinedInstruction(TOperation*);
+
   void     UnpredictableInsnBehaviour() override;
   void     CallSupervisor( uint32_t imm );
   virtual void FPTrap( unsigned fpx ) override;
   void     BKPT( int );
-
-  // TODO:
-  // SetCPSR => CPSRSetByInstriction
-  // CP15 functions have access to CPU (already do privilege checks enough)
-  // Huge issues with Mode system (gives access to system behavior) { checked by nature ? }
-
 };
 
 

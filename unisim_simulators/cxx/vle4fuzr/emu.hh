@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -21,7 +21,7 @@
 struct Processor
 {
   Processor();
-  
+
   virtual ~Processor();
 
   virtual void run( uint64_t begin, uint64_t until, uint64_t count ) = 0;
@@ -31,7 +31,7 @@ struct Processor
   {
     typedef void* (*hook_t)(void* uc, unsigned access_type, uint64_t address, unsigned size, unsigned endianness, uint64_t* value);
     typedef void (*info_t)(uint64_t first, uint64_t last, unsigned perms, unsigned hooks);
-    
+
     uint64_t hi() const { return last; }
 
     bool operator < (Page const& p) const { return last < p.base; }
@@ -114,7 +114,7 @@ struct Processor
         }
       return xhook and not xhook(p, 2, addr, count, endianness, value);
     }
-    
+
     bool chperms(unsigned new_perms) const { if (not perms) return false; const_cast<unsigned&>(perms) = new_perms; return true; }
     void chhook(unsigned access_type, hook_t new_hook) const { const_cast<hook_t&>(*hookptr(access_type)) = new_hook; }
     enum Permision { Read = 1, Write = 2, Execute = 4 };
@@ -125,7 +125,7 @@ struct Processor
     friend std::ostream& operator << ( std::ostream& sink, Page const& p ) { p.dump(sink); return sink; }
 
     void info( info_t sink ) const { (*sink)( base, last, perms, bool(rhook)*1 | bool(whook)*2 | bool(xhook)*4 ); }
-    
+
   public:
     uint64_t  base;
     uint64_t  last;
@@ -137,7 +137,7 @@ struct Processor
     hook_t const* hookptr(unsigned i) const { switch(i) { case 0: return &rhook; case 1: return &whook; case 2: return &xhook; } return 0; }
     void resize(uint64_t last);
   };
-  
+
   typedef std::set<Page, Page::Above> Pages;
   Pages pages;
   Page  failpage;
@@ -160,13 +160,13 @@ struct Processor
         error_mem_overlap(page, *std::prev(below));
         return false;
       }
-    
+
     pages.insert(below,std::move(page));
     return true;
   }
 
   void error_at( char const* issue, uint64_t addr );
-  
+
   bool mem_unmap(uint64_t addr)
   {
     auto page = pages.lower_bound(addr);
@@ -184,18 +184,18 @@ struct Processor
     page->info(sink);
     return true;
   }
-  
+
   bool pages_info(Page::info_t sink)
   {
     for (Page const& page : pages)
       page.info(sink);
     return true;
   }
-  
+
   bool  mem_chprot(uint64_t addr, unsigned perms);
   bool  mem_chhook(uint64_t addr, unsigned access_type, Page::hook_t hook);
   bool  mem_exc_chhook(unsigned access_type, Page::hook_t hook);
-  
+
   bool
   mem_write(uint64_t addr, uint8_t const* bytes, uint64_t size)
   {
@@ -257,14 +257,14 @@ struct Processor
     if (not page.phys_read(this, addr, size, endianness, value))
       { error_at("cannot read", addr); MemoryException(0,addr,"protection fault"); }
   }
-  
+
   void PhysicalFetchMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t* value )
   {
     Page const& page = AccessPage(addr);
     if (not page.phys_fetch(this, addr, size, endianness, value))
       { error_at("cannot fetch", addr); MemoryException(2,addr,"protection fault"); }
   }
-  
+
   struct RegView
   {
     virtual ~RegView() {}
@@ -273,9 +273,9 @@ struct Processor
   };
 
   virtual RegView const* get_reg(char const* id, uintptr_t size, int regid) = 0;
-  
+
   bool NoSuchRegister() { error = "NoSuchRegister()"; return false; }
-  
+
   bool
   reg_write(char const* id, uintptr_t size, int regid, uint64_t value)
   {
@@ -285,7 +285,7 @@ struct Processor
       return NoSuchRegister();
     return true;
   }
-  
+
   bool
   reg_read(char const* id, uintptr_t size, int regid, uint64_t* value)
   {
@@ -295,15 +295,15 @@ struct Processor
       return NoSuchRegister();
     return true;
   }
-  
+
   struct Abort {};
-  
+
   void abort(std::string _error) { error=_error; throw Abort(); }
-  
+
   struct Hook
   {
     typedef void (*cb_code)(void* uc, uint64_t address, unsigned size);
-    
+
     Hook(unsigned _types, void* cb, uint64_t _begin, uint64_t _end)
       : types(_types), begin(_begin), end(_end), callback(cb), insn()
     {}
@@ -317,7 +317,7 @@ struct Processor
        MEM = 4, // Hook for memory access on unmapped memory or protected memory
        TYPE_COUNT
       };
-    
+
 
     template <unsigned BITS> struct Mask
     {
@@ -326,9 +326,9 @@ struct Processor
       bool check( unsigned types ) { return bool(types&unsigned(bits)) ^ bool(types&~unsigned(bits));}
     };
     template <type_t TYPE> Mask<1<<TYPE> Is() { return Mask<1<<TYPE>(); }
-      
+
     bool check_types();
-    
+
     template <typename T> T cb() const { return (T)callback; }
     bool has_type( type_t tp ) { return (types >> int(tp)) & 1; }
     void release( type_t tp )
@@ -340,10 +340,10 @@ struct Processor
     void release( int tp ) { release(type_t(tp)); }
 
     bool bound_check(uint64_t addr) { return (addr >= begin and addr <= end) or begin > end; }
-    
+
   // private:
   //   uintptr_t refs;
-    
+
   public:
     unsigned types;
     uint64_t begin, end;
@@ -354,15 +354,15 @@ struct Processor
   bool add_hook( int types, void* callback, uint64_t begin, uint64_t end );
   void insn_hooks(uint64_t addr, unsigned len);
   void syscall_hooks(uint64_t addr, unsigned num);
-  
+
   void DebugBranch( uint64_t target ) { debug_branch = target; }
   uint64_t debug_branch;
-  
+
   void set_disasm(bool _disasm) { disasm = _disasm; }
   std::string asmbuf;
-  
+
   virtual char const* get_asm() = 0;
-  
+
   std::vector<Hook*> hooks[Hook::TYPE_COUNT];
 
   std::string error;
@@ -373,12 +373,14 @@ struct Processor
 
 struct BranchInfo
 {
-  enum { BNone = 0, Direct, Indirect };
-  
-  BranchInfo() : address(), target(BNone), pass(false) {}
+  enum { BNone = 0, Direct, Indirect, NA };
+
+  BranchInfo() : address(), target(NA), pass(false) {}
   template <class X> void update( bool branch, X const& x ) { update( branch, x.determined, x.value ); }
+  bool startupdate() { if (target == NA) { target = BNone; return true; } return false; }
   void update( bool branch, bool known, uint64_t target );
-  
+  bool has_branch() const { return target != BNone; }
+
   uint64_t address;
   unsigned target : 2;
   unsigned pass : 1;

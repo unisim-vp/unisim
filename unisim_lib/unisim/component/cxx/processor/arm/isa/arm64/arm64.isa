@@ -75,6 +75,6 @@ action {void} disasm({typename ARCH::DisasmState &} {cpu}, {std::ostream&} {sink
 impl {
 } // end of impl
 
-include "base.isa"
-include "simd.isa"
-include "floating-point.isa"
+include "unisim/component/cxx/processor/arm/isa/arm64/base.isa"
+include "unisim/component/cxx/processor/arm/isa/arm64/simd.isa"
+include "unisim/component/cxx/processor/arm/isa/arm64/floating-point.isa"
