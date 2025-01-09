@@ -414,6 +414,7 @@ class Isa:
         self.namespace = ()            #< Encapsulating namespace of the iss
         self.tparams = []              #< Template parameters of the iss
         self.variables = {}            #< Global variables used by the iss
+        self.bases = {}                #< Inherited classes for base Operation 
         self.actionprotos = {}         #< Action prototypes of operations
         self.opmap = {}                #< Defined instructions
         self.operations = []           #< Defined instructions
@@ -933,6 +934,20 @@ class Scanner:
             varlist.append( Variable(varname, c_type, c_init) )
         return varlist, nxt
 
+    def getBaseListAndLexeme(self):
+        nxt, baselist = ',', []
+        while nxt == ',':
+            self.expect( '{}'[0], self.getLexeme() )
+            c_type = self.getSourceCode()
+            c_init = None
+            nxt = self.getLexeme()
+            if nxt == '=':
+                self.expect( '{}'[0], self.getLexeme() )
+                c_init = self.getSourceCode()
+                nxt = self.getLexeme()
+            baselist.append( Variable(None, c_type, c_init) )
+        return baselist, nxt
+
     def getNamespaceAndLexeme(self):
         nmspc = []
         nxt = '::'
@@ -1208,12 +1223,22 @@ def parse(filename, app, isa, excluded_attributes=[]):
 
         elif root == 'var':
             variables, root = source.getVarListAndLexeme()
-            for v in variables:
-                p = isa.variables.get(v.name)
-                if p is not None:
+            for n in variables:
+                p = isa.variables.get(n.name)
+                if p is not None: # overwriting previous entry ?
                     msg = 'parse error:\n{}: variable {!r} redefined\n{}: previously defined here.'
-                    raise Abort( msg.format(v.c_type.fileloc, v.name, p.c_type.fileloc) )
-                isa.variables[v.name] = v
+                    raise Abort( msg.format(n.c_type.fileloc, n.name, p.c_type.fileloc) )
+                isa.variables[n.name] = n
+
+        elif root == 'base':
+            bases, root = source.getBaseListAndLexeme()
+            for n in bases:
+                ident = n.c_type.content
+                p = isa.bases.get(ident)
+                if p is not None: # overwriting previous entry ?
+                    msg = 'parse error:\n{}: base {!r} redefined\n{}: previously defined here.'
+                    raise Abort( msg.format(n.c_type.fileloc, ident, p.c_type.fileloc) )
+                isa.bases[ident] = n
 
         elif root == 'group':
             name = source.expectName(source.getLexeme())
@@ -1301,6 +1326,14 @@ def least_ctype_size(bits):
         raise Abort('Cannot encode more than 64 bits with standard C/C++ integer types')
     return size
 
+class Sep:
+    def __init__(self, base, init):
+        self.base, self.value = base, init
+
+    def get(self):
+        self.value, res = self.base, self.value
+        return res
+
 class Product:
     def __init__(self, filename, sourcelines):
         self.filename, self.sourcelines = filename, sourcelines
@@ -1354,10 +1387,9 @@ class Product:
         if not tparams:
             return self
         self.write('template <')
-        sep = ''
+        sep = Sep(',', '')
         for ctype, csymbol in tparams:
-            self.write( sep ).write('\t').usercode(ctype).write('\t').usercode(csymbol)
-            sep = ','
+            self.write( sep.get() ).write('\t').usercode(ctype).write('\t').usercode(csymbol)
         self.write('>\n')
         return self
 
@@ -1365,10 +1397,9 @@ class Product:
         if not tparams:
             return self
         self.write('<')
-        sep = ''
+        sep = Sep(',','')
         for ctype, csymbol in tparams:
-            self.write( sep ).write('\t').usercode(csymbol)
-            sep = ','
+            self.write( sep.get() ).write('\t').usercode(csymbol)
         self.write('>')
         return self
 
@@ -1513,9 +1544,11 @@ class Generator:
 
     def operation_decl(self, product):
         product.template_signature( self.source.tparams )
-        product.code( "class Operation\n" )
-        product.code( "{\n" )
-        product.code( "public:\n" )
+        sep = Sep('\n , ', '\n : ')
+        product.code( "struct Operation" )
+        for base in self.source.bases.values():
+            product.code( sep.get() ).usercode( base.c_type )
+        product.code( "\n{\n" )
         product.code( " Operation(%s code, %s addr, const char *name);\n", self.codetype_constref(), self.source.addrtype )
         product.code( " virtual ~Operation();\n" )
         if self.source.withencode:
@@ -1529,11 +1562,10 @@ class Generator:
         self.op_match( product, "_code" )
         product.code( " and GetAddr() == _addr; }\n" )
 
-        product.code( " static unsigned int const minsize = %d;\n", min(self.source.insnsizes) )
-        product.code( " static unsigned int const maxsize = %d;\n", max(self.source.insnsizes) )
+        product.write( " enum { " + f'minsize = {min(self.source.insnsizes)}, maxsize = {max(self.source.insnsizes)}' + " };\n",  )
 
         for variable in self.source.variables.values():
-            product.code(" ").usercode( variable.c_type ).code( " %s;", variable.name )
+            product.code(" ").usercode( variable.c_type ).code( f" {variable.name};\n" )
 
         if self.source.withsource:
             # base declaration for internal encoding and decoding code
@@ -1555,18 +1587,17 @@ class Generator:
             product.code( " %s(", ap.name )
 
             if ap.param_list:
-                sep = ' '
+                sep = Sep(',\n', ' ')
                 for ctype, csymbol in ap.param_list:
-                    product.code( sep ).usercode( ctype ).code( " " ).usercode( csymbol )
-                    sep = ',\n'
+                    product.code( sep.get() ).usercode( ctype ).code( " " ).usercode( csymbol )
 
             product.code( " )%s;\n", " const" if ap.constness else "" )
 
         product.code( "protected:\n" )
 
-        product.code( " %s encoding;\n", self.codetype_name() )
-        product.code( " %s addr;\n", self.source.addrtype )
         product.code( " const char *name;\n" )
+        product.code( " %s addr;\n", self.source.addrtype )
+        product.code( " %s encoding;\n", self.codetype_name() )
 
         product.code( "};\n\n" )
 
@@ -1574,18 +1605,21 @@ class Generator:
         product.template_signature( self.source.tparams )
         product.code( "Operation" )
         product.template_abbrev( self.source.tparams )
-        product.code( "::Operation(%s _code, %s _addr, const char *_name)\n", self.codetype_constref(), self.source.addrtype )
-        product.code( ": \n")
+        product.code( "::Operation(%s _code, %s _addr, const char *_name)", self.codetype_constref(), self.source.addrtype )
+        sep = Sep('\n , ','\n : ')
+
+        for base in self.source.bases.values():
+            if base.c_init is None: continue
+            product.write( sep.get() ).usercode( base.c_type ).write( '(' ).usercode( base.c_init ).write( ')' )
 
         for variable in self.source.variables.values():
             if variable.c_init is None: continue
-            product.write( f" {variable.name}(" ).usercode( variable.c_init ).write( "),\n" )
+            product.write( f'{sep.get()}{variable.name}(' ).usercode( variable.c_init ).write( ')' )
 
-        product.code( " encoding(_code),\n" )
-        product.code( " addr(_addr),\n" )
-        product.code( " name(_name)\n" )
-        product.code( "{\n" )
-        product.code( "}\n\n" )
+        product.code( sep.get() + 'name(_name)' )
+        product.code( sep.get() + 'addr(_addr)' )
+        product.code( sep.get() + 'encoding(_code)' )
+        product.code( "\n{\n}\n\n" )
         product.template_signature( self.source.tparams )
         product.code( "Operation" )
         product.template_abbrev( self.source.tparams )
@@ -1627,10 +1661,9 @@ class Generator:
             product.code( "::%s(", ap.name )
 
             if ap.param_list:
-                sep = ' '
+                sep = Sep(',\n', ' ')
                 for ctype, csymbol in ap.param_list:
-                    product.code( sep ).usercode( ctype ).code( " " ).usercode( csymbol )
-                    sep = ',\n'
+                    product.code( sep.get() ).usercode( ctype ).code( " " ).usercode( csymbol )
 
             product.code( ")%s\n{\n", " const" if ap.constness else "" )
             product.usercode( ap.defaultcode, "{", "}" )
@@ -2051,10 +2084,9 @@ class Generator:
                 product.code( " %s(", actionproto.name )
 
                 if actionproto.param_list:
-                    sep = " "
+                    sep = Sep(',\n', ' ')
                     for ctype, csymbol in actionproto.param_list:
-                        product.code( sep ).usercode( ctype ).code( " " ).usercode( csymbol )
-                        sep = ',\n'
+                        product.code( sep.get() ).usercode( ctype ).code( " " ).usercode( csymbol )
                     product.code( " " )
 
                 product.code( ")%s;\n", " const" if actionproto.constness else "" )
@@ -2103,10 +2135,9 @@ class Generator:
                 product.code( "::%s(", actionproto.name )
 
                 if actionproto.param_list:
-                    sep = " "
+                    sep = Sep(',\n', ' ')
                     for ctype, csymbol in actionproto.param_list:
-                        product.code( sep ).usercode( ctype ).code( " " ).usercode( csymbol )
-                        sep = ',\n'
+                        product.code( sep.get() ).usercode( ctype ).code( " " ).usercode( csymbol )
 
                 product.code( ")%s\n{\n", " const" if actionproto.constness else "" )
                 product.usercode( action.sourcecode, "{", "}" )
@@ -2546,7 +2577,7 @@ class BufferGenerator(Generator):
                 product.code( "%s = ", bf.name )
                 opsize = self.membersize( bf.dstsize() )
 
-                src, sep = beg, ''
+                src, sep = beg, Sep(' | ', '')
                 while src < end:
                     nsrc = min((src+8) & -8, end)
                     shift = src & 7
@@ -2559,10 +2590,9 @@ class BufferGenerator(Generator):
                     if shift: component = '(%s >> %u)' % (component, shift)
                     component = '(%s & 0x%x)' % (component, mask)
                     if dst: component = '(%s << %u)' % (component, dst)
-                    product.code( sep ).write( component )
+                    product.code( sep.get() ).write( component )
 
                     src = nsrc
-                    sep = ' | '
 
                 product.code( ";\n" )
 

@@ -17,10 +17,11 @@
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/component/cxx/processor/arm/cpu.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm32.hh>
-#include <unisim/component/cxx/processor/arm/isa_thumb.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm32/arm32.hh>
+#include <unisim/component/cxx/processor/arm/isa/thumb2/thumb.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/util/symbolic/symbolic.hh>
+#include <unisim/util/cfg/intro/intro.hh>
 
 struct ArmProcessor
   : public Processor
@@ -48,9 +49,8 @@ struct ArmProcessor
     static bool const     hasAdvSIMD = false;
   };
 
-
   //  typedef typename CP15CPU::CP15Reg CP15Reg;
-  struct OpStat { BranchInfo branch; };
+  struct OpStat { unisim::util::cfg::intro::BranchInfo branch; };
 
   ArmProcessor( char const* name, bool is_thumb );
   ~ArmProcessor();

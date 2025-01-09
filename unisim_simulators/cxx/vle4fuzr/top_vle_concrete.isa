@@ -10,7 +10,12 @@
 
 namespace vle::concrete
 
-var stat : { struct Stat { BranchInfo branch; } };
+decl
+{
+#include <unisim/util/cfg/intro/intro.hh>
+}
+
+var stat : { struct Stat { unisim::util::cfg::intro::BranchInfo branch; } };
 
 impl
 {

@@ -9,10 +9,10 @@
  */
 
 #include "arm.hh"
-#include <unisim/util/cfg/intro/xvalue.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
-#include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
+#include <unisim/component/cxx/processor/arm/isa/arm32/arm32.tcc>
+#include <unisim/component/cxx/processor/arm/isa/thumb2/thumb.tcc>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
+#include <unisim/component/cxx/processor/arm/cfg/aarch32/aarch32.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <memory>
 
@@ -70,263 +70,6 @@ ArmProcessor::get_reg(char const* id, uintptr_t size, int regid)
   return 0;
 }
 
-struct ActionNode : public unisim::util::symbolic::Choice<ActionNode> {};
-
-namespace unisim { namespace util { namespace cfg { namespace intro {
-  template <class OP> XValue<OP> NeonSHL( XValue<OP> op, XValue<int8_t> sh )
-  {
-    return XValue<OP>( unisim::component::cxx::processor::arm::NeonSHL( op.value, sh.value ), op.determined and sh.determined );
-  }
-}}}}
-
-struct ArmBranch
-{
-  typedef ArmProcessor::Config Config;
-  struct OpStat {};
-
-  typedef unisim::util::cfg::intro::XValue<double>   F64;
-  typedef unisim::util::cfg::intro::XValue<float>    F32;
-  typedef unisim::util::cfg::intro::XValue<bool>     BOOL;
-  typedef unisim::util::cfg::intro::XValue<uint8_t>  U8;
-  typedef unisim::util::cfg::intro::XValue<uint16_t> U16;
-  typedef unisim::util::cfg::intro::XValue<uint32_t> U32;
-  typedef unisim::util::cfg::intro::XValue<uint64_t> U64;
-  typedef unisim::util::cfg::intro::XValue<int8_t>   S8;
-  typedef unisim::util::cfg::intro::XValue<int16_t>  S16;
-  typedef unisim::util::cfg::intro::XValue<int32_t>  S32;
-  typedef unisim::util::cfg::intro::XValue<int64_t>  S64;
-
-  ArmBranch( ActionNode& root, uint32_t addr, uint32_t length, bool _thumb )
-    : path(&root), r15(addr + (_thumb?4:8)), insn_addr(addr), next_insn_addr(addr+length), thumb(_thumb), has_branch(false)
-  {
-  }
-
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
-  ActionNode* path;
-  U32 r15, insn_addr, next_insn_addr;
-  bool thumb, has_branch;
-  BOOL next_thumb;
-
-  void SetQC() {}
-
-  U32 GetGPR(int idx) { if (idx != 15) return U32(); return r15; }
-  void SetGPR(int idx, U32 val)
-  {
-    if (idx != 15) return;
-    if (thumb) this->Branch( val, B_JMP );
-    else this->BranchExchange( val, B_JMP );
-  }
-  void SetGPR_mem(int idx, U32 val)
-  {
-    if (idx != 15) return;
-    this->BranchExchange( val, B_JMP );
-  }
-
-  void BranchExchange(U32 target, branch_type_t branch_type)
-  {
-    next_thumb = BOOL(target & U32(1));
-    this->Branch( target, branch_type );
-  }
-
-  void Branch(U32 target, branch_type_t branch_type)
-  {
-    this->next_insn_addr = target & U32(thumb ? -2 : -4);
-    has_branch = true;
-  }
-
-  U32 GetCIA() { return this->insn_addr; }
-  U32 GetNIA() { return this->next_insn_addr; }
-
-  U32  GetVU32( unsigned idx ) { return U32(); }
-  void SetVU32( unsigned idx, U32 val ) {}
-  U64  GetVU64( unsigned idx ) { return U64(); }
-  void SetVU64( unsigned idx, U64 val ) {}
-  F32  GetVSR( unsigned idx ) { return F32(); }
-  void SetVSR( unsigned idx, F32 val ) {}
-  F64  GetVDR( unsigned idx ) { return F64(); }
-  void SetVDR( unsigned idx, F64 val ) {}
-
-  template <class ELEMT> void SetVDE( unsigned reg, unsigned idx, ELEMT const& value ) {}
-  template <class ELEMT> ELEMT GetVDE( unsigned reg, unsigned idx, ELEMT const& trait ) { return ELEMT(); }
-
-  U8 GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob) { return U8(); }
-
-  U32  GetVSU( unsigned idx ) { return U32(); }
-  void SetVSU( unsigned idx, U32 val ) {}
-  U64  GetVDU( unsigned idx ) { return U64(); }
-  void SetVDU( unsigned idx, U64 val ) {}
-
-  struct PSR
-  {
-    template <typename F, typename V> void Set( F, V ) {}
-    template <typename F> U32 Get( F ) { return U32(); }
-  } xpsr;
-
-  PSR&     CPSR() { return xpsr; };
-
-  void SetCPSR( U32 const&, uint32_t ) {}
-  U32 GetCPSR() { return U32(); }
-  U32 GetNZCV() { return U32(); }
-
-  struct Mode
-  {
-    U32 GetSPSR() { return U32(); }
-    void SetSPSR(U32) {}
-  };
-  Mode CurrentMode() { return Mode(); }
-  Mode GetMode(int) { return Mode(); }
-
-  struct ITCond {};
-  ITCond itcond() const { return ITCond(); }
-  bool itblock() { return concretize(); }
-  void ITSetState(uint8_t, uint8_t) {}
-
-  template <typename T>
-  bool Test( unisim::util::cfg::intro::XValue<T> const& cond )
-  {
-    BOOL c = BOOL(cond);
-    if (c.determined) return c.value;
-    return this->concretize();
-  }
-  bool concretize()
-  {
-    bool predicate = path->proceed();
-    path = path->next( predicate );
-    return predicate;
-  }
-
-  U32 MemURead32( U32 const& ) { return U32(); }
-  U16 MemURead16( U32 const& ) { return U16(); }
-  U32  MemRead32( U32 const& ) { return U32(); }
-  U16  MemRead16( U32 const& ) { return U16(); }
-  U8    MemRead8( U32 const& ) { return  U8(); }
-
-  void MemUWrite32( U32 const&, U32 const& ) {}
-  void MemUWrite16( U32 const&, U16 const& ) {}
-  void  MemWrite32( U32 const&, U32 const& ) {}
-  void  MemWrite16( U32 const&, U16 const& ) {}
-  void   MemWrite8( U32 const&,  U8 const& ) {}
-
-  static const unsigned PC_reg = 15;
-  static const unsigned LR_reg = 14;
-  static const unsigned SP_reg = 13;
- /* masks for the different running modes */
-  static uint32_t const USER_MODE = 0b10000;
-  static uint32_t const FIQ_MODE = 0b10001;
-  static uint32_t const IRQ_MODE = 0b10010;
-  static uint32_t const SUPERVISOR_MODE = 0b10011;
-  static uint32_t const MONITOR_MODE = 0b10110;
-  static uint32_t const ABORT_MODE = 0b10111;
-  static uint32_t const HYPERVISOR_MODE = 0b11010;
-  static uint32_t const UNDEFINED_MODE = 0b11011;
-  static uint32_t const SYSTEM_MODE = 0b11111;
-
-  template <typename T> void UndefinedInstruction( T ) { /*Illegal branch, ignoring*/ }
-  void UnpredictableInsnBehaviour() { /*Illegal branch, ignoring*/ }
-  void FPTrap( unsigned exc ) { /*Illegal branch, ignoring*/ }
-
-  void SetBankedRegister( int, int, U32 const& ) {}
-  U32  GetBankedRegister( int, int ) { return U32(); }
-
-  void SetExclusiveMonitors( U32 const&, int ) {}
-  bool ExclusiveMonitorsPass( U32 const&, int ) { return true; }
-  void ClearExclusiveLocal() {}
-  void CheckAlignment( U32 addr, unsigned alignment ) {}
-
-  bool IntegerZeroDivide( BOOL const& ) { return false; }
-  void BKPT( int ) {  }
-
-  void WaitForInterrupt() {}
-
-  struct CP15Reg
-  {
-    void CheckPermissions(uint8_t, uint8_t, uint8_t, uint8_t, ArmBranch&, bool) const {}
-    U32  Read(uint8_t, uint8_t, uint8_t, uint8_t, ArmBranch&) const { return U32(); }
-    void Write(uint8_t, uint8_t, uint8_t, uint8_t, ArmBranch&, U32 value ) const {}
-    void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink ) const { sink << "no"; }
-  };
-
-  static CP15Reg* CP15GetRegister(uint8_t, uint8_t, uint8_t, uint8_t) { static CP15Reg x; return &x; }
-
-  void CallSupervisor( uint32_t imm ) {}
-
-  U32 FPSCR, FPEXC;
-  U32 RoundTowardsZeroFPSCR() { return U32(); }
-  U32 RoundToNearestFPSCR() { return U32(); }
-
-  struct FP
-  {
-    template <typename T> static T Abs(T) { return T(); }
-    template <typename T> static T Neg(T) { return T(); }
-    template <typename T> static void SetDefaultNan( T& ) {}
-    template <typename T> static void SetQuietBit( T& ) {}
-    template <typename X, typename Y> static void ItoF( X&, Y const&, int, ArmBranch&, U32 const& ) {}
-    template <typename X, typename Y> static void FtoI( Y&, X const&, int, ArmBranch&, U32 const& ) {}
-    template <typename X, typename Y> static void FtoF( X&, Y const&, ArmBranch&, U32 const& ) {}
-
-
-    template <typename T> static void Add( T&, T const&, ArmBranch&, U32 const& ) {}
-    template <typename T> static void Sub( T&, T const&, ArmBranch&, U32 const& ) {}
-    template <typename T> static void Div( T&, T const&, ArmBranch&, U32 const& ) {}
-    template <typename T> static void Mul( T&, T const&, ArmBranch&, U32 const& ) {}
-
-    template <typename T> static BOOL IsSNaN(T const&) { return BOOL(); }
-    template <typename T> static BOOL IsQNaN(T const&) { return BOOL(); }
-    template <typename T> static BOOL IsInvalidMulAdd( T&, T const&, T const&, U32 const& ) { return BOOL(); }
-    template <typename T> static BOOL FlushToZero( T&, U32 const& ) { return BOOL(); }
-    template <typename T> static void MulAdd( T&, T const&, T const&, ArmBranch&, U32 const& ) {}
-    template <typename T> static void Sqrt( T&, ArmBranch&, U32 const& ) {}
-
-    template <typename T> static S32 Compare( T const&, T const&, U32 const& ) { return S32(); }
-  };
-};
-
-inline bool CheckCondition( ArmBranch& ab, ArmBranch::ITCond const& ) { return ab.concretize(); }
-
-template <class T> struct AMO {};
-
-template <class CPU> using Arm32Decoder = unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU>;
-template <class CPU> using ThumbDecoder = unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU>;
-
-template <> struct AMO<typename Arm32Decoder<ArmProcessor>::operation_type>
-{
-  enum { thumb = 0 };
-  typedef Arm32Decoder<ArmBranch> BDecoder;
-  typedef std::unique_ptr<typename BDecoder::operation_type> unique_op_ptr;
-};
-
-template <> struct AMO<typename ThumbDecoder<ArmProcessor>::operation_type>
-{
-  enum { thumb = 1 };
-  typedef ThumbDecoder<ArmBranch> BDecoder;
-  typedef std::unique_ptr<typename BDecoder::operation_type> unique_op_ptr;
-};
-
-template <class Insn>
-void
-ArmProcessor::ComputeBranchInfo(Insn* op)
-{
-  if (not op->stat.branch.startupdate())
-    return; // Already computed
-
-  uint32_t insn_addr = op->GetAddr(), insn = op->GetEncoding(), insn_length = op->GetLength();
-  bool const is_thumb = AMO<Insn>::thumb;
-
-  static typename AMO<Insn>::BDecoder bdecoder;
-  auto bop = typename AMO<Insn>::unique_op_ptr(bdecoder.NCDecode( insn_addr, insn ));
-
-  ActionNode root;
-
-  for (bool end = false; not end;)
-    {
-      ArmBranch ab( root, insn_addr, insn_length/8, is_thumb );
-      using unisim::component::cxx::processor::arm::CheckCondition;
-      if (is_thumb ? CheckCondition(ab, ab.itcond()) : CheckCondition(ab, insn >> 28))
-        bop->execute( ab );
-      op->stat.branch.update( ab.has_branch, ab.next_insn_addr );
-      end = ab.path->close();
-    }
-}
 
 template <typename Decoder>
 void
@@ -334,7 +77,7 @@ ArmProcessor::Step( Decoder& decoder )
 {
   typedef typename Decoder::operation_type Operation;
   typedef typename Decoder::code_type      CodeType;
-  bool const is_thumb = AMO<Operation>::thumb;
+  bool const is_thumb = Operation::minsize == 16;
 
   // Instruction boundary next_insn_addr becomes current_insn_addr
   uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
@@ -346,7 +89,7 @@ ArmProcessor::Step( Decoder& decoder )
   Operation* op = decoder.Decode(insn_addr, insn);
   SetCurrent(op);
 
-  ComputeBranchInfo(op);
+  unisim::component::cxx::processor::arm::cfg::aarch32::ComputeBranchInfo(op);
 
   // Monitor
   if (this->disasm)
@@ -375,7 +118,7 @@ ArmProcessor::Step( Decoder& decoder )
       DebugBranch(-1);
     }
   else
-    this->bblock = (op->stat.branch.has_branch());
+    this->bblock = (op->branch.has_branch());
 }
 
 template <typename Insn>

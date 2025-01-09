@@ -32,8 +32,8 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard <gilles.mouchard@cea.fr>
  */
 
-#ifndef __UNISIM_UTIL_CFG_XVALUE_HH__
-#define __UNISIM_UTIL_CFG_XVALUE_HH__
+#ifndef __UNISIM_UTIL_CFG_INTRO_HH__
+#define __UNISIM_UTIL_CFG_INTRO_HH__
 
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
@@ -130,9 +130,24 @@ namespace intro {
     return TP(cond.value ? tval.value : fval.value, cond.determined and ((cond.value and tval.determined) or (not cond.value and fval.determined)));
   }
 
+  struct BranchInfo
+  {
+    enum { BNone = 0, Direct, Indirect, NA };
+
+    BranchInfo() : address(), target(NA), pass(false) {}
+    template <class X> void update( bool branch, X const& x ) { update( branch, x.determined, x.value ); }
+    bool startupdate() { if (target == NA) { target = BNone; return true; } return false; }
+    void update( bool branch, bool known, uint64_t target );
+    bool has_branch() const { return target != BNone; }
+
+    uint64_t address;
+    unsigned target : 2;
+    unsigned pass : 1;
+  };
+
 } /* end of namespace intro */
 } /* end of namespace cfg */
 } /* end of namespace util */
 } /* end of namespace unisim */
 
-#endif // __UNISIM_UTIL_CFG_XVALUE_HH__
+#endif // __UNISIM_UTIL_CFG_INTRO_HH__

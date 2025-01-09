@@ -371,21 +371,6 @@ struct Processor
   //bool terminated;
 };
 
-struct BranchInfo
-{
-  enum { BNone = 0, Direct, Indirect, NA };
-
-  BranchInfo() : address(), target(NA), pass(false) {}
-  template <class X> void update( bool branch, X const& x ) { update( branch, x.determined, x.value ); }
-  bool startupdate() { if (target == NA) { target = BNone; return true; } return false; }
-  void update( bool branch, bool known, uint64_t target );
-  bool has_branch() const { return target != BNone; }
-
-  uint64_t address;
-  unsigned target : 2;
-  unsigned pass : 1;
-};
-
 template <class OP, uint64_t SZ>
 struct OpPage
 {

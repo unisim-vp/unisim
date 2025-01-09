@@ -48,11 +48,13 @@ decl {
 #include <stdint.h>
 } // end of decl
 
+base {ARCH::OpStat} = {};
+
 action {void} execute({ARCH &} {cpu}) {
   cpu.UndefinedInstruction( this );
 }
 
-action {void} disasm({ARCH &} {cpu}, {std::ostream&} {buffer}) {
+action {void} disasm({ARCH &} {cpu}, {std::ostream &} {buffer}) {
   buffer << "; Unknown ARM instruction";
 }
 

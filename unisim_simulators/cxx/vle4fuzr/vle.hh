@@ -13,11 +13,13 @@
 #define __VLE4FUZR_VLE_HH__
 
 #include "emu.hh"
+#include "top_vle_concrete.hh"
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
 #include <unisim/component/cxx/processor/powerpc/cpu.hh>
-#include <unisim/util/cfg/intro/xvalue.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
+#include <unisim/util/cfg/intro/intro.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <map>
@@ -49,8 +51,6 @@ namespace vle {
 
 namespace concrete
 {
-  class Operation;
-
   typedef bool  BOOL;
   typedef uint8_t   U8;
   typedef uint16_t  U16;
@@ -168,12 +168,10 @@ namespace concrete
 
     EmuProcessor::RegView const* get_reg(char const* id, uintptr_t size, int regid) override;
 
-    enum { OPPAGESIZE = 4096 };
     typedef vle::concrete::Operation Operation;
-    typedef OpPage<Operation,OPPAGESIZE> InsnPage;
-
-    std::map< uint32_t, InsnPage > insn_cache;
-
+    unisim::component::cxx::processor::opcache::OpCache<vle::concrete::Decoder> decoder;
+    Operation* current_operation;
+    
     bool Cond(bool c) { return c; }
 
     U32          reg_values[32];

@@ -133,6 +133,8 @@ unisim/component/cxx/pci/video/display.hh
 unisim/component/cxx/pci/video/display.tcc
 unisim/component/cxx/pci/video/display_32.cc
 unisim/component/cxx/pci/video/display_64.cc
+unisim/component/cxx/processor/arm/cfg/aarch32/aarch32.cc
+unisim/component/cxx/processor/arm/cfg/aarch32/aarch32.hh
 unisim/component/cxx/processor/arm/cp15.hh
 unisim/component/cxx/processor/arm/cpu.hh
 unisim/component/cxx/processor/arm/cpu.tcc
@@ -2261,7 +2263,8 @@ unisim/util/cfg/cfg.tcc
 unisim/util/cfg/dominance/dominance.cc
 unisim/util/cfg/dominance/dominance.hh
 unisim/util/cfg/dominance/dominance.tcc
-unisim/util/cfg/intro/xvalue.hh
+unisim/util/cfg/intro/intro.cc
+unisim/util/cfg/intro/intro.hh
 unisim/util/converter/convert.hh
 unisim/util/dbgate/client/client.cc
 unisim/util/dbgate/client/client.hh

@@ -9,8 +9,8 @@
  */
 
 #include "vle.hh"
-#include "top_vle_concrete.hh"
 #include "top_vle_branch.hh"
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/endian/endian.hh>
 #include <iostream>
 
@@ -25,7 +25,7 @@ namespace branch {
 namespace concrete {
 
   Processor::Processor()
-    : reg_values(), cia(), nia()
+    : decoder(), current_operation(), reg_values(), cia(), nia()
   {}
 
   Processor::RegView const*
@@ -68,20 +68,43 @@ namespace concrete {
   char const*
   Processor::get_asm()
   {
-    uint32_t insn_addr = this->cia, insn_idx = insn_addr/2,
-      insn_tag = insn_idx / Processor::OPPAGESIZE,
-      insn_offset = insn_idx % Processor::OPPAGESIZE;
-
-    if (Operation* op = insn_cache[insn_tag].ops[insn_offset])
+    if (current_operation)
       {
         std::ostringstream buf;
-        op->disasm(this, buf);
+        current_operation->disasm(this, buf);
         std::cerr << std::endl;
         asmbuf = buf.str();
       }
     else
       asmbuf = "?";
     return asmbuf.c_str();
+  }
+
+  namespace {
+    template <class Instruction>
+    void
+    ComputeBranchInfo(Instruction* op)
+    {
+      if (not op->stat.branch.startupdate())
+        return; // Already computed
+
+      uint32_t insn_addr = op->GetAddr(), insn = op->GetEncoding();
+      unsigned insn_length = op->GetLength() / 8;
+
+      static branch::Decoder bdecoder;
+      auto bop = bdecoder.NCDecode( insn_addr, insn );
+
+      branch::ActionNode root;
+      for (bool end = false; not end;)
+        {
+          branch::Processor bp( root, insn_addr, insn_length );
+          bop->execute( &bp );
+          op->stat.branch.update( bp.has_branch, bp.nia );
+          end = bp.path->close();
+        }
+
+      delete bop;
+    }
   }
 
   void
@@ -92,42 +115,15 @@ namespace concrete {
     do
       {
         // Go to the next instruction
-        uint32_t insn_addr = this->cia = this->nia, insn_length = 0;
+        uint32_t insn_addr = this->cia = this->nia;
 
         // Fetch
         CodeType insn = this->Fetch(insn_addr);
 
         // Decode
-        uint32_t insn_idx = insn_addr/2,
-          insn_tag = insn_idx / Processor::OPPAGESIZE, insn_offset = insn_idx % Processor::OPPAGESIZE;
+        Operation* op = current_operation = decoder.Decode(insn_addr, insn);
 
-        InsnPage& page = insn_cache[insn_tag];
-        Operation* op = page.ops[insn_offset];
-        if (not op or op->GetEncoding() != insn)
-          {
-            delete op;
-            static Decoder decoder;
-            op = page.ops[insn_offset] = decoder.NCDecode(insn_addr, insn);
-          }
-
-        insn_length = op->GetLength() / 8;
-
-        if (op->stat.branch.startupdate())
-          {
-            static branch::Decoder bdecoder;
-            auto bop = bdecoder.NCDecode( insn_addr, insn );
-
-            branch::ActionNode root;
-            for (bool end = false; not end;)
-              {
-                branch::Processor bp( root, insn_addr, insn_length );
-                bop->execute( &bp );
-                op->stat.branch.update( bp.has_branch, bp.nia );
-                end = bp.path->close();
-              }
-
-            delete bop;
-          }
+        ComputeBranchInfo(op);
 
         // Monitor
         if (unlikely(this->disasm))
@@ -136,6 +132,7 @@ namespace concrete {
             std::cerr << std::endl;
           }
 
+        unsigned insn_length = op->GetLength() / 8;
         insn_hooks(insn_addr, insn_length);
 
         this->nia = this->cia + insn_length;
