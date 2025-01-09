@@ -78,6 +78,7 @@ struct Router : public unisim::component::tlm2::interconnect::generic_router::Ro
 
 struct CPU : public  unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU>
 {
+  struct OpStat {};
   CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent = 0);
 };
 
