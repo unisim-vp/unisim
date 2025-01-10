@@ -73,6 +73,7 @@ struct Processor
   //   =====================================================================
   struct Unimplemented {};
   struct Undefined {};
+  struct OpStat {};
 
   struct Config
   {
