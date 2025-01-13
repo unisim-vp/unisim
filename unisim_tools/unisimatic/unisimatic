@@ -124,6 +124,13 @@ function bad()
   exit 1
 }
 
+################################################# cleanup ##########################################################
+
+function cleanup()
+{
+	[ -z "${TMP_CONFIG_YAML+x}" ] || rm -f "${TMP_CONFIG_YAML}"
+}
+
 ############################################# utility functions #####################################################
 
 # sort lines of a file
@@ -193,23 +200,23 @@ Details:
       - name: unisim_lib
         path: /path/to/unisim_lib
         package_dir: ../package
-        enabled: yes
-        default: yes
+        enabled: true
+        default: true
       - name: genisslib
         path: /path/to/genisslib
         package_dir: package
-        enabled: yes
+        enabled: true
     projects:
       - name: simulator
         path: /path/to/simulator
         config_file: ${DEFAULT_PROJECT_DISTRIB_FILE}
-        enabled: yes
+        enabled: true
     builds:
       - name: simulator
         project: simulator
         build_dir: /path/to/build_dir
         dist_dir: /path/to/dist_dir
-        enabled: yes
+        enabled: true
         command: |
           ./configure
           make
@@ -591,7 +598,15 @@ function tilda_expansion()
 # Load configuration file (~/.config/unisimatic/config.yaml)
 function config()
 {
-	[ -f "${CONFIG_YAML}" ] || die "${APP_NAME^} configuration file ${CONFIG_YAML} not found"
+	if [ -p "${CONFIG_YAML}" ]; then
+		TMP_CONFIG_YAML="$(mktemp --tmpdir --suffix=.yaml config.XXXXXXXXXX)"
+		[ $? -eq 0 ] || die "Unable to create file ${TMP_CONFIG_YAML} to save configuration file ${CONFIG_YAML}"
+		cat "${CONFIG_YAML}" > "${TMP_CONFIG_YAML}" || die "Can't copy content of configuration file ${CONFIG_YAML} into temporary file ${TMP_CONFIG_YAML}"
+		CONFIG_YAML="${TMP_CONFIG_YAML}"
+	else
+		CONFIG_YAML="$(realpath -m -q "${CONFIG_YAML}")"
+		[ -f "${CONFIG_YAML}" ] || die "${APP_NAME^} configuration file ${CONFIG_YAML} not found"
+	fi
 	
 	local PROPERTY
 	local PROP_IDX
@@ -2682,6 +2697,8 @@ function orphans()
 # main function
 function main()
 {
+	trap cleanup EXIT
+
 	# parse command line options
 	while [ $# -ne 0 ]; do
 		case "$1" in
@@ -2720,7 +2737,7 @@ function main()
 				;;
 			--config=*)
 				OPTIONS+=("$1")
-				CONFIG_YAML="$(realpath -m -q "${1##--config=}")"
+				CONFIG_YAML="${1##--config=}"
 				shift
 				;;
 			--coverage)
