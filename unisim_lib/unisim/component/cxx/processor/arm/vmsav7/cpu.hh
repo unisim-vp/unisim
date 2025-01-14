@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2023,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -41,6 +41,7 @@
 #include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
+#include <unisim/service/interfaces/instruction_collecting.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/disassembly.hh>
@@ -113,6 +114,7 @@ struct TLB
 template <class CPU_IMPL>
 struct CPU
   : public unisim::component::cxx::processor::arm::CPU<simfloat::FP,CPU_IMPL>
+  , public unisim::kernel::Client<unisim::service::interfaces::InstructionCollecting<uint32_t> >
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
   , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint32_t> >
@@ -171,7 +173,8 @@ struct CPU
   //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
-		
+
+  unisim::kernel::ServiceImport<unisim::service::interfaces::InstructionCollecting<uint32_t> > instruction_collecting_import;
   unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
   unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint32_t> > memory_access_reporting_import;
   unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint32_t> > disasm_export;
@@ -241,6 +244,13 @@ struct CPU
   //=====================================================================
 	
   virtual void PerformExit(int ret);
+
+  //=====================================================================
+  //=             instruction collection interface methods              =
+  //=====================================================================
+
+  template <class Operation>
+  void CollectInstruction(Operation* op);
 
   /**************************************************************/
   /* Memory access methods       START                          */

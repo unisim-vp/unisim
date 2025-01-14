@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2023,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -42,6 +42,7 @@ using unisim::util::arithmetic::RotateRight;
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa/arm32/arm32.tcc>
 #include <unisim/component/cxx/processor/arm/isa/thumb2/thumb.tcc>
+#include <unisim/component/cxx/processor/arm/cfg/aarch32/aarch32.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
@@ -117,6 +118,7 @@ template <class CPU_IMPL>
 CPU<CPU_IMPL>::CPU(const char* name, unisim::kernel::Object* parent)
   : unisim::kernel::Object(name, parent)
   , unisim::component::cxx::processor::arm::CPU<simfloat::FP,CPU_IMPL>(name, parent)
+  , Client<unisim::service::interfaces::InstructionCollecting<uint32_t> >(name, parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >(name, parent)
   , Service<MemoryInjection<uint32_t> >(name, parent)
@@ -127,6 +129,7 @@ CPU<CPU_IMPL>::CPU(const char* name, unisim::kernel::Object* parent)
   , Client< Memory<uint32_t> >(name, parent)
   , Client<unisim::service::interfaces::LinuxOS>(name, parent)
   , Client<unisim::service::interfaces::SymbolTableLookup<uint32_t> >(name, parent)
+  , instruction_collecting_import("instruction-collecting-import", this)
   , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
   , memory_access_reporting_import("memory-access-reporting-import", this)
   , disasm_export("disasm-export", this)
@@ -581,6 +584,46 @@ CPU<CPU_IMPL>::PerformReadAccess(	uint32_t addr, uint32_t size )
   return value;
 }
 
+
+template <class CPU_IMPL>
+template <class Operation>
+void
+CPU<CPU_IMPL>::CollectInstruction(Operation* op)
+{
+  unisim::service::interfaces::InstructionInfo<uint32_t> insn_info;
+
+  // unisim::service::interfaces::InstructionInfoBase::INDIRECT : unisim::service::interfaces::InstructionInfoBase::DIRECT;
+  unsigned insn_size = op->GetLength() / 8;
+  insn_info.size = insn_size;
+  insn_info.fallthrough = this->current_insn_addr + insn_size;
+  insn_info.target = insn_info.addr = this->next_insn_addr;
+  uint32_t opcode_word = unisim::util::endian::LittleEndian2Host(op->GetEncoding());
+  insn_info.opcode = (const uint8_t *) &opcode_word;
+
+  unisim::component::cxx::processor::arm::cfg::aarch32::ComputeBranchInfo(op);
+  bool indirect = op->branch.is_indirect();
+  insn_info.mode = indirect ? insn_info.INDIRECT : insn_info.DIRECT;
+  if (op->branch.has_branch())
+    {
+      switch (typename PCPU::branch_type_t(op->branch.arch_type))
+        {
+        default:
+        case this->B_JMP : insn_info.type = insn_info.JUMP;   break;
+        case this->B_CALL: insn_info.type = insn_info.CALL;   break;
+        case this->B_RET : insn_info.type = insn_info.RETURN; break;
+        }
+      if (op->branch.pass)
+        insn_info.type = insn_info.BRANCH;
+      if (not indirect)
+        insn_info.target = op->branch.address;
+    }
+  else
+    insn_info.type = insn_info.STANDARD;
+
+  instruction_collecting_import->CollectInstruction(insn_info);
+}
+
+
 /** Execute one complete instruction.
  */
 template <class CPU_IMPL>
@@ -625,7 +668,9 @@ CPU<CPU_IMPL>::StepInstruction()
         op->execute( self );
 
       this->ITAdvance();
-      //op->profile(profile);
+
+      if(unlikely(instruction_collecting_import))
+        CollectInstruction(op);
     }
 
     else {
@@ -649,7 +694,8 @@ CPU<CPU_IMPL>::StepInstruction()
       if (likely(CheckCondition(self, (insn >> 28) & 0xf)))
         op->execute( self );
 
-      //op->profile(profile);
+      if(unlikely(instruction_collecting_import))
+        CollectInstruction(op);
     }
 
     if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))

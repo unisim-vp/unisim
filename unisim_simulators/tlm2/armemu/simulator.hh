@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2021,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -45,6 +45,7 @@
 #include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/util/likely/likely.hh>
+#include <unisim/util/cfg/intro/intro.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/os/linux_os/arm_linux32.hh>
@@ -56,6 +57,7 @@
 #include <unisim/service/debug/profiler/profiler.hh>
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/service/analysis/cfg/cfg.hh>
 
 #include <iostream>
 #include <sstream>
@@ -79,7 +81,7 @@
 
 struct CPU : public  unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU>
 {
-  struct OpStat {};
+  struct OpStat { unisim::util::cfg::intro::BranchInfo branch; };
   CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent = 0);
 };
 
@@ -117,11 +119,22 @@ class Simulator
     typedef sc_core::sc_time TIME_TYPE;
     static const unsigned int NUM_PROCESSORS = 1;
     /* gdb_server, inline_debugger and/or monitor */
-    static const unsigned int MAX_FRONT_ENDS = 4;
+    static const unsigned int MAX_FRONT_ENDS = 5;
+  };
+
+  struct CFG_BUILDER_CONFIG
+  {
+    typedef uint32_t ADDRESS;
+    enum { MIN_OPCODE_SIZE = 2 };
+    enum { MAX_OPCODE_SIZE = 4 };
+    enum { CACHE_SIZE = 8 };
+    enum { DEBUG = 0 };
+    enum { CHECK = 0 };
   };
 
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
   typedef unisim::service::debug::monitor::Monitor<uint32_t>          MONITOR;
+  typedef unisim::service::analysis::cfg::Builder<CFG_BUILDER_CONFIG> CFG_BUILDER;
   typedef unisim::service::time::sc_time::ScTime                      ScTime;
   typedef unisim::service::time::host_time::HostTime                  HostTime;
 
@@ -140,6 +153,7 @@ class Simulator
   PROFILER*                profiler;
   HTTP_SERVER*             http_server;
   INSTRUMENTER*            instrumenter;
+  CFG_BUILDER*             cfg_builder;
   LOGGER_CONSOLE_PRINTER*  logger_console_printer;
   LOGGER_TEXT_FILE_WRITER* logger_text_file_writer;
   LOGGER_HTTP_WRITER*      logger_http_writer;
@@ -152,6 +166,8 @@ class Simulator
   unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
   bool                                     enable_profiler;
   unisim::kernel::variable::Parameter<bool> param_enable_profiler;
+  bool                                     enable_cfg_builder;
+  unisim::kernel::variable::Parameter<bool> param_enable_cfg_builder;
 
   static bool enable_monitor;
 };

@@ -6,6 +6,7 @@ std/sstream
 std/stdexcept
 std/string
 unisim/component/cxx/processor/arm
+unisim/component/cxx/processor/arm/cfg/aarch32
 unisim/component/cxx/processor/arm/isa
 unisim/component/cxx/processor/arm/isa/arm32
 unisim/component/cxx/processor/arm/isa/thumb2
@@ -13,6 +14,7 @@ unisim/component/cxx/processor/opcache
 unisim/kernel/variable
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly
+unisim/service/interfaces/instruction_collecting
 unisim/service/interfaces/linux_os
 unisim/service/interfaces/memory
 unisim/service/interfaces/memory_access_reporting

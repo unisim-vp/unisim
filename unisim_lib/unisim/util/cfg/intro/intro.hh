@@ -135,14 +135,16 @@ namespace intro {
     enum { BNone = 0, Direct, Indirect, NA };
 
     BranchInfo() : address(), target(NA), pass(false) {}
-    template <class X> void update( bool branch, X const& x ) { update( branch, x.determined, x.value ); }
+    template <class X> void update( bool branch, X const& x, unsigned arch_type ) { update( branch, x.determined, x.value, arch_type ); }
     bool startupdate() { if (target == NA) { target = BNone; return true; } return false; }
-    void update( bool branch, bool known, uint64_t target );
+    void update( bool branch, bool known, uint64_t target, unsigned _arch_type );
     bool has_branch() const { return target != BNone; }
+    bool is_indirect() const { return target == Indirect; }
 
     uint64_t address;
     unsigned target : 2;
     unsigned pass : 1;
+    unsigned arch_type : 5;
   };
 
 } /* end of namespace intro */

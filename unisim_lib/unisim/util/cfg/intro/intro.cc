@@ -42,7 +42,7 @@ namespace cfg {
 namespace intro {
 
 void
-BranchInfo::update( bool branch, bool known, uint64_t naddress )
+BranchInfo::update( bool branch, bool known, uint64_t naddress, unsigned _arch_type )
 {
   if (not branch)
     { pass = true; }
@@ -59,6 +59,7 @@ BranchInfo::update( bool branch, bool known, uint64_t naddress )
     }
   else if (target != Direct or address != naddress)
     { throw *this; }
+  arch_type = _arch_type;
 }
 
 } /* end of namespace intro */

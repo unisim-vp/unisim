@@ -80,12 +80,12 @@ struct Core
   typedef unisim::util::cfg::intro::XValue<int64_t>  S64;
 
   Core( ActionNode& root, uint32_t addr, uint32_t length, bool _thumb )
-    : path(&root), r15(addr + (_thumb?4:8)), insn_addr(addr), next_insn_addr(addr+length), thumb(_thumb), has_branch(false)
+    : path(&root), r15(addr + (_thumb?4:8)), insn_addr(addr), next_insn_addr(addr+length), branch_type(), thumb(_thumb), has_branch(false)
   {}
 
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
   ActionNode* path;
   U32 r15, insn_addr, next_insn_addr;
+  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE } branch_type;
   bool thumb, has_branch;
   BOOL next_thumb;
 
@@ -110,10 +110,11 @@ struct Core
     this->Branch( target, branch_type );
   }
 
-  void Branch(U32 target, branch_type_t branch_type)
+  void Branch(U32 target, branch_type_t _branch_type)
   {
     this->next_insn_addr = target & U32(thumb ? -2 : -4);
     has_branch = true;
+    branch_type = _branch_type;
   }
 
   U32 GetCIA() { return this->insn_addr; }
@@ -275,7 +276,7 @@ void ComputeBranchInfo(unisim::util::cfg::intro::BranchInfo& branch, Instruction
       Core ab( root, insn_addr, insn_length/8, insn.thumb );
       using unisim::component::cxx::processor::arm::CheckCondition;
       insn.execute( ab );
-      branch.update( ab.has_branch, ab.next_insn_addr );
+      branch.update( ab.has_branch, ab.next_insn_addr, unsigned(ab.branch_type) );
       end = ab.path->close();
     }
 }

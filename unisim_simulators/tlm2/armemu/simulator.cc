@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2021,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -38,6 +38,7 @@
 #include <unisim/kernel/config/ini/ini_config_file_helper.hh>
 #include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
+#include <unisim/service/analysis/cfg/cfg.tcc>
 #include <stdexcept>
 
 bool debug_enabled;
@@ -66,6 +67,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   , profiler(0)
   , http_server(0)
   , instrumenter(0)
+  , cfg_builder(0)
   , logger_console_printer(0)
   , logger_text_file_writer(0)
   , logger_http_writer(0)
@@ -77,10 +79,13 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   , param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable inline debugger.")
   , enable_profiler(false)
   , param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable profiler.")
+  , enable_cfg_builder(false)
+  , param_enable_cfg_builder("enable-cfg-builder", 0, enable_cfg_builder, "Enable control flow graph builder.")
 {
   param_enable_gdb_server.SetMutable(false);
   param_enable_inline_debugger.SetMutable(false);
   param_enable_profiler.SetMutable(false);
+  param_enable_cfg_builder.SetMutable(false);
 
   logger_console_printer = new LOGGER_CONSOLE_PRINTER();
   logger_text_file_writer = new LOGGER_TEXT_FILE_WRITER();
@@ -90,9 +95,9 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 
   instrumenter = new INSTRUMENTER("instrumenter", this);
   http_server = new HTTP_SERVER("http-server");
-  
+
   //  - Debug and Monitor
-  if (enable_inline_debugger or enable_gdb_server or enable_monitor or enable_profiler)
+  if (enable_gdb_server or enable_inline_debugger or enable_monitor or enable_profiler or enable_cfg_builder)
     debugger = new DEBUGGER("debugger");
   if (enable_gdb_server)
     gdb_server = new GDB_SERVER("gdb-server");
@@ -102,23 +107,24 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
     monitor = new MONITOR("monitor");
   if (enable_profiler)
     profiler = new PROFILER("profiler");
-  
+  if (enable_cfg_builder)
+    cfg_builder = new CFG_BUILDER("cfg-builder");
+
   instrumenter->CreateSignal("nIRQm", true);
   instrumenter->CreateSignal("nFIQm", true);
   instrumenter->CreateSignal("nRESETm", true);
-  
+
   instrumenter->RegisterPort(cpu.nIRQm);
   instrumenter->RegisterPort(cpu.nFIQm);
   instrumenter->RegisterPort(cpu.nRESETm);
-  
+
   // In Linux mode, the system is not entirely simulated.
   // This mode allows to run Linux applications without simulating all the peripherals.
   cpu.master_socket( memory.slave_sock );
   instrumenter->Bind("HARDWARE.cpu.nIRQm", "HARDWARE.nIRQm");
   instrumenter->Bind("HARDWARE.cpu.nFIQm", "HARDWARE.nFIQm");
   instrumenter->Bind("HARDWARE.cpu.nRESETm", "HARDWARE.nRESETm");
-  
-  
+
   // CPU <-> Memory connections
   cpu.memory_import >> memory.memory_export;
 
@@ -128,7 +134,6 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   linux_os.memory_import_ >> cpu.memory_export;
   linux_os.memory_injection_import_ >> cpu.memory_injection_export;
   linux_os.registers_import_ >> cpu.registers_export;
-  
 
   if (debugger)
     {
@@ -140,11 +145,11 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
       *debugger->memory_import[0]                          >> cpu.memory_export;
       *debugger->registers_import[0]                       >> cpu.registers_export;
       *debugger->memory_access_reporting_control_import[0] >> cpu.memory_access_reporting_control_export;
-      
+
       // Debugger <-> Loader connections
       debugger->blob_import >> linux_os.blob_export_;
     }
-  
+
   if (inline_debugger)
     {
       // inline-debugger <-> debugger connections
@@ -162,7 +167,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
       inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
       inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
     }
-  
+
   if (gdb_server)
     {
       // gdb-server <-> debugger connections
@@ -173,7 +178,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
       gdb_server->memory_import                 >> *debugger->memory_export[1];
       gdb_server->registers_import              >> *debugger->registers_export[1];
     }
-  
+
   if (monitor)
     {
       // monitor <-> debugger connections
@@ -188,7 +193,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
       monitor->data_object_lookup_import        >> *debugger->data_object_lookup_export[2];
       monitor->subprogram_lookup_import         >> *debugger->subprogram_lookup_export[2];
     }
-    
+
    if (profiler)
    {
       *debugger->debug_event_listener_import[3] >> profiler->debug_event_listener_export;
@@ -205,14 +210,21 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
       profiler->data_object_lookup_import       >> *debugger->data_object_lookup_export[3];
       profiler->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[3];
    }
-   
+   if (cfg_builder)
+     {
+       // CFG builder <-> debugger connections
+       cpu.instruction_collecting_import >> cfg_builder->instruction_collecting_export;
+       cfg_builder->disasm_import >> cpu.disasm_export;
+       cfg_builder->symbol_table_lookup_import >> *debugger->symbol_table_lookup_export[4];
+     }
+
    *http_server->http_server_import[0] >> logger_http_writer->http_server_export;
    *http_server->http_server_import[1] >> instrumenter->http_server_export;
    if (profiler)
    {
      *http_server->http_server_import[2] >> profiler->http_server_export;
    }
-   
+
    *http_server->registers_import[0] >> cpu.registers_export;
 }
 
@@ -222,6 +234,7 @@ Simulator::~Simulator()
   delete inline_debugger;
   delete monitor;
   delete profiler;
+  delete cfg_builder;
   delete debugger;
   delete http_server;
   delete instrumenter;
@@ -261,7 +274,7 @@ Simulator::Run()
   {
     profiler->Output();
   }
-  
+
   return GetExitStatus();
 }
 
@@ -271,9 +284,9 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
     {
       SetVariable("debugger.parse-dwarf", true);
     }
-  
+
   unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
-  
+
   return setup_status;
 }
 
@@ -283,14 +296,14 @@ bool Simulator::EndSetup()
   {
     http_server->AddJSAction(
       unisim::service::interfaces::ToolbarOpenTabAction(
-        /* name */      profiler->GetName(), 
+        /* name */      profiler->GetName(),
         /* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\" alt=\"Profile\">",
         /* tips */      std::string("Profile of ") + cpu.GetName(),
         /* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
         /* uri */       profiler->URI()
     ));
   }
-  
+
   return true;
 }
 
@@ -300,7 +313,7 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   new unisim::kernel::config::xml::XMLConfigFileHelper(sim);
   new unisim::kernel::config::ini::INIConfigFileHelper(sim);
   new unisim::kernel::config::json::JSONConfigFileHelper(sim);
-  
+
   // meta information
   sim->SetVariable("program-name", "UNISIM ARMEMU");
   sim->SetVariable("copyright", "Copyright (C) 2017, Commissariat a l'Energie Atomique (CEA)");
@@ -325,7 +338,7 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("HARDWARE.cpu.ipc",                  1.0);
   sim->SetVariable("HARDWARE.cpu.voltage",              1.8 * 1e3); // 1800 mV
   sim->SetVariable("HARDWARE.cpu.enable-dmi",           true); // Enable SystemC TLM 2.0 DMI
-  sim->SetVariable("HARDWARE.memory.bytesize",          0xffffffffUL); 
+  sim->SetVariable("HARDWARE.memory.bytesize",          0xffffffffUL);
   sim->SetVariable("HARDWARE.memory.cycle-time",        "31250 ps");
   sim->SetVariable("HARDWARE.memory.read-latency",      "31250 ps");
   sim->SetVariable("HARDWARE.memory.write-latency",     "0 ps");
@@ -377,7 +390,7 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("dl1-power-estimator.tag-width", 32); // to fix
   sim->SetVariable("dl1-power-estimator.access-mode", "fast");
   sim->SetVariable("dl1-power-estimator.verbose", false);
-  
+
   sim->SetVariable("http-server.http-port", 12360);
 }
 

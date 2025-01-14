@@ -1,12 +1,12 @@
 /*
- *  Copyright (c) 2007-2023,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
+ *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, 
+ *   - Redistributions of source code must retain the above copyright notice,
  *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
@@ -14,19 +14,19 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific 
+ *     endorse or promote products derived from this software without specific
  *     prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
- *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
@@ -80,11 +80,11 @@ struct CPU
   typedef int32_t  S32;
   typedef int64_t  S64;
   typedef bool     BOOL;
-  
+
   /*
    * ARM architecture constants
    */
-    
+
   /* values of the different condition codes */
   static uint32_t const COND_EQ = 0x00;
   static uint32_t const COND_NE = 0x01;
@@ -112,9 +112,9 @@ struct CPU
    * This class is the base for all ARM Modes specifying the interface
    * of Mode related operation. Basically it specifies accessors for
    * banked registers and SPSR. It also introduce an internal swaping
-   * mechanism to save/restore bancked registers.
+   * mechanism to save/restore banked registers.
    */
-  
+
   struct Mode
   {
     Mode( char const* _suffix ) : suffix( _suffix ) {} char const* suffix;
@@ -125,16 +125,16 @@ struct CPU
     virtual uint32_t GetSPSR() { throw std::logic_error("No SPSR for this mode"); return 0; };
     virtual void     Swap( CPU& cpu ) {};
   };
-  
+
   //=====================================================================
   //=                       Logger                                      =
   //=====================================================================
-  
+
   /** Unisim logging services. */
   unisim::kernel::logger::Logger logger;
   /** Verbosity of the CPU implementation */
   bool verbose;
-  
+
   //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
@@ -145,7 +145,7 @@ struct CPU
 	
   CPU(const char* name, Object* parent);
   ~CPU();
-  
+
   /********************************************/
   /* General Purpose Registers access methods */
   /********************************************/
@@ -187,7 +187,7 @@ struct CPU
     if (id != 15) gpr[id] = val;
     else this->BranchExchange( val, B_JMP );
   }
-  
+
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
   /** Sets the PC (and potentially exchanges mode ARM<->Thumb)
    *
@@ -223,18 +223,18 @@ struct CPU
   /******************************************/
   /* Program Status Register access methods */
   /******************************************/
-  
+
   /** Get the CPSR register.
    *
    * @return the CPSR structured register.
    */
   PSR&     CPSR() { return cpsr; };
-  
+
   void     SetCPSR( uint32_t bits, uint32_t mask );
-  
+
   uint32_t GetCPSR() const { return cpsr.Get(ALL32); }
   uint32_t GetNZCV() const { return cpsr.Get(NZCV); }
-  
+
   /** Get the endian configuration of the processor.
    *
    * @return the endian being used
@@ -249,12 +249,12 @@ struct CPU
    * IT block.
    */
   bool itblock() const { return CPU_IMPL::Config::insnsT2 ? cpsr.InITBlock() : false; }
-  
+
   /** Return the current condition associated to the IT state of the
    * processor.
    */
   uint32_t itcond() const { return CPU_IMPL::Config::insnsT2 ? cpsr.ITGetCondition() : COND_AL; }
-  
+
   bool m_isit; /* determines wether current instruction is an IT one. */
   void ITSetState( uint32_t cond, uint32_t mask )
   {
@@ -272,19 +272,19 @@ struct CPU
   /*********************************************/
   /* Modes and Banked Registers access methods */
   /*********************************************/
-  
+
   Mode& GetMode(uint8_t mode)
   {
     typename ModeMap::iterator itr = modes.find(mode);
     if (itr == modes.end()) UnpredictableInsnBehaviour();
     return *(itr->second);
   }
-  
+
   unsigned GetPL();
   void RequiresPL(unsigned rpl);
-  
+
   Mode& CurrentMode() { return GetMode(cpsr.Get(M)); }
-  
+
   /** Get the value contained by a banked register GPR.
    *
    * Returns the value contained by a banked register.  It is the same
@@ -305,7 +305,7 @@ struct CPU
     GetMode(running_mode).Swap(*this); // IN
     return value;
   }
-  
+
   /** Set the value contained by a user GPR.
    *
    * Sets the value contained by a user GPR. It is the same than
@@ -325,7 +325,7 @@ struct CPU
     GetMode(foreign_mode).Swap(*this); // OUT
     GetMode(running_mode).Swap(*this); // IN
   }
-  
+
   /************************************************************************/
   /* Exception handling                                             START */
   /************************************************************************/
@@ -336,7 +336,7 @@ public:
   void     CallSupervisor( uint32_t imm );
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
   virtual void WaitForInterrupt() {}; // Implementation-defined
-  
+
 protected:
   uint32_t     HandleAsynchronousException( uint32_t );
   uint32_t     ExcVectorBase();
@@ -385,10 +385,10 @@ public:
       uint8_t crn; uint8_t op1; uint8_t crm; uint8_t op2;
     };
   };
-  
+
   static CP15Reg* CP15GetRegister(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2);
   void            CP15ResetRegisters();
-    
+
   /**************************/
   /* CP15 Interface     END */
   /**************************/
@@ -397,38 +397,38 @@ protected:
   /*
    * Memory access variables
    */
-  
+
   /* Storage for Modes and banked registers */
   typedef std::map<uint8_t, Mode*> ModeMap;
   ModeMap modes;
-  
+
   /** Storage for the logical registers */
   uint32_t gpr[num_log_gprs];
   uint32_t current_insn_addr, next_insn_addr;
-  
+
   /** PSR registers */
   PSR      cpsr;
-  
+
   /***********************************/
   /* System control registers  START */
   /***********************************/
 
   uint32_t SCTLR; //< System Control Register
   uint32_t CPACR; //< CPACR, Coprocessor Access Control Register
-  
+
   /***********************************/
   /* System control registers   END  */
   /***********************************/
-  
+
   /****************************************************/
   /* Process, context and thread ID registers   START */
   /****************************************************/
-  
+
   uint32_t CONTEXTIDR; //< Context ID Register
   uint32_t TPIDRURW; //< User Read/Write Thread ID Register
   uint32_t TPIDRURO; //< User Read-Only Thread ID Register
   uint32_t TPIDRPRW; //< PL1 only Thread ID Register
-  
+
   /****************************************************/
   /* Process, context and thread ID registers    END  */
   /****************************************************/
@@ -436,15 +436,15 @@ protected:
 public:
   // VFP/NEON registers
   virtual void FPTrap( unsigned fpx ) { throw std::logic_error("unimplemented FP trap"); }
-  
+
   U32 FPSCR, FPEXC;
 
   U32 RoundTowardsZeroFPSCR() const { U32 fpscr = FPSCR; RMode.Set( fpscr, U32(RoundTowardsZero) ); return fpscr; }
   U32 RoundToNearestFPSCR() const   { U32 fpscr = FPSCR; RMode.Set( fpscr, U32(RoundToNearest) ); return fpscr; }
   U32 StandardValuedFPSCR() const   { return AHP.Mask( FPSCR ) | 0x03000000; }
-  
+
   void SetQC() { FPSCR |= U32(1) << 27; }
-  
+
   static unsigned const VECTORCOUNT = 32;
 
   struct VUConfig
@@ -483,7 +483,7 @@ public:
     auto r = idx/elts;
     return r < regs ? GetVDE((r0 + r) % 32, idx % elts, U8()) : oob;
   }
-  
+
   template <typename T>
   void vector_write(unsigned reg, unsigned sub, T value )
   {
@@ -504,26 +504,26 @@ public:
   /*************************************/
   /* Debug Registers             START */
   /*************************************/
-  
+
 public:
 
   virtual unisim::service::interfaces::Register* GetRegister( const char* name );
   virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
 		
   unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
-  
+
 protected:
   /** The registers interface for debugging purpose */
   typedef std::map<std::string, unisim::service::interfaces::Register*> RegistersRegistry;
   RegistersRegistry registers_registry;
-  
+
   typedef std::set<unisim::kernel::VariableBase*> VariableRegisterPool;
   VariableRegisterPool variable_register_pool;
-  
+
   /*************************************/
   /* Debug Registers              END  */
   /*************************************/
-  
+
   virtual void Sync() = 0;
 };
 	
