@@ -51,6 +51,7 @@
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/kernel/variable/variable.hh>
+#include <unisim/util/cfg/intro/intro.hh>
 #include <unisim/util/likely/likely.hh>
 #include <string>
 #include <inttypes.h>
@@ -145,6 +146,8 @@ struct CPU
     static bool const     hasVFP  = true;
     static bool const     hasAdvSIMD = false;
   };
+
+  struct OpStat { unisim::util::cfg::intro::BranchInfo branch; };
 
   typedef CPU this_type;
   typedef unisim::component::cxx::processor::arm::CPU<simfloat::FP,CPU_IMPL> PCPU;

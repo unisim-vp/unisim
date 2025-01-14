@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2021,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -80,7 +80,6 @@
 
 struct CPU : public  unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU>
 {
-  struct OpStat {};
   CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent = 0);
 };
 

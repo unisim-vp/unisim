@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2018,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -88,8 +88,6 @@ struct CPU
 {
   typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU> PCPU;
   typedef typename PCPU::CP15Reg CP15Reg;
-
-  struct OpStat {};
 
   CPU(const sc_core::sc_module_name& name, Object* parent = 0);
 

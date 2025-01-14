@@ -78,7 +78,6 @@ struct Router : public unisim::component::tlm2::interconnect::generic_router::Ro
 
 struct CPU : public  unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU>
 {
-  struct OpStat {};
   CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent = 0);
 };
 
@@ -86,7 +85,7 @@ struct Simulator : public unisim::kernel::Simulator
 {
   Simulator( int argc, char **argv );
   virtual ~Simulator();
-  
+
   int Run();
   int Run(double time, sc_time_unit unit);
   bool IsRunning() const;
@@ -95,13 +94,13 @@ struct Simulator : public unisim::kernel::Simulator
   virtual unisim::kernel::Simulator::SetupStatus Setup();
   virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
-  
+
  private:
   static void DefaultConfiguration(unisim::kernel::Simulator *sim);
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
   //typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
   typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<uint32_t> LOADER;
-  
+
   struct DEBUGGER_CONFIG
   {
     typedef uint32_t ADDRESS;
@@ -110,15 +109,15 @@ struct Simulator : public unisim::kernel::Simulator
     /* gdb_server, inline_debugger and/or monitor */
     static const unsigned int MAX_FRONT_ENDS = 3;
   };
-  
+
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
   typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
-  
+
   typedef unisim::service::profiling::addr_profiler::Profiler<uint32_t> PROFILER;
   typedef unisim::service::time::sc_time::ScTime ScTime;
   typedef unisim::service::time::host_time::HostTime HostTime;
-  
+
   scml_clock                   clock;
   CPU                          cpu;
   Router                       router;
@@ -129,7 +128,7 @@ struct Simulator : public unisim::kernel::Simulator
   sc_signal<bool>              nirq_signal;
   sc_signal<bool>              nfiq_signal;
   sc_signal<bool>              nrst_signal;
-  
+
   ScTime                       time;
   HostTime                     host_time;
   //LINUX_OS*                    linux_os;
@@ -140,7 +139,7 @@ struct Simulator : public unisim::kernel::Simulator
   DEBUGGER*                    debugger;
   GDB_SERVER*                  gdb_server;
   INLINE_DEBUGGER*             inline_debugger;
-  
+
   bool                                     enable_gdb_server;
   unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
   bool                                     enable_inline_debugger;
