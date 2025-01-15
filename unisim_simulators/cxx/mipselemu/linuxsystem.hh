@@ -56,7 +56,7 @@ struct LinuxOS
 
   void ExecuteSystemCall( int id );
 
-  unisim::util::os::linux_os::Linux<addr_t, addr_t> linux_impl;
+  unisim::util::os::linux_os::Linux<addr_t, addr_t> linux_lib;
   bool exited;
   int app_ret_status;
 };

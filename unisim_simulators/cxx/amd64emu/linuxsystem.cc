@@ -47,14 +47,14 @@ LinuxOS::LinuxOS(char const* name, unisim::kernel::Object* parent, std::ostream&
   : unisim::kernel::Object(name, 0)
   , unisim::service::interfaces::LinuxOS()
   , unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t> >(name)
-  , linux_impl( log, log, log, regs_if, mem_if, mem_inject_if )
+  , linux_lib( log, log, log, regs_if, mem_if, mem_inject_if )
   , exited( false )
   , app_ret_status( -1 )
 {
   // Set the system type of the target simulator (should be the same than the
   // binary)
-  auto amd64_target = new unisim::util::os::linux_os::AMD64TS<unisim::util::os::linux_os::Linux<uint64_t,uint64_t> >( linux_impl );
-  linux_impl.SetTargetSystem(amd64_target);
+  auto amd64_target = new unisim::util::os::linux_os::AMD64TS<unisim::util::os::linux_os::Linux<uint64_t,uint64_t> >( linux_lib );
+  linux_lib.SetTargetSystem(amd64_target);
 }
 
 void
@@ -175,7 +175,7 @@ LinuxOS::Core( std::string const& coredump )
                           if (regsize < 64)
                             {
                               char const* err = 0;
-                              if (unisim::service::interfaces::Register* reg = linux_impl.GetDebugRegister(regname))
+                              if (unisim::service::interfaces::Register* reg = linux_lib.GetDebugRegister(regname))
                                 {
                                   if (unsigned(reg->GetSize()) == regsize)
                                     reg->SetValue(&regs[idx]);
@@ -188,7 +188,7 @@ LinuxOS::Core( std::string const& coredump )
                                 std::cerr << "Warning: skipping " << regname << " initialization (" << err << ").\n";
                             }
                           else
-                            linux_impl.SetTargetRegister(regname, regs[idx]);
+                            linux_lib.SetTargetRegister(regname, regs[idx]);
                         }
                     } break;
                   case 0x202: // NT_X86_XSTATE note
@@ -197,7 +197,7 @@ LinuxOS::Core( std::string const& coredump )
                         uint16_t& fcw = *(uint16_t*)(content);
                         if (need_endian_swap) unisim::util::endian::BSwap( fcw );
                         std::cerr << std::setw(12) << "fcw" << ": " << std::hex << fcw << std::endl;
-                        if (auto reg = linux_impl.GetDebugRegister("fcw"))
+                        if (auto reg = linux_lib.GetDebugRegister("fcw"))
                           reg->SetValue(&fcw);
                         else
                           throw 0;
@@ -221,7 +221,7 @@ LinuxOS::Core( std::string const& coredump )
                                   ;
                               }
                             std::cerr << std::endl;
-                            if (auto regd = linux_impl.GetDebugRegister(regname))
+                            if (auto regd = linux_lib.GetDebugRegister(regname))
                               regd->SetValue(&xmm_bytes[16*reg]);
                           }
                       }
@@ -242,30 +242,30 @@ LinuxOS::Core( std::string const& coredump )
       uint64_t start, end;
       segment->GetAddrRange(start, end);
 
-      if (linux_impl.verbose_)
+      if (linux_lib.verbose_)
         std::cerr << "--> writing memory segment start = 0x" << std::hex << start << " end = 0x" << end << std::dec << std::endl;
 
       uint8_t const * data = (uint8_t const *)segment->GetData();
-      if (not linux_impl.mem_if_->WriteMemory(start, data, end - start + 1))
+      if (not linux_lib.mem_if_->WriteMemory(start, data, end - start + 1))
         throw "Error while writing the segments into the target memory.";
     }
-  linux_impl.is_load_ = true;
+  linux_lib.is_load_ = true;
 
   // map std file triplet
-  linux_impl.MapTargetToHostFileDescriptor(0, 0); /* stdin */
-  linux_impl.MapTargetToHostFileDescriptor(1, 1); /* stdout */
-  linux_impl.MapTargetToHostFileDescriptor(2, 2); /* stderr */
+  linux_lib.MapTargetToHostFileDescriptor(0, 0); /* stdin */
+  linux_lib.MapTargetToHostFileDescriptor(1, 1); /* stdout */
+  linux_lib.MapTargetToHostFileDescriptor(2, 2); /* stderr */
 }
 
 void
 LinuxOS::Setup()
 {
   // Set up the different linuxlib parameters
-  linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
-  linux_impl.SetMemoryPageSize( 0x1000UL );
+  linux_lib.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
+  linux_lib.SetMemoryPageSize( 0x1000UL );
   struct utsname unm;
   uname(&unm);
-  linux_impl.SetUname(unm.sysname,
+  linux_lib.SetUname(unm.sysname,
                       unm.nodename,
                       unm.release,
                       unm.version,
@@ -273,21 +273,21 @@ LinuxOS::Setup()
                       unm.domainname);
 
 
-  // linux_impl.SetUname("Linux" /* sysname */,
+  // linux_lib.SetUname("Linux" /* sysname */,
   //                     "localhost" /* nodename */,
   //                     "4.14.89-unisim" /* release */,
   //                     "#1 SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
   //                     "x86_64" /* machine */,
   //                     "localhost" /* domainname */);
-  // linux_impl.SetStdinPipeFilename(stdin_pipe_filename.c_str());
-  // linux_impl.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
-  // linux_impl.SetStderrPipeFilename(stderr_pipe_filename.c_str());
+  // linux_lib.SetStdinPipeFilename(stdin_pipe_filename.c_str());
+  // linux_lib.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
+  // linux_lib.SetStderrPipeFilename(stderr_pipe_filename.c_str());
 }
 
 void
 LinuxOS::ApplyHostEnvironment()
 {
-  linux_impl.SetApplyHostEnvironment(true);
+  linux_lib.SetApplyHostEnvironment(true);
 }
 
 void
@@ -295,33 +295,33 @@ LinuxOS::SetEnvironment( std::vector<std::string> const& envs )
 {
   // Set the linuxlib option to set the target environment with the
   // host environment
-  linux_impl.SetApplyHostEnvironment(false);
-  linux_impl.SetEnvironment(envs);
+  linux_lib.SetApplyHostEnvironment(false);
+  linux_lib.SetEnvironment(envs);
 }
 
 bool
 LinuxOS::Process( std::vector<std::string> const& simargs )
 {
-  linux_impl.SetCommandLine(simargs);
+  linux_lib.SetCommandLine(simargs);
 
   // Load the binary that will be simulated in the target simulator
   {
     typedef typename unisim::util::loader::elf_loader::StdElf<addr_t,addr_t>::Loader Loader;
-    Loader loader(linux_impl.DebugInfoStream(), linux_impl.DebugWarningStream(), linux_impl.DebugErrorStream());
-    loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, linux_impl.verbose_);
+    Loader loader(linux_lib.DebugInfoStream(), linux_lib.DebugWarningStream(), linux_lib.DebugErrorStream());
+    loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, linux_lib.verbose_);
     loader.SetFileName(std::string(simargs[0]));
     if (not loader.Load())
       throw 0;
-    linux_impl.SetFileBlob(loader.GetBlob());
+    linux_lib.SetFileBlob(loader.GetBlob());
   }
 
-  linux_impl.SetStackBase( 0x40000000UL );
+  linux_lib.SetStackBase( 0x40000000UL );
 
   // now it is time to try to run the initialization of the linuxlib
-  if (not linux_impl.Load())
+  if (not linux_lib.Load())
     return false;
 
-  if (not linux_impl.SetupTarget())
+  if (not linux_lib.SetupTarget())
     return false;
 
   return true;
@@ -330,18 +330,18 @@ LinuxOS::Process( std::vector<std::string> const& simargs )
 void
 LinuxOS::ExecuteSystemCall( int id )
 {
-  linux_impl.ExecuteSystemCall( id, exited, app_ret_status );
+  linux_lib.ExecuteSystemCall( id, exited, app_ret_status );
 }
 
 void
 LinuxOS::LogSystemCall(int id)
 {
-    linux_impl.LogSystemCall(id);
+    linux_lib.LogSystemCall(id);
 }
 
 
 void
 LinuxOS::SetBrk(addr_t brk)
 {
-  linux_impl.brk_point_ = brk;
+  linux_lib.brk_point_ = brk;
 }

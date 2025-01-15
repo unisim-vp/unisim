@@ -57,7 +57,7 @@ struct LinuxOS
            unisim::service::interfaces::MemoryInjection<addr_t>* mem_inject_if );
 
   void Setup();
-  void SetVerbose(bool verbose) { linux_impl.SetVerbose(verbose); }
+  void SetVerbose(bool verbose) { linux_lib.SetVerbose(verbose); }
   void ApplyHostEnvironment();
   void SetEnvironment( std::vector<std::string> const& envs );
   bool Process( std::vector<std::string> const& simargs );
@@ -68,9 +68,9 @@ struct LinuxOS
   void SetBrk(addr_t brk_addr);
 
   // unisim::service::interfaces::Blob<addr_t>
-  virtual unisim::util::blob::Blob<addr_t> const* GetBlob() const { return linux_impl.GetBlob(); }
+  virtual unisim::util::blob::Blob<addr_t> const* GetBlob() const { return linux_lib.GetBlob(); }
 
-  unisim::util::os::linux_os::Linux<addr_t, addr_t> linux_impl;
+  unisim::util::os::linux_os::Linux<addr_t, addr_t> linux_lib;
   bool exited;
   int app_ret_status;
 };

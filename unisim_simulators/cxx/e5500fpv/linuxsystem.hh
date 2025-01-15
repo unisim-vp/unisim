@@ -61,10 +61,10 @@ struct LinuxOS
   void ExecuteSystemCall( int id );
 
   // unisim::service::interfaces::Blob<addr_t>
-  virtual unisim::util::blob::Blob<addr_t> const* GetBlob() const { return linux_impl.GetBlob(); }
+  virtual unisim::util::blob::Blob<addr_t> const* GetBlob() const { return linux_lib.GetBlob(); }
   unisim::kernel::ServiceExport<unisim::service::interfaces::Blob<addr_t> > blob_export;
 
-  unisim::util::os::linux_os::Linux<addr_t, addr_t> linux_impl;
+  unisim::util::os::linux_os::Linux<addr_t, addr_t> linux_lib;
   bool exited;
   int app_ret_status;
 };

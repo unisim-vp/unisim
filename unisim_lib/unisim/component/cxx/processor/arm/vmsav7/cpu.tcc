@@ -1107,8 +1107,9 @@ CPU<CPU_IMPL>::CallSupervisor( uint32_t imm )
           static struct ArmLinuxOS : public unisim::util::os::linux_os::Linux<uint32_t, uint32_t>
           {
             ArmLinuxOS( CPU* _cpu )
-              : unisim::util::os::linux_os::Linux<uint32_t, uint32_t>( _cpu->logger.DebugInfoStream(), _cpu->logger.DebugWarningStream(), _cpu->logger.DebugErrorStream(), _cpu, _cpu, _cpu )
+              : unisim::util::os::linux_os::Linux<uint32_t, uint32_t>( _cpu->logger.DebugInfoStream(), _cpu->logger.DebugWarningStream(), _cpu->logger.DebugErrorStream())
             {
+              SetInterfaces(_cpu, _cpu, _cpu);
               typedef unisim::util::os::linux_os::ARMTS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> > ArmTarget;
               SetTargetSystem(new ArmTarget( "arm-eabi", *this ));
             }

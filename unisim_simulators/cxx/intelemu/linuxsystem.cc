@@ -43,7 +43,7 @@ LinuxOS::LinuxOS( std::ostream& log,
          unisim::service::interfaces::MemoryInjection<uint32_t> *mem_inject_if
          )
   : unisim::service::interfaces::LinuxOS()
-  , linux_impl( log, log, log, regs_if, mem_if, mem_inject_if )
+  , linux_lib( log, log, log, regs_if, mem_if, mem_inject_if )
   , exited( false )
   , app_ret_status( -1 )
 {}
@@ -53,54 +53,54 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
 {
   bool const verbosity = false;
   // Set up the different linuxlib parameters
-  linux_impl.SetVerbose(verbosity);
+  linux_lib.SetVerbose(verbosity);
 
-  linux_impl.SetCommandLine(simargs);
+  linux_lib.SetCommandLine(simargs);
 
   // Set the linuxlib option to set the target environment with the
   // host environment
-  linux_impl.SetApplyHostEnvironment(false);
-  linux_impl.SetEnvironment(envs);
+  linux_lib.SetApplyHostEnvironment(false);
+  linux_lib.SetEnvironment(envs);
 
   // Load the binary that will be simulated in the target simulator
   {
     typedef typename unisim::util::loader::elf_loader::StdElf<addr_t,addr_t>::Loader Loader;
-    Loader loader(linux_impl.DebugInfoStream(), linux_impl.DebugWarningStream(), linux_impl.DebugErrorStream());
+    Loader loader(linux_lib.DebugInfoStream(), linux_lib.DebugWarningStream(), linux_lib.DebugErrorStream());
     loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbosity);
     loader.SetFileName(std::string(simargs[0]));
     if (not loader.Load())
       throw 0;
-    linux_impl.SetFileBlob(loader.GetBlob());
+    linux_lib.SetFileBlob(loader.GetBlob());
   }
 
   // Set the system type of the target simulator (should be the same than the
   // binary)
-  auto i386_target = new unisim::util::os::linux_os::I386TS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> >( linux_impl );
-  linux_impl.SetTargetSystem(i386_target);
+  auto i386_target = new unisim::util::os::linux_os::I386TS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> >( linux_lib );
+  linux_lib.SetTargetSystem(i386_target);
 
-  linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
-  linux_impl.SetStackBase( 0x40000000UL );
-  linux_impl.SetMemoryPageSize( 0x1000UL );
-  linux_impl.SetUname("Linux" /* sysname */,
+  linux_lib.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
+  linux_lib.SetStackBase( 0x40000000UL );
+  linux_lib.SetMemoryPageSize( 0x1000UL );
+  linux_lib.SetUname("Linux" /* sysname */,
                       "localhost" /* nodename */,
                       "3.14.43-unisim" /* release */,
                       "#1 SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
                       "i386" /* machine */,
                       "localhost" /* domainname */);
-  // linux_impl.SetStdinPipeFilename(stdin_pipe_filename.c_str());
-  // linux_impl.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
-  // linux_impl.SetStderrPipeFilename(stderr_pipe_filename.c_str());
+  // linux_lib.SetStdinPipeFilename(stdin_pipe_filename.c_str());
+  // linux_lib.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
+  // linux_lib.SetStderrPipeFilename(stderr_pipe_filename.c_str());
 
   // now it is time to try to run the initialization of the linuxlib
-  if (not linux_impl.Load())
+  if (not linux_lib.Load())
     throw 0;
 
-  if (!linux_impl.SetupTarget())
+  if (!linux_lib.SetupTarget())
     throw 0;
 }
 
 void
 LinuxOS::ExecuteSystemCall( int id )
 {
-  linux_impl.ExecuteSystemCall( id, exited, app_ret_status );
+  linux_lib.ExecuteSystemCall( id, exited, app_ret_status );
 }

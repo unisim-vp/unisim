@@ -827,7 +827,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			, suppress_types(dw_excavator.suppress_types)
 			, suppress_functions(dw_excavator.suppress_functions)
 			, compilation_units()
-			, testbench(0) 
+			, testbench(0)
 			, curr_comp_unit(0)
 			, symbol_table(_symbol_table)
 			, subprogram_definitions_by_addr()
@@ -2096,7 +2096,7 @@ int main(int argc, char *argv[])
 				{
 					std::cout << "File \"" << binary_filename << "\" looks like an ELF32 binary file" << std::endl;
 				}
-				unisim::util::loader::elf_loader::Elf32Loader<uint32_t> elf32_loader;
+				unisim::util::loader::elf_loader::Elf32Loader<uint32_t> elf32_loader(std::cerr, std::cerr, std::cerr);
 				elf32_loader.SetFileName(binary_filename.c_str());
 				elf32_loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, json_config_reader.GetVerbose() >= VERBOSE_INFO);
 				elf32_loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, true);
@@ -2133,7 +2133,7 @@ int main(int argc, char *argv[])
 				{
 					std::cout << "File \"" << binary_filename << "\" looks like an ELF64 binary file" << std::endl;
 				}
-				unisim::util::loader::elf_loader::Elf64Loader<uint64_t> elf64_loader;
+				unisim::util::loader::elf_loader::Elf64Loader<uint64_t> elf64_loader(std::cerr, std::cerr, std::cerr);
 				elf64_loader.SetFileName(binary_filename.c_str());
 				elf64_loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, json_config_reader.GetVerbose() >= VERBOSE_INFO);
 				elf64_loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, true);

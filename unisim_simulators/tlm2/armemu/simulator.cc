@@ -97,7 +97,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   http_server = new HTTP_SERVER("http-server");
 
   //  - Debug and Monitor
-  if (enable_gdb_server or enable_inline_debugger or enable_monitor or enable_profiler or enable_cfg_builder)
+  if (enable_gdb_server or enable_inline_debugger or enable_monitor or enable_profiler)
     debugger = new DEBUGGER("debugger");
   if (enable_gdb_server)
     gdb_server = new GDB_SERVER("gdb-server");
@@ -215,7 +215,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
        // CFG builder <-> debugger connections
        cpu.instruction_collecting_import >> cfg_builder->instruction_collecting_export;
        cfg_builder->disasm_import >> cpu.disasm_export;
-       cfg_builder->symbol_table_lookup_import >> *debugger->symbol_table_lookup_export[4];
+       cfg_builder->symbol_table_lookup_import >> linux_os.symbol_table_lookup_export;
      }
 
    *http_server->http_server_import[0] >> logger_http_writer->http_server_export;

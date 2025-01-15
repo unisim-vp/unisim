@@ -136,9 +136,12 @@ namespace linux_os {
       Linux& lin;
     };
 
-    Linux(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if, unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if);
+    Linux(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream);
     ~Linux();
 
+    void SetInterfaces(unisim::service::interfaces::Registers* regs_if,
+                       unisim::service::interfaces::Memory<ADDRESS_TYPE>* mem_if,
+                       unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE>* mem_inject_if);
     void SetVerbose(bool verbose) { verbose_ = verbose; }
     bool GetVerbose() const { return verbose_; };
 
@@ -262,9 +265,9 @@ namespace linux_os {
     unisim::util::blob::Blob<ADDRESS_TYPE> *load_blob;
 
     // interfaces to the CPU registers and memory
-    unisim::service::interfaces::Registers *regs_if_;
-    unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if_;
-    unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if_;
+    unisim::service::interfaces::Registers*                     regs_if_;
+    unisim::service::interfaces::Memory<ADDRESS_TYPE>*          mem_if_;
+    unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE>* mem_inject_if_;
 
     // verbosity
     bool verbose_;

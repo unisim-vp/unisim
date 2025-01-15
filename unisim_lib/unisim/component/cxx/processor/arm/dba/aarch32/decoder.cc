@@ -523,7 +523,7 @@ public:
     virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor&, U32 const&) const { throw Unimplemented(); }
     virtual void Describe(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, std::ostream& sink ) const
     {
-      sink << "CR15{crn=" << crn << ", op1=" << op1 << ", crm=" << crm << ", op2=" << op2 << "}";
+      sink << "CR15{crn=" << unsigned(crn) << ", op1=" << unsigned(op1) << ", crm=" << unsigned(crm) << ", op2=" << unsigned(op2) << "}";
     }
   };
 

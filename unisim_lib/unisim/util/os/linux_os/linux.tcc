@@ -74,10 +74,8 @@ namespace linux_os {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(std::ostream& _debug_info_stream,
-      std::ostream& _debug_warning_stream,
-      std::ostream& _debug_error_stream,
-      unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if,
-      unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if)
+                                           std::ostream& _debug_warning_stream,
+                                           std::ostream& _debug_error_stream)
 	: is_load_(false)
 	, target_system(0)
 	, endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
@@ -102,9 +100,9 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(std::ostream& _debug_info_stream,
 	, target_envp_()
 	, utsname()
 	, load_blob(NULL)
-	, regs_if_(regs_if)
-	, mem_if_(mem_if)
-	, mem_inject_if_(mem_inject_if)
+	, regs_if_(0)
+	, mem_if_(0)
+	, mem_inject_if_(0)
 	, verbose_(false)
 	, debug_info_stream(_debug_info_stream)
 	, debug_warning_stream(_debug_info_stream)
@@ -139,6 +137,17 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
 	if (stdout_pipe_fd != -1) close(stdout_pipe_fd);
 
 	if (stderr_pipe_fd != -1) close(stderr_pipe_fd);
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetInterfaces(unisim::service::interfaces::Registers* _regs_if,
+                                                   unisim::service::interfaces::Memory<ADDRESS_TYPE>* _mem_if,
+                                                   unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE>* _mem_inject_if)
+{
+  regs_if_ = _regs_if;
+  mem_if_ = _mem_if;
+  mem_inject_if_ = _mem_inject_if;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>

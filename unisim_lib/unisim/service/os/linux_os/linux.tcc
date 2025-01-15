@@ -72,20 +72,19 @@ using unisim::kernel::logger::EndDebug;
 /** Constructor. */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
-Linux(const char *name, unisim::kernel::Object *parent)
+Linux(const char* name, unisim::kernel::Object* parent)
   : unisim::kernel::Object(name, parent)
-  , unisim::kernel::Service<unisim::service::interfaces::LinuxOS>(
-                                                                           name, parent)
-  , unisim::kernel::Service<unisim::service::interfaces::Blob<ADDRESS_TYPE> >(
-                                                                                       name, parent)
-  , unisim::kernel::Client<
-  unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent)
-  , unisim::kernel::Client<
-  unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >(name, parent)
-  , unisim::kernel::Client<unisim::service::interfaces::Registers>(
-                                                                            name, parent)
+  , unisim::kernel::Service<unisim::service::interfaces::LinuxOS>(name, parent)
+  , unisim::kernel::Service<unisim::service::interfaces::Blob<ADDRESS_TYPE> >(name, parent)
+  , unisim::kernel::Service<unisim::service::interfaces::SymbolTableLookup<ADDRESS_TYPE> >(name, parent)
+  , unisim::kernel::Service<unisim::service::interfaces::StatementLookup<ADDRESS_TYPE> >(name, parent)
+  , unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent)
+  , unisim::kernel::Client<unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >(name, parent)
+  , unisim::kernel::Client<unisim::service::interfaces::Registers>(name, parent)
   , linux_os_export_("linux-os-export", this)
   , blob_export_("blob-export", this)
+  , symbol_table_lookup_export("symbol-table-lookup-export", this)
+  , statement_lookup_export("statement-lookup-export", this)
   , memory_import_("memory-import", this)
   , memory_injection_import_("memory-injection-import", this)
   , registers_import_("registers-import", this)
@@ -106,7 +105,8 @@ Linux(const char *name, unisim::kernel::Object *parent)
   , param_stdin_pipe_filename("stdin-pipe-filename", this, stdin_pipe_filename, "stdin pipe filename")
   , param_stdout_pipe_filename("stdout-pipe-filename", this, stdout_pipe_filename, "stdout pipe filename")
   , param_stderr_pipe_filename("stderr-pipe-filename", this, stderr_pipe_filename, "stderr pipe filename")
-  , linuxlib_(0)
+  , elf_loader(logger_.DebugInfoStream(), logger_.DebugWarningStream(), logger_.DebugErrorStream())
+  , linux_lib(logger_.DebugInfoStream(), logger_.DebugWarningStream(), logger_.DebugErrorStream())
   , endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
   , param_endianness_("endianness", this, endianness_,
                       "The endianness of the binary loaded. Available values are:"
@@ -212,8 +212,6 @@ Linux(const char *name, unisim::kernel::Object *parent)
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
 {
-  delete linuxlib_;
-
   for (auto param_argv_ptr : param_argv_)
     delete param_argv_ptr;
 
@@ -235,10 +233,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
     return false;
   }
 
-  linuxlib_ = new LinuxImpl(logger_.DebugInfoStream(), logger_.DebugWarningStream(), logger_.DebugErrorStream(), registers_import_, memory_import_, memory_injection_import_);
-
   // set up the different linuxlib parameters
-  linuxlib_->SetVerbose(verbose_);
+  linux_lib.SetVerbose(verbose_);
 
   // set the linuxlib command line
   std::vector<std::string> const& cmd_args = apply_host_cmd_line_ ? GetSimulator()->GetCmdArgs() : argv_;
@@ -249,32 +245,30 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
       return false;
     }
 
-  linuxlib_->SetCommandLine(cmd_args);
+  linux_lib.SetCommandLine(cmd_args);
 
   // set the binary that will be simulated in the target simulator
   {
-    typedef typename unisim::util::loader::elf_loader::StdElf<ADDRESS_TYPE,PARAMETER_TYPE>::Loader Loader;
-    Loader loader(logger_.DebugInfoStream(), logger_.DebugWarningStream(), logger_.DebugErrorStream());
-    loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose_);
-    loader.SetFileName(std::string(cmd_args[0]));
-    loader.SetRegistersInterface(/* prc_num */ 0, registers_import_);
-    loader.SetMemoryInterface(/* prc_num */ 0, memory_import_);
-    loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf_);
-    loader.SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf_);
-    loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory_.c_str());
-    loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename_.c_str());
-    if (not loader.Load())
+    elf_loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose_);
+    elf_loader.SetFileName(std::string(cmd_args[0]));
+    elf_loader.SetRegistersInterface(/* prc_num */ 0, registers_import_);
+    elf_loader.SetMemoryInterface(/* prc_num */ 0, memory_import_);
+    elf_loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf_);
+    elf_loader.SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf_);
+    elf_loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory_.c_str());
+    elf_loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename_.c_str());
+    if (not elf_loader.Load())
       {
         logger_ << DebugError << "Could not set the binary file to simulate on the target simulator." << EndDebugError;
         return false;
       }
 
-    linuxlib_->SetFileBlob(loader.GetBlob());
+    linux_lib.SetFileBlob(elf_loader.GetBlob());
   }
 
   // set the linuxlib environment
   if (envc_ != 0) {
-    bool success = linuxlib_->SetEnvironment(envp_);
+    bool success = linux_lib.SetEnvironment(envp_);
     if (!success) {
       logger_ << DebugError
           << "Could not set the application environment."
@@ -285,39 +279,35 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
 
   // set the linuxlib option to set the target environment with the host
   // environment
-  linuxlib_->SetApplyHostEnvironment(apply_host_environment_);
+  linux_lib.SetApplyHostEnvironment(apply_host_environment_);
 
   // setup target specific implementation
 
   this->SetupTargetSystem();
 
   // set the endianness of the target simulator
-  linuxlib_->SetEndianness(endianness_);
+  linux_lib.SetEndianness(endianness_);
   // .. the stack base address
-  linuxlib_->SetStackBase(stack_base_);
+  linux_lib.SetStackBase(stack_base_);
   // .. and memory page size
-  linuxlib_->SetMemoryPageSize(memory_page_size_);
+  linux_lib.SetMemoryPageSize(memory_page_size_);
   // .. and the uname information
-  linuxlib_->SetUname(utsname_sysname_.c_str(), utsname_nodename_.c_str(),
+  linux_lib.SetUname(utsname_sysname_.c_str(), utsname_nodename_.c_str(),
                      utsname_release_.c_str(), utsname_version_.c_str(),
                      utsname_machine_.c_str(), utsname_domainname_.c_str());
-  linuxlib_->SetHWCap(hwcap_.c_str());
+  linux_lib.SetHWCap(hwcap_.c_str());
   // .. and the stdin/stdout/stderr pipe filenames (if any)
-  linuxlib_->SetStdinPipeFilename(stdin_pipe_filename.c_str());
-  linuxlib_->SetStdoutPipeFilename(stdout_pipe_filename.c_str());
-  linuxlib_->SetStderrPipeFilename(stderr_pipe_filename.c_str());
+  linux_lib.SetStdinPipeFilename(stdin_pipe_filename.c_str());
+  linux_lib.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
+  linux_lib.SetStderrPipeFilename(stderr_pipe_filename.c_str());
 
   // now it is time to try to run the initialization of the linuxlib
-  {
-    bool success = linuxlib_->Load();
-    if (!success) {
-      logger_ << DebugError
-          << "Could not initialize the linux support with the given parameters"
-          << ", please check them."
-          << EndDebugError;
+  linux_lib.SetInterfaces(registers_import_, memory_import_, memory_injection_import_);
+  if (not linux_lib.Load())
+    {
+      logger_ << DebugError << "Could not initialize the linux support with the given parameters, please check them." << EndDebugError;
       return false;
     }
-  }
 
   return true;
 }
@@ -331,7 +321,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Setup(unisim::service::interfaces::Lin
   if (registers_import_)
     registers_import_.RequireSetup();
 
-  if (!linuxlib_->SetupTarget())
+  if (!linux_lib.SetupTarget())
     {
       logger_ << DebugError << "Could not setup the linux system" << EndDebugError;
       throw unisim::kernel::ServiceAgent::SetupError();
@@ -339,19 +329,100 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Setup(unisim::service::interfaces::Lin
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id)
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id)
 {
   bool terminated = false;
   int return_status = 0;
-  //  linuxlib_->LogSystemCall(id);
-  linuxlib_->ExecuteSystemCall(id, terminated, return_status);
-  if(terminated) Object::Stop(return_status);
+  //  linux_lib.LogSystemCall(id);
+  linux_lib.ExecuteSystemCall(id, terminated, return_status);
+  if (terminated) Object::Stop(return_status);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-const unisim::util::blob::Blob<ADDRESS_TYPE> *Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetBlob() const
+const unisim::util::blob::Blob<ADDRESS_TYPE>*
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetBlob() const
 {
-  return linuxlib_->GetBlob();
+  return linux_lib.GetBlob();
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS_TYPE>& scanner) const
+{
+  if (elf_loader.GetBlob())
+    { elf_loader.ScanSymbols(scanner); }
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS_TYPE>& scanner, typename unisim::util::debug::SymbolBase::Type type) const
+{
+  if (elf_loader.GetBlob())
+    { elf_loader.ScanSymbols(scanner, type); }
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+const typename unisim::util::debug::Symbol<ADDRESS_TYPE>*
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FindSymbolByAddr(ADDRESS_TYPE addr) const
+{
+  return elf_loader.GetBlob() ? elf_loader.FindSymbolByAddr(addr) : 0;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+const typename unisim::util::debug::Symbol<ADDRESS_TYPE>*
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FindSymbolByName(const char *name) const
+{
+  return elf_loader.GetBlob() ? elf_loader.FindSymbolByName(name) : 0;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+const typename unisim::util::debug::Symbol<ADDRESS_TYPE>*
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const
+{
+  return elf_loader.GetBlob() ? elf_loader.FindSymbolByName(name, type) : 0;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+const typename unisim::util::debug::Symbol<ADDRESS_TYPE>*
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FindSymbolByAddr(ADDRESS_TYPE addr, typename unisim::util::debug::SymbolBase::Type type) const
+{
+  return elf_loader.GetBlob() ? elf_loader.FindSymbolByAddr(addr, type) : 0;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS_TYPE>& scanner, const char *filename) const
+{
+  if (elf_loader.GetBlob()) { elf_loader.ScanStatements(scanner); }
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+const unisim::util::debug::Statement<ADDRESS_TYPE>*
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FindStatement(ADDRESS_TYPE addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS_TYPE>::Scope scope) const
+{
+  return elf_loader.GetBlob() ? elf_loader.FindStatement(addr, scope) : 0;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+const unisim::util::debug::Statement<ADDRESS_TYPE>*
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS_TYPE>& scanner, ADDRESS_TYPE addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS_TYPE>::Scope scope) const
+{
+  return elf_loader.GetBlob() ? elf_loader.FindStatements(scanner, addr, scope) : 0;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+const unisim::util::debug::Statement<ADDRESS_TYPE>*
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const
+{
+  return elf_loader.GetBlob() ? elf_loader.FindStatement(source_code_location) : 0;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+const unisim::util::debug::Statement<ADDRESS_TYPE>*
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS_TYPE>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const
+{
+  return elf_loader.GetBlob() ? elf_loader.FindStatements(scanner, source_code_location) : 0;
 }
 
 } // end of linux_os namespace

@@ -36,17 +36,19 @@
 #ifndef __UNISIM_SERVICE_OS_LINUX_OS_LINUX_HH__
 #define __UNISIM_SERVICE_OS_LINUX_OS_LINUX_HH__
 
-#include <unisim/kernel/logger/logger.hh>
-#include <unisim/kernel/variable/endian/endian.hh>
-#include <unisim/kernel/variable/variable.hh>
-#include <unisim/kernel/kernel.hh>
+#include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/util/loader/elf_loader/elf32_loader.hh>
+#include <unisim/util/loader/elf_loader/elf64_loader.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/blob.hh>
-#include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/variable/endian/endian.hh>
+#include <unisim/kernel/variable/variable.hh>
+#include <unisim/kernel/kernel.hh>
 
 namespace unisim {
 namespace service {
@@ -54,32 +56,29 @@ namespace os {
 namespace linux_os {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-class Linux
+struct Linux
   : public unisim::kernel::Service< unisim::service::interfaces::LinuxOS >
   , public unisim::kernel::Service< unisim::service::interfaces::Blob<ADDRESS_TYPE> >
+  , public unisim::kernel::Service< unisim::service::interfaces::SymbolTableLookup<ADDRESS_TYPE> >
+  , public unisim::kernel::Service< unisim::service::interfaces::StatementLookup<ADDRESS_TYPE> >
   , public unisim::kernel::Client<  unisim::service::interfaces::Memory<ADDRESS_TYPE> >
   , public unisim::kernel::Client<  unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >
   , public unisim::kernel::Client<  unisim::service::interfaces::Registers>
 {
- public:
-  
+  typedef typename unisim::util::loader::elf_loader::StdElf<ADDRESS_TYPE,PARAMETER_TYPE>::Loader Loader;
   typedef unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE> LinuxImpl;
   typedef typename LinuxImpl::TargetSystem TargetSystem;
-  
+
   /* Exported services */
-  unisim::kernel::ServiceExport<unisim::service::interfaces::LinuxOS>
-      linux_os_export_;
-  unisim::kernel::ServiceExport<unisim::service::interfaces::Blob<ADDRESS_TYPE> >
-      blob_export_;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::LinuxOS>                         linux_os_export_;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Blob<ADDRESS_TYPE>>              blob_export_;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::SymbolTableLookup<ADDRESS_TYPE>> symbol_table_lookup_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::StatementLookup<ADDRESS_TYPE>>   statement_lookup_export;
 
   /* Imported services */
-  unisim::kernel::ServiceImport<
-      unisim::service::interfaces::Memory<ADDRESS_TYPE> > memory_import_;
-  unisim::kernel::ServiceImport<
-      unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >
-      memory_injection_import_;
-  unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>
-      registers_import_;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS_TYPE> >         memory_import_;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE>> memory_injection_import_;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>                     registers_import_;
 
   /* Constructor/Destructor */
   Linux(const char *name, unisim::kernel::Object *parent = 0);
@@ -90,19 +89,35 @@ class Linux
   virtual void Setup(unisim::service::interfaces::LinuxOS*) override;
 
   /* Service interface methods */
+  // unisim::service::interfaces::LinuxOS
   virtual void ExecuteSystemCall(int id) override;
-  //virtual bool Load();
 
+  // unisim::service::interfaces::Blob
   virtual const unisim::util::blob::Blob<ADDRESS_TYPE> *GetBlob() const override;
-  
+
+  // unisim::service::interfaces::SymbolTableLookup
+  virtual void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS_TYPE>& scanner) const;
+  virtual void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS_TYPE>& scanner, typename unisim::util::debug::SymbolBase::Type type) const;
+  virtual const typename unisim::util::debug::Symbol<ADDRESS_TYPE> *FindSymbolByAddr(ADDRESS_TYPE addr) const;
+  virtual const typename unisim::util::debug::Symbol<ADDRESS_TYPE> *FindSymbolByName(const char *name) const;
+  virtual const typename unisim::util::debug::Symbol<ADDRESS_TYPE> *FindSymbolByName(const char *name, typename unisim::util::debug::SymbolBase::Type type) const;
+  virtual const typename unisim::util::debug::Symbol<ADDRESS_TYPE> *FindSymbolByAddr(ADDRESS_TYPE addr, typename unisim::util::debug::SymbolBase::Type type) const;
+
+  // unisim::service::interfaces::StatementLookup
+  virtual void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS_TYPE>& scanner, const char *filename) const;
+  virtual const unisim::util::debug::Statement<ADDRESS_TYPE> *FindStatement(ADDRESS_TYPE addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS_TYPE>::Scope scope) const;
+  virtual const unisim::util::debug::Statement<ADDRESS_TYPE> *FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS_TYPE>& scanner, ADDRESS_TYPE addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS_TYPE>::Scope scope) const;
+  virtual const unisim::util::debug::Statement<ADDRESS_TYPE> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
+  virtual const unisim::util::debug::Statement<ADDRESS_TYPE> *FindStatements(unisim::service::interfaces::StatementScanner<ADDRESS_TYPE>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
+
   virtual void SetupTargetSystem() = 0;
-  
+
 protected:
   /* the logger and its verbose option */
   unisim::kernel::logger::Logger logger_;
   bool verbose_;
   unisim::kernel::variable::Parameter<bool> param_verbose_;
-  
+
   /* DWARF options */
   bool parse_dwarf_;
   bool debug_dwarf_;
@@ -112,7 +127,7 @@ protected:
   unisim::kernel::variable::Parameter<bool> param_debug_dwarf_;
   unisim::kernel::variable::Parameter<std::string> param_dwarf_to_html_output_directory_;
   unisim::kernel::variable::Parameter<std::string> param_dwarf_to_xml_output_filename_;
-  
+
   /* stdin/stdout/stderr pipes */
   std::string stdin_pipe_filename;
   std::string stdout_pipe_filename;
@@ -120,9 +135,12 @@ protected:
   unisim::kernel::variable::Parameter<std::string> param_stdin_pipe_filename;
   unisim::kernel::variable::Parameter<std::string> param_stdout_pipe_filename;
   unisim::kernel::variable::Parameter<std::string> param_stderr_pipe_filename;
-  
+
+  /* the elf loader library */
+  Loader    elf_loader;
+
   /* the linux library */
-  LinuxImpl* linuxlib_;
+  LinuxImpl linux_lib;
 
   unisim::util::endian::endian_type endianness_;
   unisim::kernel::variable::Parameter<unisim::util::endian::endian_type> param_endianness_;
