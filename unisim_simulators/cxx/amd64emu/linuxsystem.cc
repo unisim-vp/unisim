@@ -47,12 +47,13 @@ LinuxOS::LinuxOS(char const* name, unisim::kernel::Object* parent, std::ostream&
   : unisim::kernel::Object(name, 0)
   , unisim::service::interfaces::LinuxOS()
   , unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t> >(name)
-  , linux_lib( log, log, log, regs_if, mem_if, mem_inject_if )
+  , linux_lib( log, log, log )
   , exited( false )
   , app_ret_status( -1 )
 {
   // Set the system type of the target simulator (should be the same than the
   // binary)
+  linux_lib.SetInterfaces(regs_if, mem_if, mem_inject_if);
   auto amd64_target = new unisim::util::os::linux_os::AMD64TS<unisim::util::os::linux_os::Linux<uint64_t,uint64_t> >( linux_lib );
   linux_lib.SetTargetSystem(amd64_target);
 }

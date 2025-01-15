@@ -47,10 +47,12 @@ LinuxOS::LinuxOS( std::ostream& log,
   , unisim::service::interfaces::LinuxOS()
   , unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t> >("ppc64linux", 0)
   , blob_export("blob-export", this)
-  , linux_lib( log, log, log, regs_if, mem_if, mem_inject_if )
+  , linux_lib( log, log, log )
   , exited( false )
   , app_ret_status( -1 )
-{}
+{
+  linux_lib.SetInterfaces(regs_if, mem_if, mem_inject_if);
+}
 
 LinuxOS::~LinuxOS()
 {

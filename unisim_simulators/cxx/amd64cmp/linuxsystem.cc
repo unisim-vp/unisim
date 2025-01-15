@@ -40,9 +40,10 @@
 #include <sys/utsname.h>
 
 Amd64LinuxOS::Amd64LinuxOS(Arch& cpu)
-  : ThisLinux( std::cout, std::cout, std::cout, &cpu, &cpu, &cpu )
+  : ThisLinux( std::cout, std::cout, std::cout )
 {
   // Set up the different linuxlib parameters
+  SetInterfaces(&cpu, &cpu, &cpu);
   SetTargetSystem(new unisim::util::os::linux_os::AMD64TS<ThisLinux>(*this));
   SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
   struct utsname unm;

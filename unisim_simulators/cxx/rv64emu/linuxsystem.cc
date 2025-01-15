@@ -44,10 +44,12 @@ LinuxOS::LinuxOS( std::ostream& log,
          unisim::service::interfaces::MemoryInjection<uint64_t> *mem_inject_if
          )
   : unisim::service::interfaces::LinuxOS()
-  , linux_lib( log, log, log, regs_if, mem_if, mem_inject_if )
+  , linux_lib( log, log, log )
   , exited( false )
   , app_ret_status( -1 )
-{}
+{
+  linux_lib.SetInterfaces(regs_if, mem_if, mem_inject_if);
+}
 
 void
 LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )

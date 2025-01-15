@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2023,
+ *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -692,8 +692,9 @@ AArch64::CallSupervisor( uint32_t imm )
         typedef unisim::util::os::linux_os::AARCH64TS<ThisLinux> Arm64Target;
 
         Arm64LinuxOS( AArch64* cpu, std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream)
-          : ThisLinux( debug_info_stream, debug_warning_stream, debug_error_stream, cpu, cpu, cpu )
+          : ThisLinux( debug_info_stream, debug_warning_stream, debug_error_stream )
         {
+          SetInterfaces(cpu, cpu, cpu);
           SetTargetSystem(new Arm64Target(*this));
         }
         ~Arm64LinuxOS() { delete GetTargetSystem(); }
