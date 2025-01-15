@@ -31,7 +31,7 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
 #ifndef __UNISIM_UTIL_LOADER_ELF_LOADER_ELF_LOADER_HH__
 #define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF_LOADER_HH__
 
@@ -83,19 +83,19 @@ public:
 	typedef Elf_Shdr Elf_Shdr_type;
 	typedef Elf_Sym Elf_Sym_type;
 	
-	ElfLoaderImpl(const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
+	ElfLoaderImpl(std::ostream& debug_info_stream,
+	              std::ostream& debug_warning_stream,
+	              std::ostream& debug_error_stream,
+	              const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
 	virtual ~ElfLoaderImpl();
 	
 	bool Load();
 	bool Load(std::istream&);
 	void ParseSymbols();
 	
-	void SetDebugInfoStream(std::ostream& debug_info_stream);
-	void SetDebugWarningStream(std::ostream& debug_warning_stream);
-	void SetDebugErrorStream(std::ostream& debug_error_stream);
 	void SetRegistersInterface(unsigned int prc_num, unisim::service::interfaces::Registers *regs_if);
 	void SetMemoryInterface(unsigned int prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
-	void SetFileName(char const* filename);
+        void SetFileName(std::string&& filename);
 
 	void SetOption(Option opt, MEMORY_ADDR addr);
 	void SetOption(Option opt, const char *s);
@@ -137,9 +137,9 @@ public:
 	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(MEMORY_ADDR pc, const char *filename = 0) const;
 	
 private:
-	std::ostream *debug_info_stream;
-	std::ostream *debug_warning_stream;
-	std::ostream *debug_error_stream;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	std::string filename;
 	std::string architecture;
 	MEMORY_ADDR base_addr;

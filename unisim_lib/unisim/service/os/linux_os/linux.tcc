@@ -32,27 +32,27 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
 #ifndef __UNISIM_SERVICE_OS_LINUX_OS_LINUX_TCC__
 #define __UNISIM_SERVICE_OS_LINUX_OS_LINUX_TCC__
 
+#include <unisim/service/os/linux_os/linux.hh>
+#include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/service/interfaces/loader.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/memory_injection.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/register.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/util/loader/elf_loader/elf32_loader.hh>
+#include <unisim/util/loader/elf_loader/elf64_loader.hh>
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/likely/likely.hh>
+
 #include <string>
 #include <sstream>
-
-#include "unisim/kernel/kernel.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include "unisim/service/interfaces/linux_os.hh"
-#include "unisim/service/interfaces/loader.hh"
-#include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/memory_injection.hh"
-#include "unisim/service/interfaces/registers.hh"
-// #include "unisim/service/os/linux_os/linux_os_exception.hh"
-#include "unisim/util/endian/endian.hh"
-#include "unisim/service/interfaces/register.hh"
-#include "unisim/util/likely/likely.hh"
-
-#include "unisim/service/os/linux_os/linux.hh"
-#include "unisim/util/os/linux_os/linux.hh"
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim/service/os/linux_os/linux_os.tcc:" << __LINE__
 
@@ -195,7 +195,7 @@ Linux(const char *name, unisim::kernel::Object *parent)
       auto param = new parameter_type(argv_name.str().c_str(), this, argv_[i], argv_desc.str().c_str());
       param_argv_.push_back(param);
     }
-  
+
   for (unsigned int i = 0; i < envc_; i++)
     {
       std::stringstream envp_name, envp_desc, envp_val;
@@ -216,7 +216,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
 
   for (auto param_argv_ptr : param_argv_)
     delete param_argv_ptr;
-  
+
   for (auto param_envp_ptr : param_envp_)
     delete param_envp_ptr;
 }
@@ -234,77 +234,44 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
         << EndDebugError;
     return false;
   }
-  
+
   linuxlib_ = new LinuxImpl(logger_.DebugInfoStream(), logger_.DebugWarningStream(), logger_.DebugErrorStream(), registers_import_, memory_import_, memory_injection_import_);
-  
+
   // set up the different linuxlib parameters
   linuxlib_->SetVerbose(verbose_);
-  linuxlib_->SetParseDWARF(parse_dwarf_);
-  linuxlib_->SetDebugDWARF(debug_dwarf_);
-  linuxlib_->SetDWARFToHTMLOutputDirectory(dwarf_to_html_output_directory_.c_str());
-  linuxlib_->SetDWARFToXMLOutputFilename(dwarf_to_xml_output_filename_.c_str());
-  
+
   // set the linuxlib command line
-  if(apply_host_cmd_line_)
-  {
-    std::vector<std::string> const& cmd_args = GetSimulator()->GetCmdArgs();
-    
-    if (not cmd_args.empty()) {
-      bool success = linuxlib_->SetCommandLine(cmd_args);
-      
-      if (!success) {
-        logger_ << DebugError
-            << "Could not set the command line."
-            << EndDebugError;
-        return false;
-      }
-      
-      // set the binary that will be simulated in the target simulator
-      {
-        bool success = linuxlib_->AddLoadFile(cmd_args[0].c_str());
-        if (!success) {
-          logger_ << DebugError
-              << "Could not set the binary file to simulate on the target"
-              << " simulator." << EndDebugError;
-          return false;
-        }
-      }
-    } else {
-      logger_ << DebugError
-          << "No command line was given for the target simulator."
-          << EndDebugError;
-      return false;
-    }
-  }
-  else
-  {
-    if (argc_ != 0) {
-      bool success = linuxlib_->SetCommandLine(argv_);
-      if (!success) {
-        logger_ << DebugError
-            << "Could not set the command line."
-            << EndDebugError;
-        return false;
-      }
-    } else {
-      logger_ << DebugError
-          << "No command line was given for the target simulator."
-          << EndDebugError;
-      return false;
-    }
-    
-    // set the binary that will be simulated in the target simulator
+  std::vector<std::string> const& cmd_args = apply_host_cmd_line_ ? GetSimulator()->GetCmdArgs() : argv_;
+
+  if (cmd_args.empty())
     {
-      bool success = linuxlib_->AddLoadFile(binary_.c_str());
-      if (!success) {
-        logger_ << DebugError
-            << "Could not set the binary file to simulate on the target"
-            << " simulator." << EndDebugError;
+      logger_ << DebugError << "No command line was given for the target simulator." << EndDebugError;
+      return false;
+    }
+
+  linuxlib_->SetCommandLine(cmd_args);
+
+  // set the binary that will be simulated in the target simulator
+  {
+    typedef typename unisim::util::loader::elf_loader::StdElf<ADDRESS_TYPE,PARAMETER_TYPE>::Loader Loader;
+    Loader loader(logger_.DebugInfoStream(), logger_.DebugWarningStream(), logger_.DebugErrorStream());
+    loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose_);
+    loader.SetFileName(std::string(cmd_args[0]));
+    loader.SetRegistersInterface(/* prc_num */ 0, registers_import_);
+    loader.SetMemoryInterface(/* prc_num */ 0, memory_import_);
+    loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf_);
+    loader.SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf_);
+    loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory_.c_str());
+    loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename_.c_str());
+    if (not loader.Load())
+      {
+        logger_ << DebugError << "Could not set the binary file to simulate on the target simulator." << EndDebugError;
         return false;
       }
-    }
+
+    linuxlib_->SetFileBlob(loader.GetBlob());
   }
-  
+
   // set the linuxlib environment
   if (envc_ != 0) {
     bool success = linuxlib_->SetEnvironment(envp_);
@@ -321,7 +288,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
   linuxlib_->SetApplyHostEnvironment(apply_host_environment_);
 
   // setup target specific implementation
-  
+
   this->SetupTargetSystem();
 
   // set the endianness of the target simulator

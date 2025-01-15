@@ -1,32 +1,33 @@
 /*
- *  Copyright (c) 2011 Commissariat a l'Energie Atomique (CEA) All rights
- *  reserved.
+ *  Copyright (c) 2011,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are met:
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice,
- *   this list of conditions and the following disclaimer.
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *   endorse or promote products derived from this software without specific
- *   prior written permission.
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- *  ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
@@ -85,9 +86,9 @@ namespace linux_os {
       virtual char const* GetName() const = 0;
       virtual void Release() {}
       std::string TraceCall( Linux& lin ) const;
-      
+
       static int HostToLinuxErrno(int host_errno); //< Errno conversion
-  
+
       template <class ARGS>
       struct ArgsPrint
       {
@@ -95,7 +96,7 @@ namespace linux_os {
         friend std::ostream& operator << (std::ostream& sink, ArgsPrint const& ap) { ap.args.Describe(sink); return sink; }
       };
       template <class ARGS> static ArgsPrint<ARGS> argsPrint( ARGS const& args ) { return ArgsPrint<ARGS>(args); }
-      
+
     protected:
       // SysCall Friend accessing methods
       static int Target2HostFileDescriptor( Linux& lin, int32_t fd );
@@ -138,20 +139,11 @@ namespace linux_os {
     Linux(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if, unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if);
     ~Linux();
 
-    void  SetVerbose(bool verbose);
-    bool  GetVerbose() const { return verbose_; };
+    void SetVerbose(bool verbose) { verbose_ = verbose; }
+    bool GetVerbose() const { return verbose_; };
 
-    void  SetParseDWARF(bool parse_dwarf);
-
-    void  SetDebugDWARF(bool debug_dwarf);
-
-    void SetDWARFToHTMLOutputDirectory(const char *dwarf_to_html_output_directory);
-
-    void SetDWARFToXMLOutputFilename(const char *dwarf_to_xml_output_filename);
-
-    bool SetCommandLine(std::vector<std::string> const &cmd);
-
-    std::vector<std::string> GetCommandLine();
+    void SetCommandLine(std::vector<std::string> const &cmd) { argv_ = cmd; }
+    std::vector<std::string> GetCommandLine() { return argv_; }
 
     bool SetEnvironment(std::vector<std::string> const &env);
 
@@ -161,7 +153,7 @@ namespace linux_os {
 
     bool GetApplyHostEnvironment();
 
-    bool AddLoadFile(char const * const file);
+    void SetFileBlob(unisim::util::blob::Blob<ADDRESS_TYPE> const* file_blob);
 
     // Sets and gets the target specific system interface
     void SetTargetSystem(TargetSystem* _target_system) { target_system = _target_system; }
@@ -198,39 +190,17 @@ namespace linux_os {
     void SetStdoutPipeFilename(const char *filename);
     void SetStderrPipeFilename(const char *filename);
 
-    // Loads all the defined files using the user settings.
-    // Basic usage:
-    //   linux_os = new Linux<X,Y>(false);
-    //   arm_target = new ARMTS<Linux<X,Y> >("arm-eabi", linux_os);
-    //   // set options (for simplicity we assume successful calls)
-    //   linux_os->SetTargetSystem(arm_target);
-    //   linux_os->AddLoadFile("my_fabulous_elf_file");
-    //   ...
-    //   // actually load the system
-    //   if (linux_os->Load()) //success
-    //     ...;
-    //   else // failure
-    //     ...;
-    // Once Load() has been called and successfully returned, the user can get
-    // information from the loaded system with the GetBlob or request setup of the
-    // target emulator with SetupTarget.
-    // Returns: true on success, false otherwise.
+    // Compute the memory loading blob.
     bool Load();
     // Checks if the system was already successfully loaded or not.
-    // Returns: true if the system has already successfully been loaded, false
-    //          if the system has not been loaded or if the Load() method
-    //          failed.
     bool IsLoad();
 
-    // Sets up the target system using the currently loaded configuration (blob)
-    // using the register and memory interface.
-    // Returns: true on success, false otherwise.
+    // Setup the target system using the memory loading blob using
+    // the register and memory interface.
     bool SetupTarget();
 
-    // Gets the memory footprint of the application as a blob.
-    // Returns: a blob describing the memory footprint of the application. NULL
-    //          if the system has not been successfully loaded.
-    unisim::util::blob::Blob<ADDRESS_TYPE> const * const GetBlob() const { return blob_; }
+    // Gets the memory loading blob.
+    unisim::util::blob::Blob<ADDRESS_TYPE> const * const GetBlob() const { return load_blob; }
 	
     // Gets the supplied logging streams
     std::ostream& DebugInfoStream() { return debug_info_stream; }
@@ -256,8 +226,8 @@ namespace linux_os {
 	
     unisim::util::endian::endian_type endianness_;
 
-    // files to load
-    std::map<std::string, unisim::util::blob::Blob<ADDRESS_TYPE> const *> load_files_;
+    // loaded blobs
+    unisim::util::blob::Blob<ADDRESS_TYPE> const* file_blob;
 
     // program addresses (computed from the given files)
     ADDRESS_TYPE entry_point_;
@@ -289,22 +259,15 @@ namespace linux_os {
     std::string hwcap_;
 
     // the structure to keep all the loaded information
-    unisim::util::blob::Blob<ADDRESS_TYPE> *blob_;
+    unisim::util::blob::Blob<ADDRESS_TYPE> *load_blob;
 
     // interfaces to the CPU registers and memory
     unisim::service::interfaces::Registers *regs_if_;
     unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if_;
     unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if_;
 
-    // activate the verbose
+    // verbosity
     bool verbose_;
-    // activate DWARF parsing
-    bool parse_dwarf_;
-    // activate debugging DWARF
-    bool debug_dwarf_;
-    // DWARF dump parameters
-    std::string dwarf_to_html_output_directory_;
-    std::string dwarf_to_xml_output_filename_;
     // logger streams
     std::ostream& debug_info_stream;
     std::ostream& debug_warning_stream;
@@ -341,24 +304,16 @@ namespace linux_os {
     bool ReadString(ADDRESS_TYPE addr, std::string& str, bool) const;
     bool WriteMemory(ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size) const;
     bool WriteMemory(ADDRESS_TYPE addr, PARAMETER_TYPE value) const;
-    
-    // Load the files set by the user into the given blob. Returns true on sucess,
-    // false otherwise.
-    bool LoadFiles(unisim::util::blob::Blob<ADDRESS_TYPE> *blob);
 
-    // Gets the main executable blob, that is the blob that represents the
-    // executable file, not the maybe used dynamic libraries
-    unisim::util::blob::Blob<ADDRESS_TYPE> const * const GetMainBlob() const;
+    // Load the executable blob into the given blob.
+    bool CopyFileBlob(unisim::util::blob::Blob<ADDRESS_TYPE>* blob) const;
 
-    // From the given blob computes the initial addresses and values that will be
-    // used to initialize internal structures and the target processor
-    bool ComputeStructuralAddresses(
-                                    unisim::util::blob::Blob<ADDRESS_TYPE> const &blob);
+    // Gets the executable file blob (not the loading blob)
+    unisim::util::blob::Blob<ADDRESS_TYPE> const* GetFileBlob() const { return file_blob; }
 
-    // Merge the contents of the given file blob into the input/output blob
-    static bool FillBlobWithFileBlob(
-                              unisim::util::blob::Blob<ADDRESS_TYPE> const &file_blob,
-                              unisim::util::blob::Blob<ADDRESS_TYPE> *blob);
+    // Computes the initial addresses and values that will be used to
+    // initialize internal structures and the target processor
+    bool ComputeStructuralAddresses();
 
     // Create the stack memory image and insert it into the given blob
     bool CreateStack(unisim::util::blob::Blob<ADDRESS_TYPE> * blob, uint64_t& stack_size) const;
@@ -369,10 +324,10 @@ namespace linux_os {
     // Set the contents of an aux table entry
     ADDRESS_TYPE SetAuxTableEntry(uint8_t * stack_data, ADDRESS_TYPE sp,
                                   ADDRESS_TYPE entry, ADDRESS_TYPE value) const;
-    
+
     // File management
     int OpenAt( int dfd, std::string const& filename, int flags, unsigned short mode );
-    
+
     // File descriptors mapping
     int32_t AllocateFileDescriptor();
     void FreeFileDescriptor(int32_t fd);

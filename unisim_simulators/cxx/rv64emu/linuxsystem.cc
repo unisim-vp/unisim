@@ -36,6 +36,7 @@
 #include <unisim/util/os/linux_os/riscv.hh>
 #include <unisim/util/os/linux_os/linux.tcc>
 #include <unisim/util/os/linux_os/calls.tcc>
+#include <unisim/util/loader/elf_loader/elf64_loader.hh>
 
 LinuxOS::LinuxOS( std::ostream& log,
          unisim::service::interfaces::Registers *regs_if,
@@ -51,26 +52,33 @@ LinuxOS::LinuxOS( std::ostream& log,
 void
 LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
 {
+  bool const verbosity = false;
   // Set up the different linuxlib parameters
-  linux_impl.SetVerbose(false);
-  
-  if (not linux_impl.SetCommandLine(simargs))
-    throw 0;
-    
+  linux_impl.SetVerbose(verbosity);
+
+  linux_impl.SetCommandLine(simargs);
+
   // Set the linuxlib option to set the target environment with the
   // host environment
   linux_impl.SetApplyHostEnvironment(false);
   linux_impl.SetEnvironment(envs);
-    
-  // Set the binary that will be simulated in the target simulator
-  if (not linux_impl.AddLoadFile( simargs[0].c_str() ))
-    throw 0;
-  
+
+  // Load the binary that will be simulated in the target simulator
+  {
+    typedef typename unisim::util::loader::elf_loader::StdElf<addr_t,addr_t>::Loader Loader;
+    Loader loader(linux_impl.DebugInfoStream(), linux_impl.DebugWarningStream(), linux_impl.DebugErrorStream());
+    loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbosity);
+    loader.SetFileName(std::string(simargs[0]));
+    if (not loader.Load())
+      throw 0;
+    linux_impl.SetFileBlob(loader.GetBlob());
+  }
+
   // Set the system type of the target simulator (should be the same than the
   // binary)
   auto target = new unisim::util::os::linux_os::RISCVTS<unisim::util::os::linux_os::Linux<uint64_t,uint64_t> >( linux_impl );
   linux_impl.SetTargetSystem(target);
-    
+
   linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
   linux_impl.SetStackBase( 0x00000040007ff800UL );
   linux_impl.SetMemoryPageSize( 0x1000UL );
@@ -87,7 +95,7 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
   // now it is time to try to run the initialization of the linuxlib
   if (not linux_impl.Load())
     throw 0;
-  
+
   if (!linux_impl.SetupTarget())
     throw 0;
 }

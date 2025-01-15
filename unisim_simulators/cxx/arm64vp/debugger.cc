@@ -56,7 +56,7 @@
 
 template class unisim::service::debug::debugger::Debugger<Debugger::DEBUGGER_CONFIG>;
 
-Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
+Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& source)
   : unisim::kernel::Object(name, 0)
   , unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t>>(name, 0)
   , debug_hub("debug-hub", this)
@@ -76,7 +76,7 @@ Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
 #if HAVE_NODEJS
      !enable_nodejs &&
 #endif
-     !sink.is_open()
+     !source.is_open()
   ) return;
 
   // DebHub <-> ARCH connections
@@ -87,7 +87,7 @@ Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
   debug_hub.memory_import                         [0]  -> Bind(arch);
   debug_hub.registers_import                      [0]  -> Bind(arch);
   debug_hub.memory_access_reporting_control_import[0]  -> Bind(arch);
-  
+
   unsigned front_end = 0;
   // inline-debugger <-> DebugHub connections
   if(enable_inline_debugger)
@@ -122,7 +122,7 @@ Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
     gdb_server->memory_import                 >> *debug_hub.memory_export                [i];
     gdb_server->registers_import              >> *debug_hub.registers_export             [i];
   }
-  
+
 #if HAVE_NODEJS
   // NodeJS <-> DebugHub connections
   if(enable_nodejs)
@@ -140,15 +140,12 @@ Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
   }
 #endif
 
-  if(!sink.is_open()) return;
+  if (!source.is_open()) return;
 
   // DebugHub <-> Loader connections
   bool const verbose = false, debug_dwarf = false, parse_dwarf = false;
-  unisim::util::loader::elf_loader::StdElf<uint64_t,uint64_t>::Loader loader;
+  unisim::util::loader::elf_loader::StdElf<uint64_t,uint64_t>::Loader loader(std::cerr, std::cerr, std::cerr);
 
-  loader.SetDebugInfoStream(std::cerr);
-  loader.SetDebugWarningStream(std::cerr);
-  loader.SetDebugErrorStream(std::cerr);
   // loader.SetRegistersInterface(0, 0);
   // loader.SetMemoryInterface(0, 0);
   loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
@@ -158,15 +155,15 @@ Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
   // loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename_.c_str());
   loader.SetFileName("-");
 
-  
-  if (not loader.Load(sink) or not (blob = loader.GetBlob()))
+
+  if (not loader.Load(source) or not (blob = loader.GetBlob()))
     {
       std::cerr << "Could not create blob from given file." << std::endl;
       struct Bad {}; throw Bad ();
     }
 
   blob->Catch();
-  
+
   debug_hub.blob_import . Bind( *this );
 }
 

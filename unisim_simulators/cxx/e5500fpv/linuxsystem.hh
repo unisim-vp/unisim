@@ -48,21 +48,23 @@ struct LinuxOS
   : public unisim::service::interfaces::LinuxOS
   , public unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t> >
 {
+  typedef uint64_t addr_t;
+
   LinuxOS( std::ostream& log,
            unisim::service::interfaces::Registers* regs_if,
-           unisim::service::interfaces::Memory<uint64_t>* mem_if,
-           unisim::service::interfaces::MemoryInjection<uint64_t>* mem_inject_if );
+           unisim::service::interfaces::Memory<addr_t>* mem_if,
+           unisim::service::interfaces::MemoryInjection<addr_t>* mem_inject_if );
   ~LinuxOS();
-  
+
   void Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs );
-  
+
   void ExecuteSystemCall( int id );
 
-  // unisim::service::interfaces::Blob<uint64_t>
-  virtual unisim::util::blob::Blob<uint64_t> const* GetBlob() const { return linux_impl.GetBlob(); }
-  unisim::kernel::ServiceExport<unisim::service::interfaces::Blob<uint64_t> > blob_export;
+  // unisim::service::interfaces::Blob<addr_t>
+  virtual unisim::util::blob::Blob<addr_t> const* GetBlob() const { return linux_impl.GetBlob(); }
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Blob<addr_t> > blob_export;
 
-  unisim::util::os::linux_os::Linux<uint64_t, uint64_t> linux_impl;
+  unisim::util::os::linux_os::Linux<addr_t, addr_t> linux_impl;
   bool exited;
   int app_ret_status;
 };

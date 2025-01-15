@@ -461,11 +461,9 @@ bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *b
 			break;
 		case unisim::util::blob::FFMT_ELF32:
 			{
-				unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(blob);
-				
-				elf32_loader->SetDebugInfoStream(logger.DebugInfoStream());
-				elf32_loader->SetDebugWarningStream(logger.DebugWarningStream());
-				elf32_loader->SetDebugErrorStream(logger.DebugErrorStream());
+				typedef unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> Loader;
+				Loader* elf32_loader = new Loader(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), blob);
+
 				unsigned int prc_num;
 				for(prc_num = 0; prc_num < NUM_PROCESSORS; ++prc_num)
 				{
@@ -494,11 +492,9 @@ bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *b
 			break;
 		case unisim::util::blob::FFMT_ELF64:
 			{
-				unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(blob);
+				typedef unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> Loader;
+				Loader* elf64_loader = new Loader(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), blob);
 				
-				elf64_loader->SetDebugInfoStream(logger.DebugInfoStream());
-				elf64_loader->SetDebugWarningStream(logger.DebugWarningStream());
-				elf64_loader->SetDebugErrorStream(logger.DebugErrorStream());
 				unsigned int prc_num;
 				for(prc_num = 0; prc_num < NUM_PROCESSORS; ++prc_num)
 				{
@@ -1957,11 +1953,9 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 			{
 				case 1:
 					{
-						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>();
+						typedef unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> Loader;
+						Loader* elf32_loader = new Loader(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
 						
-						elf32_loader->SetDebugInfoStream(logger.DebugInfoStream());
-						elf32_loader->SetDebugWarningStream(logger.DebugWarningStream());
-						elf32_loader->SetDebugErrorStream(logger.DebugErrorStream());
 						unsigned int prc_num;
 						for(prc_num = 0; prc_num < NUM_PROCESSORS; ++prc_num)
 						{
@@ -1998,11 +1992,9 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 					break;
 				case 2:
 					{
-						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>();
-						
-						elf64_loader->SetDebugInfoStream(logger.DebugInfoStream());
-						elf64_loader->SetDebugWarningStream(logger.DebugWarningStream());
-						elf64_loader->SetDebugErrorStream(logger.DebugErrorStream());
+						typedef unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> Loader;
+						Loader* elf64_loader = new Loader(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
+
 						unsigned int prc_num;
 						for(prc_num = 0; prc_num < NUM_PROCESSORS; ++prc_num)
 						{

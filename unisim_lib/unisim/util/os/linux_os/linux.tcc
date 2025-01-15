@@ -1,32 +1,33 @@
 /*
- *  Copyright (c) 2011 Commissariat a l'Energie Atomique (CEA) All rights
- *  reserved.
+ *  Copyright (c) 2011,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are met:
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice,
- *   this list of conditions and the following disclaimer.
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *   endorse or promote products derived from this software without specific
- *   prior written permission.
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- *  ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
@@ -41,8 +42,6 @@
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/blob/blob.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/util/loader/elf_loader/elf32_loader.hh>
-#include <unisim/util/loader/elf_loader/elf64_loader.hh>
 
 #if !defined(linux) && !defined(__linux) && !defined(__linux__) && !defined(__APPLE_CC__) && !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 #error "Unsupported host machine for Linux system call translation !"
@@ -82,7 +81,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(std::ostream& _debug_info_stream,
 	: is_load_(false)
 	, target_system(0)
 	, endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
-	, load_files_()
+	, file_blob(0)
 	, entry_point_(0)
 	, load_addr_set_(false)
 	, load_addr_(0)
@@ -96,22 +95,17 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(std::ostream& _debug_info_stream,
 	, stack_base_(0)
 	, memory_page_size_(0)
 	, brk_point_(0)
-	, argc_(0)
 	, argv_()
 	, envc_(0)
 	, envp_()
 	, apply_host_environnement_(false)
 	, target_envp_()
 	, utsname()
-	, blob_(NULL)
+	, load_blob(NULL)
 	, regs_if_(regs_if)
 	, mem_if_(mem_if)
 	, mem_inject_if_(mem_inject_if)
 	, verbose_(false)
-	, parse_dwarf_(false)
-	, debug_dwarf_(false)
-	, dwarf_to_html_output_directory_()
-	, dwarf_to_xml_output_filename_()
 	, debug_info_stream(_debug_info_stream)
 	, debug_warning_stream(_debug_info_stream)
 	, debug_error_stream(_debug_info_stream)
@@ -136,68 +130,15 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(std::ostream& _debug_info_stream,
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
 {
-	typename std::map<std::string, unisim::util::blob::Blob<ADDRESS_TYPE> const *>::const_iterator it;
-	for(it = load_files_.begin(); it != load_files_.end(); it++)
-	{
-		const unisim::util::blob::Blob<ADDRESS_TYPE> *blob = (*it).second;
-		blob->Release();
-	}
-	
-	load_files_.clear();
-	
-	if(blob_)
-	{
-		blob_->Release();
-		blob_ = 0;
-	}
-	
-	if(stdin_pipe_fd != -1) close(stdin_pipe_fd);
-	
-	if(stdout_pipe_fd != -1) close(stdout_pipe_fd);
-	
-	if(stderr_pipe_fd != -1) close(stderr_pipe_fd);
-}
+	if (file_blob) file_blob->Release();
 
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetVerbose(bool verbose) {
-  verbose_ = verbose;
-}
+	if (load_blob) load_blob->Release();
 
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetParseDWARF(bool parse_dwarf) {
-  parse_dwarf_ = parse_dwarf;
-}
+	if (stdin_pipe_fd != -1) close(stdin_pipe_fd);
 
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetDebugDWARF(bool debug_dwarf) {
-  debug_dwarf_ = debug_dwarf;
-}
+	if (stdout_pipe_fd != -1) close(stdout_pipe_fd);
 
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetDWARFToHTMLOutputDirectory(const char *dwarf_to_html_output_directory)
-{
-	dwarf_to_html_output_directory_ = dwarf_to_html_output_directory;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetDWARFToXMLOutputFilename(const char *dwarf_to_xml_output_filename)
-{
-	dwarf_to_xml_output_filename_ = dwarf_to_xml_output_filename;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetCommandLine(std::vector<std::string> const &cmd)
-{
-  argc_ = cmd.size();
-  argv_ = cmd;
-
-  return true;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-std::vector<std::string> Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetCommandLine()
-{
-  return argv_;
+	if (stderr_pipe_fd != -1) close(stderr_pipe_fd);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -228,56 +169,14 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetApplyHostEnvironment()
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(char const * const filename)
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetFileBlob(unisim::util::blob::Blob<ADDRESS_TYPE> const* _blob)
 {
-  // NOTE: for the moment we only support one file to load, if this
-  // method is called more than once it will return false.
-  if (load_files_.size() != 0) return false;
+  if (    _blob)     _blob->Catch();
 
-  // check that filename points to something
-  if (filename == NULL) {
-    debug_warning_stream << "calling AddLoadFile "
-        << "without handling file." << std::endl;
-    return false;
-  }
-  
-  // check that the file exists and that the elf loader can create a blob from it
-  
-  typename unisim::util::loader::elf_loader::StdElf<ADDRESS_TYPE,PARAMETER_TYPE>::Loader loader;
-  
-  loader.SetDebugInfoStream(debug_info_stream);
-  loader.SetDebugWarningStream(debug_warning_stream);
-  loader.SetDebugErrorStream(debug_error_stream);
-  loader.SetRegistersInterface(/* prc_num */ 0, regs_if_);
-  loader.SetMemoryInterface(/* prc_num */ 0, mem_if_);
-  loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose_);
-  loader.SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
-  loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf_);
-  loader.SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf_);
-  loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory_.c_str());
-  loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename_.c_str());
+  if (file_blob) file_blob->Release();
 
-  if (!loader.Load()) {
-    debug_error_stream << "Could not load the given file " << "\"" << filename << "\"" << std::endl;
-    return false;
-  }
-
-  unisim::util::blob::Blob<ADDRESS_TYPE> const * const blob = loader.GetBlob();
-  
-  if (blob == NULL) {
-    debug_error_stream << "Could not create blob from" << " requested file (" << filename << ")." << std::endl;
-    return false;
-  }
-
-  blob->Catch();
-  
-  std::string filename_str(filename);
-  
-  if(load_files_.find(filename_str) != load_files_.end())
-    load_files_[filename_str]->Release();
-  load_files_[filename_str] = blob;
-  
-  return true;
+  file_blob = _blob;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -345,18 +244,18 @@ unisim::service::interfaces::Register*
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname ) const
 {
   if (not regname) return 0;
-  
+
   if (not regs_if_) {
     debug_error_stream << "No register interface is available" << std::endl;
     return 0;
   }
-  
+
   unisim::service::interfaces::Register* reg = regs_if_->GetRegister(regname);
   if (not reg) {
     debug_error_stream << "Can't access register " << regname << std::endl;
     return 0;
   }
-  
+
   return reg;
 }
 
@@ -365,7 +264,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadTargetMemory( ADDRESS_TYPE addr, P
 {
   if (not this->mem_if_->ReadMemory(addr, (uint8_t *)&value, sizeof(PARAMETER_TYPE)))
     return false;
-  
+
   value = Target2Host(this->GetEndianness(), value);
   return true;
 }
@@ -374,7 +273,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMemory( ADDRESS_TYPE addr, PARAMETER_TYPE value ) const
 {
   value = Host2Target(this->GetEndianness(), value);
-  
+
   return this->WriteMemory(addr, (uint8_t const*)&value, sizeof(PARAMETER_TYPE));
 }
 
@@ -382,7 +281,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMemory( ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size ) const
 {
   if (this->mem_inject_if_ == NULL) return false;
-       
+
   if (unlikely(this->verbose_))
     {
       this->debug_info_stream
@@ -390,12 +289,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMemory( ADDRESS_TYPE addr, uint8_
         << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
         << "\tsize = " << size << std::endl
         << "\tdata =0x" << std::hex;
-                       
+
       for (unsigned int i = 0; i < size; i++)
         {
           this->debug_info_stream << " " << (unsigned int)buffer[i];
         }
-               
+
       this->debug_info_stream << std::dec << std::endl;
     }
   return this->mem_inject_if_->InjectWriteMemory(addr, buffer, size);
@@ -406,7 +305,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, PARAMET
 {
   if (not ReadMemory(addr, (uint8_t *)&value, sizeof(PARAMETER_TYPE), inject))
     return false;
-  
+
   value = Target2Host(this->GetEndianness(), value);
   return true;
 }
@@ -420,7 +319,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, uint8_t
       this->debug_warning_stream << "LinuxOS has no memory connection." << std::endl;
       return false;
     }
-  
+
   if ((    inject and not this->mem_inject_if_->InjectReadMemory(addr, buffer, size)) or
       (not inject and not              this->mem_if_->ReadMemory(addr, buffer, size)))
     {
@@ -432,10 +331,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, uint8_t
             << "\tsize = " << size
             << std::endl;
         }
-      
+
       return false;
     }
-  
+
   if (unlikely(this->verbose_))
     {
       this->debug_info_stream
@@ -443,15 +342,15 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, uint8_t
         << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
         << "\tsize = " << size << std::endl
         << "\tdata =0x" << std::hex;
-        
+
       for (unsigned int i = 0; i < size; i++)
         {
           this->debug_info_stream << " " << (unsigned int)buffer[i];
         }
-                       
+
       this->debug_info_stream << std::dec << std::endl;
     }
-      
+
   return true;
 }
 
@@ -475,9 +374,9 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadString( ADDRESS_TYPE addr, std::st
         }
       if (buffer == '\0') break;
     }
-  
+
   str.resize( len, '*' );
-  
+
   return ReadMemory(addr, (uint8_t*)&str[0], len, inject);
 }
 
@@ -493,7 +392,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetTargetRegister( char const* regname
         }
         debug_error_stream << "Bad register size for " << regname << std::endl;
     }
-  
+
   return false;
 }
 
@@ -518,7 +417,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetTargetRegister( char const* regname
         }
       debug_error_stream << "Bad register size for " << regname << std::endl;
     }
-  
+
   return false;
 }
 
@@ -530,7 +429,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ClearTargetRegister( char const* regna
       reg->Clear();
       return true;
     }
-  
+
   return false;
 }
 
@@ -543,56 +442,52 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	else
 		target_envp_ = envp_;
 
-	// create the root blob that will be used to store the image that will be
-	// loaded
-	unisim::util::blob::Blob<ADDRESS_TYPE>* blob =
-	new unisim::util::blob::Blob<ADDRESS_TYPE>();
+	// compute the different structure addresses from the file blob
+        if (not ComputeStructuralAddresses())
+	{
+		debug_error_stream << "Could not compute structural addresses." << std::endl;
+		return false;
+	}
+
+	// create the working memory blob
+	unisim::util::blob::Blob<ADDRESS_TYPE>* blob = new unisim::util::blob::Blob<ADDRESS_TYPE>();
 	blob->Catch();
 	
-	// load and add files to the blob
-	if(verbose_)
+	// load file blob to the memory blob
+	if (verbose_)
 	{
-          debug_info_stream << "Loading elf files." << std::endl;
+          debug_info_stream << "Loading elf file." << std::endl;
 	}
-	if(!LoadFiles(blob))
+	if (not CopyFileBlob(blob))
 	{
-		debug_error_stream
-			<< "Could not load elf files." << std::endl;
+		debug_error_stream << "Could not load elf file." << std::endl;
 		blob->Release();
 		return false;
 	}
 
-	// create the stack footprint and add it to the blob
+	// Create the stack footprint and add it to the blob
 	uint64_t stack_size = 0;
-	if(verbose_)
+	if (verbose_)
 	{
-		debug_info_stream
-			<< "Creating the Linux software stack." << std::endl;
+		debug_info_stream << "Creating the Linux software stack." << std::endl;
 	}
-	if (!CreateStack(blob, stack_size))
+	if (not CreateStack(blob, stack_size))
 	{
-		// TODO
-		// Remove non finished state (i.e., unfinished blob, reset values, ...)
-		debug_error_stream
-			<< "Could not create the Linux software stack." << std::endl;
+		// TODO: Remove non finished state (i.e., unfinished blob, reset values, ...)
+		debug_error_stream << "Could not create the Linux software stack." << std::endl;
 		blob->Release();
 		return false;
 	}
 
-	// finish the state of the memory image depending on the system we are running
-	// on
-	if(verbose_)
+	// Perform architecture-dependant setup
+	if (verbose_)
 	{
-		debug_info_stream
-			<< "Setting the system blob." << std::endl;
+		debug_info_stream << "Setting the system blob." << std::endl;
 	}
-        // Add target dependant Segments
 	if (not target_system->SetSystemBlob(blob))
 	{
-		// TODO: Remove non finished state (i.e., unfinished
-		//       blob, reset values, ...)
-		debug_error_stream
-			<< "Could not set the system blob." << std::endl;
+		// TODO: Remove non finished state (i.e., unfinished blob, reset values, ...)
+		debug_error_stream << "Could not set the system blob." << std::endl;
 		blob->Release();
 		return false;
 	}
@@ -601,13 +496,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	ADDRESS_TYPE top_addr = stack_base_ + stack_size - 1;
 	if (verbose_)
 	{
-		debug_info_stream << "=== top_addr = 0x" << std::hex << top_addr << std::dec
-		<< std::endl;
+		debug_info_stream << "=== top_addr = 0x" << std::hex << top_addr << std::dec << std::endl;
 	}
 
 	brk_point_ = top_addr +	(memory_page_size_ - (top_addr % memory_page_size_));
 
-	if(verbose_)
+	if (verbose_)
 	{
 		debug_info_stream
 			<< "=== stack_size_ = 0x" << std::hex << stack_size << " (" << std::dec << stack_size << ")" << std::endl
@@ -616,8 +510,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 			<< std::dec << memory_page_size_ << ")" << std::endl;
 	}
 
-	if (blob_) blob_->Release();
-	blob_ = blob;
+	if (load_blob) load_blob->Release();
+	load_blob = blob;
 	is_load_ = true;
 
 	if(!stdin_pipe_filename.empty())
@@ -677,7 +571,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::IsLoad() {
-  return blob_ != NULL;
+  return load_blob != NULL;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -689,31 +583,28 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget()
       return false;
     }
 
-  if (blob_ == NULL)
+  if (load_blob == NULL)
     {
       debug_error_stream << "The linux system was not loaded." << std::endl;
       return false;
     }
-  
-  typedef unisim::util::blob::Segment<ADDRESS_TYPE> Segment;
-  typedef std::vector<const Segment*> SegmentVector;
-  typedef typename SegmentVector::const_iterator SegmentVectorIterator;
-  
-  SegmentVector segments = blob_->GetSegments();
-  for (SegmentVectorIterator it = segments.begin(); (it != segments.end()); it++)
+
+  for (auto segment : load_blob->GetSegments())
     {
-      if ((*it)->GetType() != Segment::TY_LOADABLE) continue;
-      
-      uint8_t const * data = (uint8_t const *)(*it)->GetData();
+      if (segment->GetType() != segment->TY_LOADABLE)
+        continue;
+
+      uint8_t const * data = (uint8_t const *)segment->GetData();
       ADDRESS_TYPE start, end;
-      (*it)->GetAddrRange(start, end);
-      
-      if(verbose_) {
+      segment->GetAddrRange(start, end);
+
+      if (verbose_)
+        {
         debug_info_stream << "--> writing memory segment start = 0x"
                 << std::hex << start << " end = 0x" << end << std::dec
                 << std::endl;
       }
-      
+
       if (not mem_if_->WriteMemory(start, data, end - start + 1))
         {
           debug_error_stream << "Error while writing the segments into the target memory." << std::endl;
@@ -728,7 +619,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LogSystemCall(int id)
 {
   int translated_id = id;
-  
+
   SysCall* sc = target_system->GetSystemCall( translated_id );
 
   debug_info_stream << "Syscall(id=" << std::dec << translated_id;
@@ -743,7 +634,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LogSystemCall(int id)
     }
   else
     debug_error_stream << "unknown";
-  
+
   debug_error_stream << std::endl;
 }
 
@@ -773,7 +664,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemCallStatus(int64_t ret, bool 
 {
   if (unlikely(verbose_))
     debug_info_stream << (error ? "err" : "ret") << " = 0x" << std::hex << ret << std::dec << std::endl;
-  
+
   target_system->SetSystemCallStatus(ret, error);
 }
 
@@ -789,18 +680,18 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& termin
         << std::endl;
       return;
     }
-  
+
   int translated_id = id;
-  
+
   SysCall* sc = target_system->GetSystemCall( translated_id );
-  
+
   if (not sc) {
     debug_error_stream << "Unknown syscall(id = " << translated_id << ", untranslated id = " << id << ")" << std::endl;
     // FIXME: shouldn't we end the simulation (terminated = true) ?
     target_system->SetSystemCallStatus(-LINUX_ENOSYS, true);
     return;
   }
-  
+
   if (unlikely(verbose_))
     {
       debug_info_stream
@@ -808,7 +699,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& termin
         << "id = " << translated_id << ", " << "unstranslated id = " << id << ")"
         << std::endl;
     }
-  
+
   try {
     sc->Execute( *this, translated_id );
   } catch (LSCExit const scx) {
@@ -819,79 +710,64 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& termin
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles( unisim::util::blob::Blob<ADDRESS_TYPE> *blob )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CopyFileBlob( unisim::util::blob::Blob<ADDRESS_TYPE>* blob ) const
 {
-  // Get the main executable blob
-  // NOTE: current implementation of the linux os library only supports one
-  // blob, the main executable blob
-  unisim::util::blob::Blob<ADDRESS_TYPE> const * const main_blob =
-      GetMainBlob();
+  if (file_blob == NULL) return false;
 
-  if (main_blob == NULL) return false;
-
-  if (main_blob->GetCapability() & unisim::util::blob::CAP_FILE_FORMAT) {
-    blob->SetFileFormat(main_blob->GetFileFormat());
+  if (file_blob->GetCapability() & unisim::util::blob::CAP_FILE_FORMAT) {
+    blob->SetFileFormat(file_blob->GetFileFormat());
   }
-  if(main_blob->GetCapability() & unisim::util::blob::CAP_FILENAME) {
-    blob->SetFilename(main_blob->GetFilename());
+  if(file_blob->GetCapability() & unisim::util::blob::CAP_FILENAME) {
+    blob->SetFilename(file_blob->GetFilename());
   }
-  if(main_blob->GetCapability() & unisim::util::blob::CAP_ENTRY_POINT) {
-    blob->SetEntryPoint(main_blob->GetEntryPoint());
+  if(file_blob->GetCapability() & unisim::util::blob::CAP_ENTRY_POINT) {
+    blob->SetEntryPoint(file_blob->GetEntryPoint());
   }
-  if(main_blob->GetCapability() & unisim::util::blob::CAP_ARCHITECTURE) {
-    blob->SetArchitecture(main_blob->GetArchitecture());
+  if(file_blob->GetCapability() & unisim::util::blob::CAP_ARCHITECTURE) {
+    blob->SetArchitecture(file_blob->GetArchitecture());
   }
-  if(main_blob->GetCapability() & unisim::util::blob::CAP_STACK_BASE) {
-    blob->SetStackBase(main_blob->GetStackBase());
+  if(file_blob->GetCapability() & unisim::util::blob::CAP_STACK_BASE) {
+    blob->SetStackBase(file_blob->GetStackBase());
   }
-  if(main_blob->GetCapability() & unisim::util::blob::CAP_ENDIAN) {
-    blob->SetEndian(main_blob->GetEndian());
+  if(file_blob->GetCapability() & unisim::util::blob::CAP_ENDIAN) {
+    blob->SetEndian(file_blob->GetEndian());
   }
-  if(main_blob->GetCapability() & unisim::util::blob::CAP_FILE_ENDIAN) {
-    blob->SetFileEndian(main_blob->GetFileEndian());
+  if(file_blob->GetCapability() & unisim::util::blob::CAP_FILE_ENDIAN) {
+    blob->SetFileEndian(file_blob->GetFileEndian());
   }
-  if(main_blob->GetCapability() & unisim::util::blob::CAP_ADDRESS_SIZE) {
-    blob->SetAddressSize(main_blob->GetAddressSize());
+  if(file_blob->GetCapability() & unisim::util::blob::CAP_ADDRESS_SIZE) {
+    blob->SetAddressSize(file_blob->GetAddressSize());
   }
-  if(main_blob->GetCapability() & unisim::util::blob::CAP_ELF_PHOFF) {
-    blob->SetELF_PHOFF(main_blob->GetELF_PHOFF());
+  if(file_blob->GetCapability() & unisim::util::blob::CAP_ELF_PHOFF) {
+    blob->SetELF_PHOFF(file_blob->GetELF_PHOFF());
   }
-  if(main_blob->GetCapability() & unisim::util::blob::CAP_ELF_PHENT) {
-    blob->SetELF_PHENT(main_blob->GetELF_PHENT());
+  if(file_blob->GetCapability() & unisim::util::blob::CAP_ELF_PHENT) {
+    blob->SetELF_PHENT(file_blob->GetELF_PHENT());
   }
 
-  // compute the different structure addresses from the given blob
-  if (!ComputeStructuralAddresses(*main_blob))
-    return false;
+  // Copy loadable segments
+  for (auto segment : file_blob->GetSegments())
+    {
+      if (segment->GetType() == segment->TY_LOADABLE)
+        blob->AddSegment(segment);
+    }
 
-  if (!FillBlobWithFileBlob(*main_blob, blob))
-    return false;
+  // Copy all the sections
+  for (auto section : file_blob->GetSections())
+    {
+      blob->AddSection(section);
+    }
 
   return true;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-unisim::util::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
-    PARAMETER_TYPE>:: GetMainBlob() const {
-  /* NOTE only one file is supported, so we just get the first one if any */
-  typename std::map<std::string,
-      unisim::util::blob::Blob<ADDRESS_TYPE> const *>::const_iterator
-      it = load_files_.begin();
-  if (it == load_files_.end()) return NULL;
-  else return it->second;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ComputeStructuralAddresses(
-    unisim::util::blob::Blob<ADDRESS_TYPE> const &blob) {
-  int loaded_segments = 0;
-  typedef unisim::util::blob::Segment<ADDRESS_TYPE> Segment;
-  typedef std::vector<const Segment *> SegmentVector;
-  typedef typename SegmentVector::const_iterator SegmentVectorIterator;
-  const SegmentVector &segments = blob.GetSegments();
+bool
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ComputeStructuralAddresses()
+{
 
   // Reset application structure addresses
-  entry_point_ = blob.GetEntryPoint();
+  entry_point_ = file_blob->GetEntryPoint();
   load_addr_ = ~((ADDRESS_TYPE)0);
   start_code_ = ~((ADDRESS_TYPE)0);
   end_code_ = 0;
@@ -900,33 +776,35 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ComputeStructuralAddresses(
   elf_stack_ = ~((ADDRESS_TYPE)0);
   elf_brk_ = 0;
   num_segments_ = 0;
+  auto const& segments = file_blob->GetSegments();
 
-  for (SegmentVectorIterator it = segments.begin(); it != segments.end(); it++) {
-    typename unisim::util::blob::Segment<ADDRESS_TYPE>::Type type =
-        (*it)->GetType();
-    // ignore the segment if it is not a loadable
-    if (type != unisim::util::blob::Segment<ADDRESS_TYPE>::TY_LOADABLE)
+  int loaded_segments = 0;
+  for (auto segment : segments)
+    {
+      // Ignore the segment if it is not loadable
+      if (segment->GetType() != segment->TY_LOADABLE)
       continue;
 
     loaded_segments++;
 
-    ADDRESS_TYPE segment_addr = (*it)->GetAddr();
-    ADDRESS_TYPE segment_end_addr = segment_addr + (*it)->GetSize();
-    if (load_addr_ > segment_addr) {
-      // TODO
-      // WARNING
-      // We are not considering the offset in the elf file. It would be better
-      // to set load_addr = segment_addr - segment_offset
+    ADDRESS_TYPE segment_addr = segment->GetAddr();
+    ADDRESS_TYPE segment_end_addr = segment_addr + segment->GetSize();
+    if (load_addr_ > segment_addr)
+      {
+      // TODO: WARNING: We are not considering the offset in the elf
+      // file. It would be better to set load_addr = segment_addr -
+      // segment_offset
       load_addr_ = segment_addr;
     }
     if (segment_addr < start_code_)
       start_code_ = segment_addr;
     if (start_data_ < segment_addr)
       start_data_ = segment_addr;
-    if ((*it)->GetAttr() & Segment::SA_X) {
-      if (end_code_ < segment_end_addr)
-        end_code_ = segment_end_addr;
-    }
+    if (segment->GetAttr() & segment->SA_X)
+      {
+        if (end_code_ < segment_end_addr)
+          end_code_ = segment_end_addr;
+      }
     if (end_data_ < segment_end_addr)
       end_data_ = segment_end_addr;
     if (segment_end_addr > elf_brk_)
@@ -935,39 +813,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ComputeStructuralAddresses(
 
   if (loaded_segments == 0) return false;
   num_segments_ = segments.size();
-  return true;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FillBlobWithFileBlob(
-    unisim::util::blob::Blob<ADDRESS_TYPE> const &file_blob,
-    unisim::util::blob::Blob<ADDRESS_TYPE> *blob) {
-  typedef unisim::util::blob::Segment<ADDRESS_TYPE> Segment;
-  typedef std::vector<const Segment*> SegmentVector;
-  typedef typename SegmentVector::const_iterator SegmentVectorIterator;
-  typedef unisim::util::blob::Section<ADDRESS_TYPE> Section;
-  typedef std::vector<const Section*> SectionVector;
-  typedef typename SectionVector::const_iterator SectionVectorIterator;
-  const SegmentVector &file_segments = file_blob.GetSegments();
-  const SectionVector &file_sections = file_blob.GetSections();
-
-  // copy only segments that have data to be loaded
-  for (SegmentVectorIterator it = file_segments.begin();
-       it != file_segments.end(); it++) {
-    typename unisim::util::blob::Segment<ADDRESS_TYPE>::Type type =
-        (*it)->GetType();
-    // ignore the segment if it is not a loadable
-    if (type != unisim::util::blob::Segment<ADDRESS_TYPE>::TY_LOADABLE)
-      continue;
-
-    blob->AddSegment((*it));
-  }
-
-  // copy all the sections
-  for (SectionVectorIterator it = file_sections.begin();
-       it != file_sections.end(); it++) {
-    blob->AddSection((*it));
-  }
   return true;
 }
 
@@ -987,16 +832,16 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(unisim::util::blob::Blob<A
     return false;
   }
   // make sure argv has been defined, at least for the application to execute
-  if ((argc_ == 0) || (argv_.size() == 0)) {
-    debug_error_stream
-        << "argc and/or size(argv) is/are 0." << std::endl;
-    return false;
-  }
-  
+  if (argv_.size() == 0)
+    {
+      debug_error_stream << "argc and/or size(argv) is/are 0." << std::endl;
+      return false;
+    }
+
   ADDRESS_TYPE aux_table_size = 0;
   SetAuxTable(0, aux_table_size);
   aux_table_size = -aux_table_size;
-  
+
   int pass;
   stack_size = 0;
   Section* env_section = 0;
@@ -1013,9 +858,9 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(unisim::util::blob::Blob<A
   {
     // Create the stack
     ADDRESS_TYPE sp = (pass == 2) ? stack_size : 0;
-    
+
     stack_data = (pass == 2) ? (uint8_t *) calloc(stack_size, 1) : 0;
-    
+
     // Fill the stack
     ADDRESS_TYPE cur_length;
     // - copy envp
@@ -1115,7 +960,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(unisim::util::blob::Blob<A
                       envp_top - envp_bottom,
                       envp_section_data);
     }
-    
+
     ADDRESS_TYPE argvp_top = sp;
     ADDRESS_TYPE argvp_value = 0;
     sp -= sizeof(argvp_value);
@@ -1140,7 +985,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(unisim::util::blob::Blob<A
     }
     // and finally we put argc into the stack
     ADDRESS_TYPE argc_top = sp;
-    ADDRESS_TYPE argc_value = Host2Target(endianness_, ADDRESS_TYPE(argc_));
+    ADDRESS_TYPE argc_value = Host2Target(endianness_, ADDRESS_TYPE(argv_.size()));
     sp -= sizeof(argc_value);
     if(pass == 2) memcpy(stack_data + sp, &argc_value, sizeof(argc_value));
     ADDRESS_TYPE argc_bottom = sp;
@@ -1162,10 +1007,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(unisim::util::blob::Blob<A
                       0, 0, stack_base_ + sp,
                       0, NULL);
     }
-    
+
     if(pass == 1) stack_size = -sp;
   }
-  
+
   // create a segment for the stack
   Segment* stack_segment =
       new Segment(Segment::TY_LOADABLE, Segment::SA_RW,
@@ -1185,14 +1030,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(unisim::util::blob::Blob<A
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
-    uint8_t* stack_data, ADDRESS_TYPE &sp) const {
-
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(uint8_t* stack_data, ADDRESS_TYPE &sp) const
+{
   ADDRESS_TYPE aux_table_symbol;
   ADDRESS_TYPE aux_table_value;
-  unisim::util::blob::Blob<ADDRESS_TYPE> const * const main_blob =
-      GetMainBlob();
-
   aux_table_symbol = AT_NULL;
   aux_table_value = 0;
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
@@ -1204,8 +1045,8 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
    * (see previous warning).
    * The elf library should provide information on the size of the elf header.
    */
-  
-  aux_table_value = load_addr_ + main_blob->GetELF_PHOFF(); // start address of ELF program headers
+
+  aux_table_value = load_addr_ + file_blob->GetELF_PHOFF(); // start address of ELF program headers
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_PHENT;
@@ -1214,11 +1055,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
    * The elf library should provide information on the size of the program
    * header.
    */
-  aux_table_value = main_blob->GetELF_PHENT(); // size of the program header
+  aux_table_value = file_blob->GetELF_PHENT(); // size of the program header
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_PHNUM;
-  aux_table_value = main_blob->GetELF_PHNUM(); // Number of program headers
+  aux_table_value = file_blob->GetELF_PHNUM(); // Number of program headers
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_PAGESZ;
@@ -1271,9 +1112,9 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   aux_table_value = (ADDRESS_TYPE)getegid();
 #endif
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
-  
+
   if (target_system->GetAT_HWCAP( aux_table_value ))
-    
+
   {
     aux_table_symbol = AT_HWCAP;
     sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);

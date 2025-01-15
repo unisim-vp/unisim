@@ -31,7 +31,7 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
 #ifndef __UNISIM_UTIL_LOADER_ELF_LOADER_ELF32_LOADER_HH__
 #define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF32_LOADER_HH__
 
@@ -48,14 +48,14 @@ template <class MEMORY_ADDR = uint32_t>
 class Elf32Loader : public ElfLoaderImpl<MEMORY_ADDR, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>
 {
 public:
-	Elf32Loader(const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
+	Elf32Loader(std::ostream& debug_info_stream,
+	            std::ostream& debug_warning_stream,
+	            std::ostream& debug_error_stream,
+	            const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0)
+	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>(debug_info_stream, debug_warning_stream, debug_error_stream, blob)
+	{
+	}
 };
-
-template <class MEMORY_ADDR>
-Elf32Loader<MEMORY_ADDR>::Elf32Loader(const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
-	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>(_blob)
-{
-}
 
 template <class ADDRESS_TYPE>
 struct StdElf<ADDRESS_TYPE,uint32_t>

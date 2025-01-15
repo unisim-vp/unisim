@@ -99,7 +99,7 @@ namespace concrete {
         {
           branch::Processor bp( root, insn_addr, insn_length );
           bop->execute( &bp );
-          op->stat.branch.update( bp.has_branch, bp.nia );
+          op->stat.branch.update( bp.has_branch, bp.nia, 0 );
           end = bp.path->close();
         }
 

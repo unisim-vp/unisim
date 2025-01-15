@@ -35,6 +35,7 @@
 #include <linuxsystem.hh>
 #include <unisim/util/os/linux_os/linux.tcc>
 #include <unisim/util/os/linux_os/calls.tcc>
+#include <unisim/util/loader/elf_loader/elf64_loader.hh>
 #include <iomanip>
 #include <sys/utsname.h>
 
@@ -301,12 +302,18 @@ LinuxOS::SetEnvironment( std::vector<std::string> const& envs )
 bool
 LinuxOS::Process( std::vector<std::string> const& simargs )
 {
-  if (not linux_impl.SetCommandLine(simargs))
-    return false;
+  linux_impl.SetCommandLine(simargs);
 
-  // Set the binary that will be simulated in the target simulator
-  if (not linux_impl.AddLoadFile( simargs[0].c_str() ))
-    return false;
+  // Load the binary that will be simulated in the target simulator
+  {
+    typedef typename unisim::util::loader::elf_loader::StdElf<addr_t,addr_t>::Loader Loader;
+    Loader loader(linux_impl.DebugInfoStream(), linux_impl.DebugWarningStream(), linux_impl.DebugErrorStream());
+    loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, linux_impl.verbose_);
+    loader.SetFileName(std::string(simargs[0]));
+    if (not loader.Load())
+      throw 0;
+    linux_impl.SetFileBlob(loader.GetBlob());
+  }
 
   linux_impl.SetStackBase( 0x40000000UL );
 
