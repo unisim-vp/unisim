@@ -765,7 +765,7 @@ class Scanner:
         self.sourcename = filename
         try:
             self.reader = self.read2(open(filename))
-        except FileNotFound:
+        except FileNotFoundError:
             raise Abort('cannot open {!r}'.format(filename))
         self.loc = None
 
