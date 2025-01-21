@@ -1,5 +1,0 @@
-decoder.cc
-decoder.hh
-main.cc
-top_arm32.isa
-top_thumb.isa

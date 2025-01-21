@@ -27,4 +27,3 @@ unisim/service/interfaces/registers
 unisim/util/blob
 unisim/util/endian
 unisim/util/likely
-unisim/util/loader/elf_loader

@@ -1,4 +1,0 @@
-arch.cc
-decode.cc
-decoder.cc
-main.cc

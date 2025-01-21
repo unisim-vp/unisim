@@ -99,7 +99,7 @@ namespace concrete {
         {
           branch::Processor bp( root, insn_addr, insn_length );
           bop->execute( &bp );
-          op->stat.branch.update( bp.has_branch, bp.nia, 0 );
+          op->stat.branch.update( bp.has_branch, bp.nia, op->stat.branch.NoHint );
           end = bp.path->close();
         }
 
@@ -152,7 +152,7 @@ namespace concrete {
             DebugBranch(-1);
           }
         else
-          this->bblock = (op->stat.branch.has_branch());
+          this->bblock = (op->stat.branch.has_jump());
       }
     while (this->nia != until and --count != 0);
   }

@@ -42,28 +42,30 @@ namespace cfg {
 namespace intro {
 
 void
-BranchInfo::update( bool branch, bool known, uint64_t naddress, unsigned _arch_type )
+BranchInfo::update( bool jump, bool known, uint64_t naddress, hint_t _hint )
 {
-  if (not branch)
-    { pass = true; }
-  else if (not known)
+  if (not jump)
     {
-      if (target == Direct)
-        { throw *this; }
-      target = Indirect;
+      pass = true;
+      return;
     }
-  else if (target == BNone)
+  hint = _hint;
+  if (not known)
     {
-      target = Direct;
+      if (mode == Direct)
+        { throw *this; }
+      mode = Indirect;
+    }
+  else if (mode == NoJump)
+    {
+      mode = Direct;
       address = naddress;
     }
-  else if (target != Direct or address != naddress)
+  else if (mode != Direct or address != naddress)
     { throw *this; }
-  arch_type = _arch_type;
 }
 
 } /* end of namespace intro */
 } /* end of namespace cfg */
 } /* end of namespace util */
 } /* end of namespace unisim */
-

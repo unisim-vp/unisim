@@ -29,15 +29,17 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard <gilles.mouchard@cea.fr>
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #ifndef __UNISIM_UTIL_CFG_INTRO_HH__
 #define __UNISIM_UTIL_CFG_INTRO_HH__
 
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/floating_point/floating_point.hh>
 #include <unisim/util/endian/endian.hh>
-#include <inttypes.h>
+#include <unisim/service/interfaces/instruction_collecting.hh>
+#include <cstdint>
 
 namespace unisim {
 namespace util {
@@ -83,7 +85,7 @@ namespace intro {
     this_type operator + ( this_type const& other ) const { return this_type( value + other.value, determined and other.determined ); }
     this_type operator - ( this_type const& other ) const { return this_type( value - other.value, determined and other.determined ); }
     this_type operator * ( this_type const& other ) const { return this_type( value * other.value, determined and other.determined ); }
-    this_type operator / ( this_type const& other ) const { return this_type( value / other.value, determined and other.determined ); }
+    this_type operator / ( this_type const& other ) const { return (determined and other.determined) ? this_type( value / other.value ) : this_type(); }
     this_type operator % ( this_type const& other ) const { return this_type( value % other.value, determined and other.determined ); }
     this_type operator ^ ( this_type const& other ) const { return this_type( value ^ other.value, determined and other.determined ); }
     this_type operator & ( this_type const& other ) const { return this_type( value & other.value, determined and other.determined ); }
@@ -112,12 +114,28 @@ namespace intro {
   template <typename T, class F>
   XValue<T> XApply( F const& f, XValue<T> const& v ) { return XValue<T>( f(v.value), v.determined ); }
 
-  template <typename T> XValue<T> Minimum( XValue<T> const& l, XValue<T> const& r ) { return XApply( std::min<T>, l, r ); }
-  template <typename T> XValue<T> Maximum( XValue<T> const& l, XValue<T> const& r ) { return XApply( std::max<T>, l, r ); }
+  template <typename I> XValue<I> Minimum( XValue<I> const& l, XValue<I> const& r ) { return XApply( std::min<I>, l, r ); }
+  template <typename I> XValue<I> Maximum( XValue<I> const& l, XValue<I> const& r ) { return XApply( std::max<I>, l, r ); }
 
-  template <typename UTP> UTP ByteSwap( UTP const& v ) { return UTP( unisim::util::endian::ByteSwap( v.value ), v.determined ); }
-  template <typename UTP> UTP BitScanReverse( UTP const& v ) { return UTP( unisim::util::arithmetic::BitScanReverse( v.value ), v.determined ); }
-  template <typename UTP> UTP BitScanForward( UTP const& v ) { return UTP( unisim::util::arithmetic::BitScanForward( v.value ), v.determined ); }
+  template <typename U> U ByteSwap( U const& v ) { return U( unisim::util::endian::ByteSwap( v.value ), v.determined ); }
+  template <typename U> U BitScanReverse(U const& u) { return U(unisim::util::arithmetic::BitScanReverse(u.value), u.determined); }
+  template <typename U> U BitScanForward(U const& u) { return U(unisim::util::arithmetic::BitScanForward(u.value), u.determined); }
+  template <typename U> U PopCount(U const& u) { return U(unisim::util::arithmetic::PopCount(u.value), u.determined ); }
+
+  template <typename F> XValue<F> FAbs(XValue<F> const& f) { return XApply(unisim::util::floating_point::_FAbs<F>, f); }
+  template <typename F> XValue<F> Zeroes(XValue<F> const& f) { return XApply(unisim::util::floating_point::_Zeroes<F>, f); }
+  template <typename F> XValue<F> ClearSignaling(XValue<F> const& f) { return XApply(unisim::util::floating_point::_ClearSignaling<F>, f); }
+  // template <typename F> XValue<F> FAbs(XValue<F> const& f) { return F(unisim::util::floating_point::_FAbs<F>(f.value), f.determined); }
+  // template <typename F> F FAbs(F const& f) { return F(unisim::util::floating_point::_FAbs<typename F::value_type>(f.value), f.determined); }
+  template <typename F> F FMin( F const& l, F const& r ) { return XApply( std::min<typename F::value_type>, l, r ); }
+  template <typename F> F FMax( F const& l, F const& r ) { return XApply( std::max<typename F::value_type>, l, r ); }
+  template <typename F> F FMinNumber( F const& l, F const& r ) { return XApply( unisim::util::floating_point::_FMinNumber<typename F::value_type>, l, r ); }
+  template <typename F> F FMaxNumber( F const& l, F const& r ) { return XApply( unisim::util::floating_point::_FMaxNumber<typename F::value_type>, l, r ); }
+  template <typename F> XValue<bool> IsZero(F const& f) { return XValue<bool>(unisim::util::floating_point::_IsZero( f.value ), f.determined); }
+  template <typename F> XValue<bool> IsNaN(F const& f) { return XValue<bool>(unisim::util::floating_point::_IsNaN( f.value ), f.determined); }
+  template <typename F> XValue<bool> IsInf(F const& f) { return XValue<bool>(unisim::util::floating_point::_IsInf( f.value ), f.determined); }
+  template <typename F> XValue<bool> IsSignaling(F const& f) { return XValue<bool>(unisim::util::floating_point::_IsSignaling( f.value ), f.determined); }
+  template <typename F> XValue<bool> IsDenormal(F const& f) { return XValue<bool>(unisim::util::floating_point::_IsDenormal( f.value ), f.determined); }
 
   template <typename UTP, typename STP>
   UTP RotateRight( UTP const& v, STP const& _s ) { XValue<uint8_t> s(_s); return UTP( unisim::util::arithmetic::RotateRight( v.value, s.value ), v.determined and s.determined ); }
@@ -132,20 +150,52 @@ namespace intro {
 
   struct BranchInfo
   {
-    enum { BNone = 0, Direct, Indirect, NA };
+    enum mode_t { NoJump = 0, Direct, Indirect, NA };
+    enum hint_t { NoHint = 0, Call, Return };
 
-    BranchInfo() : address(), target(NA), pass(false) {}
-    template <class X> void update( bool branch, X const& x, unsigned arch_type ) { update( branch, x.determined, x.value, arch_type ); }
-    bool startupdate() { if (target == NA) { target = BNone; return true; } return false; }
-    void update( bool branch, bool known, uint64_t target, unsigned _arch_type );
-    bool has_branch() const { return target != BNone; }
-    bool is_indirect() const { return target == Indirect; }
+    BranchInfo() : address(), mode(NA), pass(false), hint(NoHint) {}
+    template <class X> void update( bool branch, X const& x, hint_t _hint ) { update( branch, x.determined, x.value, _hint ); }
+    bool startupdate() { if (mode == NA) { mode = NoJump; return true; } return false; }
+    void update( bool branch, bool known, uint64_t target, hint_t _hint );
+    bool has_jump() const { return mode != NoJump; }
+    bool is_indirect() const { return mode == Indirect; }
+    template <class OP, typename ADDR>
+    void Collect(OP const* op, ADDR insn_addr, ADDR next_addr, unisim::service::interfaces::InstructionCollecting<ADDR>* icif) const;
 
     uint64_t address;
-    unsigned target : 2;
+    unsigned mode : 2;
     unsigned pass : 1;
-    unsigned arch_type : 5;
+    unsigned hint : 2;
   };
+
+  template <class OP, typename ADDR>
+  void BranchInfo::Collect(OP const* op, ADDR insn_addr, ADDR next_addr, unisim::service::interfaces::InstructionCollecting<ADDR>* icif) const
+  {
+    unisim::service::interfaces::InstructionInfo<ADDR> insn_info;
+    uint32_t encoding = op->GetEncoding();
+    uint32_t bytes = OP::decoder_type::little_endian ? unisim::util::endian::LittleEndian2Host(encoding) : unisim::util::endian::BigEndian2Host(encoding);
+    unsigned insn_size = op->GetLength() / 8;
+    insn_info.addr = insn_addr;
+    insn_info.size = insn_size;
+    insn_info.opcode = (uint8_t const*)&bytes;
+    insn_info.fallthrough = insn_addr + insn_size;
+    insn_info.target = next_addr;
+    insn_info.mode = this->is_indirect() ? insn_info.INDIRECT : insn_info.DIRECT;
+    if (this->has_jump())
+      {
+        switch (this->hint)
+          {
+          default:                 insn_info.type = this->pass ? insn_info.BRANCH : insn_info.JUMP; break;
+          case BranchInfo::Call:   insn_info.type = insn_info.CALL; break;
+          case BranchInfo::Return: insn_info.type = insn_info.RETURN; break;
+          }
+        if (not this->is_indirect())
+          insn_info.target = this->address;
+      }
+    else
+      insn_info.type = insn_info.STANDARD;
+    icif->CollectInstruction(insn_info);
+  }
 
 } /* end of namespace intro */
 } /* end of namespace cfg */

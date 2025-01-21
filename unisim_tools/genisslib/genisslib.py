@@ -414,7 +414,7 @@ class Isa:
         self.namespace = ()            #< Encapsulating namespace of the iss
         self.tparams = []              #< Template parameters of the iss
         self.variables = {}            #< Global variables used by the iss
-        self.bases = {}                #< Inherited classes for base Operation 
+        self.bases = {}                #< Inherited classes for base Operation
         self.actionprotos = {}         #< Action prototypes of operations
         self.opmap = {}                #< Defined instructions
         self.operations = []           #< Defined instructions
@@ -1562,7 +1562,9 @@ class Generator:
         self.op_match( product, "_code" )
         product.code( " and GetAddr() == _addr; }\n" )
 
-        product.write( " enum { " + f'minsize = {min(self.source.insnsizes)}, maxsize = {max(self.source.insnsizes)}' + " };\n",  )
+        product.write( " typedef Decoder" )
+        product.template_abbrev( self.source.tparams )
+        product.write( " decoder_type;\n" )
 
         for variable in self.source.variables.values():
             product.code(" ").usercode( variable.c_type ).code( f" {variable.name};\n" )
@@ -1671,14 +1673,13 @@ class Generator:
 
     def decoder_decl(self, product):
         product.template_signature( self.source.tparams )
-        product.code( "class Operation;\n" )
+        product.code( "struct Operation;\n" )
 
         if self.source.withcache:
             product.code( "const unsigned int NUM_OPERATIONS_PER_PAGE = 4096;\n" )
             product.template_signature( self.source.tparams )
-            product.code( "class DecodeMapPage\n" )
+            product.code( "struct DecodeMapPage\n" )
             product.code( "{\n" )
-            product.code( "public:\n" )
             product.code( " DecodeMapPage(%s key);\n", self.source.addrtype )
             product.code( " ~DecodeMapPage();\n" )
             product.code( " %s key;\n", self.source.addrtype )
@@ -1689,9 +1690,8 @@ class Generator:
             product.code( "};\n\n" )
 
         product.template_signature( self.source.tparams )
-        product.code( "class DecodeTableEntry\n" )
+        product.code( "struct DecodeTableEntry\n" )
         product.code( "{\n" )
-        product.code( "public:\n" )
         product.code( " DecodeTableEntry(%s opcode, %s opcode_mask, Operation", self.codetype_constref(), self.codetype_constref() )
         product.template_abbrev( self.source.tparams )
         product.code( " *(*decode)(%s, %s));\n", self.codetype_constref(), self.source.addrtype )
@@ -1706,15 +1706,18 @@ class Generator:
             product.code( "const unsigned int NUM_DECODE_HASH_TABLE_ENTRIES = 4096;\n" )
 
         product.template_signature( self.source.tparams )
-        product.code( "class Decoder\n" )
+        product.code( "struct Decoder\n" )
         product.code( "{\n" )
-        product.code( "public:\n" )
         product.code( " typedef Operation" )
         product.template_abbrev( self.source.tparams )
         product.code( " operation_type;\n" )
         product.code( " typedef %s address_type;\n", self.source.addrtype )
         product.code( " typedef CodeType code_type;\n" )
-        product.code( " enum { alignment = %u };\n\n", self.source.gcd() )
+        product.write( ' enum { ' )
+        product.write( f'little_endian = {int(self.source.little_endian)}, alignment = {self.source.gcd()}' )
+        product.write( f', minsize = {min(self.source.insnsizes)}, maxsize = {max(self.source.insnsizes)}' )
+        product.write( ' };\n',  )
+
         product.code( " Decoder();\n" )
         product.code( " virtual ~Decoder();\n" )
         product.code( "\n" )
@@ -2030,11 +2033,10 @@ class Generator:
     def isa_operations_decl(self, product):
         for op in self.source.operations:
             product.template_signature( self.source.tparams )
-            product.code( "class %s : public Operation", op.cname )
+            product.code( "struct %s : public Operation", op.cname )
             product.template_abbrev( self.source.tparams )
             product.code( "\n" )
             product.code( "{\n" )
-            product.code( "public:\n" )
             product.code( " %s(%s code, %s addr);\n", op.cname, self.codetype_constref(), self.source.addrtype )
             self.insn_destructor_decl( product, op )
             self.insn_getlen_decl( product, op )

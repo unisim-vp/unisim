@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021,
+ *  Copyright (c) 2025,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,58 +32,37 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_OPCACHE_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_OPCACHE_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CFG_AARCH64_AARCH64_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CFG_AARCH64_AARCH64_HH__
+
+#include <unisim/component/cxx/processor/arm/isa/arm64/arm64.hh>
+#include <unisim/util/cfg/intro/intro.hh>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
-namespace opcache {
+namespace arm {
+namespace cfg {
+namespace aarch64 {
 
-struct BaseConfig
+void ComputeBranchInfo(unisim::util::cfg::intro::BranchInfo& branch, uint64_t insn_addr, uint32_t insn, unsigned insn_length);
+
+template <class Insn>
+void ComputeBranchInfo(Insn* op)
 {
-  static unsigned const DECODE_HASH_TABLE_ENTRIES = 4096;
-  static unsigned const OPERATIONS_PER_PAGE = 4096;
-  struct DECODE_EXCEPTION {};
-};
+  if (not op->branch.startupdate())
+    return; // Already computed
 
-template <typename DECODER, typename CONFIG = BaseConfig>
-struct OpCache : public DECODER
-{
-  OpCache() : mru_page( 0 ), decode_hash_table() {}
-  ~OpCache() { InvalidateDecodingCache(); }
+  return ComputeBranchInfo(op->branch, op->GetAddr(), op->GetEncoding(), op->GetLength());
+}
 
-  typedef typename DECODER::operation_type operation_type;
-  typedef typename DECODER::address_type   address_type;
-  typedef typename DECODER::code_type      code_type;
-  enum { alignment = DECODER::alignment % 8 ? 1 : DECODER::alignment / 8 };
-
-  struct DecodeMapPage
-  {
-    DecodeMapPage(address_type _key) : key(_key), next(0), operation() {}
-    ~DecodeMapPage() { for (unsigned idx = CONFIG::OPERATIONS_PER_PAGE; idx-- > 0; ) delete operation[idx]; }
-
-    address_type    key;
-    DecodeMapPage*  next;
-    operation_type* operation[CONFIG::OPERATIONS_PER_PAGE];
-  };
-
-  template <typename EXCEPTION = typename CONFIG::DECODE_EXCEPTION> operation_type* Decode(address_type addr, code_type insn);
-  operation_type* Retrieve(address_type addr, code_type insn) const;
-  void InvalidateDecodingCacheEntry(address_type addr);
-  void InvalidateDecodingCache();
-  DecodeMapPage* FindPage(address_type page_key);
-  DecodeMapPage* FindPage(address_type page_key) const;
-
-  DecodeMapPage* mru_page;
-  DecodeMapPage* decode_hash_table[CONFIG::DECODE_HASH_TABLE_ENTRIES];
-};
-
-} // end of opcache
+} // end of namespace aarch64
+} // end of namespace cfg
+} // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CFG_AARCH64_AARCH64_HH__

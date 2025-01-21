@@ -14,4 +14,5 @@ unisim/service/interfaces/register
 unisim/service/interfaces/registers
 unisim/util/endian
 unisim/util/likely
+unisim/util/loader/elf_loader
 unisim/util/os/linux_os

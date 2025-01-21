@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2023,
+ *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -335,16 +335,7 @@ struct Scanner
   U64 GetPC() { return current_insn_addr; }
   U64 GetNPC() { return next_insn_addr; }
 
-  void BranchTo( U64 addr, branch_type_t branch_type ) { BranchTo(true, addr, branch_type, B_DIRECT); }
-  void BranchTo( U64 addr, branch_type_t branch_type, branch_mode_t branch_mode ) { BranchTo(true, addr, branch_type, branch_mode); }
-  void BranchTo( bool predicate, U64 addr, branch_type_t branch_type ) { BranchTo( predicate, addr, branch_type, B_DIRECT); }
-  void BranchTo( bool predicate, U64 addr, branch_type_t branch_type, branch_mode_t branch_mode )
-  {
-    if(predicate)
-    {
-      dont("branch");
-    }
-  }
+  void BranchTo(U64 addr, branch_type_t) { dont("branch"); }
   bool concretize( Expr cexp );
 
   template <typename T>

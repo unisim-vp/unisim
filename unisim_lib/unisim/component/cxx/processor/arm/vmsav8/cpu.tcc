@@ -43,6 +43,7 @@
 #include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/component/cxx/processor/arm/cfg/aarch64/aarch64.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/util/debug/simple_register.hh>
@@ -112,7 +113,6 @@ CPU<CPU_IMPL>::CPU(const char *name, Object *parent)
   , fpsr()
   , current_insn_addr()
   , next_insn_addr()
-  , instr_info()
   , TPIDRURW()
   , ipb()
   , requires_memory_access_reporting(false)
@@ -525,31 +525,10 @@ CPU<CPU_IMPL>::StepInstruction()
 
 template <class CPU_IMPL>
 void
-CPU<CPU_IMPL>::CollectBranch(uint64_t target, uint64_t fallthrough, branch_type_t branch_type, branch_mode_t branch_mode)
-{
-  switch(branch_type)
-  {
-    case B_JMP : instr_info.type = unisim::service::interfaces::InstructionInfoBase::JUMP;   break;
-    case B_COND: instr_info.type = unisim::service::interfaces::InstructionInfoBase::BRANCH; break;
-    case B_CALL: instr_info.type = unisim::service::interfaces::InstructionInfoBase::CALL;   break;
-    case B_RET : instr_info.type = unisim::service::interfaces::InstructionInfoBase::RETURN; break;
-    default: return; // ignore
-  }
-  instr_info.target = target;
-  instr_info.fallthrough = fallthrough;
-  instr_info.mode = (branch_mode == B_DIRECT) ? unisim::service::interfaces::InstructionInfoBase::DIRECT : unisim::service::interfaces::InstructionInfoBase::INDIRECT;
-}
-
-template <class CPU_IMPL>
-void
 CPU<CPU_IMPL>::CollectInstruction(Operation *op)
 {
-  uint32_t opcode_word = unisim::util::endian::LittleEndian2Host(op->GetEncoding());
-  instr_info.size = op->GetLength() / 8;
-  instr_info.opcode = (const uint8_t *) &opcode_word;
-  instr_info.addr = this->current_insn_addr;
-  instruction_collecting_import->CollectInstruction(instr_info);
-  instr_info.type = unisim::service::interfaces::InstructionInfoBase::STANDARD;
+  unisim::component::cxx::processor::arm::cfg::aarch64::ComputeBranchInfo(op);
+  op->branch.Collect(op, this->current_insn_addr, this->next_insn_addr, instruction_collecting_import.operator->());
 }
 
 template <class CPU_IMPL>

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015-2024,
+ *  Copyright (c) 2015,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -57,8 +57,7 @@ struct CPU
   //================ General Configuration and Constants ===============
 
   /// Control Transfer Type enumeration
-  enum branch_type_t { B_JMP = 0, B_COND, B_CALL, B_RET, B_EXC, B_ERET, B_DBG };
-  enum branch_mode_t { B_DIRECT = 0, B_INDIRECT };
+  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_ERET, B_DBG };
 
   /// Advanced SIMD layout
   struct VUConfig

@@ -23,6 +23,7 @@ unisim/service/interfaces/symbol_table_lookup
 unisim/service/interfaces/trap_reporting
 unisim/util/arithmetic
 unisim/util/backtrace
+unisim/util/cfg/intro
 unisim/util/endian
 unisim/util/likely
 unisim/util/os/linux_os

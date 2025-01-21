@@ -77,7 +77,7 @@ ArmProcessor::Step( Decoder& decoder )
 {
   typedef typename Decoder::operation_type Operation;
   typedef typename Decoder::code_type      CodeType;
-  bool const is_thumb = Operation::minsize == 16;
+  bool const is_thumb = Operation::decoder_type::minsize == 16;
 
   // Instruction boundary next_insn_addr becomes current_insn_addr
   uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
@@ -89,7 +89,7 @@ ArmProcessor::Step( Decoder& decoder )
   Operation* op = decoder.Decode(insn_addr, insn);
   SetCurrent(op);
 
-  unisim::component::cxx::processor::arm::cfg::aarch32::ComputeBranchInfo(op);
+  unisim::component::cxx::processor::arm::cfg::aarch32::ComputeBranchInfo(op, this->itcond());
 
   // Monitor
   if (this->disasm)
@@ -118,7 +118,7 @@ ArmProcessor::Step( Decoder& decoder )
       DebugBranch(-1);
     }
   else
-    this->bblock = (op->branch.has_branch());
+    this->bblock = (op->branch.has_jump());
 }
 
 template <typename Insn>

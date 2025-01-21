@@ -47,10 +47,6 @@ namespace floating_point {
 template <typename INTEGER, typename FLOAT> static INTEGER _ToInt( FLOAT a, uint_fast8_t rmode, bool exact );
 template <typename FLOAT> static FLOAT _DefaultNaN();
 template <typename FLOAT> static FLOAT _FMulAdd( FLOAT a, FLOAT b, FLOAT c );
-template <typename FLOAT> static FLOAT _FMin( FLOAT a, FLOAT b );
-template <typename FLOAT> static FLOAT _FMinNumber( FLOAT a, FLOAT b );
-template <typename FLOAT> static FLOAT _FMax( FLOAT a, FLOAT b );
-template <typename FLOAT> static FLOAT _FMaxNumber( FLOAT a, FLOAT b );
 
 } // end of namespace floating_point
 } // end of namespace util
@@ -353,44 +349,6 @@ static FLOAT _FMulAdd( FLOAT a, FLOAT b, FLOAT c )
 {
 	// Note: on x86_64 host, selecting x86-64-v3 (-march=x86-64-v3) is sufficient for enabling fused multiply-add
 	return (a * b) + c;
-}
-
-template <typename FLOAT>
-static FLOAT _FMin( FLOAT a, FLOAT b )
-{
-	return (IsZero(a) && IsZero(b)) ? (IsNeg(a) ? a : b) : ((a < b) ? a : b);
-}
-
-template <typename FLOAT>
-static FLOAT _FMinNumber( FLOAT a, FLOAT b )
-{
-	fexcept_t excepts;
-	fegetexceptflag( &excepts, FE_ALL_EXCEPT );
-	FLOAT res = IsNaN( a ) ? ( IsNaN( b ) ? a : b)
-	                        : (IsNaN( b ) ? a
-	                                      : ( ( IsZero( a ) && IsZero( b ) ) ? ( IsNeg( a ) ? a : b )
-	                                                                         : ((a < b) ? a : b) ) );
-	fesetexceptflag( &excepts, FE_ALL_EXCEPT );
-	return res;
-}
-
-template <typename FLOAT>
-static FLOAT _FMax( FLOAT a, FLOAT b )
-{
-	return (IsZero(a) && IsZero(b)) ? (IsNeg(a) ? b : a) : ((a < b) ? b : a);
-}
-
-template <typename FLOAT>
-static FLOAT _FMaxNumber( FLOAT a, FLOAT b )
-{
-	fexcept_t excepts;
-	fegetexceptflag( &excepts, FE_ALL_EXCEPT );
-	FLOAT res = IsNaN( a ) ? ( IsNaN( b ) ? a : b)
-	                        : (IsNaN( b ) ? a
-	                                      : ( ( IsZero( a ) && IsZero( b ) ) ? ( IsNeg( a ) ? b : a )
-	                                                                         : ((a < b) ? b : a) ) );
-	fesetexceptflag( &excepts, FE_ALL_EXCEPT );
-	return res;
 }
 
 } // end of namespace floating_point

@@ -64,6 +64,8 @@ using unisim::util::arithmetic::PopCount;
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
 }
 
+base {ARCH::OpStat} = {};
+
 action {void} execute({ARCH &} {cpu}) const {
   cpu.UndefinedInstruction(this);
 }

@@ -173,7 +173,7 @@ struct FloatingPointStatusAndControl
 {
 	// Floating-point context save/restore
 	typedef unisim::util::floating_point::Context<FloatingPointStatusAndControl<FLOAT> > Context;
-  
+
 	// Status and control
 	static void defaultNaN( bool flag );                     // setter
 	static bool defaultNaN();                                // getter
@@ -204,6 +204,10 @@ template <typename FLOAT> FLOAT _FAbs( FLOAT a );
 template <typename FLOAT> FLOAT _FNeg( FLOAT a );
 template <typename FLOAT> FLOAT _ClearSignaling( FLOAT a );
 template <typename FLOAT> FLOAT _Zeroes( FLOAT a );
+template <typename FLOAT> FLOAT _FMin( FLOAT a, FLOAT b );
+template <typename FLOAT> FLOAT _FMinNumber( FLOAT a, FLOAT b );
+template <typename FLOAT> FLOAT _FMax( FLOAT a, FLOAT b );
+template <typename FLOAT> FLOAT _FMaxNumber( FLOAT a, FLOAT b );
 
 } // end of namespace floating_point
 } // end of namespace util
@@ -219,7 +223,7 @@ struct FloatingPointStatusAndControl
 {
 	// Floating-point context save/restore
 	typedef unisim::util::floating_point::Context<FloatingPointStatusAndControl<FLOAT> > Context;
-  
+
 	static void defaultNaN( bool dn );                       // setter
 	static bool defaultNaN();                                // getter
 	static void detectTininess( uint_fast8_t dt );           // setter
@@ -674,6 +678,44 @@ FLOAT _Zeroes( FLOAT a )
 	typename FloatingPointTypeInfo<FLOAT>::packed_type packed = FloatingPointTypeInfo<FLOAT>::ToPacked( a );
 	packed &= FloatingPointTypeInfo<FLOAT>::sign_mask;
 	return FloatingPointTypeInfo<FLOAT>::FromPacked( packed );
+}
+
+template <typename FLOAT>
+FLOAT _FMin( FLOAT a, FLOAT b )
+{
+	return (IsZero(a) && IsZero(b)) ? (IsNeg(a) ? a : b) : ((a < b) ? a : b);
+}
+
+template <typename FLOAT>
+FLOAT _FMinNumber( FLOAT a, FLOAT b )
+{
+	fexcept_t excepts;
+	fegetexceptflag( &excepts, FE_ALL_EXCEPT );
+	FLOAT res = IsNaN( a ) ? ( IsNaN( b ) ? a : b)
+	                        : (IsNaN( b ) ? a
+	                                      : ( ( IsZero( a ) && IsZero( b ) ) ? ( IsNeg( a ) ? a : b )
+	                                                                         : ((a < b) ? a : b) ) );
+	fesetexceptflag( &excepts, FE_ALL_EXCEPT );
+	return res;
+}
+
+template <typename FLOAT>
+FLOAT _FMax( FLOAT a, FLOAT b )
+{
+	return (IsZero(a) && IsZero(b)) ? (IsNeg(a) ? b : a) : ((a < b) ? b : a);
+}
+
+template <typename FLOAT>
+FLOAT _FMaxNumber( FLOAT a, FLOAT b )
+{
+	fexcept_t excepts;
+	fegetexceptflag( &excepts, FE_ALL_EXCEPT );
+	FLOAT res = IsNaN( a ) ? ( IsNaN( b ) ? a : b)
+	                        : (IsNaN( b ) ? a
+	                                      : ( ( IsZero( a ) && IsZero( b ) ) ? ( IsNeg( a ) ? b : a )
+	                                                                         : ((a < b) ? b : a) ) );
+	fesetexceptflag( &excepts, FE_ALL_EXCEPT );
+	return res;
 }
 
 } // end of namespace floating_point

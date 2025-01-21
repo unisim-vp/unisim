@@ -210,6 +210,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
       profiler->data_object_lookup_import       >> *debugger->data_object_lookup_export[3];
       profiler->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[3];
    }
+
    if (cfg_builder)
      {
        // CFG builder <-> debugger connections

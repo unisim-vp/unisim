@@ -274,9 +274,8 @@ void ComputeBranchInfo(unisim::util::cfg::intro::BranchInfo& branch, Instruction
   for (bool end = false; not end;)
     {
       Core ab( root, insn_addr, insn_length/8, insn.thumb );
-      using unisim::component::cxx::processor::arm::CheckCondition;
       insn.execute( ab );
-      branch.update( ab.has_branch, ab.next_insn_addr, unsigned(ab.branch_type) );
+      branch.update( ab.has_branch, ab.next_insn_addr, ab.branch_type == ab.B_CALL ? branch.Call : ab.branch_type == ab.B_RET ? branch.Return : branch.NoHint );
       end = ab.path->close();
     }
 }
@@ -284,21 +283,22 @@ void ComputeBranchInfo(unisim::util::cfg::intro::BranchInfo& branch, Instruction
 template <class T> std::unique_ptr<T> mkuniq(T* obj) { return std::unique_ptr<T>(obj); }
 
 template <>
-void BranchAnalyzer<true>::GetInfo(unisim::util::cfg::intro::BranchInfo& branch, uint32_t insn_addr, uint32_t insn, unsigned insn_length)
+void BranchAnalyzer<true>::GetInfo(unisim::util::cfg::intro::BranchInfo& branch, uint32_t insn_addr, uint32_t insn, unsigned insn_length, uint8_t it_cond)
 {
   typedef unisim::component::cxx::processor::arm::isa::thumb::Decoder<Core> Decoder;
   struct Instruction
   {
     enum { thumb = true };
     std::unique_ptr<typename Decoder::operation_type> op;
-    void execute(Core& ab) { if (CheckCondition(ab, ab.itcond())) op->execute( ab ); }
+    uint8_t it_cond;
+    void execute(Core& ab) { if (unisim::component::cxx::processor::arm::CheckCondition(ab, it_cond)) op->execute( ab ); }
   };
   static Decoder decoder;
-  ComputeBranchInfo(branch, Instruction{mkuniq(decoder.NCDecode( insn_addr, insn ))}, insn_addr, insn_length);
+  ComputeBranchInfo(branch, Instruction{mkuniq(decoder.NCDecode( insn_addr, insn )), it_cond}, insn_addr, insn_length);
 }
 
 template <>
-void BranchAnalyzer<false>::GetInfo(unisim::util::cfg::intro::BranchInfo& branch, uint32_t insn_addr, uint32_t insn, unsigned insn_length)
+void BranchAnalyzer<false>::GetInfo(unisim::util::cfg::intro::BranchInfo& branch, uint32_t insn_addr, uint32_t insn, unsigned insn_length, uint8_t it_cond)
 {
   typedef unisim::component::cxx::processor::arm::isa::arm32::Decoder<Core> Decoder;
   struct Instruction

@@ -135,6 +135,8 @@ unisim/component/cxx/pci/video/display_32.cc
 unisim/component/cxx/pci/video/display_64.cc
 unisim/component/cxx/processor/arm/cfg/aarch32/aarch32.cc
 unisim/component/cxx/processor/arm/cfg/aarch32/aarch32.hh
+unisim/component/cxx/processor/arm/cfg/aarch64/aarch64.cc
+unisim/component/cxx/processor/arm/cfg/aarch64/aarch64.hh
 unisim/component/cxx/processor/arm/cp15.hh
 unisim/component/cxx/processor/arm/cpu.hh
 unisim/component/cxx/processor/arm/cpu.tcc
