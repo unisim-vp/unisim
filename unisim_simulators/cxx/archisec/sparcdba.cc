@@ -32,7 +32,7 @@
 /*  POSSIBILITY OF SUCH DAMAGE.                                               */
 /******************************************************************************/
 
-#include <sparc/decoder.hh>
+#include <unisim/component/cxx/processor/sparc/dba/arch32/decoder.hh>
 
 #include <vector>
 #include <iostream>
@@ -45,8 +45,7 @@
 
 extern "C" value sparcdba_decode(value vaddr, value vopcode, value vdelayslot) {
   std::stringstream s;
-  sparc::Decoder decoder;
-
+  unisim::component::cxx::processor::sparc::dba::arch32::Decoder decoder;
   decoder.process( s, Int32_val(vaddr),
 		   Int32_val(vopcode), Int32_val(vdelayslot) );
 
