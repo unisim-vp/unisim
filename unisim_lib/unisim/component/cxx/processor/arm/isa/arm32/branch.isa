@@ -89,7 +89,7 @@ bx.disasm = {
 };
 
 bx.execute = {
-  cpu.BranchExchange( cpu.GetGPR(rm), ARCH::B_JMP );
+  cpu.BranchExchange( cpu.GetGPR(rm), (rm == 14) ? ARCH::B_RET : ARCH::B_JMP );
 };
 
 /*

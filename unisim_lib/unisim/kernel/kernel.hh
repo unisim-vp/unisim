@@ -634,6 +634,7 @@ public:
 	operator SERVICE_IF * () const;
 
 	SERVICE_IF *operator -> () const;
+	SERVICE_IF &operator * () const;
 
 	void Bind(ServicePort<SERVICE_IF>& fwd);
 	void Bind(Service<SERVICE_IF>& service);
@@ -709,6 +710,12 @@ template <class SERVICE_IF>
 ServicePort<SERVICE_IF>::operator SERVICE_IF * () const
 {
 	return service;
+}
+
+template <class SERVICE_IF>
+SERVICE_IF &ServicePort<SERVICE_IF>::operator * () const
+{
+	return *service;
 }
 
 template <class SERVICE_IF>

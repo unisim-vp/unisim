@@ -590,7 +590,7 @@ void
 CPU<CPU_IMPL>::CollectInstruction(Operation* op)
 {
   unisim::component::cxx::processor::arm::cfg::aarch32::ComputeBranchInfo(op, this->itcond());
-  op->branch.Collect(op, this->current_insn_addr, this->next_insn_addr, instruction_collecting_import.operator->());
+  op->branch.Collect(op, this->current_insn_addr, this->next_insn_addr, *instruction_collecting_import);
 }
 
 

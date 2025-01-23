@@ -160,7 +160,7 @@ namespace intro {
     bool has_jump() const { return mode != NoJump; }
     bool is_indirect() const { return mode == Indirect; }
     template <class OP, typename ADDR>
-    void Collect(OP const* op, ADDR insn_addr, ADDR next_addr, unisim::service::interfaces::InstructionCollecting<ADDR>* icif) const;
+    void Collect(OP const* op, ADDR insn_addr, ADDR next_addr, unisim::service::interfaces::InstructionCollecting<ADDR>& icif) const;
 
     uint64_t address;
     unsigned mode : 2;
@@ -169,7 +169,7 @@ namespace intro {
   };
 
   template <class OP, typename ADDR>
-  void BranchInfo::Collect(OP const* op, ADDR insn_addr, ADDR next_addr, unisim::service::interfaces::InstructionCollecting<ADDR>* icif) const
+  void BranchInfo::Collect(OP const* op, ADDR insn_addr, ADDR next_addr, unisim::service::interfaces::InstructionCollecting<ADDR>& icif) const
   {
     unisim::service::interfaces::InstructionInfo<ADDR> insn_info;
     uint32_t encoding = op->GetEncoding();
@@ -194,7 +194,7 @@ namespace intro {
       }
     else
       insn_info.type = insn_info.STANDARD;
-    icif->CollectInstruction(insn_info);
+    icif.CollectInstruction(insn_info);
   }
 
 } /* end of namespace intro */

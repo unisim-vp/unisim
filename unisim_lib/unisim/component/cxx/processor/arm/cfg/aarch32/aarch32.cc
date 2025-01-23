@@ -101,7 +101,7 @@ struct Core
   void SetGPR_mem(int idx, U32 val)
   {
     if (idx != 15) return;
-    this->BranchExchange( val, B_JMP );
+    this->BranchExchange( val, B_RET ); /* Most probably (99%?) a return */
   }
 
   void BranchExchange(U32 target, branch_type_t branch_type)
@@ -290,11 +290,11 @@ void BranchAnalyzer<true>::GetInfo(unisim::util::cfg::intro::BranchInfo& branch,
   {
     enum { thumb = true };
     std::unique_ptr<typename Decoder::operation_type> op;
-    uint8_t it_cond;
-    void execute(Core& ab) { if (unisim::component::cxx::processor::arm::CheckCondition(ab, it_cond)) op->execute( ab ); }
+    bool always;
+    void execute(Core& ab) { if (always or ab.concretize()) op->execute( ab ); }
   };
   static Decoder decoder;
-  ComputeBranchInfo(branch, Instruction{mkuniq(decoder.NCDecode( insn_addr, insn )), it_cond}, insn_addr, insn_length);
+  ComputeBranchInfo(branch, Instruction{mkuniq(decoder.NCDecode( insn_addr, insn )), it_cond >= 14}, insn_addr, insn_length);
 }
 
 template <>
