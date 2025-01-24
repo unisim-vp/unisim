@@ -1273,7 +1273,7 @@ struct VMUL    { static char const* n() { return "mul"; } template<typename valt
 struct VDIV    { static char const* n() { return "div"; } template<typename valtype> static valtype eval ( valtype const& src1, valtype const& src2 ) { return src1 / src2; } };
 struct VMIN    { static char const* n() { return "min"; } template<typename valtype> static valtype eval ( valtype const& src1, valtype const& src2 ) { return Minimum(src1, src2); } };
 struct VMAX    { static char const* n() { return "max"; } template<typename valtype> static valtype eval ( valtype const& src1, valtype const& src2 ) { return Maximum(src1, src2); } };
-struct VSIGN    { static char const* n() { return "sign"; } template<typename valtype> static valtype eval ( valtype const& src1, valtype const& src2 ) { return ConditionalMove(src2 < valtype(0), -src1, ConditionalMove(src2 == valtype(0), valtype(0), src1)); } };
+struct VSIGN    { static char const* n() { return "sign"; } template<typename valtype> static valtype eval ( valtype const& src1, valtype const& src2 ) { return ConditionalMove(src2 < valtype(0), valtype(-src1), ConditionalMove(src2 == valtype(0), valtype(0), src1)); } };
 struct VAND    { static char const* n() { return "and"; } template<typename valtype> static valtype eval ( valtype const& src1, valtype const& src2 ) { return src1 & src2; } };
 struct VANDN   { static char const* n() { return "andn"; } template<typename valtype> static valtype eval ( valtype const& src1, valtype const& src2 ) { return ~src1 & src2; } };
 struct VOR     { static char const* n() { return "or"; } template<typename valtype> static valtype eval ( valtype const& src1, valtype const& src2 ) { return src1 | src2; } };
@@ -2051,7 +2051,7 @@ struct PClmulqdq : public Op3V<ARCH,VR>
       u128 y = u128(arch.vmm_read( VR(), rm, 2*idx + ((im>>4)&1), u64() ));
       u128 r = u128(u64(0));
       for (unsigned p = 0; p < 64; ++p)
-	r ^= (~(u128((x >> u64(p)) & u64(1)) - u128(u64(1))) & (y << u128(u64(p))));
+	r ^= (~(u128((x >> p) & u64(1)) - u128(u64(1))) & (y << p));
       arch.vmm_write( VR(), gn, idx, r );
     }
   }
