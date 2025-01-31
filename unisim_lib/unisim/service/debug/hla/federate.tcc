@@ -176,12 +176,6 @@ void Federate<CONFIG>::DebugYield()
 {
 }
 
-// unisim::service::interfaces::DebugYielding
-template <typename CONFIG>
-void Federate<CONFIG>::DebugYield()
-{
-}
-
 // unisim::service::interfaces::DebugEventListener<ADDRESS>
 template <typename CONFIG>
 void Federate<CONFIG>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
