@@ -49,14 +49,14 @@ namespace intel {
   eval_PSZ( ARCH& arch, INT const& res )
   {
     typedef typename ARCH::bit_t bit_t;
+    typedef typename TypeFor<ARCH,atpinfo<ARCH,INT>::bitsize>::s sval_t;
     {
       INT red = res & INT( 0xff );
       for (int shift = 4; shift > 0; shift >>= 1) red ^= (red >> shift);
       arch.flagwrite( ARCH::FLAG::PF, not bit_t( red & INT( 1 ) ) );
     }
 
-    INT const msbmask( INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1) );
-    arch.flagwrite( ARCH::FLAG::SF, bit_t( res & msbmask ) );
+    arch.flagwrite( ARCH::FLAG::SF, bit_t( sval_t( res ) < sval_t( 0 ) ) );
     arch.flagwrite( ARCH::FLAG::ZF, bit_t( res == INT( 0 ) ) );
   }
 
