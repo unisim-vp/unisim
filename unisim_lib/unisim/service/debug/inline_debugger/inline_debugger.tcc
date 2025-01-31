@@ -148,37 +148,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::~InlineDebugger()
 {
-	if(output_stream)
-	{
-		delete output_stream;
-	}
-	
-	if(fetch_insn_event) fetch_insn_event->Release();
-	
-	if(next_insn_event) next_insn_event->Release();
-	
-	if(listening_trap)
-	{
-		if(debug_event_trigger_import)
-		{
-			if(debug_event_trigger_import->Unlisten(trap_event))
-			{
-				listening_trap = false;
-			}
-			else
-			{
-				(*std_output_stream) << "Can't unlisten trap events" << std::endl;
-			}
-		}
-	}
-	
-	if(trap_event) trap_event->Release();
-	
-	if(fetch_stmt_event) fetch_stmt_event->Release();
-	
-	if(next_stmt_event) next_stmt_event->Release();
-	
-	if(finish_event) finish_event->Release();
+	EndOfSimulation();
 }
 
 template<class ADDRESS>
@@ -265,8 +235,43 @@ bool InlineDebugger<ADDRESS>::EndSetup()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::OnDisconnect()
+void InlineDebugger<ADDRESS>::EndOfSimulation()
 {
+	if(output_stream)
+	{
+		delete output_stream;
+	}
+	output_stream = 0;
+	
+	if(fetch_insn_event) fetch_insn_event->Release();
+	fetch_insn_event = 0;
+	
+	if(next_insn_event) next_insn_event->Release();
+	next_insn_event = 0;
+	
+	if(listening_trap)
+	{
+		if(debug_event_trigger_import)
+		{
+			if(!debug_event_trigger_import->Unlisten(trap_event))
+			{
+				(*std_output_stream) << "Can't unlisten trap events" << std::endl;
+			}
+		}
+	}
+	listening_trap = false;
+	
+	if(trap_event) trap_event->Release();
+	trap_event = 0;
+	
+	if(fetch_stmt_event) fetch_stmt_event->Release();
+	fetch_stmt_event = 0;
+	
+	if(next_stmt_event) next_stmt_event->Release();
+	next_stmt_event = 0;
+	
+	if(finish_event) finish_event->Release();
+	finish_event = 0;
 }
 
 template <class ADDRESS>

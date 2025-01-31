@@ -38,6 +38,7 @@
 
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/util/nat_sort/nat_sort.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 #include <iostream>
 #include <string>
 #include <list>
@@ -77,6 +78,7 @@ class SignalHandler;
 class ConfigFileHelper;
 
 std::string string_to_latex(const char *s, unsigned int cut = 0, const char *style = 0);
+std::string string_to_markdown(const char *s);
 
 // Service import/export connection operators
 template <class SERVICE_IF>
@@ -181,7 +183,6 @@ public:
 	
 	virtual VariableBase& operator = (const VariableBase& variable);
 	virtual std::string GetSymbolicValue() const;
-	void GenerateLatexDocumentation(std::ostream& os) const;
 	
 	bool IsMutable() const;
 	bool IsVisible() const;
@@ -197,19 +198,27 @@ public:
 	void NotifyListeners();
 
 private:
+	friend class Object;
+	friend class Simulator;
+	
+	void GenerateLatexDocumentation(std::ostream& os) const;
+	void GenerateMarkdownDocumentation(std::ostream& os) const;
+	
 	std::string name;
 	std::string var_name;
 	Object *owner;
 	VariableBase *container;
 	std::string description;
-	std::vector<std::string> enumerated_values;
+	typedef std::vector<std::string> EnumeratedValues;
+	EnumeratedValues enumerated_values;
 	Type type;
 	Format fmt;
 	bool is_mutable;
 	bool is_visible;
 	bool is_serializable;
 	bool is_modified;
-	std::set<VariableBaseListener*> listener_set;
+	typedef std::set<VariableBaseListener*> ListenerSet;
+	ListenerSet listener_set;
 };
 
 //=============================================================================
@@ -252,6 +261,7 @@ public:
 	virtual ~Simulator();
 	virtual SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
+	void EndOfSimulation();
 
 	const VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID) const;
 	VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
@@ -284,15 +294,8 @@ public:
 	std::string SearchSharedDataFile(const char *filename) const;
 	std::vector<std::string> const& GetCmdArgs() const;
 
-	void GenerateLatexDocumentation(std::ostream& os) const;
-	
-	virtual double GetSimTime()	{ return (0);	}
-	virtual double GetHostTime()	{ return (0);	}
-
-	// ********** The following methods are added by Reda and used by PIMServer *****
-	virtual unsigned long long   GetStructuredAddress(unsigned long long logicalAddress) { return (logicalAddress); }
-	virtual unsigned long long   GetPhysicalAddress(unsigned long long logicalAddress) { return (logicalAddress); }
-	// *******************************************************************************
+	virtual double GetSimTime() const;
+	virtual double GetHostTime() const;
 
 	bool IsWarningEnabled() const;
 
@@ -309,12 +312,15 @@ private:
 	static Simulator *simulator;
 	VariableBase *void_variable;
 	std::string shared_data_dir;
-	std::map<std::string, std::string> set_vars;
-	std::vector<std::string> get_config_filenames;
+	typedef std::map<std::string, std::string> SetVars;
+	SetVars set_vars;
+	typedef std::vector<std::string> GetConfigFilenames;
+	GetConfigFilenames get_config_filenames;
 	std::string default_config_file_format;
 	bool list_parms;
 	bool generate_doc;
 	std::string generate_doc_filename;
+	std::string generate_doc_section;
 	bool enable_warning;
 	bool enable_version;
 	bool enable_help;
@@ -322,6 +328,7 @@ private:
 	bool warn_resolve_bin_path;
 	bool warn_resolve_share_path;
 	bool enable_press_enter_at_exit;
+	bool end_of_simulation;
 	std::string executable_path;
 	std::string bin_dir;
 	std::string program_binary;
@@ -341,6 +348,9 @@ private:
 	variable::Parameter<std::string> *var_schematic;
 	variable::Parameter<bool> *param_enable_press_enter_at_exit;
 	variable::Parameter<std::string> *param_default_config_file_format;
+	
+	void GenerateLatexDocumentation(std::ostream& os) const;
+	void GenerateMarkdownDocumentation(std::ostream& os) const;
 	
 	bool ResolveExecutablePath(const char *argv0, std::string& out_execute_path) const;
 	bool ResolveBinPath(const std::string& executable_path, std::string& out_bin_dir, std::string& out_bin_program) const;
@@ -389,14 +399,20 @@ private:
 	};
 
 	std::string config_file_formats;
-	std::vector<CommandLineOption> command_line_options;
+	typedef std::vector<CommandLineOption> CommandLineOptions;
+	CommandLineOptions command_line_options;
 
-	std::map<std::string, Object *, unisim::util::nat_sort::nat_ltstr> objects;
-	std::map<std::string, ServicePortBase *> srv_ports;
-	std::map<std::string, VariableBase *, unisim::util::nat_sort::nat_ltstr> variables;
-	std::map<std::string, ConfigFileHelper *> config_file_helpers;
+	typedef std::map<std::string, Object *, unisim::util::nat_sort::nat_ltstr> Objects;
+	Objects objects;
+	typedef std::map<std::string, ServicePortBase *> ServicePorts;
+	ServicePorts srv_ports;
+	typedef std::map<std::string, VariableBase *, unisim::util::nat_sort::nat_ltstr> Variables;
+	Variables variables;
+	typedef std::map<std::string, ConfigFileHelper *> ConfigFileHelpers;
+	ConfigFileHelpers config_file_helpers;
 	
-	std::vector<std::string> cmd_args;
+	typedef std::vector<std::string> CmdArgs;
+	CmdArgs cmd_args;
 	variable::ParameterArray<std::string> *param_cmd_args;
 	
 public:
@@ -456,7 +472,7 @@ public:
 	Object(const char *name, Object *parent = 0, const char *description = 0);
 	virtual ~Object();
 
-	virtual void OnDisconnect();
+	virtual void EndOfSimulation();
 	/** Object initial setup routine. The routine is the first
 	 * called, it must not call any import. */
 	virtual bool BeginSetup();
@@ -472,34 +488,41 @@ public:
 	const char *GetObjectName() const;
 	std::string URI() const;
 
+	const std::list<Object *>& GetLeafs() const;
+	void GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID) const;
+	Object *GetParent() const;
+	VariableBase& operator [] (const char *name);
+	VariableBase& operator [] (const std::string& name);
+	Simulator *GetSimulator() const;
+	const char *GetDescription() const;
+	virtual void Stop(int exit_status, bool asynchronous = false);
+	void SetDescription(const char *description);
+	
+private:
+	friend class Simulator;
+	friend class VariableBase;
+	template <class SERVICE_IF> friend class Service;
 	void Add(Object& object);
 	void Remove(Object& object);
 	void Add(VariableBase& var);
 	void Remove(VariableBase& var);
-	const std::list<Object *>& GetLeafs() const;
-	void GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID) const;
-	Object *GetParent() const;
-	void Disconnect();
-	VariableBase& operator [] (const char *name);
-	VariableBase& operator [] (const std::string& name);
-	Simulator *GetSimulator() const;
 	void GenerateLatexDocumentation(std::ostream& os, VariableBase::Type variable_type) const;
-	const char *GetDescription() const;
-	virtual void Stop(int exit_status, bool asynchronous = false);
-	void SetDescription(const char *description);
+	void GenerateMarkdownDocumentation(std::ostream& os, VariableBase::Type variable_type) const;
 	/** Service setup routine. The routine is called after BeginSetup, it
 	 * can call imports (see ServiceImport::RequireSetup) */
 	void AddServiceAgent( ServiceAgent const* srv_agent );
-	void DoServiceSetup();
-	
-private:
+	bool DoServiceSetup();
+
 	std::string object_name;
 	std::string object_base_name;
 	std::string description;
 	Object *parent;
-	std::list<VariableBase *> variables;
-	std::list<Object *> leaf_objects;
-	std::set<ServiceAgent const*> srv_agents;
+	typedef std::list<VariableBase *> Variables;
+	Variables variables;
+	typedef std::list<Object *> LeafObjects;
+	LeafObjects leaf_objects;
+	typedef std::set<ServiceAgent const*> ServiceAgents;
+	ServiceAgents srv_agents;
 	bool killed;
 };
 
@@ -522,10 +545,7 @@ class ServiceAgent
 {
 public:
 	virtual ~ServiceAgent() {}
-	virtual void Setup( Object* ) const = 0;
-	virtual ServiceBase* GetBase( Object* ) const = 0;
-	
-	struct SetupError {};
+	virtual bool Setup( Object* ) const = 0;
 };
 
 class ServiceBase : virtual public Object
@@ -546,8 +566,8 @@ class Service : public ServiceBase, public SERVICE_IF
 {
 public:
 	Service(const char *name, Object *parent = 0, const char *description = 0);
-	virtual void Setup(SERVICE_IF*) {}
-	void RequireSetup() { if (NeedServiceSetup()) { Setup(this); setup_state = SetupComplete; } }
+	virtual bool Setup(SERVICE_IF*) { return true; }
+	bool RequireSetup();
 };
 
 template <class SERVICE_IF>
@@ -557,10 +577,26 @@ Service<SERVICE_IF>::Service(const char *_name, Object *_parent, const char *_de
 {
 	static struct DerivedServiceAgent : public ServiceAgent
 	{
-		void Setup( Object* object ) const override { dynamic_cast<Service<SERVICE_IF>*>(object)->RequireSetup(); }
-		ServiceBase* GetBase( Object* object ) const  override { return dynamic_cast<Service<SERVICE_IF>*>(object); }
+		bool Setup( Object* object ) const override { return dynamic_cast<Service<SERVICE_IF>*>(object)->RequireSetup(); }
 	} agent;
 	this->Object::AddServiceAgent( &agent );
+}
+
+template <class SERVICE_IF>
+bool Service<SERVICE_IF>::RequireSetup()
+{
+	if (NeedServiceSetup())
+	{
+		setup_state = SetupStarted;
+		if(Setup(this))
+		{
+			setup_state = SetupComplete;
+			return true;
+		}
+		std::cerr << "Simulator: " << GetName() << " setup failed" << std::endl << unisim::util::backtrace::BackTrace() << std::endl;
+		return false;
+	} 
+	return true;
 }
 
 //=============================================================================
@@ -638,7 +674,7 @@ public:
 	void Bind(ServicePort<SERVICE_IF>& fwd);
 	void Bind(Service<SERVICE_IF>& service);
 
-	void RequireSetup() const;
+	bool RequireSetup() const;
 
 private:
 	void SpreadServiceBwd(Service<SERVICE_IF>* service);
@@ -725,10 +761,9 @@ SERVICE_IF *ServicePort<SERVICE_IF>::operator -> () const
 }
 
 template <class SERVICE_IF>
-void ServicePort<SERVICE_IF>::RequireSetup() const
+bool ServicePort<SERVICE_IF>::RequireSetup() const
 {
-	if (service)
-		service->RequireSetup();
+	return service && service->RequireSetup();
 }
 
 template <class SERVICE_IF>

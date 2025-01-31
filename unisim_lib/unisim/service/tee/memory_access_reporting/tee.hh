@@ -72,7 +72,7 @@ public:
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
 
-	virtual void Setup(MemoryAccessReporting<ADDRESS>*) override;
+	virtual bool Setup(MemoryAccessReporting<ADDRESS>*) override;
 	virtual bool ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
 			typename MemoryAccessReporting<ADDRESS>::MemoryType mt, 
 			ADDRESS addr, uint32_t size);
@@ -89,7 +89,7 @@ private:
 	
 		ControlSelector(const char *name, Tee* _tee, unsigned int index);
 		
-		virtual void Setup(MemoryAccessReportingControl*) override;
+		virtual bool Setup(MemoryAccessReportingControl*) override;
 		virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType, bool report);
 
 		Tee& tee;

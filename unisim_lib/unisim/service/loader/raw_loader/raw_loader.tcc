@@ -114,19 +114,17 @@ RawLoader<MEMORY_ADDR>::BeginSetup()
 }
 
 template <class MEMORY_ADDR>
-void
+bool
 RawLoader<MEMORY_ADDR>::Setup(Loader*)
 {
-	if(memory_import)
-		memory_import.RequireSetup();
+	return memory_import && memory_import.RequireSetup();
 }
 
 template <class MEMORY_ADDR>
-void
+bool
 RawLoader<MEMORY_ADDR>::Setup(Blob<MEMORY_ADDR>*)
 {
-	if (not SetupBlob())
-		throw unisim::kernel::ServiceAgent::SetupError();
+	return SetupBlob();
 }
 
 template <class MEMORY_ADDR>

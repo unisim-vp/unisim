@@ -56,7 +56,7 @@ bool HostTime::BeginSetup()
 	return true;
 }
 
-double HostTime::GetTime()
+double HostTime::GetTime() const
 {
 	return unisim::util::host_time::GetHostTime();
 }

@@ -64,7 +64,7 @@ public:
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
 
-	void Setup(SymbolTableLookup<ADDRESS>*) override { for(unsigned i = 0; i < MAX_IMPORTS; i++) symbol_table_lookup_import[i]->RequireSetup(); }
+	bool Setup(SymbolTableLookup<ADDRESS>*) override;
 
 	virtual void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner) const;
 	virtual void ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner, typename unisim::util::debug::SymbolBase::Type type) const;

@@ -167,9 +167,9 @@ public:
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
 	bool SetupMemReport();
-	virtual void Setup(DebugYielding*) { SetupMemReport(); }
-	virtual void Setup(TrapReporting*) { SetupMemReport(); }
-	virtual void Setup(DebugEventListener<ADDRESS>*) { SetupMemReport(); }
+	virtual bool Setup(DebugYielding*) { return SetupMemReport(); }
+	virtual bool Setup(TrapReporting*) { return SetupMemReport(); }
+	virtual bool Setup(DebugEventListener<ADDRESS>*) { return SetupMemReport(); }
 	virtual bool EndSetup();
 
 	virtual void Stop(int exit_status);
@@ -181,6 +181,8 @@ public:
 
 	double GetSimTime();
 	double GetHostTime();
+	ADDRESS GetStructuredAddress(ADDRESS logicalAddress);
+	ADDRESS GetPhysicalAddress(ADDRESS logicalAddress);
 
 	inline GDBEndian GetEndian() const { return (endian); }
 

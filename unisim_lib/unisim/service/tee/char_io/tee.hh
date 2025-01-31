@@ -57,7 +57,7 @@ public:
 	Tee(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~Tee();
 
-	virtual void Setup(interfaces::CharIO*) override;
+	virtual bool Setup(interfaces::CharIO*) override;
 
 	virtual void ResetCharIO();
 	virtual bool GetChar(char& c);
@@ -88,10 +88,13 @@ Tee<MAX_IMPORTS>::~Tee()
 }
 
 template <unsigned int MAX_IMPORTS>
-void Tee<MAX_IMPORTS>::Setup(interfaces::CharIO*)
+bool Tee<MAX_IMPORTS>::Setup(interfaces::CharIO*)
 {
 	for(unsigned int i = 0; i < MAX_IMPORTS; i++)
-		char_io_import_n(i).RequireSetup();
+	{
+		if(char_io_import_n(i) && !char_io_import_n(i).RequireSetup()) return false;
+	}
+	return true;
 }
 
 template <unsigned int MAX_IMPORTS>

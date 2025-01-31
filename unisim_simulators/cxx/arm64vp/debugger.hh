@@ -87,7 +87,7 @@ struct Debugger
 
   virtual unisim::util::blob::Blob<uint64_t> const* GetBlob() const override { return blob; }
 
-  DebugHub debug_hub;
+  std::unique_ptr<DebugHub> debug_hub;
   std::unique_ptr<GDBServer> gdb_server;
   std::unique_ptr<InlineDebugger> inline_debugger;
 #if HAVE_NODEJS

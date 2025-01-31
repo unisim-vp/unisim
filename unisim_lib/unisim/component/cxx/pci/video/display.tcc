@@ -147,10 +147,9 @@ bool Display<ADDRESS>::SetupFrameBuffer()
 }
 
 template <class ADDRESS>
-void Display<ADDRESS>::Setup(Memory<ADDRESS>*)
+bool Display<ADDRESS>::Setup(Memory<ADDRESS>*)
 {
-	if (not SetupFrameBuffer())
-		throw unisim::kernel::ServiceAgent::SetupError();
+	return SetupFrameBuffer();
 }
 
 template <class ADDRESS>

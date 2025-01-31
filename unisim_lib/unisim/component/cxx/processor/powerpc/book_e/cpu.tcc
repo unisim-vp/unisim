@@ -597,9 +597,9 @@ bool CPU<TYPES, CONFIG>::CheckFloatingPointLoadStoreAlignment(EFFECTIVE_ADDRESS 
 }
 
 template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::Setup(unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS>*)
+bool CPU<TYPES, CONFIG>::Setup(unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS>*)
 {
-	this->memory_import.RequireSetup();
+	return this->memory_import.RequireSetup();
 }
 
 template <typename TYPES, typename CONFIG>

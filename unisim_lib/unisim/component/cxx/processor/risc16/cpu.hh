@@ -127,8 +127,8 @@ public:
 	//=====================================================================
 
 	virtual bool BeginSetup();
-	void Setup(Memory<uint64_t>*) { memory_import.RequireSetup(); }
-	void Setup(Disassembly<uint64_t>*) { memory_import.RequireSetup(); }
+	bool Setup(Memory<uint64_t>*) { return memory_import.RequireSetup(); }
+	bool Setup(Disassembly<uint64_t>*) { return memory_import.RequireSetup(); }
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();

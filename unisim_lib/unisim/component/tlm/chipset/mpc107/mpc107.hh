@@ -223,7 +223,7 @@ public:
 	/* Initialization methods of the service */
 	virtual void Reset();
 	virtual bool BeginSetup();
-	virtual void Setup(Memory<PHYSICAL_ADDR>*);
+	virtual bool Setup(Memory<PHYSICAL_ADDR>*);
 		
 	/* Methods to implement for Service<MemoryInterface<PHYSICAL_ADDR> > */
 	virtual void ResetMemory();

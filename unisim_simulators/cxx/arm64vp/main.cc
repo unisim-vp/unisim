@@ -310,7 +310,7 @@ struct StreamSpy
     step = _step;
   }
 
-  void Setup(unisim::service::interfaces::CharIO*) override { char_io_import.RequireSetup(); }
+  bool Setup(unisim::service::interfaces::CharIO*) override { return char_io_import.RequireSetup(); }
   
   virtual void ResetCharIO() override { char_io_import->ResetCharIO(); }
   virtual bool GetChar(char& ch) override
@@ -480,11 +480,11 @@ main(int argc, char *argv[])
         if (arch.last_insn(idx).op)
           {
             AArch64::InstructionInfo const& last_insn = arch.last_insn(idx);
-            unisim::util::debug::Statement<uint64_t> const* stmt = dbg->debug_hub.FindStatement(
+            unisim::util::debug::Statement<uint64_t> const* stmt = dbg->debug_hub ? dbg->debug_hub->FindStatement(
               last_insn.addr,
               /* any filename */ 0,
               unisim::service::interfaces::StatementLookup<uint64_t>::SCOPE_EXACT_STMT
-            );
+            ) : 0;
             if (stmt)
               {
                 char const* source_filename = stmt->GetSourceFilename();

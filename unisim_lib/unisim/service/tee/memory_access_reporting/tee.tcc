@@ -75,11 +75,14 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent)
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-void
+bool
 Tee<ADDRESS, MAX_IMPORTS>::Setup(MemoryAccessReporting<ADDRESS>*)
 {
 	for(unsigned i = 0; i < MAX_IMPORTS; i++)
-		out_n(i).RequireSetup();
+	{
+		if(out_n(i) && !out_n(i).RequireSetup()) return false;
+	}
+	return true;
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
@@ -170,11 +173,14 @@ Tee<ADDRESS, MAX_IMPORTS>::ControlSelector::ControlSelector(const char *name, Te
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-void
+bool
 Tee<ADDRESS, MAX_IMPORTS>::ControlSelector::Setup(MemoryAccessReportingControl*)
 {
 	for(unsigned i = 0; i < MAX_IMPORTS; i++)
-		tee.out_control.RequireSetup();
+	{
+		if(tee.out_control && !tee.out_control.RequireSetup()) return false;
+	}
+	return true;
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>

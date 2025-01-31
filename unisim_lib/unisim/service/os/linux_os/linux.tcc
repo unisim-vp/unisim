@@ -357,18 +357,19 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
 
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Setup(unisim::service::interfaces::LinuxOS*)
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Setup(unisim::service::interfaces::LinuxOS*)
 {
-  if (memory_import_)
-    memory_import_.RequireSetup();
-  if (registers_import_)
-    registers_import_.RequireSetup();
+  if (memory_import_ and not memory_import_.RequireSetup())
+    return false;
+  if (registers_import_ and not registers_import_.RequireSetup())
+    return false;
 
   if (!linuxlib_->SetupTarget())
     {
       logger_ << DebugError << "Could not setup the linux system" << EndDebugError;
-      throw unisim::kernel::ServiceAgent::SetupError();
+      return false;
     }
+  return true;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>

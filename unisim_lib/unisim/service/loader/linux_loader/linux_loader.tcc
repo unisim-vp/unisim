@@ -241,7 +241,7 @@ LinuxLoader<T>::BeginSetup()
 }
 
 template<class T>
-void
+bool
 LinuxLoader<T>::Setup(Loader*)
 {
 	/* check that mem and elf_loader are available */
@@ -251,20 +251,21 @@ LinuxLoader<T>::Setup(Loader*)
 				<< __LINE__ << "): "
 				<< "Trying to execute LinuxLoader without a memory service connected."
 				<< EndDebugError;
-		throw unisim::kernel::ServiceAgent::SetupError();
+		return false;
 	}
-	memory_import.RequireSetup();
+	if(!memory_import.RequireSetup()) return false;
 	if(!loader_import) {
 		logger << DebugError << "ERROR(" << __FUNCTION__ << ":"
 				<< __FILE__ << ":"
 				<< __LINE__ << "): "
 				<< "Trying to execute LinuxLoader without an elf_loader service connected."
 				<< EndDebugError;
-		throw unisim::kernel::ServiceAgent::SetupError();
+		return false;
 	}
-        loader_import.RequireSetup();
+	if(!loader_import.RequireSetup()) return false;
 
-	blob_import.RequireSetup();
+	if(!blob_import.RequireSetup()) return false;
+	return true;
 }
 
 template <class T>
@@ -495,18 +496,18 @@ LinuxLoader<T>::DumpBlob(unisim::util::blob::Blob<T> const &b, int indent)
 }
 
 template<class T>
-void
+bool
 LinuxLoader<T>::Setup(Blob<T>*)
 {
-	if(blob) return;
+	if(blob) return true;
 	if(!loader_import)
-		throw unisim::kernel::ServiceAgent::SetupError();
+		return false;
 	if(!blob_import)
-		throw unisim::kernel::ServiceAgent::SetupError();
+		return false;
 	blob_import.RequireSetup();
 	const unisim::util::blob::Blob<T> *loader_blob = blob_import->GetBlob();
 	if(!loader_blob)
-		throw unisim::kernel::ServiceAgent::SetupError();
+		return false;
 
 	DumpBlob(*loader_blob, 0);
 	T entry_point = loader_blob->GetEntryPoint();
@@ -767,6 +768,8 @@ LinuxLoader<T>::Setup(Blob<T>*)
 	blob->Catch();
 	blob->AddBlob(loader_blob);
 	blob->AddBlob(stack_blob);
+	
+	return true;
 }
 
 template<class T>

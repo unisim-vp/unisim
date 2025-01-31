@@ -75,6 +75,16 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
+bool Tee<ADDRESS, MAX_IMPORTS>::Setup(SymbolTableLookup<ADDRESS>*)
+{
+	for(unsigned i = 0; i < MAX_IMPORTS; i++)
+	{
+		if(symbol_table_lookup_import[i] && (*symbol_table_lookup_import[i]) && !symbol_table_lookup_import[i]->RequireSetup()) return false;
+	}
+	return true;
+}
+
+template <class ADDRESS, unsigned int MAX_IMPORTS>
 void Tee<ADDRESS, MAX_IMPORTS>::ScanSymbols(unisim::service::interfaces::SymbolTableScanner<ADDRESS>& scanner) const
 {
 	unsigned int i;

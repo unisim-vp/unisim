@@ -61,7 +61,7 @@ public:
 	virtual ~HostTime();
 
 	virtual bool BeginSetup();
-	virtual double GetTime(); // in seconds
+	virtual double GetTime() const; // in seconds
 };
 
 } // end of namespace host_time

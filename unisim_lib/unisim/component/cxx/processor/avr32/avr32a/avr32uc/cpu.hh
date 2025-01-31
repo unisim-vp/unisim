@@ -368,9 +368,9 @@ public:
 	
 	virtual bool BeginSetup();
 	// virtual void Setup(MemoryAccessReportingControl*) {}
-	virtual void Setup(Disassembly<typename CONFIG::address_t> *) { memory_import.RequireSetup(); }
+	virtual bool Setup(Disassembly<typename CONFIG::address_t> *) { return memory_import.RequireSetup(); }
 	// virtual void Setup(unisim::service::interfaces::Registers*) {}
-	virtual void Setup(Memory<typename CONFIG::address_t> *) { memory_import.RequireSetup(); }
+	virtual bool Setup(Memory<typename CONFIG::address_t> *) { return memory_import.RequireSetup(); }
 	// virtual void Setup(MemoryInjection<typename CONFIG::address_t> *) {}
 	virtual bool EndSetup();
 	virtual void OnDisconnect();

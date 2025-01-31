@@ -231,7 +231,7 @@ public:
 
 	virtual bool BeginSetup();
 	
-	void Setup(Memory<MEMORY_ADDR>*) override { for(unsigned i = 0; i < MAX_MEMORIES; i++) memory_import[i]->RequireSetup(); }
+	bool Setup(Memory<MEMORY_ADDR>*) override;
 
 	virtual void ResetMemory();
 	virtual bool ReadMemory(MEMORY_ADDR addr, void *buffer, uint32_t size);

@@ -87,7 +87,7 @@ class Linux
 
   /* Service methods */
   virtual bool BeginSetup() override;
-  virtual void Setup(unisim::service::interfaces::LinuxOS*) override;
+  virtual bool Setup(unisim::service::interfaces::LinuxOS*) override;
 
   /* Service interface methods */
   virtual void ExecuteSystemCall(int id) override;

@@ -42,6 +42,7 @@ public:
 	virtual void run();
 
 	double GetSimTime();
+	double GetHostTime();
 	bool UpdateTimeRatio();
 	double GetLastTimeRatio();
 

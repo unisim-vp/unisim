@@ -225,7 +225,7 @@ struct CPU
   //=          unisim::service::interfaces::Memory<uint32_t>            =
   //=====================================================================
 
-  virtual void Setup(unisim::service::interfaces::Memory<uint32_t>*) { memory_import.RequireSetup(); }
+  virtual bool Setup(unisim::service::interfaces::Memory<uint32_t>*) { return memory_import.RequireSetup(); }
   virtual bool ReadMemory( uint32_t addr, void* buffer, uint32_t size );
   virtual bool WriteMemory( uint32_t addr, void const* buffer, uint32_t size );
 
@@ -233,7 +233,7 @@ struct CPU
   //=        unisim::service::interfaces::Disassembly<uint32_t>         =
   //=====================================================================
 
-  virtual void Setup(unisim::service::interfaces::Disassembly<uint32_t>*) { memory_import.RequireSetup(); }
+  virtual bool Setup(unisim::service::interfaces::Disassembly<uint32_t>*) { return memory_import.RequireSetup(); }
   virtual std::string Disasm(uint32_t addr, uint32_t& next_addr);
 
   //=====================================================================

@@ -13,7 +13,7 @@
 #include <unisim/service/debug/debugger/debugger.tcc>
 
 Simulator::Simulator(int argc, char **argv)
-	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
+	: unisim::kernel::pim::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, mmc(0)
 	, mpu(0)

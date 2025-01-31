@@ -477,7 +477,7 @@ decl $\rightarrow$ $\epsilon$ \textbar~~op\_decl \textbar~~action\_proto\_decl \
 source\_code\_decl $\rightarrow$ {\bf source\_code}\\
 op\_decl $\rightarrow$ {\bf op} {\bf identifier} {\bf (} bitfield\_list {\bf )}\\
 bitfield\_list $\rightarrow$ bitfield \textbar~ bitfield\_list {\bf :} bitfield\\
-bitfield $\rightarrow$ {\bf integer} {\bf [} {\bf integer} {\bf ]} \textbar~ sext\_modifier size\_modifier {\bf identifier} {\bf [} {\bf integer} {\bf ]} \textbar~ ? {\bf [} {\bf integer}�{\bf ]}\\
+bitfield $\rightarrow$ {\bf integer} {\bf [} {\bf integer} {\bf ]} \textbar~ sext\_modifier size\_modifier {\bf identifier} {\bf [} {\bf integer} {\bf ]} \textbar~ ? {\bf [} {\bf integer} {\bf ]}\\
 sext\_modifier $\rightarrow$ $\epsilon$ \textbar~ {\bf sext}\\
 size\_modifier $\rightarrow$ $\epsilon$ \textbar~ {\bf \textless}~ {\bf integer} {\bf \textgreater}~ \textbar~ {\bf \textless}~ {\bf \textgreater}~\\
 action\_proto\_decl $\rightarrow$ static\_modifier {\bf action} {\bf source\_code} {\bf identifier} {\bf (} params {\bf )} {\bf source\_code}\\

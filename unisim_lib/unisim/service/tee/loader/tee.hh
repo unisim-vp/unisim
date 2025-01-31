@@ -64,7 +64,7 @@ public:
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
 
-	void Setup(Loader*) override { for(unsigned i = 0; i < MAX_IMPORTS; i++) loader_import[i]->RequireSetup(); }
+	bool Setup(Loader*) override;
 
 	virtual bool Load();
 private:

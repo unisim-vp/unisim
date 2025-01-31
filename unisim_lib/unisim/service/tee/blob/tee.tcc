@@ -88,10 +88,9 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-void Tee<ADDRESS, MAX_IMPORTS>::Setup(Blob<ADDRESS>*)
+bool Tee<ADDRESS, MAX_IMPORTS>::Setup(Blob<ADDRESS>*)
 {
-	if (not SetupBlob())
-		throw unisim::kernel::ServiceAgent::SetupError();
+	return SetupBlob();
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>

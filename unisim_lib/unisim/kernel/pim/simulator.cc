@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2007,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2015-2016,
+ *  Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -29,29 +29,23 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Reda Nouacer (reda.nouacer@cea.fr)
  */
- 
-#ifndef __UNISIM_SERVICE_INTERFACE_TIME_HH__
-#define __UNISIM_SERVICE_INTERFACE_TIME_HH__
 
-#include <unisim/service/interfaces/interface.hh>
-#include <inttypes.h>
+#include <unisim/kernel/pim/simulator.hh>
 
 namespace unisim {
-namespace service {
-namespace interfaces {
+namespace kernel {
+namespace pim {
 
-class Time : public ServiceInterface
+Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::Simulator *simulator))
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
 {
-public:
-	virtual double GetTime() const = 0; // in seconds
-};
+}
 
-} // end of namespace interfaces
-} // end of namespace service
+unsigned long long Simulator::GetStructuredAddress(unsigned long long logicalAddress) const { return (logicalAddress); }
+unsigned long long Simulator::GetPhysicalAddress(unsigned long long logicalAddress) const { return (logicalAddress); }
+
+} // end of namespace pim
+} // end of namespace kernel
 } // end of namespace unisim
-
-
-#endif

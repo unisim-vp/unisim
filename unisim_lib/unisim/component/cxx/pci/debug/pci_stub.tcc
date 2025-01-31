@@ -214,17 +214,15 @@ bool PCIStub<ADDRESS>::SetupMemoryAccessReporting()
 }
 
 template <class ADDRESS>
-void PCIStub<ADDRESS>::Setup(Memory<ADDRESS>*)
+bool PCIStub<ADDRESS>::Setup(Memory<ADDRESS>*)
 {
-	if (not SetupMemory())
-		throw unisim::kernel::ServiceAgent::SetupError();
+	return SetupMemory();
 }
 
 template <class ADDRESS>
-void PCIStub<ADDRESS>::Setup(MemoryAccessReporting<ADDRESS>*)
+bool PCIStub<ADDRESS>::Setup(MemoryAccessReporting<ADDRESS>*)
 {
-	if (not SetupMemoryAccessReporting())
-		throw unisim::kernel::ServiceAgent::SetupError();
+	return SetupMemoryAccessReporting();
 }
 
 template <class ADDRESS>

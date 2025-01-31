@@ -54,6 +54,12 @@ Translator<FROM_ADDRESS, TO_ADDRESS>::~Translator()
 }
 
 template <class FROM_ADDRESS, class TO_ADDRESS>
+bool Translator<FROM_ADDRESS, TO_ADDRESS>::Setup(Memory<FROM_ADDRESS>*)
+{
+	return memory_import.RequireSetup();
+}
+
+template <class FROM_ADDRESS, class TO_ADDRESS>
 void Translator<FROM_ADDRESS, TO_ADDRESS>::ResetMemory()
 {
 	return memory_import->ResetMemory();

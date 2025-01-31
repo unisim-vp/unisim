@@ -4,21 +4,18 @@ Class Type describes programming language types.
 
 It is the superclass of all type description classes.
 
-	                                                                                                   Type
-	                                                                                                     ^
-	                                                                                                     |
-	                                                              +--------------------------------------+-----------------+---------+------------+-----------+------------+-------------+
-	                                                              |                                                        |         |            |           |            |             |
-	                                                          NamedType                                                    |         |            |           |            |             |
-	                                                              ^                                                        |         |            |           |            |             |
-	                                                              |                                                        |         |            |           |            |             |
-	                       +--------------------------------------+-----------+---------------------------+---------+      |         |            |           |            |             |
-	                       |                                                  |                           |         |      |         |            |           |            |             |
-	                    BaseType                                        CompositeType                     |         |      |         |            |           |            |             |
-	                       ^                                                  ^                           |         |      |         |            |           |            |             |
-	                       |                                                  |                           |         |      |         |            |           |            |             |
-	     +----------+------------+-------------+            +------------+----+----+----------+           |         |      |         |            |           |            |             |
-	     |          |            |             |            |            |         |          |           |         |      |         |            |           |            |             |
+	                                                                                                    Type
+	                                                                                                     │
+	                                                              ┌──────────────────────────────────────┴─────────────────┬─────────┬────────────┬───────────┬────────────┬─────────────┐
+	                                                              │                                                        │         │            │           │            │             │
+	                                                          NamedType                                                    │         │            │           │            │             │
+	                                                              │                                                        │         │            │           │            │             │
+	                       ┌──────────────────────────────────────┴───────────┬───────────────────────────┬─────────┐      │         │            │           │            │             │
+	                       │                                                  │                           │         │      │         │            │           │            │             │
+	                    BaseType                                        CompositeType                     │         │      │         │            │           │            │             │
+	                       │                                                  │                           │         │      │         │            │           │            │             │
+	     ┌──────────┬──────┴─────┬─────────────┐            ┌────────────┬────┴────┬──────────┐           │         │      │         │            │           │            │             │
+	     │          │            │             │            │            │         │          │           │         │      │         │            │           │            │             │
 	IntegerType CharType FloatingPointType BooleanType StructureType UnionType ClassType InterfaceType EnumType Typedef ArrayType PointerType FunctionType ConstType UnspecifiedType VolatileType
 
 ## `(read-only) isComposite: boolean`

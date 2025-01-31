@@ -5,10 +5,9 @@ This class provides support for debug event (see also `continueExecution()`).
 It is the superclass of Breakpoint, SourceCodeBreakpoint, and SubProgramBreakpoint.
 
 	                     DebugEvent
-	                         ^
-	                         |
-	     +-------------------+--------------------+
-	     |                   |                    |
+	                         │
+	     ┌───────────────────┼────────────────────┐
+	     │                   │                    │
 	Breakpoint    SourceCodeBreakpoint   SubProgramBreakpoint
 
 ## `(read-only) processor: Processor`

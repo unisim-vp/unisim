@@ -498,6 +498,17 @@ bool Router<CONFIG>::BeginSetup()
 }
 
 template <class CONFIG>
+bool Router<CONFIG>::Setup(unisim::service::interfaces::Memory<typename CONFIG::ADDRESS>*)
+{
+	for (unsigned i = 0; i < OUTPUT_SOCKETS; i++)
+	{
+		if((*memory_import[i]) && !memory_import[i]->RequireSetup()) return false;
+	}
+	return true;
+}
+
+
+template <class CONFIG>
 void Router<CONFIG>::end_of_elaboration()
 {
 	// Spawn InputInterfaceClockPropertyChangedProcess

@@ -21,6 +21,7 @@ std/vector
 sys/types
 unisim/kernel
 unisim/kernel/logger
+unisim/kernel/pim
 unisim/kernel/variable
 unisim/service/interfaces/debug_event
 unisim/service/interfaces/debug_yielding

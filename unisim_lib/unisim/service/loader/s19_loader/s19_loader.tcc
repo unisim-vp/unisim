@@ -64,9 +64,9 @@ S19_Loader<MEMORY_ADDR>::~S19_Loader()
 }
 
 template <class MEMORY_ADDR>
-void S19_Loader<MEMORY_ADDR>::Setup(Loader*)
+bool S19_Loader<MEMORY_ADDR>::Setup(Loader*)
 {
-	memory_import.RequireSetup();
+	return memory_import.RequireSetup();
 }
 
 template <class MEMORY_ADDR>

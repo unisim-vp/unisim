@@ -216,18 +216,15 @@ bool PPCUBoot<MEMORY_ADDR>::SetupBlob()
 }
 
 template <class MEMORY_ADDR>
-void PPCUBoot<MEMORY_ADDR>::Setup(Blob<uint32_t>*)
+bool PPCUBoot<MEMORY_ADDR>::Setup(Blob<uint32_t>*)
 {
-	if (not SetupBlob())
-		throw unisim::kernel::ServiceAgent::SetupError();
+	return SetupBlob();
 }
 
 template <class MEMORY_ADDR>
-void PPCUBoot<MEMORY_ADDR>::Setup(Loader*)
+bool PPCUBoot<MEMORY_ADDR>::Setup(Loader*)
 {
-	if(not SetupBlob() or not registers_import)
-		throw unisim::kernel::ServiceAgent::SetupError();
-        register_import.RequireSetup();
+	if(not SetupBlob() or not registers_import or not register_import.RequireSetup()) return false;
 
         struct
         {
@@ -245,8 +242,8 @@ void PPCUBoot<MEMORY_ADDR>::Setup(Loader*)
         get_register(ppc_r6, "r6");
         get_register(ppc_r7, "r7");
 
-	if (!kernel_blob || !(kernel_blob->GetCapability() & unisim::util::blob::Blob<MEMORY_ADDR>::CAP_ENTRY_POINT))
-          throw unisim::kernel::ServiceAgent::SetupError();
+	if (!kernel_blob || !(kernel_blob->GetCapability() & unisim::util::blob::Blob<MEMORY_ADDR>::CAP_ENTRY_POINT)) return false;
+	return true;
 }
 
 template <class MEMORY_ADDR>

@@ -83,7 +83,7 @@ public:
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
-	virtual void Setup(Memory<ADDRESS>*) override;
+	virtual bool Setup(Memory<ADDRESS>*) override;
 	virtual bool EndSetup();
 	virtual void Reset();
 	virtual void ResetMemory();

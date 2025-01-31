@@ -38,6 +38,7 @@
 #define __UNISIM_SERVICE_PIM_PIM_SERVER_TCC__
 
 #include <unisim/service/pim/pim_server.hh>
+#include <unisim/kernel/pim/simulator.hh>
 
 #include <unisim/util/xml/xml.hh>
 
@@ -192,12 +193,24 @@ PIMServer<ADDRESS>::~PIMServer()
 
 template <class ADDRESS>
 double PIMServer<ADDRESS>::GetSimTime() {
-	return (Object::GetSimulator()->GetSimTime());
+	return Object::GetSimulator()->GetSimTime();
 }
 
 template <class ADDRESS>
 double PIMServer<ADDRESS>::GetHostTime() {
-	return (Object::GetSimulator()->GetHostTime());
+	return Object::GetSimulator()->GetHostTime();
+}
+
+template <class ADDRESS>
+ADDRESS PIMServer<ADDRESS>::GetStructuredAddress(ADDRESS logicalAddress) {
+	unisim::kernel::pim::Simulator *simulator = dynamic_cast<unisim::kernel::pim::Simulator *>(Object::GetSimulator());
+	return simulator ? simulator->GetStructuredAddress(logicalAddress) : logicalAddress;
+}
+
+template <class ADDRESS>
+ADDRESS PIMServer<ADDRESS>::GetPhysicalAddress(ADDRESS logicalAddress) {
+	unisim::kernel::pim::Simulator *simulator = dynamic_cast<unisim::kernel::pim::Simulator *>(Object::GetSimulator());
+	return simulator ? simulator->GetPhysicalAddress(logicalAddress) : logicalAddress;
 }
 
 template <class ADDRESS>
@@ -1681,7 +1694,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 				const Statement<ADDRESS> *stmt = 0;
 				ADDRESS addr = *pc_reg;
-				uint64_t mcuAddress = Object::GetSimulator()->GetStructuredAddress(addr);
+				uint64_t mcuAddress = GetStructuredAddress(addr);
 
 				number2HexString((uint8_t*) &mcuAddress, 8, hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
@@ -1737,7 +1750,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 				ADDRESS logical_address;
 				hexString2Number(hex_addr_str, &logical_address, hex_addr_str.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
-				uint64_t physicalAddress = Object::GetSimulator()->GetPhysicalAddress(logical_address);
+				uint64_t physicalAddress = GetPhysicalAddress(logical_address);
 
 				number2HexString((uint8_t*) &physicalAddress, 8, hex_addr_str, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
@@ -1761,7 +1774,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 				ADDRESS logical_address;
 				hexString2Number(hex_addr_str, &logical_address, hex_addr_str.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
-				uint64_t physicalAddress = Object::GetSimulator()->GetStructuredAddress(logical_address);
+				uint64_t physicalAddress = GetStructuredAddress(logical_address);
 
 				number2HexString((uint8_t*) &physicalAddress, 8, hex_addr_str, (endian == GDB_BIG_ENDIAN)? "big":"little");
 

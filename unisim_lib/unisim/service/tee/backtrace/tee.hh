@@ -64,7 +64,7 @@ public:
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
 
-	void Setup(BackTrace<ADDRESS>*) override { for(unsigned i = 0; i < MAX_IMPORTS; i++) backtrace_import[i]->RequireSetup(); }
+	bool Setup(BackTrace<ADDRESS>*) override;
 
 	virtual std::vector<ADDRESS> *GetBackTrace() const;
 	virtual bool GetReturnAddress(ADDRESS& ret_addr) const;

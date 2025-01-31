@@ -163,6 +163,7 @@ struct Federate
 	// unisim::kernel::Object
 	virtual bool BeginSetup();
 	virtual bool EndSetup();
+	virtuaol void EndOfSimulation();
 	virtual void Kill();
 	bool Killed() const;
 	

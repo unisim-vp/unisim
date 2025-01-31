@@ -1763,6 +1763,8 @@ unisim/kernel/logger/text_file/text_file_writer.cc
 unisim/kernel/logger/text_file/text_file_writer.hh
 unisim/kernel/logger/xml_file/xml_file_writer.cc
 unisim/kernel/logger/xml_file/xml_file_writer.hh
+unisim/kernel/pim/simulator.cc
+unisim/kernel/pim/simulator.hh
 unisim/kernel/scml2/simulator.cc
 unisim/kernel/scml2/simulator.hh
 unisim/kernel/tlm/tlm.hh

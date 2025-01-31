@@ -6,6 +6,7 @@
  */
 
 #include <unisim/service/pim/pim_thread.hh>
+#include <unisim/kernel/pim/simulator.hh>
 
 namespace unisim {
 namespace service {
@@ -15,6 +16,10 @@ using namespace std;
 
 double PIMThread::GetSimTime() {
 	return Object::GetSimulator()->GetSimTime();
+}
+
+double PIMThread::GetHostTime() {
+	return Object::GetSimulator()->GetHostTime();
 }
 
 double PIMThread::GetLastTimeRatio() { return (last_time_ratio); }
@@ -27,8 +32,8 @@ bool PIMThread::UpdateTimeRatio() {
 
 
 	double new_time_ratio = last_time_ratio;
-	double sim_time = Object::GetSimulator()->GetSimTime();
-	double host_time = Object::GetSimulator()->GetHostTime();
+	double sim_time = GetSimTime();
+	double host_time = GetHostTime();
 
 	bool has_changed = false;
 

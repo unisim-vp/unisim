@@ -78,7 +78,7 @@ public:
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
-	virtual void Setup(Loader*) override;
+	virtual bool Setup(Loader*) override;
 	virtual bool EndSetup();
 
 	virtual bool Load();

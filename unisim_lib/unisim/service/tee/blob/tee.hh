@@ -66,7 +66,7 @@ public:
 	virtual ~Tee();
 
 	virtual bool BeginSetup();
-	virtual void Setup(Blob<ADDRESS>*) override;
+	virtual bool Setup(Blob<ADDRESS>*) override;
 	
 	const unisim::util::blob::Blob<ADDRESS> *GetBlob() const;
 protected:

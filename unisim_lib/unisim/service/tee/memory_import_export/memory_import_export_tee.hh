@@ -77,7 +77,13 @@ public:
 
 	}
 	
-	virtual void Setup(Memory<service_address_t>*) override { for (unsigned int i=0; i<width; i++) memory_import[i]->RequireSetup(); }
+	virtual bool Setup(Memory<service_address_t>*) override
+	{
+		for (unsigned int i=0; i<width; i++) {
+			if ((*memory_import[i]) && !memory_import[i]->RequireSetup()) return false;
+		}
+		return true;
+	}
 	
 	virtual ~MemoryImportExportTee() {
 		for (unsigned int i=0; i<width; i++) {

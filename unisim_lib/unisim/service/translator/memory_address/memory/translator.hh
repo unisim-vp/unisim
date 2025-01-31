@@ -63,7 +63,7 @@ public:
 	Translator(const char* name, Object *parent = 0);
 	virtual ~Translator();
 	
-	virtual void Setup(Memory<FROM_ADDRESS>*) override { memory_import.RequireSetup(); }
+	virtual bool Setup(Memory<FROM_ADDRESS>*) override;
 	virtual void ResetMemory();
 	virtual bool ReadMemory(FROM_ADDRESS addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(FROM_ADDRESS addr, const void *buffer, uint32_t size);

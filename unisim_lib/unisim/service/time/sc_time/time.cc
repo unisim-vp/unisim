@@ -56,7 +56,7 @@ bool ScTime::BeginSetup()
 	return true;
 }
 
-double ScTime::GetTime()
+double ScTime::GetTime() const
 {
 	return sc_core::sc_time_stamp().to_seconds();
 }

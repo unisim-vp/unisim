@@ -548,16 +548,16 @@ bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *b
 	for(typename SiblingBlobs::const_iterator it = sibling_blobs.begin(); it != sibling_blobs.end(); ++it)
 	{
 		const unisim::util::blob::Blob<ADDRESS> *sibling_blob = *it;
-		SetupDebugInfo(sibling_blob);
+		if(!SetupDebugInfo(sibling_blob)) return false;
 	}
 	return true;
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::SetupDebugInfo()
+bool Debugger<CONFIG>::SetupDebugInfo()
 {
 	if(setup_debug_info_done)
-		return;
+		return true;
 		
 	unsigned int front_end_num;
 	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; ++front_end_num)
@@ -581,17 +581,14 @@ void Debugger<CONFIG>::SetupDebugInfo()
 		dw_mach_state[front_end_num].Initialize();
 	}
 	
-	if(blob_import)
+	if(!blob_import) return false;
+	if(!blob_import.RequireSetup()) return false;
+	const unisim::util::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
+	if(blob)
 	{
-		blob_import.RequireSetup();
-		const unisim::util::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
-		if(blob)
-		{
-			if(!SetupDebugInfo(blob))
-				throw unisim::kernel::ServiceAgent::SetupError();
-		}
+		if(!SetupDebugInfo(blob)) return false;
 	}
-	setup_debug_info_done = true;
+	return setup_debug_info_done = true;
 }
 
 template <typename CONFIG>

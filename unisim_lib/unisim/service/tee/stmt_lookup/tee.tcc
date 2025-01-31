@@ -75,6 +75,16 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
+bool Tee<ADDRESS, MAX_IMPORTS>::Setup(StatementLookup<ADDRESS>*)
+{
+	for(unsigned i = 0; i < MAX_IMPORTS; i++)
+	{
+		if(stmt_lookup_import[i] && (*stmt_lookup_import[i]) && !stmt_lookup_import[i]->RequireSetup()) return false;
+	}
+	return true;
+}
+
+template <class ADDRESS, unsigned int MAX_IMPORTS>
 void Tee<ADDRESS, MAX_IMPORTS>::ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const char *filename) const
 {
 	unsigned int i;

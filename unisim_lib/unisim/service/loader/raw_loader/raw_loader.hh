@@ -78,8 +78,8 @@ public:
 
 private:
 	bool SetupBlob();
-	virtual void Setup(unisim::service::interfaces::Blob<MEMORY_ADDR>*);
-	virtual void Setup(unisim::service::interfaces::Loader*);
+	virtual bool Setup(unisim::service::interfaces::Blob<MEMORY_ADDR>*);
+	virtual bool Setup(unisim::service::interfaces::Loader*);
 
 	unisim::util::blob::Blob<MEMORY_ADDR> *blob;
 	std::string filename;

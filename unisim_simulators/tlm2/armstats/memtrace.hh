@@ -232,12 +232,13 @@ struct MemTrace
   AccessLog wclog_sink;
   
   // unisim::service::interfaces::MemoryAccessReportingControl
-  void Setup(unisim::service::interfaces::MemoryAccessReportingControl*)
+  bool Setup(unisim::service::interfaces::MemoryAccessReportingControl*)
   {
-    memory_access_reporting_control_import.RequireSetup();
+    if (not memory_access_reporting_control_import.RequireSetup()) return false;
     memory_access_reporting_control_import->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_MEM_ACCESS, true);
     memory_access_reporting_control_import->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_FETCH_INSN, true);
     memory_access_reporting_control_import->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_COMMIT_INSN, true);
+    return true;
   }
 
   void RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report )
@@ -251,7 +252,7 @@ struct MemTrace
   }
 
   // unisim::service::interfaces::MemoryAccessReporting<uint32_t>
-  void Setup(unisim::service::interfaces::MemoryAccessReporting<uint32_t>*) { memory_access_reporting_import.RequireSetup(); }
+  bool Setup(unisim::service::interfaces::MemoryAccessReporting<uint32_t>*) { return memory_access_reporting_import.RequireSetup(); }
 
   bool ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size ) override
   {

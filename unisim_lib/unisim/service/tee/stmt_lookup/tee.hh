@@ -64,7 +64,7 @@ public:
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
 
-	void Setup(StatementLookup<ADDRESS>*) override { for(unsigned i = 0; i < MAX_IMPORTS; i++) stmt_lookup_import[i]->RequireSetup(); }
+	bool Setup(StatementLookup<ADDRESS>*) override;
 
 	virtual void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const char *filename) const;
 	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope) const;

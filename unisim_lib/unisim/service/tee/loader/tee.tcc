@@ -75,6 +75,16 @@ Tee<MAX_IMPORTS>::~Tee()
 }
 
 template <unsigned int MAX_IMPORTS>
+bool Tee<MAX_IMPORTS>::Setup(Loader*)
+{
+	for(unsigned i = 0; i < MAX_IMPORTS; i++)
+	{
+		if(loader_import[i] && (*loader_import[i]) && !loader_import[i]->RequireSetup()) return false;
+	}
+	return true;
+}
+
+template <unsigned int MAX_IMPORTS>
 bool Tee<MAX_IMPORTS>::Load()
 {
 	unsigned int i;

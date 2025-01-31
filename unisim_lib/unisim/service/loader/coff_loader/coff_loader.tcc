@@ -105,9 +105,9 @@ bool CoffLoader<MEMORY_ADDR>::BeginSetup()
 }
 
 template <class MEMORY_ADDR>
-void CoffLoader<MEMORY_ADDR>::Setup(Loader*)
+bool CoffLoader<MEMORY_ADDR>::Setup(Loader*)
 {
-  memory_import.RequireSetup();
+  return memory_import.RequireSetup();
 }
 
 template <class MEMORY_ADDR>

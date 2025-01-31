@@ -61,7 +61,7 @@ public:
 	virtual ~ScTime();
 
 	virtual bool BeginSetup();
-	virtual double GetTime(); // in seconds
+	virtual double GetTime() const; // in seconds
 };
 
 } // end of namespace sc_time

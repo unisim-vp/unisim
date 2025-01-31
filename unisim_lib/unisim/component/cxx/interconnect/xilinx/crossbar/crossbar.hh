@@ -93,7 +93,7 @@ public:
 	
 	void Reset();
 	
-	virtual void Setup(Memory<typename CONFIG::ADDRESS>*) override;
+	virtual bool Setup(Memory<typename CONFIG::ADDRESS>*) override;
 	virtual void ResetMemory();
 	virtual bool ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::ADDRESS addr, const void *buffer, uint32_t size);

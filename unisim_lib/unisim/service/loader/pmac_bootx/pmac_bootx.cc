@@ -872,37 +872,36 @@ PMACBootX::PMACBootX(const char *name, Object *parent) :
 {
 }
 
-void PMACBootX::Setup(Blob<uint32_t>*)
+bool PMACBootX::Setup(Blob<uint32_t>*)
 {
-	if(not SetupBlob())
-		throw unisim::kernel::ServiceAgent::SetupError();    
+	return SetupBlob();
 }
 
-void PMACBootX::Setup(Loader*)
+bool PMACBootX::Setup(Loader*)
 {
-	if(not SetupBlob())
-		throw unisim::kernel::ServiceAgent::SetupError();    
+	if(!SetupBlob()) return false;
 	
 	if(!loader_import)
 	{
 		logger << DebugError << "No loader connected" << EndDebugError;
-		throw unisim::kernel::ServiceAgent::SetupError();    
+		return false;
 	}
-        loader_import.RequireSetup();
+	if(!loader_import.RequireSetup()) return false;
 	
 	if(!memory_import)
 	{
 		logger << DebugError << "No memory connected" << EndDebugError;
-		throw unisim::kernel::ServiceAgent::SetupError();    
+		return false;
 	}
-	memory_import.RequireSetup();
+	if(!memory_import.RequireSetup()) return false;
 
 	if(!registers_import)
 	{
 		logger << DebugError << "No CPU connected" << EndDebugError;
-		throw unisim::kernel::ServiceAgent::SetupError();    
+		return false;
 	}
-        registers_import.RequireSetup();
+	if(!registers_import.RequireSetup()) return false;
+	return true;
 }
 
 bool PMACBootX::BeginSetup()

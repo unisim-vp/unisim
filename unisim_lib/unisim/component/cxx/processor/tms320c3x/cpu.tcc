@@ -344,10 +344,10 @@ CPU<CONFIG, DEBUG>::RequiresMemoryAccessReporting(MemoryAccessReportingType type
 //===============================================================
 
 template<class CONFIG, bool DEBUG>
-void
+bool
 CPU<CONFIG, DEBUG>::Setup(Memory<typename CONFIG::address_t>*)
 {
-	memory_import.RequireSetup();
+	return memory_import.RequireSetup();
 }
 
 template<class CONFIG, bool DEBUG>
@@ -512,10 +512,10 @@ CPU<CONFIG, DEBUG>::ScanRegisters( unisim::service::interfaces::RegisterScanner&
 //===============================================================
 
 template<class CONFIG, bool DEBUG>
-void
+bool
 CPU<CONFIG, DEBUG>::Setup(Disassembly<typename CONFIG::address_t>*)
 {
-	memory_import.RequireSetup();
+	return memory_import.RequireSetup();
 }
 
 /**

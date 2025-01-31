@@ -1,14 +1,13 @@
-# class Hook
+# Class Hook
 
 Class Hook provides support for triggering the execution of Javascript callbacks when program reaches a particular location.
 
 It is the superclass of AddressHook, SourceCodeHook, and SubProgramHook:
 
 	                    Hook
-	                     ^
-	                     |
-	      +--------------+-----------------+
-	      |              |                 |
+	                     │
+	      ┌──────────────┼─────────────────┐
+	      │              │                 │
 	 AddressHook  SourceCodeHook   SubProgramHook  
 	
 

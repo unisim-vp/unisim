@@ -99,9 +99,9 @@ public:
 	virtual ~SDL();
 
 	virtual void OnDisconnect();
-	virtual void Setup(unisim::service::interfaces::Video<ADDRESS>* srv_export) override { SetupSDL(); }
-	virtual void Setup(unisim::service::interfaces::Keyboard* srv_export) override { SetupSDL(); }
-	virtual void Setup(unisim::service::interfaces::Mouse* srv_export) override { SetupSDL(); }
+	virtual bool Setup(unisim::service::interfaces::Video<ADDRESS>* srv_export) override { return SetupSDL(); }
+	virtual bool Setup(unisim::service::interfaces::Keyboard* srv_export) override { return SetupSDL(); }
+	virtual bool Setup(unisim::service::interfaces::Mouse* srv_export) override { return SetupSDL(); }
 
 	virtual bool SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height, uint32_t depth, uint32_t fb_bytes_per_line);
 	virtual void RefreshDisplay();

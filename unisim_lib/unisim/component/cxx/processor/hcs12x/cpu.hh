@@ -496,7 +496,7 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual void Setup(Memory<physical_address_t>*) override { memory_import.RequireSetup(); }
+	virtual bool Setup(Memory<physical_address_t>*) override { return memory_import.RequireSetup(); }
 	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
@@ -525,7 +525,7 @@ public:
 	//=                   DebugDisasmInterface methods                    =
 	//=====================================================================
 
-	virtual void Setup(Disassembly<physical_address_t>*) override { memory_import.RequireSetup(); }
+	virtual bool Setup(Disassembly<physical_address_t>*) override { return memory_import.RequireSetup(); }
 	/**
 	 * Returns a string with the disassembling of the instruction found
 	 *   at address addr.

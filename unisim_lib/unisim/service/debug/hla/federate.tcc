@@ -118,6 +118,12 @@ Federate<CONFIG>::Federate(const char *_name, unisim::kernel::Object *_parent)
 template <typename CONFIG>
 Federate<CONFIG>::~Federate()
 {
+	EndOfSimulation();
+}
+
+template <typename CONFIG>
+void Federate<CONFIG>::EndOfSimulation()
+{
 	for(typename FederateHooks::const_iterator it = federate_hooks.begin(); it != federate_hooks.end(); ++it)
 	{
 		FederateHook<CONFIG> *federate_hook = *it;
@@ -130,6 +136,7 @@ Federate<CONFIG>::~Federate()
 			logger << DebugWarning << "Can't remove hook at " << federate_hook->GetSourceCodeLocation() << EndDebugWarning;
 		}
 	}
+	federate_hooks.clear();
 	
 	for(typename FederateStubs::const_iterator it = federate_stubs.begin(); it != federate_stubs.end(); ++it)
 	{
@@ -143,20 +150,30 @@ Federate<CONFIG>::~Federate()
 			logger << DebugWarning << "Can't remove stub at " << federate_stub->GetSubProgram()->GetName() << EndDebugWarning;
 		}
 	}
+	federate_stubs.clear();
 	
 	for(typename ObjectInstances::const_iterator it = object_instances.begin(); it != object_instances.end(); ++it)
 	{
 		unisim::util::hla::ObjectInstance *object_instance = *it;
 		delete object_instance;
 	}
+	object_instances.clear();
 	
 	for(typename ObjectClasses::const_iterator it = object_classes.begin(); it != object_classes.end(); ++it)
 	{
 		ObjectClass *object_class = *it;
 		delete object_class;
 	}
+	object_classes.clear();
 	
 	if(p_config) delete p_config;
+	p_config = 0;
+}
+
+// unisim::service::interfaces::DebugYielding
+template <typename CONFIG>
+void Federate<CONFIG>::DebugYield()
+{
 }
 
 // unisim::service::interfaces::DebugYielding

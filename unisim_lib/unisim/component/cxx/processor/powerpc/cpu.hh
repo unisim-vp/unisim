@@ -791,7 +791,7 @@ public:
 	
 	/////////////// unisim::service::interfaces::Memory<> /////////////////////
 	
-	virtual void Setup(unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS>*) override;
+	virtual bool Setup(unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS>*) override;
 	virtual void ResetMemory();
 	virtual bool ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size);

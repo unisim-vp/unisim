@@ -98,7 +98,7 @@ public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
 	ServiceExport<Loader> loader_export;
 
-	virtual void Setup(Loader*) override;
+	virtual bool Setup(Loader*) override;
 	virtual bool EndSetup();
 	virtual void Reset();
 	virtual MEMORY_ADDR GetEntryPoint() const;

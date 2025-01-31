@@ -180,10 +180,9 @@ void Crossbar<CONFIG>::Reset()
 }
 
 template <class CONFIG>
-void Crossbar<CONFIG>::Setup(Memory<typename CONFIG::ADDRESS>*)
+bool Crossbar<CONFIG>::Setup(Memory<typename CONFIG::ADDRESS>*)
 {
-	mci_memory_import.RequireSetup();
-	mplb_memory_import.RequireSetup();
+	return mci_memory_import.RequireSetup() && mplb_memory_import.RequireSetup();
 }
 
 template <class CONFIG>

@@ -1214,9 +1214,9 @@ CPU<TYPES, CONFIG>::AltivecVectorUnit::AltivecVectorUnit(typename CONFIG::CPU *c
 }
 
 template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::Setup(unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS>*)
+bool CPU<TYPES, CONFIG>::Setup(unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS>*)
 {
-	memory_import.RequireSetup();
+	return memory_import.RequireSetup();
 }
 
 template <typename TYPES, typename CONFIG>

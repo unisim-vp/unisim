@@ -272,8 +272,8 @@ public:
 	
 	PMACBootX(const char *name, Object *parent = 0);
 	virtual bool BeginSetup();
-	virtual void Setup(Blob<uint32_t> *srv_export) override;
-	virtual void Setup(Loader *srv_export) override;
+	virtual bool Setup(Blob<uint32_t> *srv_export) override;
+	virtual bool Setup(Loader *srv_export) override;
 	virtual bool EndSetup();
 	virtual const unisim::util::blob::Blob<uint32_t> *GetBlob() const;
 	virtual bool Load();

@@ -166,7 +166,7 @@ public:
 	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
 
 	virtual bool EndSetup();
-	virtual void OnDisconnect();
+	virtual void EndOfSimulation();
 protected:
 	virtual void Interrupt();
 private:

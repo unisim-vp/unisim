@@ -169,7 +169,7 @@ public:
 	/** Destructor */
 	~Bus();
 
-	virtual void Setup(Memory<ADDRESS_TYPE>*) override;
+	virtual bool Setup(Memory<ADDRESS_TYPE>*) override;
 	virtual void Reset();
 	
 	virtual void ResetMemory();

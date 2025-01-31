@@ -87,8 +87,8 @@ public:
 	virtual bool Load();
 
 	virtual bool BeginSetup();
-	virtual void Setup(Loader*) override;
-	virtual void Setup(Blob<MEMORY_ADDR>*) override;
+	virtual bool Setup(Loader*) override;
+	virtual bool Setup(Blob<MEMORY_ADDR>*) override;
 	virtual bool EndSetup();
 private:
 	bool SetupBlob();

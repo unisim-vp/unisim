@@ -74,10 +74,14 @@ namespace registers {
         delete registers_import[i];
     }
 
-    void Setup(Registers*) override
+    bool Setup(Registers*) override
     {
       for (unsigned i=0; i<NUM_EXPORTS; i++)
-        registers_import_n(i).RequireSetup();
+      {
+        if (registers_import_n(i) && not registers_import_n(i).RequireSetup())
+          return false;
+      }
+      return true;
     }
 
 

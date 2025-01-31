@@ -518,12 +518,13 @@ private:
 	};
 
 	template <typename IMPORT>
-	void RequireSetup( IMPORT ProcessorGate::*member )
+	bool RequireSetup( IMPORT ProcessorGate::*member )
 	{
 		for (unsigned idx = 0; idx < NUM_PROCESSORS; ++idx)
 		{
-			(prc_gate[idx]->*member).RequireSetup();
+			if((prc_gate[idx]->*member) and !(prc_gate[idx]->*member).RequireSetup()) return false;
 		}
+		return true;
 	}
                       
 	struct FrontEndGate
@@ -630,34 +631,36 @@ private:
 			debug_yielding_import       >> *dbg.debug_yielding_import[id];
 		}
 
-		virtual void Setup(interfaces::DebugEventTrigger<ADDRESS>*) { dbg.RequireSetup(&ProcessorGate::memory_access_reporting_control_import); }
-		virtual void Setup(interfaces::Memory<ADDRESS>*) { dbg.RequireSetup(&ProcessorGate::memory_import); }
-		virtual void Setup(interfaces::Registers*) { dbg.RequireSetup(&ProcessorGate::registers_import); }
-		virtual void Setup(interfaces::Disassembly<ADDRESS>*) { dbg.RequireSetup(&ProcessorGate::disasm_import); }
+		virtual bool Setup(interfaces::DebugEventTrigger<ADDRESS>*) { return dbg.RequireSetup(&ProcessorGate::memory_access_reporting_control_import); }
+		virtual bool Setup(interfaces::Memory<ADDRESS>*) { return dbg.RequireSetup(&ProcessorGate::memory_import); }
+		virtual bool Setup(interfaces::Registers*) { return dbg.RequireSetup(&ProcessorGate::registers_import); }
+		virtual bool Setup(interfaces::Disassembly<ADDRESS>*) { return dbg.RequireSetup(&ProcessorGate::disasm_import); }
 		
-		virtual void Setup(interfaces::SymbolTableLookup<ADDRESS>*) { dbg.SetupDebugInfo(); }
-		virtual void Setup(interfaces::StatementLookup<ADDRESS>*) { dbg.SetupDebugInfo(); }
-		virtual void Setup(interfaces::StackFrame<ADDRESS>*)
+		virtual bool Setup(interfaces::SymbolTableLookup<ADDRESS>*) { return dbg.SetupDebugInfo(); }
+		virtual bool Setup(interfaces::StatementLookup<ADDRESS>*) { return dbg.SetupDebugInfo(); }
+		virtual bool Setup(interfaces::StackFrame<ADDRESS>*)
 		{
-			dbg.RequireSetup(&ProcessorGate::registers_import);
-			dbg.RequireSetup(&ProcessorGate::memory_import);
-			dbg.SetupDebugInfo();
+			if(!dbg.RequireSetup(&ProcessorGate::registers_import)) return false;
+			if(!dbg.RequireSetup(&ProcessorGate::memory_import)) return false;
+			if(!dbg.SetupDebugInfo()) return false;
+			return true;
 		}
-		virtual void Setup(interfaces::DebugInfoLoading*) { dbg.SetupDebugInfo(); }
-		virtual void Setup(interfaces::DataObjectLookup<ADDRESS>*)
+		virtual bool Setup(interfaces::DebugInfoLoading*) { return dbg.SetupDebugInfo(); }
+		virtual bool Setup(interfaces::DataObjectLookup<ADDRESS>*)
 		{
-			dbg.RequireSetup(&ProcessorGate::registers_import);
-			dbg.RequireSetup(&ProcessorGate::memory_import);
-			dbg.SetupDebugInfo();
+			if(!dbg.RequireSetup(&ProcessorGate::registers_import)) return false;
+			if(!dbg.RequireSetup(&ProcessorGate::memory_import)) return false;
+			if(!dbg.SetupDebugInfo()) return false;
+			return true;
 		}
-		virtual void Setup(interfaces::SubProgramLookup<ADDRESS>*) { dbg.SetupDebugInfo(); }
-		virtual void Setup(interfaces::DebugProcessors<ADDRESS, TIME_TYPE>*)
+		virtual bool Setup(interfaces::SubProgramLookup<ADDRESS>*) { return dbg.SetupDebugInfo(); }
+		virtual bool Setup(interfaces::DebugProcessors<ADDRESS, TIME_TYPE>*)
 		{
-			dbg.RequireSetup(&ProcessorGate::memory_access_reporting_control_import);
-			dbg.RequireSetup(&ProcessorGate::memory_import);
-			dbg.RequireSetup(&ProcessorGate::registers_import);
-			dbg.RequireSetup(&ProcessorGate::disasm_import);
-			dbg.SetupDebugInfo();
+			if(!dbg.RequireSetup(&ProcessorGate::memory_access_reporting_control_import)) return false;
+			if(!dbg.RequireSetup(&ProcessorGate::memory_import)) return false;
+			if(!dbg.RequireSetup(&ProcessorGate::registers_import)) return false;
+			if(!dbg.RequireSetup(&ProcessorGate::disasm_import)) return false;
+			return dbg.SetupDebugInfo();
 		}
 		
 		// From Front-end
@@ -1968,7 +1971,7 @@ private:
 	void SetupDWARF(const typename unisim::util::blob::Blob<ADDRESS> *blob);
 	
 	bool SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *blob);
-	void SetupDebugInfo();
+	bool SetupDebugInfo();
 	void RequireSetup(int);
 	
 	void UpdateReportingRequirements(unsigned int prc_num);

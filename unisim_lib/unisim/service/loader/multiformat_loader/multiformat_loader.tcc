@@ -912,6 +912,16 @@ MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::~MemoryMapper()
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
+bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::Setup(Memory<MEMORY_ADDR>*)
+{
+	for(unsigned i = 0; i < MAX_MEMORIES; i++)
+	{
+		if(memory_import[i] && (*memory_import[i]) && !memory_import[i]->RequireSetup()) return false;
+	}
+	return true;
+}
+
+template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
 bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
 {
 	unsigned int num_mappings = mapping_table.size();

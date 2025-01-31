@@ -75,6 +75,17 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
+bool Tee<ADDRESS, MAX_IMPORTS>::Setup(BackTrace<ADDRESS>*)
+{
+	for(unsigned i = 0; i < MAX_IMPORTS; i++)
+	{
+		if((*backtrace_import[i]) && !backtrace_import[i]->RequireSetup()) return false;
+	}
+	return true;
+}
+
+
+template <class ADDRESS, unsigned int MAX_IMPORTS>
 std::vector<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::GetBackTrace() const
 {
 	unsigned int i;

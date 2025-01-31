@@ -322,22 +322,16 @@ public:
 
 	bool SetupMemory()
 	{
-	    	for (unsigned int i = 0; i < NUM_TARGETS; i++)
-			if(!memory_import[i])
+		for (unsigned int i = 0; i < NUM_TARGETS; i++)
+			if((*memory_import[i]) && !memory_import[i]->RequireSetup())
 				return false;
 			
 		return true;
 	}
 
-	virtual void Setup(unisim::service::interfaces::Memory<ADDRESS_TYPE>*) override
+	virtual bool Setup(unisim::service::interfaces::Memory<ADDRESS_TYPE>*) override
 	{
-		for (unsigned int j = 0; j < NUM_TARGETS; j++)
-		{
-			memory_import[j]->RequireSetup();
-		}
-		
-		if (not SetupMemory())
-			throw unisim::kernel::ServiceAgent::SetupError();
+		return SetupMemory();
 	}
 
 	virtual bool EndSetup() {

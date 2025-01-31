@@ -152,8 +152,8 @@ private:
 	/* total results */
 	Cacti4_2 *cacti;
 	
-	virtual void Setup(unisim::service::interfaces::CachePowerEstimator*) override { SetupCacti(); }
-	virtual void Setup(unisim::service::interfaces::PowerMode*) override { SetupCacti(); }
+	virtual bool Setup(unisim::service::interfaces::CachePowerEstimator*) override { SetupCacti(); return true; }
+	virtual bool Setup(unisim::service::interfaces::PowerMode*) override { SetupCacti(); return true; }
 	void SetupCacti();
 };
 

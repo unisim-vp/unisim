@@ -190,16 +190,16 @@ Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> ::
 }
 
 template <class ADDRESS_TYPE, unsigned int DATA_SIZE, unsigned int NUM_PROCS>
-void
+bool
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS>::Setup(Memory<ADDRESS_TYPE>*)
 {
 	if(!memory_import) {
 		logger << DebugError << LOCATION << ", "
 			<< "No memory connected" << endl
 			<< EndDebugError;
-                throw unisim::kernel::ServiceAgent::SetupError();
+		return false;
 	}
-        memory_import.RequireSetup();
+	if(!memory_import.RequireSetup()) return false;
 
 	if(unlikely(verbose)) {
 		logger << DebugInfo << LOCATION << ", "
@@ -209,8 +209,9 @@ Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS>::Setup(Memory<ADDRESS_TYPE>*)
 	if(cycle_time == sc_core::SC_ZERO_TIME) {
 		logger << DebugError << LOCATION << ", "
 			<< "cycle_time should be bigger than 0" << EndDebugError;
-                throw unisim::kernel::ServiceAgent::SetupError();
+		return false;
 	}
+	return true;
 }
 
 template <class ADDRESS_TYPE, unsigned int DATA_SIZE,

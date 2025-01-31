@@ -21,6 +21,7 @@
 #endif
 
 #include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/pim/simulator.hh>
 #include <unisim/kernel/logger/console/console_printer.hh>
 #include <unisim/kernel/logger/text_file/text_file_writer.hh>
 #include <unisim/kernel/logger/http/http_writer.hh>
@@ -138,7 +139,7 @@ using unisim::service::netstreamer::NetStreamer;
 
 
 class Simulator
-  : public unisim::kernel::Simulator
+  : public unisim::kernel::pim::Simulator
 {
 private:
 	//=========================================================================
@@ -158,8 +159,8 @@ private:
 	void Run();
 	bool RunSample(double inVal);
 
-	virtual double GetSimTime()	{ if (sim_time) { return (sim_time->GetTime()); } else { return (0); }	}
-	virtual double GetHostTime()	{ if (host_time) { return (host_time->GetTime()); } else { return (0); }	}
+	virtual double GetSimTime() const	{ if (sim_time) { return (sim_time->GetTime()); } else { return (0); }	}
+	virtual double GetHostTime() const	{ if (host_time) { return (host_time->GetTime()); } else { return (0); }	}
 
 	virtual unsigned long long GetStructuredAddress(unsigned long long logicalAddress) { return (mmc->getCPU12XPagedAddress(logicalAddress)); }
 	virtual unsigned long long GetPhysicalAddress(unsigned long long logicalAddress) { return (mmc->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED, false, false, 0x00)); }
