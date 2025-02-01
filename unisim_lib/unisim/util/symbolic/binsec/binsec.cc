@@ -1347,6 +1347,7 @@ namespace binsec {
   ConstNodeBase const*
   BitFilter::Simplify( Expr const& mask, Expr& expr ) const
   {
+    Expr keep(this);
     // First check for local simplification, trivial and pipe hole
     if (rshift == 0 and source == select and select == extend)
       { expr = input; return 0; }

@@ -77,9 +77,10 @@ struct Translator
     // Instruction decoding
     struct Instruction
     {
-      Instruction(addr_t address, uint8_t* bytes) : operation()
+      Instruction(addr_t address, std::vector<uint8_t> bytes ) : operation()
       {
-        operation = Proc::Decode(address, bytes);
+        bytes.resize(16,0);
+        operation = Proc::Decode(address, &bytes[0]);
         if (not operation) throw typename Proc::Undefined();
       }
       ~Instruction() { delete operation; }
@@ -87,7 +88,7 @@ struct Translator
       Operation& operator * () { return *operation; }
       Operation* operation;
     };
-    Instruction instruction( addr, &code[0] );
+    Instruction instruction( addr, code );
 
     if (instruction->length > code.size()) { struct LengthError {}; throw LengthError(); }
     code.resize(instruction->length);
