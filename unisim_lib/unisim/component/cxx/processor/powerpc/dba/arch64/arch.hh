@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2022-2023,
+ *  Copyright (c) 2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -122,7 +122,6 @@ namespace arch64 {
     using ExprNode = unisim::util::symbolic::ExprNode;
     using ValueType = unisim::util::symbolic::ValueType;
     using ActionNode = unisim::util::symbolic::binsec::ActionNode;
-    using Variables = unisim::util::symbolic::binsec::Variables;
     using BitInsertNode = unisim::util::symbolic::binsec::BitInsertNode;
 
     template <typename T>

@@ -542,31 +542,21 @@ struct Processor : public ProcessorBase
 
     virtual ValueType GetType() const override { return ELEM::GetType(); }
 
-    virtual int GenCode(std::ostream& sink, unisim::util::symbolic::binsec::Variables& vars, unisim::util::symbolic::binsec::Point& head ) const override
+    virtual int GenCode(std::ostream& sink, unisim::util::symbolic::binsec::Scope& scope) const override
     {
       for (int i = 0; i < elemcount - 1; i += 1) {
         sink << "(if";
-        ASExprNode::GenerateCode( GetSub(elemcount), sink, vars, head );
+        ASExprNode::GenerateCode( GetSub(elemcount), sink, scope );
         sink << " = "
              << unisim::util::symbolic::binsec::dbx(traits::BITSIZE/8, i)
              << " then ";
-        ASExprNode::GenerateCode( GetSub(i), sink, vars, head );
+        ASExprNode::GenerateCode( GetSub(i), sink, scope );
         sink << " else ";
       }
-      ASExprNode::GenerateCode( GetSub(elemcount - 1), sink, vars, head );
+      ASExprNode::GenerateCode( GetSub(elemcount - 1), sink, scope );
       for (int i = 0; i < elemcount - 1; i += 1) {
         sink << ')';
       }
-      // sink << "((";
-      // for (int i = elemcount - 1; 0 < i; i -= 1) {
-      //         ASExprNode::GenerateCode( GetSub(i), vars, bloc, sink );
-      //         sink << " :: ";
-      // }
-      // ASExprNode::GenerateCode( GetSub(0), vars, bloc, sink );
-      // sink << ") >>u (" << traits::BITSIZE
-      //            << '<' << GetVSize() << "> * (extu ";
-      // ASExprNode::GenerateCode( GetSub(elemcount), vars, bloc, sink );
-      // sink << ' ' << GetVSize() << "))){0," << traits::BITSIZE - 1 << '}';
       return traits::BITSIZE;
     }
 

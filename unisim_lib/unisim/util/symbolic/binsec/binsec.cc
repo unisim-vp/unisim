@@ -37,6 +37,8 @@
 #include <ostream>
 #include <sstream>
 #include <iomanip>
+#include <list>
+#include <memory>
 
 namespace unisim {
 namespace util {
@@ -82,7 +84,21 @@ namespace binsec {
     int index;
   };
 
-  void Point::connect( Point const& np ) { insn->connect(np.insn); }
+  struct Point
+  {
+    Point(Instruction* _insn, int) : insn(_insn) {}
+    Point(Point const&) = default;
+
+    void connect( Point const& np ) { insn->connect(np.insn); }
+    Point& append( Instruction* nins, int) { insn->connect(nins); insn = nins; return *this; }
+    Point& prepend( Instruction* nins, int) { nins->connect(insn); insn = nins; return *this; }
+
+    Instruction* operator -> () const { return insn; }
+    Instruction* get() const { return insn; }
+
+  private:
+    Instruction* insn;
+  };
 
   struct SeqInstruction : Instruction
   {
@@ -127,6 +143,178 @@ namespace binsec {
     Instruction* nexts[2];
     std::string cond;
     bool dir;
+  };
+
+  struct Scope
+  {
+    Scope( Instruction& entrypoint ) : insns(), vars(), head(&entrypoint, 0), tail(0, 0) {}
+    Scope( Scope const* up ) : insns(), vars(up->vars), head(up->head), tail(up->tail) {}
+
+    template<typename INSN, typename... ARGS>
+    INSN*
+    make_insn(ARGS&&... __args)
+    {
+      INSN* insn = new INSN(std::forward<ARGS>(__args)...);
+      insns.push_back(std::unique_ptr<INSN>(insn));
+      return insn;
+    }
+
+    std::string const&
+    mktemp(Expr const& expr, unsigned size)
+    {
+      auto itr = vars.lower_bound(expr);
+      if (itr != vars.end() and itr->first == expr)
+        throw std::logic_error( "multiple temporary definitions" );
+
+      std::string name;
+      {
+        std::ostringstream buf;
+        buf << "%%" << vars.size() << "<" << size << ">";
+        name = buf.str();
+      }
+
+      itr = vars.emplace_hint(itr, std::piecewise_construct, std::forward_as_tuple(expr), std::forward_as_tuple(std::move(name), size) );
+      return itr->second.first;
+    }
+
+    int GenTempCode(Expr const& expr)
+    {
+      std::string tmp_src;
+      int retsize;
+      {
+        std::ostringstream buffer;
+        retsize = ASExprNode::GenerateCode( expr, buffer, *this );
+        if (vars.count(expr)) return retsize;
+        tmp_src = buffer.str();
+      }
+      std::ostringstream buffer;
+      buffer << mktemp( expr, retsize ) << " := " << tmp_src;
+      head.append( make_insn<Statement>( buffer.str() ), 0 );
+      return retsize;
+    }
+
+    // Introducing a Finish instruction to capture branching code epilogue.
+    struct Finish : Statement
+    {
+      Finish( std::string&& txt ) : Statement( std::move(txt) ) {}
+      // The epilogue cannot share code with other epilogues as it
+      // ends with its own goto => unshare remaining statements.
+      virtual bool allocate(Sequence& head, Sequence& tail) override
+      {
+        int idx = tail.rbegin() != tail.rend() ? tail.rbegin()->first : 0;
+        index = idx++;
+        for (Statement const* insn = this; (insn = dynamic_cast<Statement*>(insn->next));)
+          idx += 1;
+        tail[idx] = this;
+        return false;
+      }
+      virtual void print(Printer const& printer) const override
+      {
+        int idx = index;
+        for (Statement const* insn = this; (insn = dynamic_cast<Statement*>(insn->next));)
+          { printer.label(idx) << insn->text << "; goto " << idx+1 << '\n'; idx += 1; }
+        printer.label(idx) << text << '\n';
+      }
+    };
+
+    void GenCode( ActionNode const* action_tree )
+    {
+      Branch const* nia = 0;
+
+      {
+        // Ordering Sub Expressions by size of expressions (so that
+        // smaller expressions are factorized in larger ones)
+        struct CSE : public std::multimap<unsigned,Expr>
+        {
+          void Process( Expr const& expr )
+          {
+            insert( std::make_pair( CountSubs( expr ), expr ) );
+          }
+          unsigned CountSubs( Expr const& expr )
+          {
+            unsigned sum = 1;
+            for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
+              sum += CountSubs( expr->GetSub(idx) );
+            return sum;
+          }
+        } cse;
+
+        for (auto const& sestat : action_tree->get_sestats())
+          {
+            // At least 2 references to be considered a common subexpression
+            if (sestat.second >= 2 and not this->vars.count(sestat.first))
+              cse.Process(sestat.first);
+          }
+
+        // Assigning temporaries with each subexpression
+        for (std::multimap<unsigned,Expr>::const_iterator itr = cse.begin(), end = cse.end(); itr != end; ++itr)
+          {
+            GenTempCode(itr->second);
+          }
+      }
+
+      for (auto const& sink : action_tree->get_sinks())
+        {
+          SideEffect const& side_effect = dynamic_cast<SideEffect const&>( *sink.node );
+
+          for (unsigned idx = 0, end = side_effect.SubCount(); idx < end; ++idx)
+            {
+              Expr const& value = side_effect.GetSub(idx);
+              if (not value->AsConstNode() and not this->vars.count(value))
+                GenTempCode(value);
+            }
+
+          if (Branch const* branch = dynamic_cast<Branch const*>( &side_effect ))
+            nia = branch;
+          else
+            {
+              std::ostringstream buffer;
+              side_effect.GenerateCode(buffer, *this);
+              tail.prepend( make_insn<Statement>( buffer.str() ), 0 );
+            }
+        }
+
+      if (nia)
+        {
+          std::ostringstream buffer;
+          Expr const& target = nia->value;
+          buffer << "goto (" << GetCode(target, *this) << (target->AsConstNode() ? ",0" : "") << ")";
+          nia->annotate( buffer );
+          tail.prepend( make_insn<Finish>(buffer.str()), 0 );
+        }
+
+      if (action_tree->cond.good())
+        {
+          std::ostringstream buffer;
+          buffer << GetCode(action_tree->cond, *this);
+          auto cbr = make_insn<ConditionalBranch>(buffer.str());
+          head.append( cbr, 0 );
+
+          for (unsigned side = 0; side < 2; ++side)
+            {
+              cbr->follow(side);
+              if (action_tree->nexts[side])
+                {
+                  Scope nxt(this);
+                  nxt.GenCode( action_tree->nexts[side]);
+                  for (auto&& insn : nxt.insns)
+                    insns.push_back(std::move(insn));
+                }
+              else
+                head.connect( tail );
+            }
+        }
+      else
+        {
+          if (action_tree->get_sinks().size() == 0)
+            throw std::logic_error( "empty leaf" );
+          head.connect( tail );
+        }
+    }
+
+    std::list<std::unique_ptr<Instruction>> insns;
+    std::map<Expr,std::pair<std::string,int>> vars;
+    Point head, tail;
   };
 
   bool
@@ -260,171 +448,12 @@ namespace binsec {
     } sec(this,0);
   }
 
-  std::string const&
-  mktemp(Variables& vars, Expr const& expr, unsigned size)
-  {
-    auto itr = vars.lower_bound(expr);
-    if (itr != vars.end() and itr->first == expr)
-      throw std::logic_error( "multiple temporary definitions" );
-
-    std::string name;
-    {
-      std::ostringstream buf;
-      buf << "%%" << vars.size() << "<" << size << ">";
-      name = buf.str();
-    }
-
-    itr = vars.emplace_hint(itr, std::piecewise_construct, std::forward_as_tuple(expr), std::forward_as_tuple(std::move(name), size) );
-    return itr->second.first;
-  }
-
   void
   ActionNode::generate(std::ostream& sink, unsigned addrsize, uint64_t address) const
   {
-    // Introducing a Finish instruction to capture branching code epilogue.
-    struct Finish : Statement
-    {
-      Finish( std::string&& txt ) : Statement( std::move(txt) ) {}
-      // The epilogue cannot share code with other epilogues as it
-      // ends with its own goto => unshare remaining statements.
-      virtual bool allocate(Sequence& head, Sequence& tail) override
-      {
-        int idx = tail.rbegin() != tail.rend() ? tail.rbegin()->first : 0;
-        index = idx++;
-        for (Statement const* insn = this; (insn = dynamic_cast<Statement*>(insn->next));)
-          idx += 1;
-        tail[idx] = this;
-        return false;
-      }
-      virtual void print(Printer const& printer) const override
-      {
-        int idx = index;
-        for (Statement const* insn = this; (insn = dynamic_cast<Statement*>(insn->next));)
-          { printer.label(idx) << insn->text << "; goto " << idx+1 << '\n'; idx += 1; }
-        printer.label(idx) << text << '\n';
-      }
-    };
-
-    struct Scope
-    {
-      Scope() {}
-      Scope( Scope* up ) : vars(up->vars) {}
-
-      int GenTempCode(Expr const& expr, Point& head)
-      {
-        std::string tmp_src;
-        int retsize;
-        {
-          std::ostringstream buffer;
-          retsize = ASExprNode::GenerateCode( expr, buffer, vars, head );
-          if (vars.count(expr)) return retsize;
-          tmp_src = buffer.str();
-        }
-        std::ostringstream buffer;
-        buffer << mktemp( vars, expr, retsize ) << " := " << tmp_src;
-        head.append( new Statement( buffer.str() ) );
-        return retsize;
-      }
-
-      void GenCode( ActionNode const* action_tree, Point head, Point tail )
-      {
-        Branch const* nia = 0;
-
-        {
-          // Ordering Sub Expressions by size of expressions (so that
-          // smaller expressions are factorized in larger ones)
-          struct CSE : public std::multimap<unsigned,Expr>
-          {
-            void Process( Expr const& expr )
-            {
-              insert( std::make_pair( CountSubs( expr ), expr ) );
-            }
-            unsigned CountSubs( Expr const& expr )
-            {
-              unsigned sum = 1;
-              for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
-                sum += CountSubs( expr->GetSub(idx) );
-              return sum;
-            }
-          } cse;
-
-          for (auto const& sestat : action_tree->get_sestats())
-            {
-              // At least 2 references to be considered a common subexpression
-              if (sestat.second >= 2 and not this->vars.count(sestat.first))
-                cse.Process(sestat.first);
-            }
-
-          // Assigning temporaries with each subexpression
-          for (std::multimap<unsigned,Expr>::const_iterator itr = cse.begin(), end = cse.end(); itr != end; ++itr)
-            {
-              GenTempCode(itr->second, head);
-            }
-        }
-
-        for (auto const& sink : action_tree->get_sinks())
-          {
-            SideEffect const& side_effect = dynamic_cast<SideEffect const&>( *sink.node );
-
-            for (unsigned idx = 0, end = side_effect.SubCount(); idx < end; ++idx)
-              {
-                Expr const& value = side_effect.GetSub(idx);
-                if (not value->AsConstNode() and not this->vars.count(value))
-                  GenTempCode(value, head);
-              }
-
-            if (Branch const* branch = dynamic_cast<Branch const*>( &side_effect ))
-              nia = branch;
-            else
-              {
-                std::ostringstream buffer;
-                side_effect.GenerateCode(buffer, vars);
-                tail.prepend( new Statement( buffer.str() ) );
-              }
-          }
-
-        if (nia)
-          {
-            std::ostringstream buffer;
-            Expr const& target = nia->value;
-            buffer << "goto (" << GetCode(target, this->vars, head) << (target->AsConstNode() ? ",0" : "") << ")";
-            nia->annotate( buffer );
-            tail.prepend( new Finish(buffer.str()) );
-          }
-
-        if (action_tree->cond.good())
-          {
-            std::ostringstream buffer;
-            buffer << GetCode(action_tree->cond, this->vars, head);
-            auto cbr = new ConditionalBranch(buffer.str());
-            head.append( cbr );
-
-            for (unsigned side = 0; side < 2; ++side)
-              {
-                cbr->follow(side);
-                if (action_tree->nexts[side])
-                  {
-                    Scope nxt(this);
-                    nxt.GenCode( action_tree->nexts[side], head, tail);
-                  }
-                else
-                  head.connect( tail );
-              }
-          }
-        else
-          {
-            if (action_tree->get_sinks().size() == 0)
-              throw std::logic_error( "empty leaf" );
-            head.connect( tail );
-          }
-      }
-
-      Variables vars;
-    };
-
     Nop entrypoint;
-    Scope root;
-    root.GenCode( this, Point(&entrypoint), Point(0) );
+    Scope root( entrypoint );
+    root.GenCode( this );
 
     Instruction::Sequence prologue, epilogue;
     entrypoint.compute_indices(prologue, epilogue);
@@ -441,11 +470,6 @@ namespace binsec {
       line.second->print(printer);
     for (auto line : epilogue)
       line.second->print(printer);
-
-    std::set<Instruction*> release_pool;
-    entrypoint.next->release(release_pool);
-    for (auto insn : release_pool)
-      delete insn;
   }
 
   std::ostream&
@@ -493,11 +517,11 @@ namespace binsec {
   }
 
   int
-  ASExprNode::GenerateCode( Expr const& expr, std::ostream& sink, Variables& vars, Point& head )
+  ASExprNode::GenerateCode( Expr const& expr, std::ostream& sink, Scope& scope )
   {
     /*** Pre expression process ***/
-    Variables::iterator itr = vars.find( expr );
-    if (itr != vars.end())
+    auto itr = scope.vars.find( expr );
+    if (itr != scope.vars.end())
       {
         sink << itr->second.first;
         return itr->second.second;
@@ -515,24 +539,24 @@ namespace binsec {
           {
           case 2: {
             auto infix = [&] (char const* op) -> int {
-              int lhs_size = GenerateCode( node->GetSub(0), sink << '(', vars, head );
-              sink << ' ' << op << ' ' << GetCode( node->GetSub(1), vars, head ) << ')';
+              int lhs_size = GenerateCode( node->GetSub(0), sink << '(', scope );
+              sink << ' ' << op << ' ' << GetCode( node->GetSub(1), scope ) << ')';
               return lhs_size;
             };
 
             auto prefix = [&] (char const* op) -> int {
-              int lhs_size = GenerateCode( node->GetSub(0), sink << op << '(', vars, head );
-              sink << ", " << GetCode( node->GetSub(1), vars, head ) << ')';
+              int lhs_size = GenerateCode( node->GetSub(0), sink << op << '(', scope );
+              sink << ", " << GetCode( node->GetSub(1), scope ) << ')';
               return lhs_size;
             };
 
             auto test = [&] (char const* op) -> int {
-              sink << '(' << GetCode( node->GetSub(0), vars, head ) << ' ' << op << ' ' << GetCode( node->GetSub(1), vars, head ) << ')';
+              sink << '(' << GetCode( node->GetSub(0), scope ) << ' ' << op << ' ' << GetCode( node->GetSub(1), scope ) << ')';
               return 1;
             };
 
             auto shift = [&] (char const* op) -> int {
-              int lhs_size = GenerateCode( node->GetSub(0), sink << '(', vars, head );
+              int lhs_size = GenerateCode( node->GetSub(0), sink << '(', scope );
               Expr rhs = node->GetSub(1);
               switch (lhs_size)
                 {
@@ -541,7 +565,7 @@ namespace binsec {
                 case 32: rhs = U32(USH(rhs)).expr; BitSimplify::Do(rhs); break;
                 case 64: rhs = U64(USH(rhs)).expr; BitSimplify::Do(rhs); break;
                 }
-              sink << ' ' << op << ' ' << GetCode( rhs, vars, head ) << ')';
+              sink << ' ' << op << ' ' << GetCode( rhs, scope ) << ')';
               return lhs_size;
             };
 
@@ -605,7 +629,7 @@ namespace binsec {
                   unsigned bitsize = node->GetType().bitsize;
                   sink << "(";
                   for (unsigned i = 0; i < bitsize - 1; i += 1) {
-                    sink << "if " << GetCode(node->GetSub(0), vars, head)
+                    sink << "if " << GetCode(node->GetSub(0), scope)
                          << '{' << i << "} then "
                          << i << '<' << bitsize << "> else (";
                   }
@@ -617,7 +641,7 @@ namespace binsec {
                   // Point exit(new Nop());
 
                   // std::ostringstream buffer;
-                  // buffer << "bsf_in<" << bitsize << "> := " << GetCode(node->GetSub(0), vars, head, bitsize);
+                  // buffer << "bsf_in<" << bitsize << "> := " << GetCode(node->GetSub(0), scope, bitsize);
                   // head.append( new Statement( buffer.str() ) );
 
                   // buffer = std::ostringstream();
@@ -650,12 +674,12 @@ namespace binsec {
                   unsigned bitsize = node->GetType().bitsize;
                   sink << "(";
                   for (unsigned i = bitsize - 1; i > 1; i -= 1) {
-                    sink << "if " << GetCode(node->GetSub(0), vars, head)
+                    sink << "if " << GetCode(node->GetSub(0), scope)
                          << '{' << i << "} then "
                          << i << '<' << bitsize << "> else (";
                   }
                   sink << "extu ("
-                       << GetCode(node->GetSub(0), vars, head)
+                       << GetCode(node->GetSub(0), scope)
                        << "{1}) " << bitsize;
                   for (unsigned i = bitsize; i > 1; i -= 1) {
                     sink << ')';
@@ -664,7 +688,7 @@ namespace binsec {
                   // Point exit(new Nop());
 
                   // std::ostringstream buffer;
-                  // buffer << "bsr_in<" << bitsize << "> := " << GetCode(node->GetSub(0), vars, head, bitsize);
+                  // buffer << "bsr_in<" << bitsize << "> := " << GetCode(node->GetSub(0), scope, bitsize);
                   // head.append( new Statement( buffer.str() ) );
 
                   // buffer = std::ostringstream();
@@ -694,7 +718,7 @@ namespace binsec {
               case Op::Tnzero:
                 {
                   Expr const& src = node->GetSub(0);
-                  sink << "(" << GetCode(src, vars, head) << " <> " << dbx(src->GetType().bitsize/8,0) << ")";
+                  sink << "(" << GetCode(src, scope) << " <> " << dbx(src->GetType().bitsize/8,0) << ")";
                   return 1;
                 }
               case Op::Cast:
@@ -705,14 +729,14 @@ namespace binsec {
                   /* TODO: At this point, boolean casts should not remain */
                   if (dst.encoding == dst.BOOL)
                     {
-                      sink << "(" << GetCode(cnb.src, vars, head) << " <> " << dbx(src.bitsize/8,0) << ")";
+                      sink << "(" << GetCode(cnb.src, scope) << " <> " << dbx(src.bitsize/8,0) << ")";
                     }
                   else
                     {
                       throw std::logic_error("Unexpected cast");
                       /* TODO: What to do with FP casts ? */
                       dst.Repr(sink);
-                      sink << "( " << GetCode(cnb.src, vars, head) << " )";
+                      sink << "( " << GetCode(cnb.src, scope) << " )";
                     }
 
                   return dst.bitsize;
@@ -720,7 +744,7 @@ namespace binsec {
               }
 
             sink << '(' << operation << ' ';
-            int retsz = GenerateCode( node->GetSub(0), sink, vars, head );
+            int retsz = GenerateCode( node->GetSub(0), sink, scope );
             sink << ')';
             return retsz;
           }
@@ -731,9 +755,9 @@ namespace binsec {
 
               case Op::CMov:
 
-                sink << "(if " << GetCode(node->GetSub(2), vars, head) << " then ";
-                int retsz = GenerateCode( node->GetSub(0), sink, vars, head );
-                sink << " else " << GetCode(node->GetSub(1), vars, head) << ")";
+                sink << "(if " << GetCode(node->GetSub(2), scope) << " then ";
+                int retsz = GenerateCode( node->GetSub(0), sink, scope );
+                sink << " else " << GetCode(node->GetSub(1), scope) << ")";
 
                 return retsz;
 
@@ -748,9 +772,9 @@ namespace binsec {
         unsigned srcsize = 8*vt->srcsize, dstsize = vt->GetType().bitsize, srcpos = 8*vt->srcpos;
 
         if (dstsize < srcsize)
-          sink << "(" << GetCode(vt->src, vars, head) << " {" << std::dec << srcpos << ", " << (srcpos+dstsize-1) << "})";
+          sink << "(" << GetCode(vt->src, scope) << " {" << std::dec << srcpos << ", " << (srcpos+dstsize-1) << "})";
         else
-          sink << GetCode(vt->src, vars, head);
+          sink << GetCode(vt->src, scope);
         return dstsize;
       }
     else if (auto vc = dynamic_cast<vector::VCatBase const*>( expr.node ))
@@ -760,7 +784,7 @@ namespace binsec {
         char const* sep = "";
         for (unsigned idx = vc->inputs.size(); idx-- > 0;)
           {
-            sink << sep << GetCode(vc->inputs[idx], vars, head, subsize);
+            sink << sep << GetCode(vc->inputs[idx], scope, subsize);
             sep = " :: ";
           }
         sink << ")";
@@ -768,7 +792,7 @@ namespace binsec {
       }
     else if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
       {
-        return node->GenCode( sink, vars, head );
+        return node->GenCode( sink, scope );
       }
 
     throw std::logic_error("No GenCode method");
@@ -828,16 +852,16 @@ namespace binsec {
   }
 
   int
-  BitFilter::GenCode( std::ostream& sink, Variables& vars, Point& head ) const
+  BitFilter::GenCode( std::ostream& sink, Scope& scope ) const
   {
     bool selection = source > select;
     if (extend == source and selection)
       {
         bool tail = true;
         if      (not rshift and not sxtend and select < 64)
-          sink << "(" << GetCode(input, vars, head, source) << " and " << dbx(source/8, (1ull << select)-1) << ")";
+          sink << "(" << GetCode(input, scope, source) << " and " << dbx(source/8, (1ull << select)-1) << ")";
         else if ((rshift + select) == extend)
-          sink << "(" << GetCode(input, vars, head, source) << " rshift" << (sxtend?"s ":"u ") << dbx(source/8, rshift) << ")";
+          sink << "(" << GetCode(input, scope, source) << " rshift" << (sxtend?"s ":"u ") << dbx(source/8, rshift) << ")";
         else
           tail = false;
 
@@ -851,7 +875,7 @@ namespace binsec {
     if (selection)
       sink << '(';
 
-    int chksize = ASExprNode::GenerateCode( input, sink, vars, head );
+    int chksize = ASExprNode::GenerateCode( input, sink, scope );
     if (chksize != source) { struct TypeSizeMisMatch {}; throw TypeSizeMisMatch(); }
 
     if (selection)
@@ -875,7 +899,7 @@ namespace binsec {
   }
 
   int
-  RegReadBase::GenCode( std::ostream& sink, Variables& vars, Point& head ) const
+  RegReadBase::GenCode( std::ostream& sink, Scope& scope ) const
   {
     unsigned bitsize = GetType().bitsize;
     GetRegName( sink );
@@ -892,12 +916,12 @@ namespace binsec {
   }
 
   int
-  Assignment::GenInputCode( Expr const& input, Variables& vars, std::ostream& sink )
+  Assignment::GenInputCode( Expr const& input, Scope& scope, std::ostream& sink )
   {
     Expr constant = input;
     if (ConstNodeBase const* node = constant.ConstSimplify())
       return ASExprNode::GenConstCode(node, sink);
-    auto const& var = vars.at(input);
+    auto const& var = scope.vars.at(input);
     sink << var.first;
     return var.second;
   }
@@ -921,7 +945,7 @@ namespace binsec {
   }
 
   void
-  RegWriteBase::GenerateCode( std::ostream& sink, Variables& vars ) const
+  RegWriteBase::GenerateCode( std::ostream& sink, Scope& scope ) const
   {
     /* Name of the assigned register */
     GetRegName( sink );
@@ -931,7 +955,7 @@ namespace binsec {
 
     sink << " := ";
 
-    int value_size = GenInputCode( value, vars, sink );
+    int value_size = GenInputCode( value, scope, sink );
 
     if (slice_size != value_size)
       throw std::logic_error( "error: size disagreement in register assignment." );
@@ -946,7 +970,7 @@ namespace binsec {
   }
 
   void
-  Branch::GenerateCode( std::ostream& sink, Variables& vars ) const
+  Branch::GenerateCode( std::ostream& sink, Scope& scope ) const
   {
     struct ShouldNotBeHere {};
     throw ShouldNotBeHere ();
@@ -987,7 +1011,7 @@ namespace binsec {
   }
 
   void
-  AssertFalse::GenerateCode( std::ostream& sink, Variables& vars ) const
+  AssertFalse::GenerateCode( std::ostream& sink, Scope& scope ) const
   {
     sink << "assert (false)";
   }
@@ -1000,14 +1024,14 @@ namespace binsec {
   }
 
   void
-  Store::GenerateCode( std::ostream& sink, Variables& vars ) const
+  Store::GenerateCode( std::ostream& sink, Scope& scope ) const
   {
     /* TODO: exploit alignment info */
     sink << "@[";
-    GenInputCode( addr, vars, sink );
+    GenInputCode( addr, scope, sink );
     sink << ',' << (bigendian?"->":"<-") << ',' << bytecount() << "] := ";
 
-    int value_size = GenInputCode( value, vars, sink );
+    int value_size = GenInputCode( value, scope, sink );
 
     if (value_size != 8*bytecount())
       throw std::logic_error( "error: size disagreement in memory store." );
@@ -1020,10 +1044,10 @@ namespace binsec {
   }
 
   int
-  Load::GenCode( std::ostream& sink, Variables& vars, Point& head ) const
+  Load::GenCode( std::ostream& sink, Scope& scope ) const
   {
     /* TODO: exploit alignment info */
-    sink << "@[" << GetCode(addr, vars, head) << ',' << (bigendian?"->":"<-") << ',' << bytecount() << "]";
+    sink << "@[" << GetCode(addr, scope) << ',' << (bigendian?"->":"<-") << ',' << bytecount() << "]";
     return 8*bytecount();
   }
 
@@ -1042,19 +1066,19 @@ namespace binsec {
   }
 
   int
-  UndefinedValueBase::GenCode(std::ostream& sink, Variables& vars, Point& head) const
+  UndefinedValueBase::GenCode(std::ostream& sink, Scope& scope) const
   {
     int retsize = GetType().bitsize;
     std::ostringstream buffer;
-    std::string const& tmp = mktemp( vars, Expr(this), retsize );
+    std::string const& tmp = scope.mktemp( Expr(this), retsize );
     buffer << tmp << " := \\undef";
-    head.append( new Statement( buffer.str() ) );
+    scope.head.append( scope.make_insn<Statement>( buffer.str() ), 0 );
     sink << tmp;
     return retsize;
   }
 
   int
-  BitInsertNode::GenCode(std::ostream& sink, Variables&, Point&) const
+  BitInsertNode::GenCode(std::ostream& sink, Scope&) const
   {
     throw 0;
     return 0;
