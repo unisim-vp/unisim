@@ -2067,6 +2067,35 @@ struct PBlend : public Op3V<ARCH,VR>
   uint8_t im;
 };
 
+template <class ARCH, class VR>
+struct PBlendvb : public Op3V<ARCH,VR>
+{
+  typedef typename ARCH::u8_t u8_t;
+  typedef typename ARCH::s8_t s8_t;
+
+  PBlendvb( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, unsigned vn, unsigned gn, uint8_t _im ) : Op3V<ARCH,VR>(opbase, std::move(rm), vn, gn), mn((_im >> 4) & 0b1111) {}
+
+  using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
+
+  void disasm( std::ostream& sink ) const
+  {
+    sink << vprefix() << "pblendvb " << DisasmV( VR(), mn ) << ','; disasmVVW(sink);
+  }
+  void execute( ARCH& arch ) const
+  {
+
+    for (unsigned idx = 0, end = VR::size() / 8; idx < end; ++ idx) {
+      u8_t r =
+	ConditionalMove( arch.vmm_read( VR(), mn, idx, s8_t() ) < s8_t(0),
+			 arch.vmm_read( VR(), rm, idx, u8_t() ),
+			 arch.vmm_read( VR(), vn, idx, u8_t() ) );
+      arch.vmm_write( VR(), gn, idx, r );
+    }
+  }
+
+  unsigned mn;
+};
+
 /* PBLENDW -- Blend Packed Words */
 template <class ARCH> struct DC<ARCH,PBLEND> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
@@ -2078,6 +2107,18 @@ template <class ARCH> struct DC<ARCH,PBLEND> { Operation<ARCH>* get( InputCode<A
   if (auto _ = match( ic, vex( "\x66\x0f\x3a\x02" ) & RM() & Imm<8>() ))
     if (ic.vex() && ic.w() == 0)
       return newPBlend<32>( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()) );
+
+  if (auto _ = match( ic, OpSize<16>() & opcode("\x0f\x38\x10") & RM() ))
+    return new PBlendvb<ARCH,SSE>( _.opbase(), _.rmop(), _.greg(), _.greg(), 0 );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x4c" ) & RM() & Imm<8>() ))
+    if (ic.vex() && ic.w() == 0) {
+      unsigned vn = ic.vreg();
+      if (ic.vlen() == 128)
+	return new PBlendvb<ARCH,XMM>( _.opbase(), _.rmop(), vn, _.greg(), _.i(uint8_t()) );
+      if (ic.vlen() == 256)
+	return new PBlendvb<ARCH,YMM>( _.opbase(), _.rmop(), vn, _.greg(), _.i(uint8_t()) );
+    }
 
   return 0;
 }
