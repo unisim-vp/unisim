@@ -70,25 +70,139 @@ namespace symbolic {
     uint32_t bitsize : 24;
   };
 
+  struct Op : public identifier::Identifier<Op>
+  {
+    enum Code
+      {
+        Xor, And, Or,
+        Ror, Rol, Lsl, Asr, Lsr,
+        Add, Sub, Mul, Div, Divu, Mod, Modu, Min, Max, Minu, Maxu,
+        CMov, Inc, Dec,
+        Tzero, Tnzero,
+        Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu,
+        BSwp, BSR, BSF, POPCNT, Not, Neg,
+        FAdd, FSub, FDiv, FMul,
+        FCmp, FSQB, FFZ, FNeg, FSqrt, FAbs, FDen, FMod, FPow,
+        FCeil, FFloor, FTrunc, FRound, FNear, FMax, FMin,
+        Opaque, Cast, ReinterpretAs,
+        end
+      } code;
+
+    char const* c_str() const
+    {
+      switch (code)
+        {
+        case    Xor: return "Xor";
+        case    And: return "And";
+        case     Or: return "Or";
+        case    Add: return "Add";
+        case    Sub: return "Sub";
+        case    Div: return "Div";
+        case   Divu: return "Divu";
+        case    Mod: return "Mod";
+        case   Modu: return "Modu";
+        case    Mul: return "Mul";
+        case    Min: return "Min";
+        case    Max: return "Max";
+        case   Minu: return "Minu";
+        case   Maxu: return "Maxu";
+        case   CMov: return "CMov";
+        case    Ror: return "Ror";
+        case    Rol: return "Rol";
+        case    Lsl: return "Lsl";
+        case    Asr: return "Asr";
+        case    Lsr: return "Lsr";
+        case    Inc: return "Inc";
+        case    Dec: return "Dec";
+        case  Tzero: return "Tzero";
+        case Tnzero: return "Tnzero";
+        case    Teq: return "Teq";
+        case    Tne: return "Tne";
+        case    Tge: return "Tge";
+        case    Tgt: return "Tgt";
+        case    Tle: return "Tle";
+        case    Tlt: return "Tlt";
+        case   Tgeu: return "Tgeu";
+        case   Tgtu: return "Tgtu";
+        case   Tleu: return "Tleu";
+        case   Tltu: return "Tltu";
+        case   FCmp: return "FCmp";
+        case   BSwp: return "BSwp";
+        case    BSR: return "BSR";
+        case    BSF: return "BSF";
+        case POPCNT: return "POPCNT";
+        case    Not: return "Not";
+        case    Neg: return "Neg";
+        case   FAdd: return "FAdd";
+        case   FSub: return "FSub";
+        case   FMul: return "FMul";
+        case   FDiv: return "FDiv";
+        case   FSQB: return "FSQB";
+        case    FFZ: return "FFZ";
+        case   FNeg: return "FNeg";
+        case  FSqrt: return "FSqrt";
+        case   FAbs: return "FAbs";
+        case   FDen: return "FDen";
+        case   FMod: return "FMod";
+        case   FPow: return "FPow";
+        case FFloor: return "FFloor";
+        case  FCeil: return "FCeil";
+        case FRound: return "FRound";
+        case FTrunc: return "FTrunc";
+        case  FNear: return "FNear";
+        case   FMax: return "FMax";
+        case   FMin: return "FMin";
+        case Opaque: return "Opaque";
+        case   Cast: return "Cast";
+        case ReinterpretAs: return "ReinterpretAs";
+        case    end: break;
+        }
+      return "NA";
+    }
+
+    Op() : code(end) {}
+    Op( Code _code ) : code(_code) {}
+    Op( char const* _code ) : code(end) { init( _code ); }
+  };
+
+  // TODO: Use c++-20 concepts and requirements ASAP.
+
   template <typename VALUE_TYPE>
   struct TypeInfo
   {
-    enum { BITSIZE = 8*sizeof(VALUE_TYPE), ENCODING = std::numeric_limits<VALUE_TYPE>::is_signed ? ValueType::SIGNED : ValueType::UNSIGNED };
+    enum { BITSIZE = 8*sizeof(VALUE_TYPE), ENCODING = std::is_signed<VALUE_TYPE>::value ? ValueType::SIGNED : ValueType::UNSIGNED };
+    static constexpr Op::Code rsh_op() { return std::is_signed<VALUE_TYPE>::value ? Op::Asr : Op::Lsr; }
+    static constexpr Op::Code add_op() { return Op::Add; }
+    static constexpr Op::Code sub_op() { return Op::Sub; }
+    static constexpr Op::Code mul_op() { return Op::Mul; }
+    static constexpr Op::Code div_op() { return std::is_signed<VALUE_TYPE>::value ? Op::Div : Op::Divu; }
+    static constexpr Op::Code mod_op() { return std::is_signed<VALUE_TYPE>::value ? Op::Mod : Op::Modu; }
+    static constexpr Op::Code min_op() { return std::is_signed<VALUE_TYPE>::value ? Op::Min : Op::Minu; }
+    static constexpr Op::Code max_op() { return std::is_signed<VALUE_TYPE>::value ? Op::Max : Op::Maxu; }
   };
 
   template <> struct TypeInfo<bool>
   {
     enum { BITSIZE = 1, ENCODING = ValueType::BOOL };
   };
-  template <> struct TypeInfo<float>
+  struct FloatTypeOps
+  {
+    static constexpr Op::Code add_op() { return Op::FAdd; }
+    static constexpr Op::Code sub_op() { return Op::FSub; }
+    static constexpr Op::Code mul_op() { return Op::FMul; }
+    static constexpr Op::Code div_op() { return Op::FDiv; }
+    static constexpr Op::Code min_op() { return Op::FMin; }
+    static constexpr Op::Code max_op() { return Op::FMax; }
+  };
+  template <> struct TypeInfo<float> : public FloatTypeOps
   {
     enum { BITSIZE = 32, ENCODING = ValueType::FLOAT };
   };
-  template <> struct TypeInfo<double>
+  template <> struct TypeInfo<double> : public FloatTypeOps
   {
     enum { BITSIZE = 64, ENCODING = ValueType::FLOAT };
   };
-  template <> struct TypeInfo<long double>
+  template <> struct TypeInfo<long double> : public FloatTypeOps
   {
     enum { BITSIZE = 80, ENCODING = ValueType::FLOAT };
   };
@@ -153,94 +267,6 @@ namespace symbolic {
     virtual ValueType GetType() const override { return type; }
     virtual int cmp( ExprNode const& rhs ) const override { return 0; }
     ValueType type;
-  };
-
-  struct Op : public identifier::Identifier<Op>
-  {
-    enum Code
-      {
-        Xor, And, Or,
-        Ror, Rol, Lsl, Asr, Lsr,
-        Add, Sub, Div, Divu, Mod, Modu, Mul, Min, Max,
-        CMov, Inc, Dec,
-        Tzero, Tnzero,
-        Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu,
-        BSwp, BSR, BSF, POPCNT, Not, Neg,
-        FCmp, FSQB, FFZ, FNeg, FSqrt, FAbs, FDen, FMod, FPow,
-        FCeil, FFloor, FTrunc, FRound, FNear, FMax, FMin,
-        Cast, ReinterpretAs, Opaque,
-        end
-      } code;
-
-    char const* c_str() const
-    {
-      switch (code)
-        {
-        case    Xor: return "Xor";
-        case    And: return "And";
-        case     Or: return "Or";
-        case    Add: return "Add";
-        case    Sub: return "Sub";
-        case    Div: return "Div";
-        case   Divu: return "Divu";
-        case    Mod: return "Mod";
-        case   Modu: return "Modu";
-        case    Mul: return "Mul";
-        case    Min: return "Min";
-        case    Max: return "Max";
-        case   CMov: return "CMov";
-        case    Ror: return "Ror";
-        case    Rol: return "Rol";
-        case    Lsl: return "Lsl";
-        case    Asr: return "Asr";
-        case    Lsr: return "Lsr";
-        case    Inc: return "Inc";
-        case    Dec: return "Dec";
-        case  Tzero: return "Tzero";
-        case Tnzero: return "Tnzero";
-        case    Teq: return "Teq";
-        case    Tne: return "Tne";
-        case    Tge: return "Tge";
-        case    Tgt: return "Tgt";
-        case    Tle: return "Tle";
-        case    Tlt: return "Tlt";
-        case   Tgeu: return "Tgeu";
-        case   Tgtu: return "Tgtu";
-        case   Tleu: return "Tleu";
-        case   Tltu: return "Tltu";
-        case   FCmp: return "FCmp";
-        case   BSwp: return "BSwp";
-        case    BSR: return "BSR";
-        case    BSF: return "BSF";
-        case POPCNT: return "POPCNT";
-        case    Not: return "Not";
-        case    Neg: return "Neg";
-        case   FSQB: return "FSQB";
-        case    FFZ: return "FFZ";
-        case   FNeg: return "FNeg";
-        case  FSqrt: return "FSqrt";
-        case   FAbs: return "FAbs";
-        case   FDen: return "FDen";
-        case   FMod: return "FMod";
-        case   FPow: return "FPow";
-        case FFloor: return "FFloor";
-        case  FCeil: return "FCeil";
-        case FRound: return "FRound";
-        case FTrunc: return "FTrunc";
-        case  FNear: return "FNear";
-        case   FMax: return "FMax";
-        case   FMin: return "FMin";
-        case   Cast: return "Cast";
-        case Opaque: return "Opaque";
-        case ReinterpretAs: return "ReinterpretAs";
-        case    end: break;
-        }
-      return "NA";
-    }
-
-    Op() : code(end) {}
-    Op( Code _code ) : code(_code) {}
-    Op( char const* _code ) : code(end) { init( _code ); }
   };
 
   struct ConstNodeBase : public ExprNode
@@ -438,10 +464,10 @@ namespace symbolic {
         case Op::BSwp: case Op::Not: case Op::Neg:  case Op::BSR:   case Op::BSF:  case Op::POPCNT:
         case Op::FSQB: case Op::FFZ: case Op::FNeg: case Op::FSqrt: case Op::FAbs: case Op::FMod: case Op::FPow:
         case Op::FFloor: case Op::FCeil: case Op::FTrunc: case Op::FRound: case Op::FNear:
-        case Op::FMax: case Op::FMin:
+        case Op::FMax: case Op::FMin: case Op::FAdd: case Op::FSub: case Op::FMul: case Op::FDiv:
         case Op::Xor:  case Op::And: case Op::Or:
         case Op::Lsl:  case Op::Lsr: case Op::Asr:  case Op::Ror:   case Op::Rol:
-        case Op::Add:  case Op::Sub: case Op::Min:  case Op::Max: case Op::CMov:
+        case Op::Add:  case Op::Sub: case Op::Min:  case Op::Max: case Op::Minu:  case Op::Maxu: case Op::CMov:
         case Op::Mul:  case Op::Div: case Op::Mod: case Op::Divu: case Op::Modu:
         case Op::ReinterpretAs: case Op::Inc: case Op::Dec:
 
@@ -492,8 +518,10 @@ namespace symbolic {
         case Op::BSR:    return new this_type( EvalBitScanReverse( value ) );
         case Op::BSF:    return new this_type( EvalBitScanForward( value ) );
         case Op::POPCNT: return new this_type( EvalPopCount( value ) );
-        case Op::Min:    return new this_type( std::min( value, GetValue( args[1] ) ) );
-        case Op::Max:    return new this_type( std::max( value, GetValue( args[1] ) ) );
+        case Op::Min:
+        case Op::Minu:   return new this_type( std::min( value, GetValue( args[1] ) ) );
+        case Op::Max:
+        case Op::Maxu:   return new this_type( std::max( value, GetValue( args[1] ) ) );
         case Op::Xor:    return new this_type( EvalXor( value, GetValue( args[1] ) ) );
         case Op::And:    return new this_type( EvalAnd( value, GetValue( args[1] ) ) );
         case Op::Or:     return new this_type( EvalOr( value, GetValue( args[1] ) ) );
@@ -501,11 +529,14 @@ namespace symbolic {
         case Op::Lsl:    return new this_type( EvalSHL( value, dynamic_cast<ConstNode<shift_type> const&>(*args[1]).value ) );
         case Op::Lsr:
         case Op::Asr:    return new this_type( EvalSHR( value, dynamic_cast<ConstNode<shift_type> const&>(*args[1]).value ) );
+        case Op::FAdd:
         case Op::Add:    return new this_type( value + GetValue( args[1] ) );
+        case Op::FSub:
         case Op::Sub:    return new this_type( value - GetValue( args[1] ) );
+        case Op::FMul:
         case Op::Mul:    return new this_type( EvalMul( value, GetValue( args[1] ) ) );
-        case Op::Div:
-        case Op::Divu:   return new this_type( value / GetValue( args[1] ) );
+        case Op::FDiv: case Op::Divu:
+        case Op::Div:   return new this_type( value / GetValue( args[1] ) );
         case Op::Mod:
         case Op::Modu:   return new this_type( EvalMod( value, GetValue( args[1] ) ) );
         case Op::Inc:    return new this_type( EvalInc( value ) );
@@ -736,6 +767,7 @@ namespace symbolic {
   {
     typedef VALUE_TYPE value_type;
     typedef SmartValue<value_type> this_type;
+    typedef TypeInfo<value_type> info_type;
     static ValueType GetType() { return CValueType(value_type()); }
 
     Expr expr;
@@ -762,109 +794,110 @@ namespace symbolic {
     }
 
     static bool const is_signed = std::numeric_limits<value_type>::is_signed;
+    static bool const is_float = std::is_floating_point<value_type>::value;
 
     this_type& operator = ( this_type const& other ) { expr = other.expr; return *this; }
 
     template <typename SHT>
-    this_type operator << ( SHT sh ) const { return this_type( make_operation( "Lsl", expr, make_const<shift_type>(sh) ) ); }
+    this_type operator << ( SHT sh ) const { return this_type( make_operation( Op::Lsl, expr, make_const<shift_type>(sh) ) ); }
     template <typename SHT>
-    this_type operator >> ( SHT sh ) const { return this_type( make_operation( is_signed ? "Asr" : "Lsr", expr, make_const<shift_type>(sh) ) ); }
+    this_type operator >> ( SHT sh ) const { return this_type( make_operation( info_type::rsh_op(), expr, make_const<shift_type>(sh) ) ); }
     template <typename SHT>
-    this_type& operator <<= ( SHT sh ) { expr = make_operation( "Lsl", expr, make_const<shift_type>(sh) ); return *this; }
+    this_type& operator <<= ( SHT sh ) { expr = make_operation( Op::Lsl, expr, make_const<shift_type>(sh) ); return *this; }
     template <typename SHT>
-    this_type& operator >>= ( SHT sh ) { expr = make_operation( is_signed?"Asr":"Lsr", expr, make_const<shift_type>(sh) ); return *this; }
+    this_type& operator >>= ( SHT sh ) { expr = make_operation( info_type::rsh_op(), expr, make_const<shift_type>(sh) ); return *this; }
 
     template <typename SHT>
-    this_type operator << ( SmartValue<SHT> const& sh ) const { return this_type( make_operation( "Lsl", expr, SmartValue<shift_type>(sh).expr ) ); }
+    this_type operator << ( SmartValue<SHT> const& sh ) const { return this_type( make_operation( Op::Lsl, expr, SmartValue<shift_type>(sh).expr ) ); }
     template <typename SHT>
-    this_type operator >> ( SmartValue<SHT> const& sh ) const {return this_type( make_operation( is_signed?"Asr":"Lsr", expr, SmartValue<shift_type>(sh).expr ) ); }
+    this_type operator >> ( SmartValue<SHT> const& sh ) const { return this_type( make_operation( info_type::rsh_op(), expr, SmartValue<shift_type>(sh).expr ) ); }
     template <typename SHT>
-    this_type& operator <<= ( SmartValue<SHT> const& sh ) { expr = make_operation( "Lsl", expr, SmartValue<shift_type>(sh).expr ); return *this; }
+    this_type& operator <<= ( SmartValue<SHT> const& sh ) { expr = make_operation( Op::Lsl, expr, SmartValue<shift_type>(sh).expr ); return *this; }
     template <typename SHT>
-    this_type& operator >>= ( SmartValue<SHT> const& sh ) { expr = make_operation( is_signed?"Asr":"Lsr", expr, SmartValue<shift_type>(sh).expr ); return *this; }
+    this_type& operator >>= ( SmartValue<SHT> const& sh ) { expr = make_operation( info_type::rsh_op(), expr, SmartValue<shift_type>(sh).expr ); return *this; }
 
-    this_type operator - () const { return this_type( make_operation( "Neg", expr ) ); }
-    this_type operator ~ () const { return this_type( make_operation( "Not", expr ) ); }
+    this_type operator - () const { return this_type( make_operation( Op::Neg, expr ) ); }
+    this_type operator ~ () const { return this_type( make_operation( Op::Not, expr ) ); }
 
-    this_type& operator += ( this_type const& other ) { expr = make_operation( "Add", expr, other.expr ); return *this; }
-    this_type& operator -= ( this_type const& other ) { expr = make_operation( "Sub", expr, other.expr ); return *this; }
-    this_type& operator *= ( this_type const& other ) { expr = make_operation( "Mul", expr, other.expr ); return *this; }
-    this_type& operator /= ( this_type const& other ) { expr = make_operation( is_signed ? "Div" : "Divu", expr, other.expr ); return *this; }
-    this_type& operator %= ( this_type const& other ) { expr = make_operation( is_signed ? "Mod" : "Modu", expr, other.expr ); return *this; }
-    this_type& operator ^= ( this_type const& other ) { expr = make_operation( "Xor", expr, other.expr ); return *this; }
-    this_type& operator &= ( this_type const& other ) { expr = make_operation( "And", expr, other.expr ); return *this; }
-    this_type& operator |= ( this_type const& other ) { expr =  make_operation( "Or", expr, other.expr ); return *this; }
+    this_type& operator += ( this_type const& other ) { expr = make_operation( info_type::add_op(), expr, other.expr ); return *this; }
+    this_type& operator -= ( this_type const& other ) { expr = make_operation( info_type::sub_op(), expr, other.expr ); return *this; }
+    this_type& operator *= ( this_type const& other ) { expr = make_operation( info_type::mul_op(), expr, other.expr ); return *this; }
+    this_type& operator /= ( this_type const& other ) { expr = make_operation( info_type::div_op(), expr, other.expr ); return *this; }
+    this_type& operator %= ( this_type const& other ) { expr = make_operation( info_type::mod_op(), expr, other.expr ); return *this; }
+    this_type& operator ^= ( this_type const& other ) { expr = make_operation( Op::Xor, expr, other.expr ); return *this; }
+    this_type& operator &= ( this_type const& other ) { expr = make_operation( Op::And, expr, other.expr ); return *this; }
+    this_type& operator |= ( this_type const& other ) { expr =  make_operation( Op::Or, expr, other.expr ); return *this; }
 
-    this_type operator + ( this_type const& other ) const { return this_type( make_operation( "Add", expr, other.expr ) ); }
-    this_type operator - ( this_type const& other ) const { return this_type( make_operation( "Sub", expr, other.expr ) ); }
-    this_type operator * ( this_type const& other ) const { return this_type( make_operation( "Mul", expr, other.expr ) ); }
-    this_type operator / ( this_type const& other ) const { return this_type( make_operation( is_signed ? "Div" : "Divu", expr, other.expr ) ); }
-    this_type operator % ( this_type const& other ) const { return this_type( make_operation( is_signed ? "Mod" : "Modu", expr, other.expr ) ); }
-    this_type operator ^ ( this_type const& other ) const { return this_type( make_operation( "Xor", expr, other.expr ) ); }
-    this_type operator & ( this_type const& other ) const { return this_type( make_operation( "And", expr, other.expr ) ); }
-    this_type operator | ( this_type const& other ) const { return this_type( Expr(  make_operation( "Or", expr, other.expr ) ) ); }
+    this_type operator + ( this_type const& other ) const { return this_type( make_operation( info_type::add_op(), expr, other.expr ) ); }
+    this_type operator - ( this_type const& other ) const { return this_type( make_operation( info_type::sub_op(), expr, other.expr ) ); }
+    this_type operator * ( this_type const& other ) const { return this_type( make_operation( info_type::mul_op(), expr, other.expr ) ); }
+    this_type operator / ( this_type const& other ) const { return this_type( make_operation( info_type::div_op(), expr, other.expr ) ); }
+    this_type operator % ( this_type const& other ) const { return this_type( make_operation( info_type::mod_op(), expr, other.expr ) ); }
+    this_type operator ^ ( this_type const& other ) const { return this_type( make_operation( Op::Xor, expr, other.expr ) ); }
+    this_type operator & ( this_type const& other ) const { return this_type( make_operation( Op::And, expr, other.expr ) ); }
+    this_type operator | ( this_type const& other ) const { return this_type( make_operation( Op::Or, expr, other.expr ) ); }
 
-    SmartValue<bool> operator == ( this_type const& other ) const { return SmartValue<bool>( make_operation( "Teq", expr, other.expr ) ); }
-    SmartValue<bool> operator != ( this_type const& other ) const { return SmartValue<bool>( make_operation( "Tne", expr, other.expr ) ); }
-    SmartValue<bool> operator <= ( this_type const& other ) const { return SmartValue<bool>( make_operation( is_signed ? "Tle" : "Tleu", expr, other.expr ) ); }
-    SmartValue<bool> operator >= ( this_type const& other ) const { return SmartValue<bool>( make_operation( is_signed ? "Tge" : "Tgeu", expr, other.expr ) ); }
-    SmartValue<bool> operator < ( this_type const& other ) const  { return SmartValue<bool>( make_operation( is_signed ? "Tlt" : "Tltu", expr, other.expr ) ); }
-    SmartValue<bool> operator > ( this_type const& other ) const  { return SmartValue<bool>( make_operation( is_signed ? "Tgt" : "Tgtu", expr, other.expr ) ); }
+    SmartValue<bool> operator == ( this_type const& other ) const { return SmartValue<bool>( make_operation( Op::Teq, expr, other.expr ) ); }
+    SmartValue<bool> operator != ( this_type const& other ) const { return SmartValue<bool>( make_operation( Op::Tne, expr, other.expr ) ); }
+    SmartValue<bool> operator <= ( this_type const& other ) const { return SmartValue<bool>( make_operation( is_signed ? Op::Tle : Op::Tleu, expr, other.expr ) ); }
+    SmartValue<bool> operator >= ( this_type const& other ) const { return SmartValue<bool>( make_operation( is_signed ? Op::Tge : Op::Tgeu, expr, other.expr ) ); }
+    SmartValue<bool> operator < ( this_type const& other ) const  { return SmartValue<bool>( make_operation( is_signed ? Op::Tlt : Op::Tltu, expr, other.expr ) ); }
+    SmartValue<bool> operator > ( this_type const& other ) const  { return SmartValue<bool>( make_operation( is_signed ? Op::Tgt : Op::Tgtu, expr, other.expr ) ); }
 
     SmartValue<bool> operator ! () const
-    { return SmartValue<bool>( make_operation( "Not", SmartValue<bool>( *this ).expr ) ); }
+    { return SmartValue<bool>( make_operation( Op::Not, SmartValue<bool>( *this ).expr ) ); }
 
     SmartValue<bool> operator && ( SmartValue<bool> const& other ) const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( make_operation( "And", expr, other.expr ) ); }
+    { AssertBool<value_type>::check(); return SmartValue<bool>( make_operation( Op::And, expr, other.expr ) ); }
 
     SmartValue<bool> operator || ( SmartValue<bool> const& other ) const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( Expr(  make_operation( "Or", expr, other.expr ) ) ); }
+    { AssertBool<value_type>::check(); return SmartValue<bool>( Expr(  make_operation( Op::Or, expr, other.expr ) ) ); }
   };
 
-  template <typename T> SmartValue<T> Minimum( SmartValue<T> const& l, SmartValue<T> const& r ) { return SmartValue<T>( make_operation( "Min", l.expr, r.expr ) ); }
-  template <typename T> SmartValue<T> Maximum( SmartValue<T> const& l, SmartValue<T> const& r ) { return SmartValue<T>( make_operation( "Max", l.expr, r.expr ) ); }
+  template <typename T> SmartValue<T> Minimum( SmartValue<T> const& l, SmartValue<T> const& r ) { return SmartValue<T>( make_operation( TypeInfo<T>::min_op(), l.expr, r.expr ) ); }
+  template <typename T> SmartValue<T> Maximum( SmartValue<T> const& l, SmartValue<T> const& r ) { return SmartValue<T>( make_operation( TypeInfo<T>::max_op(), l.expr, r.expr ) ); }
 
-  template <typename T> SmartValue<T> ConditionalMove(SmartValue<bool> cond, SmartValue<T> tval, SmartValue<T> fval) { return SmartValue<T>( make_operation( "CMov", tval.expr, fval.expr, cond.expr ) ); }
-
-  template <typename UTP>
-  UTP ByteSwap( UTP const& value ) { return UTP( make_operation( "BSwp", value.expr ) ); }
+  template <typename T> SmartValue<T> ConditionalMove(SmartValue<bool> cond, SmartValue<T> tval, SmartValue<T> fval) { return SmartValue<T>( make_operation( Op::CMov, tval.expr, fval.expr, cond.expr ) ); }
 
   template <typename UTP>
-  UTP RotateRight( UTP const& value, shift_type sh ) { return UTP( make_operation( "Ror", value.expr, make_const<shift_type>(sh) ) ); }
+  UTP ByteSwap( UTP const& value ) { return UTP( make_operation( Op::BSwp, value.expr ) ); }
+
+  template <typename UTP>
+  UTP RotateRight( UTP const& value, shift_type sh ) { return UTP( make_operation( Op::Ror, value.expr, make_const<shift_type>(sh) ) ); }
   template <typename UTP, typename STP>
-  UTP RotateRight( UTP const& value, STP const& sh ) { return UTP( make_operation( "Ror", value.expr, SmartValue<shift_type>(sh).expr ) ); }
+  UTP RotateRight( UTP const& value, STP const& sh ) { return UTP( make_operation( Op::Ror, value.expr, SmartValue<shift_type>(sh).expr ) ); }
 
   template <typename UTP>
-  UTP RotateLeft( UTP const& value, shift_type sh ) { return UTP( make_operation( "Rol", value.expr, make_const<shift_type>(sh) ) ); }
+  UTP RotateLeft( UTP const& value, shift_type sh ) { return UTP( make_operation( Op::Rol, value.expr, make_const<shift_type>(sh) ) ); }
   template <typename UTP, typename STP>
-  UTP RotateLeft( UTP const& value, STP const& sh ) { return UTP( make_operation( "Rol", value.expr, SmartValue<shift_type>(sh).expr ) ); }
+  UTP RotateLeft( UTP const& value, STP const& sh ) { return UTP( make_operation( Op::Rol, value.expr, SmartValue<shift_type>(sh).expr ) ); }
 
   template <typename UTP>
-  UTP BitScanReverse( UTP const& value ) { return UTP( make_operation( "BSR", value.expr ) ); }
+  UTP BitScanReverse( UTP const& value ) { return UTP( make_operation( Op::BSR, value.expr ) ); }
 
   template <typename UTP>
-  UTP BitScanForward( UTP const& value ) { return UTP( make_operation( "BSF", value.expr ) ); }
+  UTP BitScanForward( UTP const& value ) { return UTP( make_operation( Op::BSF, value.expr ) ); }
 
   template <typename UTP>
-  UTP PopCount(UTP const& v) { return UTP( make_operation("POPCNT", v.expr) ); }
+  UTP PopCount(UTP const& v) { return UTP( make_operation( Op::POPCNT, v.expr ) ); }
 
   /*** Floating-Point ***/
   template <typename FTP>
-  FTP power( FTP const& left, FTP const& right ) { return FTP( make_operation( "FPow", left.expr, right.expr ) ); }
+  FTP power( FTP const& left, FTP const& right ) { return FTP( make_operation( Op::FPow, left.expr, right.expr ) ); }
 
   template <typename FTP>
-  FTP fmodulo( FTP const& left, FTP const& right ) { return FTP( make_operation( "FMod", left.expr, right.expr ) ); }
+  FTP fmodulo( FTP const& left, FTP const& right ) { return FTP( make_operation( Op::FMod, left.expr, right.expr ) ); }
 
-  template <typename FTP>  FTP fabs( FTP const& value ) { return FTP( make_operation( "FAbs", value.expr ) ); }
+  template <typename FTP>  FTP fabs( FTP const& value ) { return FTP( make_operation( Op::FAbs, value.expr ) ); }
   template <typename FTP>  FTP FAbs( FTP const& value ) { return fabs<FTP>( value ); }
-  template <typename FTP>  FTP ceil( FTP const& value ) { return FTP( make_operation( "FCeil", value.expr ) ); }
-  template <typename FTP>  FTP floor( FTP const& value ) { return FTP( make_operation( "FFloor", value.expr ) ); }
-  template <typename FTP>  FTP trunc( FTP const& value ) { return FTP( make_operation( "FTrunc", value.expr ) ); }
-  template <typename FTP>  FTP round( FTP const& value ) { return FTP( make_operation( "FRound", value.expr ) ); }
-  template <typename FTP>  FTP nearbyint( FTP const& value ) { return FTP( make_operation( "FNear", value.expr ) ); }
-  template <typename FTP>  FTP sqrt( FTP const& value ) { return FTP( make_operation( "FSqrt", value.expr ) ); }
-  template <typename FTP>  FTP fmin( FTP const& l, FTP const& r ) { return FTP( make_operation( "FMin", l.expr, r.expr ) ); }
-  template <typename FTP>  FTP fmax( FTP const& l, FTP const& r ) { return FTP( make_operation( "FMax", l.expr, r.expr ) ); }
+  template <typename FTP>  FTP ceil( FTP const& value ) { return FTP( make_operation( Op::FCeil, value.expr ) ); }
+  template <typename FTP>  FTP floor( FTP const& value ) { return FTP( make_operation( Op::FFloor, value.expr ) ); }
+  template <typename FTP>  FTP trunc( FTP const& value ) { return FTP( make_operation( Op::FTrunc, value.expr ) ); }
+  template <typename FTP>  FTP round( FTP const& value ) { return FTP( make_operation( Op::FRound, value.expr ) ); }
+  template <typename FTP>  FTP nearbyint( FTP const& value ) { return FTP( make_operation( Op::FNear, value.expr ) ); }
+  template <typename FTP>  FTP sqrt( FTP const& value ) { return FTP( make_operation( Op::FSqrt, value.expr ) ); }
+  template <typename FTP>  FTP fmin( FTP const& l, FTP const& r ) { return FTP( make_operation( Op::FMin, l.expr, r.expr ) ); }
+  template <typename FTP>  FTP fmax( FTP const& l, FTP const& r ) { return FTP( make_operation( Op::FMax, l.expr, r.expr ) ); }
   template <typename FTP>  FTP FMax( FTP const& l, FTP const& r ) { return fmax<FTP>( l, r ); }
 
   struct FP
@@ -891,21 +924,21 @@ namespace symbolic {
     template <typename FLOAT> static
     void SetQuietBit( FLOAT& op )
     {
-      op = FLOAT( make_operation( "FSQB", op.expr ) );
+      op = FLOAT( make_operation( Op::FSQB, op.expr ) );
     }
 
     template <typename FLOAT> static
     SmartValue<bool>
     FlushToZero( FLOAT& op, SmartValue<uint32_t> const& fpscr_val )
     {
-      op = FLOAT( make_operation( "FFZ", op.expr ) );
-      return SmartValue<bool>( make_operation( "FDen", op.expr ) );
+      op = FLOAT( make_operation( Op::FFZ, op.expr ) );
+      return SmartValue<bool>( make_operation( Op::FDen, op.expr ) );
     }
 
     template <typename FLOAT> static
     SmartValue<int32_t> Compare( FLOAT op1, FLOAT op2, SmartValue<uint32_t> const& fpscr_val )
     {
-      return SmartValue<int32_t>( make_operation( "FCmp", op1.expr, op2.expr ) );
+      return SmartValue<int32_t>( make_operation( Op::FCmp, op1.expr, op2.expr ) );
     }
 
     struct IsNaNNode : public ExprNode
@@ -937,25 +970,25 @@ namespace symbolic {
     template <typename FLOAT, class ARCH> static
     void Add( FLOAT& acc, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      acc = FLOAT( make_operation( "Add", acc.expr, op2.expr ) );
+      acc = FLOAT( make_operation( Op::FAdd, acc.expr, op2.expr ) );
     }
 
     template <typename FLOAT, class ARCH> static
     void Sub( FLOAT& acc, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      acc = FLOAT( make_operation( "Sub", acc.expr, op2.expr ) );
+      acc = FLOAT( make_operation( Op::FSub, acc.expr, op2.expr ) );
     }
 
     template <typename FLOAT, class ARCH> static
     void Div( FLOAT& acc, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      acc = FLOAT( make_operation( "Div", acc.expr, op2.expr ) );
+      acc = FLOAT( make_operation( Op::FDiv, acc.expr, op2.expr ) );
     }
 
     template <typename FLOAT, class ARCH> static
     void Mul( FLOAT& acc, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      acc = FLOAT( make_operation( "Mul", acc.expr, op2.expr ) );
+      acc = FLOAT( make_operation( Op::FMul, acc.expr, op2.expr ) );
     }
 
     struct MulAddNode : public ExprNode
@@ -1006,13 +1039,13 @@ namespace symbolic {
     }
 
     template <typename FLOAT> static
-    void Neg( FLOAT& acc ) { acc = FLOAT( make_operation( "FNeg", acc.expr ) ); }
+    void Neg( FLOAT& acc ) { acc = FLOAT( make_operation( Op::FNeg, acc.expr ) ); }
 
     template <typename FLOAT> static
-    void Abs( FLOAT& acc ) { acc = FLOAT( make_operation( "FAbs", acc.expr ) ); }
+    void Abs( FLOAT& acc ) { acc = FLOAT( make_operation( Op::FAbs, acc.expr ) ); }
 
     template <typename FLOAT, class ARCH> static
-    void Sqrt( FLOAT& acc, ARCH& arch, SmartValue<uint32_t> const& fpscr_val ) { acc = FLOAT( make_operation( "FSqrt", acc.expr ) ); }
+    void Sqrt( FLOAT& acc, ARCH& arch, SmartValue<uint32_t> const& fpscr_val ) { acc = FLOAT( make_operation( Op::FSqrt, acc.expr ) ); }
 
     struct FtoFNode : public ExprNode
     {

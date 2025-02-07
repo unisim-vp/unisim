@@ -44,6 +44,7 @@ namespace dba {
 typedef Processor<Intel64>  P64;
 typedef Processor<Compat32> P32;
 
+typedef ProcessorBase::rc_t  RC;
 typedef ProcessorBase::u64_t U64;
 typedef ProcessorBase::s64_t S64;
 typedef ProcessorBase::f64_t F64;
@@ -94,11 +95,10 @@ F64 eval_fprem1( P64& arch, F64 const& dividend, F64 const& modulus ) { throw Pr
 
 } /* end of namespace dba */
 
-  template <typename FPT> FPT firound( FPT const& src, int x87frnd_mode )
-  {
-    throw dba::ProcessorBase::Unimplemented();
-    return FPT();
-  }
+template <typename FPT> FPT firound( FPT const& src, dba::RC x87frnd_mode )
+{
+  return FPT(unisim::util::symbolic::Expr(new unisim::util::symbolic::binsec::Opaque<FPT>({src.expr, x87frnd_mode.expr})));
+}
 
 } /* end of namespace intel */
 } /* end of namespace processor */

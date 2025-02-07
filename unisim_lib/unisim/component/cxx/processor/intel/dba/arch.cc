@@ -49,6 +49,8 @@ ProcessorBase::ProcessorBase()
 {
   for (FLAG reg; reg.next();)
     flagvalues[reg.idx()] = newRegRead( reg );
+  for (FRegID reg; reg.next();)
+    fregs[reg.idx()] = newRegRead( reg );
 }
 
 // void
@@ -108,6 +110,48 @@ ProcessorBase::flagwrite( FLAG flag, bit_t fval, bit_t def )
     {
       flagvalues[flag.idx()] = ConditionalMove(def, fval, bit_t(unisim::util::symbolic::binsec::make_undefined_value(bool()))).expr;
     }
+}
+
+void
+ProcessorBase::finit()
+{
+  ftop = u8_t(0);
+  fcw = u16_t(0x37f);
+  for (auto flag : {FLAG::C0, FLAG::C1, FLAG::C2, FLAG::C3})
+    flagwrite( flag, bit_t(0) );
+}
+
+void
+ProcessorBase::fxam()
+{
+  Expr val = this->fread( 0 ).expr;
+
+  flagwrite( FLAG::C1, bit_t(u64_t(Expr( new unisim::util::symbolic::vector::VTrans<u64_t>( val, 64, 0 ))) >> 63) );
+
+  for (auto flag : {FLAG::C0, FLAG::C2, FLAG::C3})
+    flagwrite( flag, bit_t( Expr( new unisim::util::symbolic::binsec::Opaque<bool>({val}) ) ) );
+}
+
+void
+ProcessorBase::ftopdec()
+{
+  int last = FREGCOUNT-1;
+  f64_t rot = fregs[last];
+  for (int idx = last; idx > 0; --idx)
+    fregs[idx] = fregs[idx-1];
+  fregs[0] = rot;
+  ftop = (ftop - u8_t(1)) % u8_t(FREGCOUNT);
+}
+
+void
+ProcessorBase::ftopinc()
+{
+  int last = FREGCOUNT-1;
+  f64_t rot = fregs[0];
+  for (int idx = 0; idx < last; ++idx)
+    fregs[idx] = fregs[idx+1];
+  fregs[last] = rot;
+  ftop = (ftop + u8_t(1)) % u8_t(FREGCOUNT);
 }
 
 namespace

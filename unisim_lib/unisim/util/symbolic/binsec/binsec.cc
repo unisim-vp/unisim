@@ -72,13 +72,6 @@ namespace binsec {
       std::ostream& sink; std::string addr;
     };
     virtual void print(Printer const&) const = 0;
-    void release(std::set<Instruction*>& pool)
-    {
-      if (not pool.insert(this).second)
-        return;
-      for (int idx = 0; Instruction* next = get_next(idx); ++idx)
-        next->release(pool);
-    }
     virtual Instruction* get_next(int idx) const { return 0; }
 
     int index;
@@ -451,8 +444,66 @@ namespace binsec {
   void
   ActionNode::generate(std::ostream& sink, unsigned addrsize, uint64_t address) const
   {
+    struct
+    {
+      void source(Expr const& from)
+      {
+        if (unsigned subcount = from->SubCount())
+          {
+            for (unsigned idx = 0; idx < subcount; ++idx)
+              source( from->GetSub(idx) );
+          }
+        else if (not from->AsConstNode())
+          reads.insert(from);
+      }
+
+      void
+      process(ActionNode const* action_tree)
+      {
+        for (auto const& sink : action_tree->get_sinks())
+        {
+          SideEffect const& side_effect = dynamic_cast<SideEffect const&>( *sink.node );
+
+          for (unsigned idx = 0, end = side_effect.SubCount(); idx < end; ++idx)
+            source( side_effect.GetSub(idx) );
+
+          if (Branch const* branch = dynamic_cast<Branch const*>( &side_effect ))
+            {
+              source( branch->value );
+              branches.insert( branch->value );
+            }
+          else if (auto assignment = dynamic_cast<Assignment const*>( &side_effect ))
+            writes.insert( assignment->SourceRead() );
+        }
+
+        if (action_tree->cond.good())
+          source( action_tree->cond );
+
+        for (unsigned side = 0; side < 2; ++side)
+          if (ActionNode* next = action_tree->nexts[side])
+            process( next );
+      }
+
+      std::set<Expr> reads, writes, branches;
+    } effects;
+    effects.process( this );
+
     Nop entrypoint;
     Scope root( entrypoint );
+
+    sink << "(read";
+    for (auto const& read : effects.reads)
+      ASExprNode::GenerateCode( read, sink << ' ', root );
+    sink << ")\n";
+    sink << "(write";
+    for (auto const& write : effects.writes)
+      ASExprNode::GenerateCode( write, sink << ' ', root );
+    sink << ")\n";
+    sink << "(branch";
+    for (auto const& branch : effects.branches)
+      ASExprNode::GenerateCode( branch, sink << ' ', root );
+    sink << ")\n";
+    
     root.GenCode( this );
 
     Instruction::Sequence prologue, epilogue;
@@ -571,7 +622,6 @@ namespace binsec {
 
             switch (node->op.code)
               {
-              default:          break;
               case Op::Add:     return infix("+");
               case Op::Sub:     return infix("-");
               case Op::Mul:     return infix("*");
@@ -606,6 +656,20 @@ namespace binsec {
 
               case Op::Min:     return prefix("min");
               case Op::Max:     return prefix("max");
+
+              case Op::Rol:
+              case Op::Minu: case Op::Maxu:
+              case Op::FAdd: case Op::FSub: case Op::FMul: case Op::FDiv: case Op::FMod: case Op::FPow:
+              case Op::FMax: case Op::FMin:
+                return OpaqueBV( node->GetSub(0)->GetType().bitsize, {node->GetSub(0), node->GetSub(1)}).GenCode(sink, scope);
+
+              case Op::CMov:
+              case Op::Inc: case Op::Dec: case Op::Tzero: case Op::Tnzero: case Op::BSwp:
+              case Op::BSR: case Op::BSF: case Op::POPCNT: case Op::Not: case Op::Neg:
+              case Op::FCmp: case Op::FSQB: case Op::FFZ: case Op::FNeg: case Op::FSqrt: case Op::FAbs: case Op::FDen:
+              case Op::FCeil: case Op::FFloor: case Op::FTrunc: case Op::FRound: case Op::FNear:
+              case Op::Opaque: case Op::Cast: case Op::ReinterpretAs: case Op::end:
+                break;
               }
 
             std::ostringstream buf;
@@ -1056,13 +1120,7 @@ namespace binsec {
   {
     sink << "UndefinedValue<";
     GetType().Repr(sink);
-    sink << ">(";
-    for (unsigned idx = 0, end = this->SubCount(); idx < end; ++idx)
-      {
-        sink << (idx ? ", " : "");
-        this->GetSub(idx)->Repr(sink);
-      }
-    sink << ")";
+    sink << ">()";
   }
 
   int
@@ -1074,6 +1132,31 @@ namespace binsec {
     buffer << tmp << " := \\undef";
     scope.head.append( scope.make_insn<Statement>( buffer.str() ), 0 );
     sink << tmp;
+    return retsize;
+  }
+
+  void OpaqueBase::Repr( std::ostream& sink ) const
+  {
+    sink << "Opaque<";
+    GetType().Repr(sink);
+    sink << ">(";
+    for (unsigned idx = 0, end = this->SubCount(); idx < end; ++idx)
+      {
+        sink << (idx ? ", " : "");
+        this->GetSub(idx)->Repr(sink);
+      }
+    sink << ")";
+  }
+
+  int OpaqueBase::GenCode( std::ostream& sink, Scope& scope ) const
+  {
+    int retsize = GetType().bitsize;
+    sink << "opaque<" << std::dec << retsize << ">(";
+    for (unsigned idx = 0, end = this->SubCount(); idx < end; ++idx)
+      {
+        ASExprNode::GenerateCode( this->GetSub(idx), sink << (idx ? ", " : ""), scope );
+      }
+    sink << ")";
     return retsize;
   }
 

@@ -120,60 +120,6 @@ struct ProcessorBase
   template <typename RID>
   static Expr newPartialRegWrite( RID id, unsigned pos, unsigned size, Expr const& value ) { return new unisim::util::symbolic::binsec::RegWrite<RID>( id, pos, size, value ); }
 
-  /*** FLOATING POINT REGISTERS ***/
-
-  enum {FREGCOUNT=8};
-
-  void                        fnanchk( f64_t value ) {}
-
-  int                         fcwreadRC() const { return 0; }
-  u16_t                       fcwread() const { throw Unimplemented(); /*FCW access*/ return u16_t(); }
-  void                        fcwwrite( u16_t value ) { throw Unimplemented(); /*FCW access*/}
-  void                        finit() { throw Unimplemented(); /*FCW access*/ }
-
-  void                        fxam() { throw Unimplemented(); }
-
-  // struct FTop : public unisim::util::symbolic::ExprNode
-  // {
-  //   virtual FTop* Mutate() const override { return new FTop(*this); }
-  //   virtual unsigned SubCount() const { return 0; }
-  //   virtual int cmp(ExprNode const&) const override { return 0; }
-  //   virtual ValueType const* GetType() const { return ValueType::U8; }
-  //   virtual void Repr( std::ostream& sink ) const;
-  // };
-
-  // struct FTopWrite : public unisim::util::symbolic::binsec::RegWrite
-  // {
-  //   using unisim::util::symbolic::binsec::RegWrite;
-  //   //typedef unisim::util::symbolic::binsec::RegWrite Super;
-  //   FTopWrite( u8_t const& ftop ) : RegWrite( ftop.expr, 8 ) {}
-  //   virtual FTopWrite* Mutate() const override { return new FTopWrite(*this); }
-  //   virtual void GetRegName(std::ostream& sink) const;
-  //   virtual int cmp(ExprNode const& rhs) const override { return Super::compare(dynamic_cast<Super const&>(rhs)); }
-  // };
-
-  u16_t                       ftopread() { throw Unimplemented(); /*FCW access*/; return u16_t(); }
-  // unsigned                    ftop;
-
-  Expr&                       fpaccess(unsigned r, bool w);
-  bool                        fpdiff(unsigned r);
-
-  Expr                        fpregs[8];
-  void                        fpush( f64_t value ) { throw Unimplemented(); }
-  void                        fwrite( unsigned idx, f64_t value ) { throw Unimplemented(); }
-  f64_t                       fpop() { throw Unimplemented(); return f64_t(); }
-  f64_t                       fread( unsigned idx ) { throw Unimplemented(); return f64_t(); }
-
-  struct FRegID : public unisim::util::identifier::Identifier<FRegID>
-  {
-    static unisim::util::symbolic::ValueType GetType() { return unisim::util::symbolic::CValueType(double()); }
-    enum Code { st0=0, st1, st2, st3, st4, st5, st6, st7, end } code;
-    char const* c_str() const { return &"st0\0st1\0st2\0st3\0st4\0st5\0st6\0st7"[(unsigned(code) % 8)*4]; }
-    FRegID() : code(end) {}
-    FRegID( Code _code ) : code(_code) {}
-    FRegID( char const* _code ) : code(end) { init( _code ); }
-  };
-
   /*** VECTOR REGISTERS ***/
   struct VRegID
   {
@@ -300,6 +246,61 @@ struct ProcessorBase
 
     return concretize( bit_t(cond).expr );
   }
+
+  /*** FLOATING POINT REGISTERS ***/
+  enum {FREGCOUNT=8};
+  f64_t                       fregs[FREGCOUNT];
+  u8_t                        ftop;
+  u16_t                       fcw;
+
+  void                        finit();
+  typedef u8_t rc_t;
+  rc_t                        fcwreadRC() const { return u8_t(fcw >> 10) & u8_t(3); }
+  u16_t                       fcwread() const { return fcw; }
+  void                        fcwwrite( u16_t value ) { fcw = value; }
+  u8_t                        ftopread() { return ftop; }
+  void                        ftopdec();
+  void                        ftopinc();
+  void                        fpush( f64_t value ) { fnanchk( value ); ftopdec(); fregs[0] = value; }
+  void                        fwrite( unsigned idx, f64_t value ) { fnanchk( value ); fregs[idx] = value; }
+  f64_t                       fpop() { f64_t value = fregs[0]; ftopinc(); fnanchk( value ); return value; }
+  f64_t                       fread( unsigned idx ) { f64_t value = fregs[idx]; fnanchk( value ); return value; }
+  void                        fnanchk( f64_t value ) {}
+  void                        fxam();
+
+  Expr&                       fpaccess(unsigned r, bool w);
+  bool                        fpdiff(unsigned r);
+
+  // struct FTop : public unisim::util::symbolic::ExprNode
+  // {
+  //   virtual FTop* Mutate() const override { return new FTop(*this); }
+  //   virtual unsigned SubCount() const { return 0; }
+  //   virtual int cmp(ExprNode const&) const override { return 0; }
+  //   virtual ValueType const* GetType() const { return ValueType::U8; }
+  //   virtual void Repr( std::ostream& sink ) const;
+  // };
+
+  // struct FTopWrite : public unisim::util::symbolic::binsec::RegWrite
+  // {
+  //   using unisim::util::symbolic::binsec::RegWrite;
+  //   //typedef unisim::util::symbolic::binsec::RegWrite Super;
+  //   FTopWrite( u8_t const& ftop ) : RegWrite( ftop.expr, 8 ) {}
+  //   virtual FTopWrite* Mutate() const override { return new FTopWrite(*this); }
+  //   virtual void GetRegName(std::ostream& sink) const;
+  //   virtual int cmp(ExprNode const& rhs) const override { return Super::compare(dynamic_cast<Super const&>(rhs)); }
+  // };
+
+  struct FRegID : public unisim::util::identifier::Identifier<FRegID>
+  {
+    typedef f64_t value_type;
+    static unisim::util::symbolic::ValueType GetType() { return unisim::util::symbolic::CValueType(double()); }
+    enum Code { st0=0, st1, st2, st3, st4, st5, st6, st7, end } code;
+    char const* c_str() const { return &"st0\0st1\0st2\0st3\0st4\0st5\0st6\0st7"[(unsigned(code) % 8)*4]; }
+    void Repr(std::ostream& sink) const { sink << c_str(); }
+    FRegID() : code(end) {}
+    FRegID( Code _code ) : code(_code) {}
+    FRegID( char const* _code ) : code(end) { init( _code ); }
+  };
 };
 
 template <class MODE>
@@ -653,7 +654,12 @@ public:
 
   void unimplemented() { throw Unimplemented(); }
 
-  void cpuid() { throw Unimplemented(); /*hardware*/ }
+  void cpuid()
+  {
+    auto src = regread( GOd(), 0 ).expr;
+    for (int reg = 0; reg < 4; ++reg)
+      this->regwrite( GOd(), reg, u32_t( Expr( new unisim::util::symbolic::binsec::Opaque<uint32_t>({src}) ) ) );
+  }
 
   void xgetbv() { throw Unimplemented(); /*hardware*/ }
 
@@ -958,6 +964,10 @@ Processor<MODE>::close( Processor<MODE> const& ref )
   for (FLAG reg; reg.next();)
     if (flagvalues[reg.idx()] != ref.flagvalues[reg.idx()])
       path->add_sink( newRegWrite( reg, flagvalues[reg.idx()] ) );
+
+  for (FRegID reg; reg.next();)
+    if (fregs[reg.idx()].expr != ref.fregs[reg.idx()].expr)
+      path->add_sink( newRegWrite( reg, fregs[reg.idx()].expr ) );
 
   for (unsigned reg = VREGCOUNT; reg-- > 0; )
     vregsinks(ref, reg);

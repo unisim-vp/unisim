@@ -37,6 +37,7 @@
 
 #include <unisim/util/symbolic/symbolic.hh>
 #include <iostream>
+#include <vector>
 #include <map>
 #include <set>
 
@@ -365,6 +366,37 @@ namespace binsec {
 
   template <typename VALUE_TYPE>
   Expr make_undefined_value( VALUE_TYPE ) { return Expr( new UndefinedValue<VALUE_TYPE>() ); }
+
+  struct OpaqueBase : public ASExprNode
+  {
+    OpaqueBase(std::initializer_list<Expr> l) : sources(l) {}
+
+    virtual unsigned SubCount() const override { return sources.size(); }
+    virtual Expr const& GetSub(unsigned idx) const { if (idx < sources.size()) return sources[idx]; return ExprNode::GetSub(idx); }
+    virtual void Repr( std::ostream& sink ) const override;
+    virtual int cmp( ExprNode const& rhs ) const override { return this > &rhs ? +1 : this < &rhs ? -1 : 0; }
+    virtual int GenCode( std::ostream& sink, Scope& scope ) const override;
+
+    std::vector<Expr> sources;
+  };
+
+  template <typename T>
+  struct Opaque : public OpaqueBase
+  {
+    Opaque(std::initializer_list<Expr> l) : OpaqueBase(l) {}
+
+    typedef Opaque<T> this_type;
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
+    virtual ValueType GetType() const override { return CValueType(T()); }
+  };
+
+  struct OpaqueBV : public OpaqueBase
+  {
+    OpaqueBV(int bits, std::initializer_list<Expr> l) : OpaqueBase(l), bitsize(bits) {}
+    virtual OpaqueBV* Mutate() const override { return new OpaqueBV( *this ); }
+    virtual ValueType GetType() const override { return ValueType(ValueType::UNSIGNED, bitsize); }
+    int bitsize;
+  };
 
 } /* end of namespace binsec */
 } /* end of namespace symbolic */
