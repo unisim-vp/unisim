@@ -67,6 +67,7 @@ namespace test
     typedef float        f32_t;
     typedef double       f64_t;
     typedef long double  f80_t;
+    typedef uint8_t      rc_t;
 
     typedef unisim::component::cxx::processor::intel::GObLH GObLH;
     typedef unisim::component::cxx::processor::intel::GOb GOb;
@@ -406,7 +407,7 @@ namespace test
   public:
     void                        fnanchk( f64_t value ) {};
     unsigned                    ftopread() { return m_ftop; }
-    int                         fcwreadRC() const { return int( (m_fcw >> 10) & 3 ); }
+    rc_t                        fcwreadRC() const { return int( (m_fcw >> 10) & 3 ); }
     void                        fpush( f64_t value )
     { fnanchk( value ); m_ftop = ((m_ftop + 0x7) & 0x7); m_fregs[m_ftop] = value; /*m_dirtfregs |= (1 << m_ftop);*/ }
     void                        fwrite( unsigned idx, f64_t value )

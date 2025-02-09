@@ -83,6 +83,7 @@ namespace intel {
     typedef float        f32_t;
     typedef double       f64_t;
     typedef long double  f80_t;
+    typedef u8_t         rc_t;
 
     typedef GOq   GR;
     typedef u64_t gr_type;

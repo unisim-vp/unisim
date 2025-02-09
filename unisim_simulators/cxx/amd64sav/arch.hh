@@ -185,6 +185,7 @@ namespace review
     typedef SmartValue<bool>        bit_t;
 
     typedef u64_t addr_t;
+    typedef u8_t rc_t;
 
     typedef SmartValue<float>       f32_t;
     typedef SmartValue<double>      f64_t;
@@ -455,7 +456,7 @@ namespace review
 
     void                        fnanchk( f64_t value ) {};
 
-    int                         fcwreadRC() const { return 0; }
+    rc_t                        fcwreadRC() const { return rc_t(0); }
     u16_t                       fcwread() const { throw unisim::util::sav::Untestable("FCW access"); return u16_t(); }
     void                        fcwwrite( u16_t value ) { throw unisim::util::sav::Untestable("FCW access"); }
     void                        finit() { throw unisim::util::sav::Untestable("FCW access"); }

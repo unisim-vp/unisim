@@ -81,6 +81,7 @@ struct Arch
   typedef float        f32_t;
   typedef double       f64_t;
   typedef long double  f80_t;
+  typedef u8_t         rc_t;
 
   typedef unisim::component::cxx::processor::intel::GObLH GObLH;
   typedef unisim::component::cxx::processor::intel::GOb GOb;
