@@ -323,20 +323,6 @@ namespace symbolic {
     sink << "( " << src << " )";
   }
 
-  void
-  OpaqueNodeBase::Repr( std::ostream& sink ) const
-  {
-    sink << "OpaqueOperation<";
-    GetType().Repr(sink);
-    sink << ">(";
-    for (unsigned idx = 0, end = this->SubCount(); idx < end; ++idx)
-      {
-        sink << (idx ? ", " : "");
-        this->GetSub(idx)->Repr(sink);
-      }
-    sink << ")";
-  }
-
   void FP::DefaultNaNNode::Repr( std::ostream& sink ) const { sink << "DefaultNaN()"; }
   void FP::IsNaNNode::Repr( std::ostream& sink ) const { sink << "IsNaN(" << src << ", " << int(signaling) << ", " << int(quiet) << ")"; }
   void FP::MulAddNode::Repr( std::ostream& sink ) const { sink << "MulAdd( " << acc << ", " << left << ", " << right << " )"; }

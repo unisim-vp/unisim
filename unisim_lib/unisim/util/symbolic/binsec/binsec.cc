@@ -683,7 +683,7 @@ namespace binsec {
               case Op::BSR: case Op::BSF: case Op::POPCNT: case Op::Not: case Op::Neg:
               case Op::FCmp: case Op::FSQB: case Op::FFZ: case Op::FNeg: case Op::FSqrt: case Op::FAbs: case Op::FDen:
               case Op::FCeil: case Op::FFloor: case Op::FTrunc: case Op::FRound: case Op::FNear:
-              case Op::Opaque: case Op::Cast: case Op::ReinterpretAs: case Op::end:
+              case Op::Cast: case Op::ReinterpretAs: case Op::end:
                 break;
               }
 

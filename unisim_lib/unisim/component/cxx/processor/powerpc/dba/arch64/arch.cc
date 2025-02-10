@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2022-2023,
+ *  Copyright (c) 2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *

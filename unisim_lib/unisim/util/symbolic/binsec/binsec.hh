@@ -390,6 +390,12 @@ namespace binsec {
     virtual ValueType GetType() const override { return CValueType(T()); }
   };
 
+  template <typename VALUE_TYPE>
+  Expr make_opaque(VALUE_TYPE, std::initializer_list<Expr> l)
+  {
+    return new Opaque<VALUE_TYPE>(l);
+  }
+
   struct OpaqueBV : public OpaqueBase
   {
     OpaqueBV(int bits, std::initializer_list<Expr> l) : OpaqueBase(l), bitsize(bits) {}

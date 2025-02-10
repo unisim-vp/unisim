@@ -84,7 +84,7 @@ namespace symbolic {
         FAdd, FSub, FDiv, FMul,
         FCmp, FSQB, FFZ, FNeg, FSqrt, FAbs, FDen, FMod, FPow,
         FCeil, FFloor, FTrunc, FRound, FNear, FMax, FMin,
-        Opaque, Cast, ReinterpretAs,
+        Cast, ReinterpretAs,
         end
       } code;
 
@@ -152,7 +152,6 @@ namespace symbolic {
         case  FNear: return "FNear";
         case   FMax: return "FMax";
         case   FMin: return "FMin";
-        case Opaque: return "Opaque";
         case   Cast: return "Cast";
         case ReinterpretAs: return "ReinterpretAs";
         case    end: break;
@@ -481,7 +480,7 @@ namespace symbolic {
         case Op::FCmp:
           return CValueType(int32_t());
 
-        case Op::Opaque: case Op::Cast:
+        case Op::Cast:
            /* Should have been handled in derived type */
         case Op::end:
           throw std::logic_error("???");
@@ -558,7 +557,6 @@ namespace symbolic {
         case Op::Rol:    return new this_type( EvalRotateLeft( value, dynamic_cast<ConstNode<shift_type> const&>(*args[1]).value ) );
         case Op::ReinterpretAs: return new this_type( EvalReinterpretAs( value, args[1] ) );
 
-        case Op::Opaque: break;
         case Op::FSQB:   break;
         case Op::FFZ:    break;
         case Op::FNeg:   break;
@@ -657,57 +655,6 @@ namespace symbolic {
 
     Expr subs[SUBCOUNT];
   };
-
-  struct OpaqueNodeBase : public OpNodeBase
-  {
-    OpaqueNodeBase() : OpNodeBase( Op::Opaque ) {}
-    virtual void Repr( std::ostream& sink ) const override;
-    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<OpaqueNodeBase const&>( rhs ) ); }
-    int compare( OpaqueNodeBase const& rhs ) const { return 0; }
-  };
-
-  template <typename T, unsigned SUBCOUNT>
-  struct OpaqueNode : public OpaqueNodeBase
-  {
-    typedef OpaqueNode<T, SUBCOUNT> this_type;
-
-    virtual unsigned SubCount() const override { return SUBCOUNT; };
-    virtual Expr const& GetSub(unsigned idx) const override { if (idx < SUBCOUNT) { return subs[idx]; } return ExprNode::GetSub(idx); }
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ValueType GetType() const override { return CValueType(T()); }
-
-    Expr subs[SUBCOUNT];
-  };
-
-  /* 1 operand opaque operation */
-  template <typename VALUE_TYPE>
-  Expr make_opaque_operation( VALUE_TYPE, Expr const& op0 )
-  {
-    typedef OpaqueNode<VALUE_TYPE,1> result_type;
-    result_type* result = new result_type;
-    result->subs[0] = op0;
-    return result;
-  }
-
-  /* 2 operands opaque operation */
-  template <typename VALUE_TYPE>
-  Expr make_opaque_operation( VALUE_TYPE, Expr const& op0, Expr const& op1 )
-  {
-    typedef OpaqueNode<VALUE_TYPE,2> result_type;
-    result_type* result = new result_type;
-    result->subs[0] = op0; result->subs[1] = op1;
-    return result;
-  }
-
-  /* 3 operands opaque operation */
-  template <typename VALUE_TYPE>
-  Expr make_opaque_operation( VALUE_TYPE, Expr const& op0, Expr const& op1, Expr const& op2 )
-  {
-    typedef OpaqueNode<VALUE_TYPE,3> result_type;
-    result_type* result = new result_type;
-    result->subs[0] = op0; result->subs[1] = op1; result->subs[2] = op2;
-    return result;
-  }
 
   struct CastNodeBase : public OpNodeBase
   {
