@@ -68,7 +68,7 @@ namespace binsec {
     void                    commit_stats();
     std::map<Expr,unsigned> const& get_sestats() const { return sestats; }
     std::set<Expr> const&   get_sinks() const { return updates; }
-    void                    generate(std::ostream& sink, unsigned bytes, uint64_t address) const;
+    void                    generate(std::ostream& sink, unsigned bytes, uint64_t address, bool with_opaque=false) const;
 
   private:
     std::map<Expr,unsigned> sestats;

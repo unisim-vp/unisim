@@ -140,8 +140,15 @@ namespace binsec {
 
   struct Scope
   {
-    Scope( Instruction& entrypoint ) : insns(), vars(), head(&entrypoint, 0), tail(0, 0) {}
-    Scope( Scope const* up ) : insns(), vars(up->vars), head(up->head), tail(up->tail) {}
+    Scope( Instruction& entrypoint ) : insns(), vars(), head(&entrypoint, 0), tail(0, 0), opaque(false) {}
+    Scope( Scope const* up ) : insns(), vars(up->vars), head(up->head), tail(up->tail), opaque(false) {}
+
+    void leave(Scope* up)
+    {
+      for (auto&& insn : insns)
+        up->insns.push_back(std::move(insn));
+      up->opaque |= opaque;
+    }
 
     template<typename INSN, typename... ARGS>
     INSN*
@@ -289,9 +296,8 @@ namespace binsec {
               if (action_tree->nexts[side])
                 {
                   Scope nxt(this);
-                  nxt.GenCode( action_tree->nexts[side]);
-                  for (auto&& insn : nxt.insns)
-                    insns.push_back(std::move(insn));
+                  nxt.GenCode( action_tree->nexts[side] );
+                  nxt.leave(this);
                 }
               else
                 head.connect( tail );
@@ -308,6 +314,7 @@ namespace binsec {
     std::list<std::unique_ptr<Instruction>> insns;
     std::map<Expr,std::pair<std::string,int>> vars;
     Point head, tail;
+    bool opaque;
   };
 
   bool
@@ -442,85 +449,93 @@ namespace binsec {
   }
 
   void
-  ActionNode::generate(std::ostream& sink, unsigned addrsize, uint64_t address) const
+  ActionNode::generate(std::ostream& sink, unsigned addrsize, uint64_t address, bool with_opaque) const
   {
-    struct
-    {
-      void source(Expr const& from)
-      {
-        if (unsigned subcount = from->SubCount())
-          {
-            for (unsigned idx = 0; idx < subcount; ++idx)
-              source( from->GetSub(idx) );
-          }
-        else if (not from->AsConstNode())
-          reads.insert(from);
-      }
-
-      void
-      process(ActionNode const* action_tree)
-      {
-        for (auto const& sink : action_tree->get_sinks())
-        {
-          SideEffect const& side_effect = dynamic_cast<SideEffect const&>( *sink.node );
-
-          for (unsigned idx = 0, end = side_effect.SubCount(); idx < end; ++idx)
-            source( side_effect.GetSub(idx) );
-
-          if (Branch const* branch = dynamic_cast<Branch const*>( &side_effect ))
-            {
-              source( branch->value );
-              branches.insert( branch->value );
-            }
-          else if (auto assignment = dynamic_cast<Assignment const*>( &side_effect ))
-            writes.insert( assignment->SourceRead() );
-        }
-
-        if (action_tree->cond.good())
-          source( action_tree->cond );
-
-        for (unsigned side = 0; side < 2; ++side)
-          if (ActionNode* next = action_tree->nexts[side])
-            process( next );
-      }
-
-      std::set<Expr> reads, writes, branches;
-    } effects;
-    effects.process( this );
-
     Nop entrypoint;
     Scope root( entrypoint );
 
-    sink << "(read";
-    for (auto const& read : effects.reads)
-      ASExprNode::GenerateCode( read, sink << ' ', root );
-    sink << ")\n";
-    sink << "(write";
-    for (auto const& write : effects.writes)
-      ASExprNode::GenerateCode( write, sink << ' ', root );
-    sink << ")\n";
-    sink << "(branch";
-    for (auto const& branch : effects.branches)
-      ASExprNode::GenerateCode( branch, sink << ' ', root );
-    sink << ")\n";
-    
     root.GenCode( this );
 
-    Instruction::Sequence prologue, epilogue;
-    entrypoint.compute_indices(prologue, epilogue);
+    if (not root.opaque or with_opaque)
+      {
+        Instruction::Sequence prologue, epilogue;
+        entrypoint.compute_indices(prologue, epilogue);
 
-    int tail = prologue.size();
-    for (auto& line : epilogue)
-      line.second->index += tail;
+        int tail = prologue.size();
+        for (auto& line : epilogue)
+          line.second->index += tail;
 
-    std::ostringstream buf;
-    buf << dbx(addrsize, address);
-    Instruction::Printer printer{sink, buf.str()};
+        std::ostringstream buf;
+        buf << dbx(addrsize, address);
+        Instruction::Printer printer{sink, buf.str()};
 
-    for (auto line : prologue)
-      line.second->print(printer);
-    for (auto line : epilogue)
-      line.second->print(printer);
+        for (auto line : prologue)
+          line.second->print(printer);
+        for (auto line : epilogue)
+          line.second->print(printer);
+      }
+    if (root.opaque or with_opaque)
+      {
+        if (not with_opaque)
+          sink << "(unsupported)\n";
+        struct
+        {
+          void source(Expr const& from)
+          {
+            if (unsigned subcount = from->SubCount())
+              {
+                for (unsigned idx = 0; idx < subcount; ++idx)
+                  source( from->GetSub(idx) );
+              }
+            else if (not from->AsConstNode())
+              reads.insert(from);
+          }
+
+          void
+          process(ActionNode const* action_tree)
+          {
+            for (auto const& sink : action_tree->get_sinks())
+              {
+                SideEffect const& side_effect = dynamic_cast<SideEffect const&>( *sink.node );
+
+                for (unsigned idx = 0, end = side_effect.SubCount(); idx < end; ++idx)
+                  source( side_effect.GetSub(idx) );
+
+                if (Branch const* branch = dynamic_cast<Branch const*>( &side_effect ))
+                  {
+                    source( branch->value );
+                    branches.insert( branch->value );
+                  }
+                else if (auto assignment = dynamic_cast<Assignment const*>( &side_effect ))
+                  writes.insert( assignment->SourceRead() );
+              }
+
+            if (action_tree->cond.good())
+              source( action_tree->cond );
+
+            for (unsigned side = 0; side < 2; ++side)
+              if (ActionNode* next = action_tree->nexts[side])
+                process( next );
+          }
+
+          std::set<Expr> reads, writes, branches;
+        } effects;
+
+        effects.process( this );
+
+        sink << "(read";
+        for (auto const& read : effects.reads)
+          ASExprNode::GenerateCode( read, sink << ' ', root );
+        sink << ")\n";
+        sink << "(write";
+        for (auto const& write : effects.writes)
+          ASExprNode::GenerateCode( write, sink << ' ', root );
+        sink << ")\n";
+        sink << "(branch";
+        for (auto const& branch : effects.branches)
+          ASExprNode::GenerateCode( branch, sink << ' ', root );
+        sink << ")\n";
+      }
   }
 
   std::ostream&
@@ -1150,6 +1165,7 @@ namespace binsec {
 
   int OpaqueBase::GenCode( std::ostream& sink, Scope& scope ) const
   {
+    scope.opaque = true;
     int retsize = GetType().bitsize;
     sink << "opaque<" << std::dec << retsize << ">(";
     for (unsigned idx = 0, end = this->SubCount(); idx < end; ++idx)
