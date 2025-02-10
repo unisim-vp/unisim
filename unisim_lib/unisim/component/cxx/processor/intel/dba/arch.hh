@@ -656,9 +656,9 @@ public:
 
   void cpuid()
   {
-    auto src = regread( GOd(), 0 ).expr;
+    auto src0 = regread( GOd(), 0 ).expr, src1 = regread( GOd(), 1 ).expr;
     for (int reg = 0; reg < 4; ++reg)
-      this->regwrite( GOd(), reg, u32_t( Expr( new unisim::util::symbolic::binsec::Opaque<uint32_t>({src}) ) ) );
+      this->regwrite( GOd(), reg, u32_t( Expr( new unisim::util::symbolic::binsec::Opaque<uint32_t>({src0, src1}) ) ) );
   }
 
   void xgetbv() { throw Unimplemented(); /*hardware*/ }
