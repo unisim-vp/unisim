@@ -2132,6 +2132,95 @@ template <class ARCH> struct DC<ARCH,PBLEND> { Operation<ARCH>* get( InputCode<A
   return 0;
 }};
 
+template <class ARCH, class VR, unsigned OPSIZE, unsigned IXSIZE>
+struct VPGather : public Operation<ARCH>
+{
+  VPGather( OpBase<ARCH> const& opbase, unsigned _dn, unsigned seg, unsigned _sc, unsigned _in, unsigned _bn, int32_t _disp, unsigned _vn )
+    : Operation<ARCH>(opbase), disp(_disp), dn( _dn ), segment(seg), sc( _sc ), in( _in ), bn( _bn ), vn( _vn )
+  {}
+
+  void disasm( std::ostream& sink ) const
+  {
+    sink << "vpgather" << ' ' << DisasmV( VR(), vn ) << ",(" << DisasmG( typename ARCH::GR(), bn ) << ',' << DisasmV( VR(), in) << ',' << unsigned(sc) << ")," << DisasmV( VR(), dn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OPSIZE>::u elt_type;
+    typedef typename TypeFor<ARCH,OPSIZE>::s sel_type;
+    typedef typename TypeFor<ARCH,IXSIZE>::s idx_type;
+    typedef typename ARCH::addr_t addr_type;
+    typedef typename ARCH::bit_t bool_type;
+
+    enum { elt_count = VR::size() / OPSIZE, idx_count = VR::size() / OPSIZE };
+    bool_type mask[elt_count];
+    for (unsigned idx = 0, end = elt_count; idx < end; ++ idx)
+      {
+        elt_type e = arch.vmm_read( VR(), vn, idx, elt_type() );
+        e = elt_type(sel_type(e) >> (OPSIZE-1));
+        mask[idx] = bool_type(e & elt_type(1));
+        arch.vmm_write( VR(), vn, idx, e );
+      }
+    // MASK[VLMAX-1:vlen] <= 0;
+    addr_type base_addr = addr_type(arch.regread( typename ARCH::GR(), bn)) + addr_type(disp);
+    for (unsigned idx = 0, end = idx_count; idx < end; ++ idx)
+      {
+        auto data_addr = base_addr + addr_type(idx_type(sc)*arch.vmm_read( VR(), in, idx, idx_type() ));
+        auto data = arch.template memread<OPSIZE>( segment, data_addr );
+        arch.vmm_write( VR(), dn, idx, ConditionalMove( mask[idx], data, arch.vmm_read( VR(), dn, idx, elt_type() ) ) );
+        arch.vmm_write( VR(), vn, idx, elt_type(0) );
+      }
+    // MASK[vlen:vlen/(ixsz/esz)] <= 0;
+    // DEST[VLMAX-1:vlen/(ixsz/esz)] <= 0;
+  }
+
+  int32_t disp;
+  uint8_t dn, segment, sc, in, bn, vn;
+};
+
+/* VPGATHER -- Gather Packed Dword/Qword Values Using Signed Dword/Qword Indices */
+template <class ARCH> struct DC<ARCH,VPGATHER> {
+  struct SIBD { uint8_t s, i, b; int32_t d; };
+  Operation<ARCH>* get( InputCode<ARCH> const& ic )
+  {
+    if (ic.f0()) return 0;
+
+    if (auto _ = match( ic, (vex( "\x66\x0f\x38\x90" ) + Var<1>()) & RM() ))
+    
+      if (ic.vex())
+        {
+          struct GetSIBD : RMOpFabric, SIBD
+          {
+            GetSIBD( CodeBase const& cb ) : RMOpFabric( cb ), fields{0,0,0,0} {} SIBD fields;
+            void newSIB( uint8_t s, uint8_t i, uint8_t b ) override { fields = {s,i,b,0}; }
+            void newSIBD( uint8_t s, uint8_t i, uint8_t b, int32_t d ) override { fields = {s,i,b,d}; }
+          };
+
+          auto const& cb = _.icode();
+          GetSIBD sibd( cb );
+          _.find( static_cast<RMOpFabric&>(sibd), cb.opcode() );
+
+          if (ic.vlen() == 128) return newVPGather<XMM>(_.opbase(), ic.w() << 1 | _.var(), _.greg(), sibd.segment, sibd.fields, ic.vreg());
+          if (ic.vlen() == 256) return newVPGather<YMM>(_.opbase(), ic.w() << 1 | _.var(), _.greg(), sibd.segment, sibd.fields, ic.vreg());
+
+          return 0;
+        }
+
+    return 0;
+  }
+  template <class VR>
+  Operation<ARCH>* newVPGather( OpBase<ARCH> const& opbase, unsigned dqdq, uint8_t gr, uint8_t segment, SIBD const& sibd, uint8_t vn )
+  {
+    unsigned scale = 1 << sibd.s;
+    switch (dqdq)
+      {
+      case 0b00: return new VPGather<ARCH,VR,32,32>(opbase, gr, segment, scale, sibd.i, sibd.b, sibd.d, vn);
+      case 0b01: return new VPGather<ARCH,VR,32,64>(opbase, gr, segment, scale, sibd.i, sibd.b, sibd.d, vn);
+      case 0b10: return new VPGather<ARCH,VR,64,32>(opbase, gr, segment, scale, sibd.i, sibd.b, sibd.d, vn);
+      case 0b11: return new VPGather<ARCH,VR,64,64>(opbase, gr, segment, scale, sibd.i, sibd.b, sibd.d, vn);
+      }
+    return 0;
+  }
+};
 
 template <class ARCH, class VR>
 struct PClmulqdq : public Op3V<ARCH,VR>
