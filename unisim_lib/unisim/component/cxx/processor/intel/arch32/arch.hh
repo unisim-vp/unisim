@@ -793,9 +793,6 @@ namespace intel {
     void xrstor(XSaveMode, bool, u64_t, RMOp const&) { unimplemented(); }
   };
 
-
-  struct FPException : public std::exception {};
-
   Arch::f64_t sine( Arch::f64_t );
   Arch::f64_t cosine( Arch::f64_t );
   Arch::f64_t tangent( Arch::f64_t );

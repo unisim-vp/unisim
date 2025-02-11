@@ -329,8 +329,6 @@ Arch::cpuid()
     }
 }
 
-struct FPException : public std::exception {};
-
 Arch::f64_t sine( Arch::f64_t angle ) { return sin( angle ); }
 
 Arch::f64_t cosine( Arch::f64_t angle ) { return cos( angle ); }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -450,77 +450,28 @@ CPU<CPU_IMPL>::StepInstruction()
       debug_yielding_import->DebugYield();
     }
 
-  try {
-    // Instruction Fetch Decode and Execution (may generate exceptions
-    // known as synchronous aborts since their occurences are a direct
-    // consequence of the instruction execution).
+  // Instruction Fetch Decode and Execution (may generate exceptions
+  // known as synchronous aborts since their occurences are a direct
+  // consequence of the instruction execution).
 
-    /*** Fetch and decode instruction ***/
-    Operation* op = ipb.access(*this, insn_addr);
+  /*** Fetch and decode instruction ***/
+  Operation* op = ipb.access(*this, insn_addr);
 
-    this->next_insn_addr += 4;
+  this->next_insn_addr += 4;
 
-    // std::cerr << "@" << std::hex << insn_addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn << "; ";
-    // op->disasm( *this, std::cerr );
-    // std::cerr << std::endl;
+  // std::cerr << "@" << std::hex << insn_addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn << "; ";
+  // op->disasm( *this, std::cerr );
+  // std::cerr << std::endl;
 
-    /* Execute instruction */
-    asm volatile( "arm64_operation_execute:" );
-    op->execute( *static_cast<CPU_IMPL*>(this) );
+  /* Execute instruction */
+  asm volatile( "arm64_operation_execute:" );
+  op->execute( *static_cast<CPU_IMPL*>(this) );
 
-    if(unlikely(instruction_collecting_import))
-      CollectInstruction(op);
+  if(unlikely(instruction_collecting_import))
+    CollectInstruction(op);
 
-    if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
-      memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
-
-    //instruction_counter++; /* Instruction regularly finished */
-  }
-
-  // catch (SVCException const& svexc) {
-  //   /* Resuming execution, since SVC exceptions are explicitly
-  //    * requested from regular instructions. */
-  //   if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-  //     memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr);
-
-  //   instruction_counter++; /* Instruction regularly finished */
-
-  //   this->TakeSVCException();
-  // }
-
-  // catch (DataAbortException const& daexc) {
-  //   /* Abort execution, and take processor to data abort handler */
-
-  //   if (unlikely(trap_reporting_import))
-  //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
-
-  //   this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
-  // }
-
-  // catch (PrefetchAbortException const& paexc) {
-  //   /* Abort execution, and take processor to prefetch abort handler */
-
-  //   if (unlikely(trap_reporting_import))
-  //     trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
-
-  //   this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
-  // }
-
-  // catch (UndefInstrException const& undexc) {
-  //   /* Abort execution, and take processor to undefined handler */
-
-  //   if (unlikely( trap_reporting_import))
-  //     trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
-
-  //   this->TakeUndefInstrException();
-  // }
-
-  catch (std::exception const& exc) {
-    logger << DebugError << "Unimplemented exception (" << exc.what() << ")"
-           << " pc: " << std::hex << current_insn_addr << std::dec
-           << EndDebugError;
-    this->Stop(-1);
-  }
+  if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+    memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
 }
 
 template <class CPU_IMPL>
@@ -785,17 +736,9 @@ CPU<CPU_IMPL>::CallSupervisor( uint32_t imm )
   if (linux_os_import)
     {
       // we are executing on linux emulation mode, use linux_os_import
-      try
-        {
-          linux_os_import->ExecuteSystemCall(imm);
-          // if (trap_reporting_import)
-          //   trap_reporting_import->ReportTrap(*this, "CallSupervisor");
-        }
-      catch (std::exception const& e)
-        {
-          std::cerr << e.what() << std::endl;
-          this->Stop( -1 );
-        }
+      linux_os_import->ExecuteSystemCall(imm);
+      // if (trap_reporting_import)
+      //   trap_reporting_import->ReportTrap(*this, "CallSupervisor");
     }
   else
     {
