@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2019,
+ *  Copyright (c) 2015,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -67,27 +67,6 @@
 // op comiss_vdq_wdq( 0x0f[8]:> <:0x2f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 //
 // comiss_vdq_wdq.disasm = { _sink << "comiss " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-
-template <class ARCH, class VR>
-struct Op3V : public Operation<ARCH>
-{
-  Op3V(OpBase<ARCH> const& opbase, RMOp<ARCH>&& _rm, unsigned _vn, unsigned _gn) : Operation<ARCH>(opbase), rm(std::move(_rm)), vn(_vn), gn(_gn) {}
-  void disasmVVW(std::ostream& sink, bool has_nds = true) const
-  {
-    sink          << DisasmW( VR(), rm );
-    if (VR::vex() and has_nds)
-      sink << ',' << DisasmV( VR(), vn );
-    sink   << ',' << DisasmV( VR(), gn );
-  }
-  void disasmVV(std::ostream& sink) const
-  {
-    if (VR::vex())
-      sink << ',' << DisasmV( VR(), vn );
-    sink   << ',' << DisasmV( VR(), gn );
-  }
-  char const* vprefix() const { return &"v"[not VR::vex()]; }
-  RMOp<ARCH> rm; uint8_t vn, gn;
-};
 
 /* CMP -- Compare Scalar or Packed Single- or Double-Precision Floating-Point Values */
 
@@ -1730,7 +1709,7 @@ template <class ARCH> struct DC<ARCH,PMUL> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, vex( "\x66\x0f\x38\x28" ) & RM() ))
 
     return newPMuldq<typename ARCH::s32_t>( ic, _.opbase(), _.rmop(), _.greg() );
-  
+
   return 0;
 }
 template <class TYPE>
@@ -2185,7 +2164,7 @@ template <class ARCH> struct DC<ARCH,VPGATHER> {
     if (ic.f0()) return 0;
 
     if (auto _ = match( ic, (vex( "\x66\x0f\x38\x90" ) + Var<1>()) & RM() ))
-    
+
       if (ic.vex())
         {
           struct GetSIBD : RMOpFabric, SIBD

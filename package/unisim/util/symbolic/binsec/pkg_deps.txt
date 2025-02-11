@@ -1,8 +1,11 @@
 std/iomanip
 std/iostream
+std/list
 std/map
+std/memory
 std/ostream
 std/set
 std/sstream
+std/vector
 unisim/util/symbolic
 unisim/util/symbolic/vector

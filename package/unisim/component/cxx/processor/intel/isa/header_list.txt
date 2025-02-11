@@ -1,3 +1,4 @@
+unisim/component/cxx/processor/intel/isa/aes.hh
 unisim/component/cxx/processor/intel/isa/branch.hh
 unisim/component/cxx/processor/intel/isa/floatingpoint.hh
 unisim/component/cxx/processor/intel/isa/integer.hh

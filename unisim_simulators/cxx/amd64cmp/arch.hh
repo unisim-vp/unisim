@@ -39,6 +39,7 @@
 #include <unisim/component/cxx/processor/intel/isa/intel.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
+#include <unisim/component/cxx/processor/intel/aes.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -58,10 +59,7 @@ template <typename A, unsigned S> using TypeFor = typename unisim::component::cx
 struct Tracee;
 struct Amd64LinuxOS;
 
-struct Arch
-  : public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t>>
-  , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t>>
-  , public unisim::kernel::Service<unisim::service::interfaces::Registers>
+struct ArchTypes
 {
   typedef uint8_t      u8_t;
   typedef uint16_t     u16_t;
@@ -99,7 +97,15 @@ struct Arch
   {
     OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
   };
+};
 
+struct Arch
+  : ArchTypes
+  , unisim::component::cxx::processor::intel::AES<ArchTypes>
+  , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t>>
+  , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t>>
+  , public unisim::kernel::Service<unisim::service::interfaces::Registers>
+{
   typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
 
   struct UpdateNode

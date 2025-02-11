@@ -274,6 +274,7 @@ unisim/component/cxx/processor/hcs12x/s12mpu_if.hh
 unisim/component/cxx/processor/hcs12x/types.hh
 unisim/component/cxx/processor/hcs12x/xgate.cc
 unisim/component/cxx/processor/hcs12x/xgate.hh
+unisim/component/cxx/processor/intel/aes.hh
 unisim/component/cxx/processor/intel/arch32/arch.cc
 unisim/component/cxx/processor/intel/arch32/arch.hh
 unisim/component/cxx/processor/intel/dba/arch.cc
@@ -284,6 +285,7 @@ unisim/component/cxx/processor/intel/dba/decoder.hh
 unisim/component/cxx/processor/intel/disasm.cc
 unisim/component/cxx/processor/intel/disasm.hh
 unisim/component/cxx/processor/intel/execute.hh
+unisim/component/cxx/processor/intel/isa/aes.hh
 unisim/component/cxx/processor/intel/isa/branch.hh
 unisim/component/cxx/processor/intel/isa/floatingpoint.hh
 unisim/component/cxx/processor/intel/isa/integer.hh

@@ -82,16 +82,19 @@ struct ProcessorBase
   template <typename T> using VectorTypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
   template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
 
+  typedef unisim::util::arithmetic::Integer<4,false> uint128_t;
+  typedef unisim::util::arithmetic::Integer<4,true> int128_t;
+
   typedef SmartValue<uint8_t>     u8_t;
   typedef SmartValue<uint16_t>    u16_t;
   typedef SmartValue<uint32_t>    u32_t;
   typedef SmartValue<uint64_t>    u64_t;
-  typedef SmartValue<unisim::util::arithmetic::Integer<4,false>> u128_t;
+  typedef SmartValue<uint128_t>   u128_t;
   typedef SmartValue<int8_t>      s8_t;
   typedef SmartValue<int16_t>     s16_t;
   typedef SmartValue<int32_t>     s32_t;
   typedef SmartValue<int64_t>     s64_t;
-  typedef SmartValue<unisim::util::arithmetic::Integer<4,true>> s128_t;
+  typedef SmartValue<int128_t>    s128_t;
   typedef SmartValue<bool>        bit_t;
 
   typedef SmartValue<float>       f32_t;
@@ -301,6 +304,13 @@ struct ProcessorBase
     FRegID( Code _code ) : code(_code) {}
     FRegID( char const* _code ) : code(end) { init( _code ); }
   };
+
+  static u128_t aesdec         ( u128_t src1, u128_t src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src1.expr, src2.expr}) ); }
+  static u128_t aesdeclast     ( u128_t src1, u128_t src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src1.expr, src2.expr}) ); }
+  static u128_t aesenc         ( u128_t src1, u128_t src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src1.expr, src2.expr}) ); }
+  static u128_t aesenclast     ( u128_t src1, u128_t src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src1.expr, src2.expr}) ); }
+  static u128_t aesimc         ( u128_t src )               { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src.expr}) ); }
+  static u128_t aeskeygenassist( u128_t src, uint8_t im )   { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src.expr, u8_t(im).expr}) ); }
 };
 
 template <class MODE>

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2023,
+ *  Copyright (c) 2015,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_ARCH_HH__
 
 #include <unisim/component/cxx/memory/sparse/memory.hh>
+#include <unisim/component/cxx/processor/intel/aes.hh>
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
@@ -62,7 +63,7 @@ namespace intel {
 
   template <class ARCH> struct Operation;
 
-  struct Arch
+  struct ArchTypes
   {
     template <unsigned W> using UInteger = unisim::util::arithmetic::Integer<W, false>;
     template <unsigned W> using SInteger = unisim::util::arithmetic::Integer<W, true>;
@@ -92,7 +93,12 @@ namespace intel {
     {
       OpHeader( uint32_t _address ) : address( _address ) {} uint32_t address;
     };
+  };
 
+  struct Arch
+    : ArchTypes
+    , AES<ArchTypes>
+  {
     // CONSTRUCTORS/DESTRUCTORS
     Arch();
     ~Arch();

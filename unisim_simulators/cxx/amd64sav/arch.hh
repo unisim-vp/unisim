@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2023,
+ *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -39,6 +39,7 @@
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
+#include <unisim/component/cxx/processor/intel/aes.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/util/sav/sav.hh>
 #include <unisim/util/symbolic/vector/vector.hh>
@@ -170,7 +171,7 @@ namespace review
     static unisim::util::symbolic::ValueType GetType() { return unisim::util::symbolic::ValueType(unisim::util::symbolic::ValueType::NA, 8*BYTECOUNT); }
   };
 
-  struct Arch
+  struct ArchTypes
   {
     typedef SmartValue<uint8_t>     u8_t;
     typedef SmartValue<uint16_t>    u16_t;
@@ -203,10 +204,6 @@ namespace review
 
     typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
 
-    typedef unisim::util::symbolic::Expr Expr;
-    typedef unisim::util::symbolic::ExprNode ExprNode;
-    typedef unisim::util::symbolic::ValueType ValueType;
-
     typedef GOq   GR;
     typedef u64_t gr_type;
 
@@ -214,6 +211,15 @@ namespace review
     {
       OpHeader( uint64_t _address ) : address( _address ) {} uint64_t address;
     };
+  };
+
+  struct Arch
+    : ArchTypes
+    , unisim::component::cxx::processor::intel::AES<ArchTypes>
+  {
+    typedef unisim::util::symbolic::Expr Expr;
+    typedef unisim::util::symbolic::ExprNode ExprNode;
+    typedef unisim::util::symbolic::ValueType ValueType;
 
     void noexec( Operation const& op )
     {

@@ -50,7 +50,7 @@ namespace test
 {
   template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
 
-  struct Arch
+  struct ArchTypes
   {
     typedef uint8_t      u8_t;
     typedef uint16_t     u16_t;
@@ -82,12 +82,17 @@ namespace test
     typedef GOq   GR;
     typedef u64_t gr_type;
 
-    void run(review::Interface::testcode_t testcode, uint64_t* data);
-
     struct OpHeader
     {
       OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
     };
+  };
+
+  struct Arch
+    : ArchTypes
+    , unisim::component::cxx::processor::intel::AES<ArchTypes>
+  {
+    void run(review::Interface::testcode_t testcode, uint64_t* data);
 
     Arch()
       : rip()
