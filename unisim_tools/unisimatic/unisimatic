@@ -602,7 +602,7 @@ function yquery()
 {
 	local QUERY="$1"' | join("\u0000")'
 	if $MIKEFARAH_YQ_DETECTED; then
-		yq -M -p=y -o=j "${CONFIG_YAML}" | jq -j "$QUERY" "${CONFIG_YAML}" && echo -n -e '\0'
+		cat "${CONFIG_YAML}" | yq "." -M -p=y -o=j | jq -j "$QUERY" && echo -n -e '\0'
 	else
 		yq -j "$QUERY" "${CONFIG_YAML}" && echo -n -e '\0'
 	fi
