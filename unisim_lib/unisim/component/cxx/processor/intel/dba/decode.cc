@@ -57,7 +57,7 @@ void eval_div_128( P64& arch, I64& hi, I64& lo, I64 const& divisor )
   if (arch.Test(divisor == I64(0))) arch._DE();
 
   bool const sext = hi.is_signed;
-  Expr dividend = new unisim::util::symbolic::vector::VCat<P64::u128_t>( std::vector<Expr>{hi.expr, lo.expr}, 64 );
+  Expr dividend = new unisim::util::symbolic::vector::VCat<P64::u128_t>( std::vector<Expr>{hi.expr, lo.expr}, 8 );
   Expr divisor128 = BitFilter::mksimple( divisor.expr, 64, 0, 64, 128, sext );
   Expr divres = unisim::util::symbolic::make_operation(divisor.is_signed ? "Div" : "Divu", dividend, divisor128);
   Expr modres = unisim::util::symbolic::make_operation(divisor.is_signed ? "Mod" : "Modu", dividend, divisor128);

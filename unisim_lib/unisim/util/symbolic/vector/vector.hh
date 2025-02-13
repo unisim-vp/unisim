@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017-2023,
+ *  Copyright (c) 2020,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -86,7 +86,7 @@ namespace vector {
     int compare(VCatBase const& rhs) const { if (intptr_t delta = inputs.size() - rhs.inputs.size()) return delta > 0 ? +1 : -1; return 0; }
     virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<VCatBase const&>(brhs) ); }
     std::vector<Expr> inputs;
-    unsigned subsize;
+    unsigned subsize; /* size of sub parts in bytes*/
   };
 
   template <typename T>
