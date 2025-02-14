@@ -152,7 +152,7 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::Object *
 	master_if(*this);
 	
 	std::stringstream description_sstr;
-	description_sstr << "MPC57XX Interrupt Controller (EDMA):" << std::endl;
+	description_sstr << "MPC57XX Enhanced Direct Memory Access (EDMA):" << std::endl;
 	description_sstr << "  - " << NUM_DMA_CHANNELS << " DMA channel(s)" << std::endl;
 	description_sstr << "  - " << BUSWIDTH << "-bit data bus" << std::endl;
 	description_sstr << "  - SystemC TLM-2.0 IP Version: " << TLM2_IP_VERSION_MAJOR << "." << TLM2_IP_VERSION_MINOR << "." << TLM2_IP_VERSION_PATCH << std::endl;
