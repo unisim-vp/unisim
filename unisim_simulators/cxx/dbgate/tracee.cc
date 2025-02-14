@@ -70,7 +70,7 @@ namespace
 
     virtual void Decode(Tracee&, char const* execpath)  override
     {
-      typename unisim::util::loader::elf_loader::StdElf<addr_t,addr_t>::Loader loader;
+      typename unisim::util::loader::elf_loader::StdElf<addr_t,addr_t>::Loader loader(std::cerr, std::cerr, std::cerr);
       typedef typename decltype(loader)::Symbol Symbol;
       loader.SetFileName(execpath);
       loader.Load();
@@ -91,12 +91,12 @@ namespace
             }
         }
     }
-    
+
     virtual addr_t GetInsnAddr(Tracee const& tracee) const = 0;
     virtual addr_t GetParam(Tracee const& tracee, int pos) const = 0;
     virtual void SetResult(Tracee const& tracee, addr_t res) const = 0;
     virtual void ReturnInt(Tracee const& tracee, int res) const { SetResult(tracee, addr_t(res)); Return(tracee); }
-    
+
     virtual void PrintInsnAddr( Tracee const& tracee, std::ostream& sink ) const override
     {
       sink << "0x" << std::hex << GetInsnAddr(tracee) << std::dec;
@@ -108,7 +108,7 @@ namespace
     {
       std::string result;
       addr_t addr = GetParam(tracee, adpos);
-      
+
       for (addr_t word, pos = 0; ; word >>= 8, pos = (pos + 1) % sizeof (addr_t))
         {
           if (pos == 0)
@@ -124,13 +124,13 @@ namespace
         }
       return result;
     }
-    
+
     std::string GetBuffer( Tracee const& tracee, int adpos, int szpos ) const
     {
       std::string result;
       addr_t addr = GetParam(tracee, adpos);
       addr_t size = GetParam(tracee, szpos);
-      
+
       for (addr_t word, pos = 0; ; word >>= 8, pos = (pos + 1) % sizeof (addr_t))
         {
           if (0 == size--) break;
@@ -143,7 +143,7 @@ namespace
         }
       return result;
     }
-    
+
     addr_t methods[DBGateMethodID::end];
   };
 
@@ -192,7 +192,7 @@ Tracee::Tracee( char** argv )
       return false;
     }
   } exec;
-    
+
   if (strchr(filename,'/'))
     {
       exec.check( filename );
@@ -235,7 +235,7 @@ Tracee::Tracee( char** argv )
       /* Trying debugger-style (as if '.' was in the PATH). */
       if (triedbypath or not exec.check( filename ))
         { std::cerr << "error: " << filename << " not found.\n"; return; }
-        
+
       /* XXX: maybe issue a warning ? */
     }
 
@@ -254,7 +254,7 @@ Tracee::Tracee( char** argv )
 
     if (Loader::NeedEndianSwap(&header))
       Loader::SwapElfHeader(&header);
-      
+
     if ((header.e_ident[EI_VERSION] != 1) or (header.e_version != 1))
       { std::cerr << "error: " << exec.path.c_str() << " ELF version mismatch.\n"; return; }
 
@@ -284,16 +284,16 @@ Tracee::Tracee( char** argv )
         };
         driver = new EM_386_Driver();
         break;
-          
+
       case EM_X86_64:
         /*** AMD x86 64 processors and compatibles ***/
-        
+
         if (header.e_ident[EI_CLASS] != ELFCLASS64)
           { std::cerr << "error: " << exec.path.c_str() << " expected e_ident[EI_CLASS] == ELFCLASS64.\n"; return; }
-        
+
         struct EM_X86_64_Driver : public AnyX86Driver<uint64_t>
         {
-          enum { RAX = 80, RDX = 96, RSI = 104, RDI = 112, RIP = 128, RSP = 152 }; 
+          enum { RAX = 80, RDX = 96, RSI = 104, RDI = 112, RIP = 128, RSP = 152 };
           static uintptr_t arg(int pos) { switch (pos) { case 0: return RDI; case 1: return RSI; case 2: return RDX; } throw 0; }
           virtual addr_t GetInsnAddr(Tracee const& tracee) const override { return tracee.ptrace(PTRACE_PEEKUSER, RIP, 0); }
           virtual addr_t GetParam(Tracee const& tracee, int pos) const override { return tracee.ptrace(PTRACE_PEEKUSER, arg(pos), 0); }
@@ -308,19 +308,19 @@ Tracee::Tracee( char** argv )
         };
         driver = new EM_X86_64_Driver();
         break;
-          
+
       default:
         std::cerr << "error: " << exec.path.c_str() << " unrecognized machine type.\n";
         return;
       }
   }
-    
+
   /*** Locate dbgate methods ***/
   driver->Decode(*this, exec.path.c_str());
 
   /*** Start tracee ***/
   pid = fork();
-    
+
   if (pid < 0)
     {
       perror("fork");
@@ -338,7 +338,7 @@ Tracee::Tracee( char** argv )
     }
 
   // We are the tracer.
-  
+
   int status;
   // waitpid(pid, &status, 0); // Wait for stopped process
   wait(&status);
@@ -360,13 +360,13 @@ Tracee::nextcall() const
           perror( "Tracee::nextcall {ptrace}" );
           throw 0;
         }
-  
+
       int status;
       wait(&status);
-  
+
       if (WIFEXITED(status))
         return DBGateMethodID::end;
-  
+
       if (not WIFSTOPPED(status))
         {
           std::cerr << "Unhandled exit status: " << std::hex << std::endl;
@@ -386,7 +386,7 @@ Tracee::nextcall() const
           for (DBGateMethodID method; method.next();)
             if (driver->AtBreakPoint(*this,method))
               return method;
-      
+
           printinsnaddr( std::cerr << "Unknown breakpoint: " ) << std::endl;
           throw 0;
           return DBGateMethodID::end;
@@ -395,7 +395,7 @@ Tracee::nextcall() const
       std::cerr << "error: unhandled signal " << stopsig << std::endl;
       throw 0;
     }
-  
+
   return DBGateMethodID::end;
 }
 

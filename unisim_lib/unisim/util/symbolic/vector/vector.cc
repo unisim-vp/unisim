@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 #include <unisim/util/symbolic/vector/vector.hh>
 #include <ostream>
 #include <iomanip>
@@ -41,16 +41,22 @@ namespace util {
 namespace symbolic {
 namespace vector {
 
-  void VMix::Repr( std::ostream& sink ) const
+  void VCatBase::Repr( std::ostream& sink ) const
   {
-    sink << "VMix( " << l << ", " << r << " )";
+    sink << "VCat{";
+    GetType().Repr(sink);
+    sink << "}(";
+    char const* sep = "";
+    for (auto const& x : inputs)
+      { sink << sep << x; sep = ", "; }
+    sink << ")";
   }
-  
+
   void VTransBase::Repr( std::ostream& sink ) const
   {
-    sink << "VTrans<";
+    sink << "VTrans{";
     GetType().Repr(sink);
-    sink << ">(" << src << ", " << srcsize << ", " << srcpos << ")";
+    sink << ", " << srcsize << ", " << srcpos << "}(" << src << ")";
   }
 
   ExprNode const* corresponding_origin( Expr const& dst, unsigned dpos, unsigned spos )
@@ -63,12 +69,17 @@ namespace vector {
           {
             pos += vt->srcpos;
             if (pos >= vt->srcsize)
-              return false;
+              return /* Should not happen ? */ false;
             return seek( vt->src.node, pos );
           }
-        if (auto vm = dynamic_cast<VMix const*>( exp ))
-          return seek( vm->l.node, pos ) or seek( vm->r.node, pos );
-        
+        if (auto vc = dynamic_cast<VCatBase const*>( exp ))
+          {
+            unsigned subsize = vc->subsize, idx = pos / subsize, npos = pos % subsize;
+            if (idx >= vc->inputs.size())
+              return false;
+            return seek( vc->inputs[idx].node, npos );
+          }
+
         sexp = exp;
         spos = pos;
         return true;
@@ -81,7 +92,7 @@ namespace vector {
       return 0;
     return seeker.sexp;
   }
-  
+
 } /* end of namespace vector */
 } /* end of namespace symbolic */
 } /* end of namespace util */

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2017,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -479,7 +479,7 @@ public:
 	struct NI     : Field<NI    , 29    > {}; // Floating-point non-IEEE mode
 	struct RN     : Field<RN    , 30, 31> {}; // Floating-point rounding control
 
-	typedef FieldSet< FX, FEX, VX, OX, UX, ZX, XX, VXSNAN, VXISI, VXIDI, VXZDZ, VXIMZ, VXVC  
+	typedef FieldSet< FX, FEX, VX, OX, UX, ZX, XX, VXSNAN, VXISI, VXIDI, VXZDZ, VXIMZ, VXVC
 	                , FR, FI, FPRF, VXSOFT, VXSQRT, VXCVI, VE, OE, UE, ZE, XE, NI, RN > ALL;
 	
 	FPSCR() : Super() { Init(); }
@@ -1201,8 +1201,8 @@ protected:
 	struct NullException62 {};
 	struct NullException63 {};
 	
-	template < typename E0  = NullException0 , typename E1  = NullException1 , typename E2  = NullException2 , typename E3  = NullException3 
-	         , typename E4  = NullException4 , typename E5  = NullException5 , typename E6  = NullException6 , typename E7  = NullException7 
+	template < typename E0  = NullException0 , typename E1  = NullException1 , typename E2  = NullException2 , typename E3  = NullException3
+	         , typename E4  = NullException4 , typename E5  = NullException5 , typename E6  = NullException6 , typename E7  = NullException7
 	         , typename E8  = NullException8 , typename E9  = NullException9 , typename E10 = NullException10, typename E11 = NullException11
 	         , typename E12 = NullException12, typename E13 = NullException13, typename E14 = NullException14, typename E15 = NullException15
 	         , typename E16 = NullException16, typename E17 = NullException17, typename E18 = NullException18, typename E19 = NullException19
@@ -3174,7 +3174,7 @@ protected:
 		struct FT    : Field<FT   , 31>     {}; // Freeze Timers on Debug Event
 		
 		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet< EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1R, DAC1W, DAC2R, DAC2W> ALL; }; 
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet< EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1R, DAC1W, DAC2R, DAC2W> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet< EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1, DAC2
 		                                                  , RET, IAC5, IAC6, IAC7, IAC8, DEVT1, DEVT2, DCNT1, DCNT2, CIRPT, CRET, FT> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet< EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1, DAC2, RET
@@ -3191,31 +3191,31 @@ protected:
 			EDM  ::SetName("EDM");   EDM  ::SetDescription("External Debug Mode");
 			IDM  ::SetName("IDM");   IDM  ::SetDescription("Internal Debug Mode");
 			RST  ::SetName("RST");   RST  ::SetDescription("Reset Control");
-			ICMP ::SetName("ICMP");  ICMP ::SetDescription("Instruction Complete Debug Event Enable"); 
+			ICMP ::SetName("ICMP");  ICMP ::SetDescription("Instruction Complete Debug Event Enable");
 			BRT  ::SetName("BRT");   BRT  ::SetDescription("Branch Taken Debug Event Enable");
-			IRPT ::SetName("IRPT");  IRPT ::SetDescription("Interrupt Taken Debug Event Enable"); 
-			TRAP ::SetName("TRAP");  TRAP ::SetDescription("Trap Taken Debug Event Enable"); 
-			IAC1 ::SetName("IAC1");  IAC1 ::SetDescription("Instruction Address Compare 1 Debug Event Enable"); 
-			IAC2 ::SetName("IAC2");  IAC2 ::SetDescription("Instruction Address Compare 2 Debug Event Enable"); 
-			IAC3 ::SetName("IAC3");  IAC3 ::SetDescription("Instruction Address Compare 3 Debug Event Enable"); 
-			IAC4 ::SetName("IAC4");  IAC4 ::SetDescription("Instruction Address Compare 4 Debug Event Enable"); 
-			DAC1 ::SetName("DAC1");  DAC1 ::SetDescription("Data Address Compare 1 Debug Event Enable"); 
-			DAC1R::SetName("DAC1R"); DAC1R::SetDescription("Data Address Compare 1 Read Debug Event Enable");  
-			DAC1W::SetName("DAC1W"); DAC1W::SetDescription("Data Address Compare 1 Write Debug Event Enable");  
-			DAC2 ::SetName("DAC2");  DAC2 ::SetDescription("Data Address Compare 2 Debug Event Enable"); 
-			DAC2R::SetName("DAC2R"); DAC2R::SetDescription("Data Address Compare 2 Read Debug Event Enable");  
-			DAC2W::SetName("DAC2W"); DAC2W::SetDescription("Data Address Compare 2 Write Debug Event Enable");  
+			IRPT ::SetName("IRPT");  IRPT ::SetDescription("Interrupt Taken Debug Event Enable");
+			TRAP ::SetName("TRAP");  TRAP ::SetDescription("Trap Taken Debug Event Enable");
+			IAC1 ::SetName("IAC1");  IAC1 ::SetDescription("Instruction Address Compare 1 Debug Event Enable");
+			IAC2 ::SetName("IAC2");  IAC2 ::SetDescription("Instruction Address Compare 2 Debug Event Enable");
+			IAC3 ::SetName("IAC3");  IAC3 ::SetDescription("Instruction Address Compare 3 Debug Event Enable");
+			IAC4 ::SetName("IAC4");  IAC4 ::SetDescription("Instruction Address Compare 4 Debug Event Enable");
+			DAC1 ::SetName("DAC1");  DAC1 ::SetDescription("Data Address Compare 1 Debug Event Enable");
+			DAC1R::SetName("DAC1R"); DAC1R::SetDescription("Data Address Compare 1 Read Debug Event Enable");
+			DAC1W::SetName("DAC1W"); DAC1W::SetDescription("Data Address Compare 1 Write Debug Event Enable");
+			DAC2 ::SetName("DAC2");  DAC2 ::SetDescription("Data Address Compare 2 Debug Event Enable");
+			DAC2R::SetName("DAC2R"); DAC2R::SetDescription("Data Address Compare 2 Read Debug Event Enable");
+			DAC2W::SetName("DAC2W"); DAC2W::SetDescription("Data Address Compare 2 Write Debug Event Enable");
 			RET  ::SetName("RET");   RET  ::SetDescription("Return Debug Event Enable");
-			IAC5 ::SetName("IAC5");  IAC5 ::SetDescription("Instruction Address Compare 5 Debug Event Enable"); 
-			IAC6 ::SetName("IAC6");  IAC6 ::SetDescription("Instruction Address Compare 6 Debug Event Enable"); 
-			IAC7 ::SetName("IAC7");  IAC7 ::SetDescription("Instruction Address Compare 7 Debug Event Enable"); 
-			IAC8 ::SetName("IAC8");  IAC8 ::SetDescription("Instruction Address Compare 8 Debug Event Enable"); 
-			DEVT1::SetName("DEVT1"); DEVT1::SetDescription("External Debug Event 1 Enable");  
-			DEVT2::SetName("DEVT2"); DEVT2::SetDescription("External Debug Event 2 Enable");  
-			DCNT1::SetName("DCNT1"); DCNT1::SetDescription("Debug Counter 1 Debug Event Enable");  
-			DCNT2::SetName("DCNT2"); DCNT2::SetDescription("Debug Counter 2 Debug Event Enable");  
-			CIRPT::SetName("CIRPT"); CIRPT::SetDescription("Critical Interrupt Taken Debug Event Enable");  
-			CRET ::SetName("CRET");  CRET ::SetDescription("Critical Return Debug Event Enable"); 
+			IAC5 ::SetName("IAC5");  IAC5 ::SetDescription("Instruction Address Compare 5 Debug Event Enable");
+			IAC6 ::SetName("IAC6");  IAC6 ::SetDescription("Instruction Address Compare 6 Debug Event Enable");
+			IAC7 ::SetName("IAC7");  IAC7 ::SetDescription("Instruction Address Compare 7 Debug Event Enable");
+			IAC8 ::SetName("IAC8");  IAC8 ::SetDescription("Instruction Address Compare 8 Debug Event Enable");
+			DEVT1::SetName("DEVT1"); DEVT1::SetDescription("External Debug Event 1 Enable");
+			DEVT2::SetName("DEVT2"); DEVT2::SetDescription("External Debug Event 2 Enable");
+			DCNT1::SetName("DCNT1"); DCNT1::SetDescription("Debug Counter 1 Debug Event Enable");
+			DCNT2::SetName("DCNT2"); DCNT2::SetDescription("Debug Counter 2 Debug Event Enable");
+			CIRPT::SetName("CIRPT"); CIRPT::SetDescription("Critical Interrupt Taken Debug Event Enable");
+			CRET ::SetName("CRET");  CRET ::SetDescription("Critical Return Debug Event Enable");
 			FT   ::SetName("FT");    FT   ::SetDescription("Freeze Timers on Debug Event");
 		}
 	};
@@ -3230,7 +3230,7 @@ protected:
 		struct IAC2US  : Field<IAC2US , 4 , 5 > {}; // Instruction Address Compare 2 User/Supervisor Mode
 		struct IAC2ER  : Field<IAC2ER , 6 , 7 > {}; // Instruction Address Compare 2 Effective/Real Mode
 		struct IAC12M  : Field<IAC12M , 8 , 9 > {}; // Instruction Address Compare 1/2 Mode
-		struct IAC12AT : Field<IAC12AT, 15    > {}; // Instruction Address Compare 1/2 Auto-Toggle Enable 
+		struct IAC12AT : Field<IAC12AT, 15    > {}; // Instruction Address Compare 1/2 Auto-Toggle Enable
 		struct IAC3US  : Field<IAC3US , 16, 17> {}; // Instruction Address Compare 3 User/Supervisor Mode
 		struct IAC3ER  : Field<IAC3ER , 18, 19> {}; // Instruction Address Compare 3 Effective/Real Mode
 		struct IAC4US  : Field<IAC4US , 20, 21> {}; // Instruction Address Compare 4 User/Supervisor Mode
@@ -3283,7 +3283,7 @@ protected:
 		struct DVC2M   : Field<DVC2M  , 14, 15> {}; // Data Value Compare 2 Mode
 		
 		SWITCH_ENUM_TRAIT(Model, _1);
-		CASE_ENUM_TRAIT(PPC440, _1)      { struct DVC1BE : Field<DVC1BE , 20, 23> {}; }; 
+		CASE_ENUM_TRAIT(PPC440, _1)      { struct DVC1BE : Field<DVC1BE , 20, 23> {}; };
 		CASE_ENUM_TRAIT(E200Z710N3, _1)  { struct DVC1BE : Field<DVC1BE , 16, 23> {}; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _1) { struct DVC1BE : Field<DVC1BE , 16, 23> {}; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _1)::DVC1BE DVC1BE; // Data Value Compare 1 Byte Enables
@@ -3291,7 +3291,7 @@ protected:
 		SWITCH_ENUM_TRAIT(Model, _2);
 		CASE_ENUM_TRAIT(PPC440, _2)      { struct DVC2BE : Field<DVC2BE , 28, 31> {}; };
 		CASE_ENUM_TRAIT(E200Z710N3, _2)  { struct DVC2BE : Field<DVC2BE , 24, 31> {}; };
-		CASE_ENUM_TRAIT(E200Z425BN3, _2) { struct DVC2BE : Field<DVC2BE , 24, 31> {}; };  
+		CASE_ENUM_TRAIT(E200Z425BN3, _2) { struct DVC2BE : Field<DVC2BE , 24, 31> {}; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _2)::DVC2BE DVC2BE; // Data Value Compare 2 Byte Enables
 		
 		SWITCH_ENUM_TRAIT(Model, _);
@@ -4234,11 +4234,11 @@ protected:
 		struct DVC1C   : Field<DVC1C  , 1>      {}; // Data Value Compare 1 Control
 		struct DVC2C   : Field<DVC2C  , 3>      {}; // Data Value Compare 2 Control
 		struct DAC1XMH : Field<DAC1XMH, 13>     {}; // Data Address Compare 1 Extended Mask Control High
-		struct DAC2XMH : Field<DAC2XMH, 15>     {}; // Data Address Compare 2 Extended Mask Control High 
+		struct DAC2XMH : Field<DAC2XMH, 15>     {}; // Data Address Compare 2 Extended Mask Control High
 		struct DAC1XM  : Field<DAC1XM , 16, 19> {}; // Data Address Compare 1 Extended Mask Control
 		struct DAC2XM  : Field<DAC2XM , 20, 23> {}; // Data Address Compare 2 Extended Mask Control
-		struct DAC1CFG : Field<DAC1CFG, 24, 27> {}; // Data Address Compare 1 Configuration 
-		struct DAC2CFG : Field<DAC2CFG, 28, 31> {}; // Data Address Compare 2 Configuration 
+		struct DAC1CFG : Field<DAC1CFG, 24, 27> {}; // Data Address Compare 1 Configuration
+		struct DAC2CFG : Field<DAC2CFG, 28, 31> {}; // Data Address Compare 2 Configuration
 		
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<DVC1C, DVC2C, DAC1XMH, DAC2XMH, DAC1XM, DAC2XM, DAC1CFG, DAC2CFG> ALL; };
@@ -4466,22 +4466,22 @@ protected:
 		{
 			       this->SetName("MCSR");               this->SetDescription("Machine Check Syndrome Register");
 			MCP        ::SetName("MCP");         MCP        ::SetDescription("Machine check input pin");
-			MCS        ::SetName("MCS");         MCS        ::SetDescription("Machine Check Summary");     
+			MCS        ::SetName("MCS");         MCS        ::SetDescription("Machine Check Summary");
 			IC_DPERR   ::SetName("IC_DPERR");    IC_DPERR   ::SetDescription("Instruction Cache data array parity error");
-			IB         ::SetName("IB");          IB         ::SetDescription("Instruction PLB Error");    
-			DRB        ::SetName("DRB");         DRB        ::SetDescription("Data Read PLB Error");     
+			IB         ::SetName("IB");          IB         ::SetDescription("Instruction PLB Error");
+			DRB        ::SetName("DRB");         DRB        ::SetDescription("Data Read PLB Error");
 			DC_DPERR   ::SetName("DC_DPERR");    DC_DPERR   ::SetDescription("Data Cache data array parity error");
-			DWB        ::SetName("DWB");         DWB        ::SetDescription("Data Write PLB Error");     
+			DWB        ::SetName("DWB");         DWB        ::SetDescription("Data Write PLB Error");
 			EXCP_ERR   ::SetName("EXCP_ERR");    EXCP_ERR   ::SetDescription("ISI or Bus Error on first instruction fetch for an exception handler");
-			TLBP       ::SetName("TLBP");        TLBP       ::SetDescription("Translation Lookaside Buffer Parity Error");      
+			TLBP       ::SetName("TLBP");        TLBP       ::SetDescription("Translation Lookaside Buffer Parity Error");
 			IC_TPERR   ::SetName("IC_TPERR");    IC_TPERR   ::SetDescription("Instruction Cache Tag parity error");
-			ICP        ::SetName("ICP");         ICP        ::SetDescription("Instruction Cache Parity Error");     
+			ICP        ::SetName("ICP");         ICP        ::SetDescription("Instruction Cache Parity Error");
 			DC_TPERR   ::SetName("DC_TPERR");    DC_TPERR   ::SetDescription("Data Cache Tag parity error");
-			DCSP       ::SetName("DCSP");        DCSP       ::SetDescription("Data Cache Search Parity Error");      
+			DCSP       ::SetName("DCSP");        DCSP       ::SetDescription("Data Cache Search Parity Error");
 			IC_LKERR   ::SetName("IC_LKERR");    IC_LKERR   ::SetDescription("Instruction Cache Lock error");
-			DCFP       ::SetName("DCFP");        DCFP       ::SetDescription("Data Cache Flush Parity Error");      
+			DCFP       ::SetName("DCFP");        DCFP       ::SetDescription("Data Cache Flush Parity Error");
 			DC_LKERR   ::SetName("DC_LKERR");    DC_LKERR   ::SetDescription("Data Cache Lock error");
-			IMPE       ::SetName("IMPE");        IMPE       ::SetDescription("Imprecise Machine Check Exception");      
+			IMPE       ::SetName("IMPE");        IMPE       ::SetDescription("Imprecise Machine Check Exception");
 			NMI        ::SetName("NMI");         NMI        ::SetDescription("NMI input pin");
 			MAV        ::SetName("MAV");         MAV        ::SetDescription("MCAR Address Valid");
 			MEA        ::SetName("MEA");         MEA        ::SetDescription("MCAR holds Effective Address");
@@ -5658,9 +5658,9 @@ protected:
 		using Super::operator =;
 	private:
 		void Init()
-		{      
+		{
 			   this->SetName("HID0");       this->SetDescription("Hardware Implementation Dependent Register 0");
-			   
+			
 			   EMCP       ::SetName("EMCP");        EMCP       ::SetDescription("Enable machine check pin (p_mcp_b)");
 			   TBEN       ::SetName("TBEN");        TBEN       ::SetDescription("Time base enable");
 			   STEN       ::SetName("STEN");        STEN       ::SetDescription("Software table search enable");
@@ -5765,7 +5765,7 @@ protected:
 		}
 	};
 	
-	// Instruction Address Breakpoint Register 
+	// Instruction Address Breakpoint Register
 	struct IABR : PrivilegedSPR<IABR, 1010>
 	{
 		typedef PrivilegedSPR<IABR, 1010> Super;
@@ -5888,7 +5888,7 @@ protected:
 		void Init() { this->SetName("DBDR"); this->SetDescription("Debug Data Register"); }
 	};
 
-	// Instruction Cache and Interrupt Control Register 
+	// Instruction Cache and Interrupt Control Register
 	struct ICTRL : PrivilegedSPR<ICTRL, 1011>
 	{
 		typedef PrivilegedSPR<ICTRL, 1011> Super;
@@ -5967,7 +5967,7 @@ protected:
 		}
 	};
 
-	// Data Address Breakpoint Register 
+	// Data Address Breakpoint Register
 	struct DABR : PrivilegedSPR<DABR, 1013>
 	{
 		typedef PrivilegedSPR<DABR, 1013> Super;
@@ -5976,7 +5976,7 @@ protected:
 		struct BT  : Field<BT , 29    > {}; // Breakpoint translation enable
 		struct DW  : Field<DW , 30    > {}; // Data write enable
 		struct DR  : Field<DR , 31    > {}; // Data read enable
-		        
+		
 		typedef FieldSet<DAB, BT, DW, DR> ALL;
 		
 		DABR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
@@ -6622,7 +6622,7 @@ protected:
 			WRC            ::SetName("WRC");                    WRC            ::SetDescription("Write Control");
 			INVC           ::SetName("INVC");                   INVC           ::SetDescription("Invert Control");
 			WCHKBIT_CHKINVT::SetName("WCHKBIT_CHKINVT");        WCHKBIT_CHKINVT::SetDescription("Write Checkbits / Checkbit Invert Mask");
-			WCHKBIT_CHKINVT::SetDisplayName("WCHKBIT/CHKINVT"); 
+			WCHKBIT_CHKINVT::SetDisplayName("WCHKBIT/CHKINVT");
 		}
 	};
 
@@ -6890,7 +6890,7 @@ protected:
 		}
 	};
 	
-	// Page Table Entry High Register 
+	// Page Table Entry High Register
 	struct PTEHI : PrivilegedSPR<PTEHI, 981>
 	{
 		typedef PrivilegedSPR<PTEHI, 981> Super;
@@ -6915,7 +6915,7 @@ protected:
 		}
 	};
 	
-	// Page Table Entry Low Register 
+	// Page Table Entry Low Register
 	struct PTELO : PrivilegedSPR<PTELO, 982>
 	{
 		typedef PrivilegedSPR<PTELO, 982> Super;
@@ -7739,10 +7739,10 @@ protected:
 				FC   ::SetName("FC");     FC   ::SetDescription("Freeze Counter");
 				FCS  ::SetName("FCS");    FCS  ::SetDescription("Freeze Counter in Supervisor state");
 				FCU  ::SetName("FCU");    FCU  ::SetDescription("Freeze Counter in User state");
-				FCM1 ::SetName("FCM1");   FCM1 ::SetDescription("Freeze Counter while Mark is set"); 
-				FCM0 ::SetName("FCM0");   FCM0 ::SetDescription("Freeze Counter while Mark is cleared"); 
+				FCM1 ::SetName("FCM1");   FCM1 ::SetDescription("Freeze Counter while Mark is set");
+				FCM0 ::SetName("FCM0");   FCM0 ::SetDescription("Freeze Counter while Mark is cleared");
 				CE   ::SetName("CE");     CE   ::SetDescription("Condition Enable");
-				EVENT::SetName("EVENT");  EVENT::SetDescription("Event selector");  
+				EVENT::SetName("EVENT");  EVENT::SetDescription("Event selector");
 				PMP  ::SetName("PMP");    PMP  ::SetDescription("Performance Monitor Watchpoint Periodicity Select");
 			}
 		};
@@ -7786,12 +7786,12 @@ protected:
 				this->SetName(name_sstr.str()); this->SetDescription(desc_sstr.str());
 				
 				TRIGONCTL ::SetName("TRIGONCTL");  TRIGONCTL ::SetDescription("Trigger-on Control Class - Class of Trigger-on source");
-				TRIGOFFCTL::SetName("TRIGOFFCTL"); TRIGOFFCTL::SetDescription("Trigger-off Control Class - Class of Trigger-off source");  
-				TRIGONSEL ::SetName("TRIGONSEL");  TRIGONSEL ::SetDescription("Trigger-on Source Select - Source Select based on setting of TRIGONCTL"); 
-				TRIGOFFSEL::SetName("TRIGOFFSEL"); TRIGOFFSEL::SetDescription("Trigger-off Source Select - Source Select based on setting of TRIGOFFCTL");  
-				TRIGGERED ::SetName("TRIGGERED");  TRIGGERED ::SetDescription("Triggered"); 
-				THRESHMUL ::SetName("THRESHMUL");  THRESHMUL ::SetDescription("Threshold multiple"); 
-				THRESHOLD ::SetName("THRESHOLD");  THRESHOLD ::SetDescription("Threshold"); 
+				TRIGOFFCTL::SetName("TRIGOFFCTL"); TRIGOFFCTL::SetDescription("Trigger-off Control Class - Class of Trigger-off source");
+				TRIGONSEL ::SetName("TRIGONSEL");  TRIGONSEL ::SetDescription("Trigger-on Source Select - Source Select based on setting of TRIGONCTL");
+				TRIGOFFSEL::SetName("TRIGOFFSEL"); TRIGOFFSEL::SetDescription("Trigger-off Source Select - Source Select based on setting of TRIGOFFCTL");
+				TRIGGERED ::SetName("TRIGGERED");  TRIGGERED ::SetDescription("Triggered");
+				THRESHMUL ::SetName("THRESHMUL");  THRESHMUL ::SetDescription("Threshold multiple");
+				THRESHOLD ::SetName("THRESHOLD");  THRESHOLD ::SetDescription("Threshold");
 			}
 		};
 		
@@ -8138,9 +8138,10 @@ private:
 		typedef unisim::util::os::linux_os::PPCTS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> > PPCTarget;
 
 		PowerPCLinux32(CPU *_cpu)
-			: unisim::util::os::linux_os::Linux<uint32_t, uint32_t>(_cpu->GetDebugInfoStream(), _cpu->GetDebugWarningStream(), _cpu->GetDebugErrorStream(), _cpu, _cpu, _cpu)
+			: unisim::util::os::linux_os::Linux<uint32_t, uint32_t>(_cpu->GetDebugInfoStream(), _cpu->GetDebugWarningStream(), _cpu->GetDebugErrorStream())
 			, ppc_target(0)
 		{
+			SetInterfaces(_cpu, _cpu, _cpu);
 			ppc_target = new PPCTarget(*this);
 			SetTargetSystem(ppc_target);
 		}

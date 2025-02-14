@@ -31,7 +31,7 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
 #ifndef __UNISIM_UTIL_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 #define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 
@@ -39,7 +39,6 @@
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/debug/dwarf/dwarf.tcc>
 #include <unisim/util/locate/locate.hh>
-#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <stdlib.h>
@@ -50,10 +49,13 @@ namespace loader {
 namespace elf_loader {
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
-	: debug_info_stream(&std::cout)
-	, debug_warning_stream(&std::cerr)
-	, debug_error_stream(&std::cerr)
+ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(std::ostream& _debug_info_stream,
+                                                                                            std::ostream& _debug_warning_stream,
+                                                                                            std::ostream& _debug_error_stream,
+                                                                                            const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
+	: debug_info_stream(_debug_info_stream)
+	, debug_warning_stream(_debug_warning_stream)
+	, debug_error_stream(_debug_error_stream)
 	, filename()
 	, architecture()
 	, base_addr(0)
@@ -103,24 +105,6 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::~E
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetDebugInfoStream(std::ostream& _debug_info_stream)
-{
-	debug_info_stream = &_debug_info_stream;
-}
-
-template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetDebugWarningStream(std::ostream& _debug_warning_stream)
-{
-	debug_warning_stream = &_debug_warning_stream;
-}
-
-template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetDebugErrorStream(std::ostream& _debug_error_stream)
-{
-	debug_error_stream = &_debug_error_stream;
-}
-
-template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetRegistersInterface(unsigned int prc_num, unisim::service::interfaces::Registers *_regs_if)
 {
 	if(prc_num >= regs_if.size())
@@ -141,7 +125,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetFileName(const char *s)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetFileName(std::string&& s)
 {
 	filename = s;
 }
@@ -1833,19 +1817,19 @@ uint8_t ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 std::ostream& ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDebugInfoStream() const
 {
-	return *debug_info_stream;
+	return debug_info_stream;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 std::ostream& ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDebugWarningStream() const
 {
-	return *debug_warning_stream;
+	return debug_warning_stream;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 std::ostream& ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDebugErrorStream() const
 {
-	return *debug_error_stream;
+	return debug_error_stream;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

@@ -151,27 +151,6 @@ Processor::Page::dump(std::ostream& sink) const
 }
 
 void
-BranchInfo::update( bool branch, bool known, uint64_t naddress )
-{
-  if (not branch)
-    { pass = true; }
-  else if (not known)
-    {
-      if (target == Direct)
-        { throw *this; }
-      target = Indirect;
-    }
-  else if (target == BNone)
-    {
-      target = Direct;
-      address = naddress;
-    }
-  else if (target != Direct or address != naddress)
-    { throw *this; }
-}
-
-
-void
 Processor::error_mem_overlap( Page const& a, Page const& b )
 {
   std::cerr << "error: inserted " << a << " overlaps " << b << "\n";

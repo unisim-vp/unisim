@@ -47,10 +47,6 @@ namespace floating_point {
 template <typename INTEGER, typename FLOAT> static INTEGER _ToInt( FLOAT a, uint_fast8_t rmode, bool exact );
 template <typename FLOAT> static FLOAT _DefaultNaN();
 template <typename FLOAT> static FLOAT _FMulAdd( FLOAT a, FLOAT b, FLOAT c );
-template <typename FLOAT> static FLOAT _FMin( FLOAT a, FLOAT b );
-template <typename FLOAT> static FLOAT _FMinNumber( FLOAT a, FLOAT b );
-template <typename FLOAT> static FLOAT _FMax( FLOAT a, FLOAT b );
-template <typename FLOAT> static FLOAT _FMaxNumber( FLOAT a, FLOAT b );
 
 } // end of namespace floating_point
 } // end of namespace util
@@ -213,7 +209,7 @@ float FMin( float a, float b ) { return unisim::util::floating_point::_FMin<floa
 float FMinNumber( float a, float b ) { return unisim::util::floating_point::_FMinNumber<float>( a, b ); }
 float FMax( float a, float b ) { return unisim::util::floating_point::_FMax<float>( a, b ); }
 float FMaxNumber( float a, float b ) { return unisim::util::floating_point::_FMaxNumber<float>( a, b ); }
-bool IsSignaling( float a ) { return issignaling( a ); }
+bool IsSignaling( float a ) { return unisim::util::floating_point::_IsSignaling<float>( a ); }
 template <> float DefaultNaN<float>() { return unisim::util::floating_point::_DefaultNaN<float>(); }
 
 // Functions for double
@@ -289,7 +285,7 @@ double FMin( double a, double b ) { return unisim::util::floating_point::_FMin<d
 double FMinNumber( double a, double b ) { return unisim::util::floating_point::_FMinNumber<double>( a, b ); }
 double FMax( double a, double b ) { return unisim::util::floating_point::_FMax<double>( a, b ); }
 double FMaxNumber( double a, double b ) { return unisim::util::floating_point::_FMaxNumber<double>( a, b ); }
-bool IsSignaling( double a ) { return issignaling( a ); }
+bool IsSignaling( double a ) { return unisim::util::floating_point::_IsSignaling<double>( a ); }
 template <> double DefaultNaN<double>() { return unisim::util::floating_point::_DefaultNaN<double>(); }
 
 namespace unisim {
@@ -353,44 +349,6 @@ static FLOAT _FMulAdd( FLOAT a, FLOAT b, FLOAT c )
 {
 	// Note: on x86_64 host, selecting x86-64-v3 (-march=x86-64-v3) is sufficient for enabling fused multiply-add
 	return (a * b) + c;
-}
-
-template <typename FLOAT>
-static FLOAT _FMin( FLOAT a, FLOAT b )
-{
-	return (IsZero(a) && IsZero(b)) ? (IsNeg(a) ? a : b) : ((a < b) ? a : b);
-}
-
-template <typename FLOAT>
-static FLOAT _FMinNumber( FLOAT a, FLOAT b )
-{
-	fexcept_t excepts;
-	fegetexceptflag( &excepts, FE_ALL_EXCEPT );
-	FLOAT res = IsNaN( a ) ? ( IsNaN( b ) ? a : b)
-	                        : (IsNaN( b ) ? a
-	                                      : ( ( IsZero( a ) && IsZero( b ) ) ? ( IsNeg( a ) ? a : b )
-	                                                                         : ((a < b) ? a : b) ) );
-	fesetexceptflag( &excepts, FE_ALL_EXCEPT );
-	return res;
-}
-
-template <typename FLOAT>
-static FLOAT _FMax( FLOAT a, FLOAT b )
-{
-	return (IsZero(a) && IsZero(b)) ? (IsNeg(a) ? b : a) : ((a < b) ? b : a);
-}
-
-template <typename FLOAT>
-static FLOAT _FMaxNumber( FLOAT a, FLOAT b )
-{
-	fexcept_t excepts;
-	fegetexceptflag( &excepts, FE_ALL_EXCEPT );
-	FLOAT res = IsNaN( a ) ? ( IsNaN( b ) ? a : b)
-	                        : (IsNaN( b ) ? a
-	                                      : ( ( IsZero( a ) && IsZero( b ) ) ? ( IsNeg( a ) ? b : a )
-	                                                                         : ((a < b) ? b : a) ) );
-	fesetexceptflag( &excepts, FE_ALL_EXCEPT );
-	return res;
 }
 
 } // end of namespace floating_point

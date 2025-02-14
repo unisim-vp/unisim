@@ -74,16 +74,16 @@ struct Simulator
   static void DefaultConfiguration(unisim::kernel::Simulator *sim);
   typedef unisim::component::tlm2::processor::arm::cortex_a53::CPU CPU;
   typedef unisim::component::tlm2::memory::ram::Memory<64, uint64_t, 8, 1024 * 1024, true> MEMORY;
-  
+
   struct DEBUGGER_CONFIG
   {
     typedef uint64_t ADDRESS;
     typedef sc_core::sc_time TIME_TYPE;
     static const unsigned int NUM_PROCESSORS = 1;
     /* gdb_server, inline_debugger */
-    static const unsigned int MAX_FRONT_ENDS = 4;
+    static const unsigned int MAX_FRONT_ENDS = 3;
   };
-  
+
   struct CFG_BUILDER_CONFIG
   {
     typedef uint64_t ADDRESS;
@@ -93,7 +93,7 @@ struct Simulator
     enum { DEBUG = 0 };
     enum { CHECK = 0 };
   };
-  
+
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
   typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
@@ -127,7 +127,7 @@ struct Simulator
   LOGGER_HTTP_WRITER*                        logger_http_writer;
   LOGGER_XML_FILE_WRITER*                    logger_xml_file_writer;
   LOGGER_NETSTREAM_WRITER*                   logger_netstream_writer;
-  
+
   bool                                       enable_gdb_server;
   unisim::kernel::variable::Parameter<bool>   param_enable_gdb_server;
   bool                                       enable_inline_debugger;

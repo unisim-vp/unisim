@@ -51,16 +51,16 @@ namespace arm {
    * Base class used to abort normal execution of an instruction and
    * take processor to related handler (using a throw).
    */
-  struct Exception : public std::exception { Exception() {} virtual const char* what() const throw() { return "Exception"; } };
+  struct Exception { virtual const char* what() const throw() = 0; };
 
-  struct UndefInstrException : Exception { UndefInstrException() {} virtual const char* what() const throw() { return "UndefInstrException"; } };
-  struct HypTrapException : Exception { HypTrapException() {} virtual const char* what() const throw() { return "HypTrapException"; } };
-  struct SVCException : Exception  { SVCException() {} virtual const char* what() const throw() { return "SVCException"; } };
-  struct SMCException : Exception  { SMCException() {} virtual const char* what() const throw() { return "SMCException"; } };
-  struct HVCException : Exception  { HVCException() {} virtual const char* what() const throw() { return "HVCException"; } };
-  struct PrefetchAbortException : Exception { PrefetchAbortException() {} virtual const char* what() const throw() { return "PrefetchAbortException"; } };
-  struct DataAbortException : Exception { DataAbortException() {} virtual const char* what() const throw() { return "DataAbortException"; } };
-  struct VirtualAbortException : Exception { VirtualAbortException() {} virtual const char* what() const throw() { return "VirtualAbortException"; } };
+  struct UndefInstrException : Exception { UndefInstrException() {} const char* what() const throw() override { return "UndefInstrException"; } };
+  struct HypTrapException : Exception { HypTrapException() {} const char* what() const throw() override { return "HypTrapException"; } };
+  struct SVCException : Exception  { SVCException() {} const char* what() const throw() override { return "SVCException"; } };
+  struct SMCException : Exception  { SMCException() {} const char* what() const throw() override { return "SMCException"; } };
+  struct HVCException : Exception  { HVCException() {} const char* what() const throw() override { return "HVCException"; } };
+  struct PrefetchAbortException : Exception { PrefetchAbortException() {} const char* what() const throw() override { return "PrefetchAbortException"; } };
+  struct DataAbortException : Exception { DataAbortException() {} const char* what() const throw() override { return "DataAbortException"; } };
+  struct VirtualAbortException : Exception { VirtualAbortException() {} const char* what() const throw() override { return "VirtualAbortException"; } };
 
   // Data Abort Types
   struct DAbort : public unisim::util::identifier::Identifier<DAbort>

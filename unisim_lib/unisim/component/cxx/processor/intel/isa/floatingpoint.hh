@@ -1,12 +1,12 @@
 /*
- *  Copyright (c) 2007-2019,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
+ *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, 
+ *   - Redistributions of source code must retain the above copyright notice,
  *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
@@ -14,19 +14,19 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific 
+ *     endorse or promote products derived from this software without specific
  *     prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
- *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
@@ -45,9 +45,9 @@ template <class ARCH> struct DC<ARCH,F2XM1> { Operation<ARCH>* get( InputCode<AR
 {
   // F2XM1 - Compute 2^x - 1
   if (auto _ = match( ic, opcode( "\xd9\xf0" ) ))
-  
+
     return new F2xm1<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -70,9 +70,9 @@ template <class ARCH> struct DC<ARCH,FABS> { Operation<ARCH>* get( InputCode<ARC
 {
   // FABS - Absolute Value
   if (auto _ = match( ic, opcode( "\xd9\xe1" ) ))
-  
+
     return new Fabs<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -106,33 +106,33 @@ struct Fiadd : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FADD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xd8" ) /0 & RM_mem() ))
-  
+
     return new Fadd<ARCH,32>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdc" ) /0 & RM_mem() ))
-  
+
     return new Fadd<ARCH,64>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xd8" ) /0 & RM_reg() ))
-  
+
     return new FaddReg<ARCH,false>( _.opbase(), _.ereg(), 0 );
-  
+
   if (auto _ = match( ic, opcode( "\xdc" ) /0 & RM_reg() ))
-  
+
     return new FaddReg<ARCH,false>( _.opbase(), 0, _.ereg() );
 
   if (auto _ = match( ic, opcode( "\xde" ) /0 & RM_reg() ))
-  
+
     return new FaddReg<ARCH,true>( _.opbase(), 0, _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xda" ) /0 & RM_mem() ))
-  
-    return new Fiadd<ARCH,GOd>( _.opbase(), _.rmop() ); 
-  
+
+    return new Fiadd<ARCH,GOd>( _.opbase(), _.rmop() );
+
   if (auto _ = match( ic, opcode( "\xde" ) /0 & RM_mem() ))
-  
+
     return new Fiadd<ARCH,GOw>( _.opbase(), _.rmop() );
-  
+
   return 0;
 }};
 
@@ -146,9 +146,9 @@ struct Fbld : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FBLD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xdf" ) /4 & RM_mem() ))
-  
+
     return new Fbld<ARCH>( _.opbase(), _.rmop() );
-  
+
   return 0;
 }};
 
@@ -162,9 +162,9 @@ struct Fbstp_m80 : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FBSTP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xdf" ) /6 & RM_mem() ))
-  
+
     return new Fbstp_m80<ARCH>( _.opbase(), _.rmop() );
-  
+
   return 0;
 }};
 
@@ -179,9 +179,9 @@ struct Fchs : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FCHS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xd9\xe0" ) ))
-  
+
     return new Fchs<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -195,7 +195,7 @@ struct Fnclex : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FCLEX> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xdb\xe2" ) ))
-  
+
     return new Fnclex<ARCH>( _.opbase() );
 
   return 0;
@@ -228,39 +228,39 @@ struct Fcmovcc : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FCMOV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FCMOVcc -- Floating-Point Conditional Move
-  
+
   if (auto _ = match( ic, opcode( "\xda" ) /0 & RM_reg() ))
-  
+
     return new Fcmovcc<ARCH,0>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xda" ) /1 & RM_reg() ))
-  
+
     return new Fcmovcc<ARCH,2>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xda" ) /2 & RM_reg() ))
-  
+
     return new Fcmovcc<ARCH,4>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xda" ) /3 & RM_reg() ))
-  
+
     return new Fcmovcc<ARCH,6>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xdb" ) /0 & RM_reg() ))
-  
+
     return new Fcmovcc<ARCH,1>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xdb" ) /1 & RM_reg() ))
-  
+
     return new Fcmovcc<ARCH,3>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xdb" ) /2 & RM_reg() ))
-  
+
     return new Fcmovcc<ARCH,5>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xdb" ) /3 & RM_reg() ))
-  
+
     return new Fcmovcc<ARCH,7>( _.opbase(), _.ereg() );
-  
+
   return 0;
 }};
 
@@ -273,12 +273,12 @@ struct Fcom_m32 : public Operation<ARCH>
   {
     typedef typename ARCH::bit_t bit_t;
     typedef typename ARCH::f64_t f64_t;
-    
+
     f64_t a = arch.fread( 0 );
     f64_t b = f64_t( arch.template frmread<32>( rmop ) );
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
-    
+
     arch.flagwrite( ARCH::FLAG::C3, notge == notle );
     arch.flagwrite( ARCH::FLAG::C2, notge and notle );
     arch.flagwrite( ARCH::FLAG::C0, notge );
@@ -295,7 +295,7 @@ struct Fcom_m64 : public Operation<ARCH>
   {
     typedef typename ARCH::bit_t bit_t;
     typedef typename ARCH::f64_t f64_t;
-    
+
     f64_t a = arch.fread( 0 );
     f64_t b = arch.template frmread<64>( rmop );
     bit_t notle = not (a <= b);
@@ -313,12 +313,12 @@ struct Fcom_stn_st0 : public Operation<ARCH>
 {
   Fcom_stn_st0( OpBase<ARCH> const& opbase, uint8_t _stidx ) : Operation<ARCH>( opbase ), stidx( _stidx ) {} uint8_t stidx;
   void disasm( std::ostream& sink ) const { sink << "fcom" << (P?"p":"") << " %st(" << unsigned(stidx) << ")"; }
-  
+
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::bit_t bit_t;
     typedef typename ARCH::f64_t f64_t;
-    
+
     f64_t a = arch.fread( 0 );
     f64_t b = arch.fread( stidx );
     bit_t notle = not (a <= b);
@@ -336,12 +336,12 @@ struct Fcompp : public Operation<ARCH>
 {
   Fcompp( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fcompp"; }
-  
+
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::bit_t bit_t;
     typedef typename ARCH::f64_t f64_t;
-    
+
     f64_t a = arch.fpop();
     f64_t b = arch.fpop();
     bit_t notle = not (a <= b);
@@ -358,33 +358,33 @@ template <class ARCH> struct DC<ARCH,FCOM> { Operation<ARCH>* get( InputCode<ARC
   // FCOM/FCOMP/FCOMPP -- Compare Floating Point Values
 
   if (auto _ = match( ic, opcode( "\xd8" ) /2 & RM_mem() ))
-  
+
     return new Fcom_m32<ARCH,false>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdc" ) /2 & RM_mem() ))
-  
+
     return new Fcom_m64<ARCH,false>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xd8" ) /2 & RM_reg() ))
-  
+
     return new Fcom_stn_st0<ARCH,false>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xd8" ) /3 & RM_mem() ))
 
     return new Fcom_m32<ARCH,true>( _.opbase(), _.rmop() );
 
   if (auto _ = match( ic, opcode( "\xdc" ) /3 & RM_mem() ))
-  
+
     return new Fcom_m64<ARCH,true>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xd8" ) /3 & RM_reg() ))
 
     return new Fcom_stn_st0<ARCH,true>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xde\xd9" ) ))
-  
+
     return new Fcompp<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -393,12 +393,12 @@ struct Fcomi_st0_stn : public Operation<ARCH>
 {
   Fcomi_st0_stn( OpBase<ARCH> const& opbase, uint8_t _stidx ) : Operation<ARCH>( opbase ), stidx( _stidx ) {} uint8_t stidx;
   void disasm( std::ostream& sink ) const { sink << "fcomi" << (P?"p":"") << " %st(" << unsigned(stidx) << "),%st"; }
-  
+
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::bit_t bit_t;
     typedef typename ARCH::f64_t f64_t;
-    
+
     f64_t a = arch.fread( 0 );
     f64_t b = arch.fread( stidx );
     bit_t notle = not (a <= b);
@@ -416,12 +416,12 @@ struct Fucomi_st0_stn : public Operation<ARCH>
 {
   Fucomi_st0_stn( OpBase<ARCH> const& opbase, uint8_t _stidx ) : Operation<ARCH>( opbase ), stidx( _stidx ) {} uint8_t stidx;
   void disasm( std::ostream& sink ) const { sink << "fucomi" << (P?"p":"") << " %st(" << unsigned(stidx) << "),%st"; }
-  
+
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::bit_t bit_t;
     typedef typename ARCH::f64_t f64_t;
-    
+
     f64_t a = arch.fread( 0 );
     f64_t b = arch.fread( stidx );
     bit_t notle = not (a <= b);
@@ -439,21 +439,21 @@ template <class ARCH> struct DC<ARCH,FCOMI> { Operation<ARCH>* get( InputCode<AR
   // FCOMI/FCOMIP/FUCOMI/FUCOMIP -- Compare Floating Point Values and Set EFLAGS
 
   if (auto _ = match( ic, opcode( "\xdb" ) /6 & RM_reg() ))
-  
+
     return new Fcomi_st0_stn<ARCH,false>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xdf" ) /6 & RM_reg() ))
-  
+
     return new Fcomi_st0_stn<ARCH,true>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xdb" ) /5 & RM_reg() ))
-  
+
     return new Fucomi_st0_stn<ARCH,false>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xdf" ) /5 & RM_reg() ))
-  
+
     return new Fucomi_st0_stn<ARCH,true>( _.opbase(), _.ereg() );
-  
+
   return 0;
 }};
 
@@ -478,11 +478,11 @@ template <class ARCH> struct DC<ARCH,FINCDECSTP> { Operation<ARCH>* get( InputCo
   if (auto _ = match( ic, opcode( "\xd9\xf6" ) ))
 
     return new Fdecstp<ARCH>( _.opbase() );
-  
+
   if (auto _ = match( ic, opcode( "\xd9\xf7" ) ))
 
     return new Fincstp<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -517,35 +517,35 @@ struct Fidiv : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FDIV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FDIV/FDIVP/FIDIV -- Floating-Point Divide
- 
+
   if (auto _ = match( ic,  opcode( "\xd8" ) /6 & RM_mem() ))
-  
+
     return new Fdiv<ARCH,32>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic,  opcode( "\xdc" ) /6 & RM_mem() ))
-  
+
     return new Fdiv<ARCH,64>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xd8" ) /6 & RM_reg() ))
-  
+
     return new FdivReg<ARCH,false>( _.opbase(), _.ereg(), 0 );
-  
+
   if (auto _ = match( ic, opcode( "\xdc" ) /7 & RM_reg() ))
-  
+
     return new FdivReg<ARCH,false>( _.opbase(), 0, _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xde" ) /7 & RM_reg() ))
-  
+
     return new FdivReg<ARCH,true>( _.opbase(), 0, _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xda" ) /6 & RM_mem() ))
-  
+
     return new Fidiv<ARCH,GOw>( _.opbase(), _.rmop() );
 
   if (auto _ = match( ic, opcode( "\xde" ) /6 & RM_mem() ))
-  
+
     return new Fidiv<ARCH,GOd>( _.opbase(), _.rmop() );
-  
+
   return 0;
 }};
 
@@ -577,38 +577,38 @@ struct Fidivr : public Operation<ARCH>
   void execute( ARCH& arch ) const { arch.fwrite( 0, f64_t( s_type( arch.rmread( OP(), rmop ) ) ) / arch.fread( 0 ) ); }
 };
 
-template <class ARCH> struct DC<ARCH,FDIVR> { Operation<ARCH>* get( InputCode<ARCH> const& ic ) 
+template <class ARCH> struct DC<ARCH,FDIVR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FDIVR/FDIVRP/FIDIVR -- Reverse Divide
-  
+
   if (auto _ = match( ic, opcode( "\xd8" ) /7 & RM_mem() ))
-  
+
     return new Fdivr<ARCH,32>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdc" ) /7 & RM_mem() ))
-  
+
     return new Fdivr<ARCH,64>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xd8" ) /7 & RM_reg() ))
 
     return new FdivrReg<ARCH,false>( _.opbase(), _.ereg(), 0 );
-  
+
   if (auto _ = match( ic, opcode( "\xdc" ) /6 & RM_reg() ))
-  
+
     return new FdivrReg<ARCH,false>( _.opbase(), 0, _.ereg() );
 
   if (auto _ = match( ic, opcode( "\xde" ) /6 & RM_reg() ))
-  
+
     return new FdivrReg<ARCH,true>( _.opbase(), 0, _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xda" ) /7 & RM_mem() ))
-  
+
     return new Fidivr<ARCH,GOd>( _.opbase(), _.rmop() );
 
   if (auto _ = match( ic, opcode( "\xde" ) /7 & RM_mem() ))
-  
+
     return new Fidivr<ARCH,GOw>( _.opbase(), _.rmop() );
-  
+
   return 0;
 }};
 
@@ -623,11 +623,11 @@ struct Ffree : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FFREE> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FFREE -- Free Floating-Point Register
-  
+
   if (auto _ = match( ic, opcode( "\xdd" ) /0 & RM_reg() ))
-  
+
     return new Ffree<ARCH>( _.opbase(), _.ereg() );
-  
+
   return 0;
 }};
 
@@ -650,23 +650,23 @@ struct Ficom_m16 : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FICOM> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FICOM/FICOMP -- Compare Integer
-  
+
   if (auto _ = match( ic, opcode( "\xde" ) /2 & RM_mem() ))
-  
+
     return new Ficom_m16<ARCH,false>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xda" ) /2 & RM_mem() ))
-  
+
     return new Ficom_m32<ARCH,false>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xde" ) /3 & RM_mem() ))
-  
+
     return new Ficom_m16<ARCH,true>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xda" ) /3 & RM_mem() ))
-  
+
     return new Ficom_m32<ARCH,true>( _.opbase(), _.rmop() );
-  
+
   return 0;
 }};
 
@@ -675,7 +675,7 @@ struct Fild : public Operation<ARCH>
 {
   typedef typename ARCH::f64_t f64_t;
   Fild( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
-  
+
   void disasm( std::ostream& sink ) const { sink << "fild" << (&"ll "[2-meta::BitScan<OP::SIZE/16>::forward]) << DisasmM( rmop ); }
   void execute( ARCH& arch ) const { arch.fpush( f64_t( typename TypeFor<ARCH,OP::SIZE>::s( arch.rmread( OP(), rmop ) ) ) ); }
 };
@@ -683,19 +683,19 @@ struct Fild : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FILD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FILD -- Load Integer
-  
+
   if (auto _ = match( ic, opcode( "\xdf" ) /0 & RM_mem() ))
-  
+
     return new Fild<ARCH,GOw>( _.opbase(), _.rmop() );
 
   if (auto _ = match( ic, opcode( "\xdb" ) /0 & RM_mem() ))
-  
+
     return new Fild<ARCH,GOd>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdf" ) /5 & RM_mem() ))
 
     return new Fild<ARCH,GOq>( _.opbase(), _.rmop() );
-  
+
   return 0;
 }};
 
@@ -711,11 +711,11 @@ struct Fninit : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FINIT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FINIT/FNINIT -- Initialize Floating-Point Unit
-  
+
   if (auto _ = match( ic, opcode( "\xdb\xe3" ) ))
-  
+
     return new Fninit<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -733,27 +733,27 @@ struct Fist : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FIST> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FIST/FISTP -- Store Integer
-  
+
   if (auto _ = match( ic, opcode( "\xdf" ) /2 & RM_mem() ))
-  
+
     return new Fist<ARCH,16,false>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdb" ) /2 & RM_mem() ))
-  
+
     return new Fist<ARCH,32,false>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdf" ) /3 & RM_mem() ))
-  
+
     return new Fist<ARCH,16,true>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdb" ) /3 & RM_mem() ))
-  
-    return new Fist<ARCH,32,true>( _.opbase(), _.rmop() );   
-  
+
+    return new Fist<ARCH,32,true>( _.opbase(), _.rmop() );
+
   if (auto _ = match( ic, opcode( "\xdf" ) /7 & RM_mem() ))
-  
+
     return new Fist<ARCH,64,true>( _.opbase(), _.rmop() );
-  
+
   return 0;
 }};
 
@@ -768,19 +768,19 @@ struct Fisttp : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FISTTP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FISTTP -- Store Integer with Truncation
-  
+
   if (auto _ = match( ic, opcode( "\xdf" ) /1 & RM_mem() ))
-  
+
     return new Fisttp<ARCH,16>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdb" ) /1 & RM_mem() ))
-  
+
     return new Fisttp<ARCH,32>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdd" ) /1 & RM_mem() ))
-  
+
     return new Fisttp<ARCH,64>( _.opbase(), _.rmop() );
-  
+
   return 0;
 }};
 
@@ -807,7 +807,7 @@ template <class ARCH> struct DC<ARCH,FLD> { Operation<ARCH>* get( InputCode<ARCH
   // FLD -- Load Floating Point Value
 
   if (auto _ = match( ic, opcode( "\xd9" ) /0 & RM_mem() ))
-  
+
     return new Fld<ARCH,32>( _.opbase(), _.rmop() );
 
   if (auto _ = match( ic, opcode( "\xdd" ) /0 & RM_mem() ))
@@ -819,9 +819,9 @@ template <class ARCH> struct DC<ARCH,FLD> { Operation<ARCH>* get( InputCode<ARCH
     return new Fld<ARCH,80>( _.opbase(), _.rmop() );
 
   if (auto _ = match( ic, opcode( "\xd9" ) /0 & RM_reg() ))
-  
+
     return new Fld_stn<ARCH>( _.opbase(), _.ereg() );
- 
+
   return 0;
 }};
 
@@ -865,33 +865,33 @@ struct FldConst : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FLDCONST> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xd9\xe8" ) ))
-  
+
     return new FldConst<ARCH,FLD1>( _.opbase() );
-  
+
   if (auto _ = match( ic, opcode( "\xd9\xe9" ) ))
-  
+
     return new FldConst<ARCH,FLDL2T>( _.opbase() );
-  
+
   if (auto _ = match( ic, opcode( "\xd9\xea" ) ))
-  
+
     return new FldConst<ARCH,FLDL2E>( _.opbase() );
-  
+
   if (auto _ = match( ic, opcode( "\xd9\xeb" ) ))
-  
+
     return new FldConst<ARCH,FLDPI>( _.opbase() );
-  
+
   if (auto _ = match( ic, opcode( "\xd9\xec" ) ))
-  
+
     return new FldConst<ARCH,FLDLG2>( _.opbase() );
-  
+
   if (auto _ = match( ic, opcode( "\xd9\xed" ) ))
-  
+
     return new FldConst<ARCH,FLDLN2>( _.opbase() );
-  
+
   if (auto _ = match( ic, opcode( "\xd9\xee" ) ))
-  
+
     return new FldConst<ARCH,FLDZ>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -916,15 +916,15 @@ struct FstCW : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FLSCW> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FLDCW/FSTCW/FNSTCW -- Load/Store x87 FPU Control Word
-  
+
   if (auto _ = match( ic, opcode( "\xd9" ) /5 & RM_mem() ))
-  
+
     return new FldCW<ARCH>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xd9" ) /7 & RM_mem() ))
-  
+
     return new FstCW<ARCH>( _.opbase(), _.rmop() );
-  
+
   return 0;
 }};
 
@@ -947,15 +947,15 @@ struct Fstenv : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FLSENV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FLDENV/FSTENV/FNSTENV -- Load/Store x87 FPU Environment
-  
+
   if (auto _ = match( ic, opcode( "\xd9" ) /4 & RM_mem() ))
-  
+
     return new Fldenv<ARCH>( _.opbase(), _.rmop(), ic.opsize() == 16 );
-  
+
   if (auto _ = match( ic, opcode( "\xd9" ) /6 & RM_mem() ))
-  
+
     return new Fstenv<ARCH>( _.opbase(), _.rmop(), ic.opsize() == 16 );
-  
+
   return 0;
 }};
 
@@ -989,29 +989,29 @@ struct Fimul : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FMUL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FMUL/FMULP/FIMUL -- Multiply
-  
+
   if (auto _ = match( ic, opcode( "\xd8" ) /1 & RM_mem() ))
-  
+
     return new Fmul<ARCH,32>( _.opbase(), _.rmop() );
 
   if (auto _ = match( ic, opcode( "\xdc" ) /1 & RM_mem() ))
-  
+
     return new Fmul<ARCH,64>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xd8" ) /1 & RM_reg() ))
-  
+
     return new FmulReg<ARCH,false>( _.opbase(), _.ereg(), 0 );
 
   if (auto _ = match( ic, opcode( "\xdc" ) /1 & RM_reg() ))
-  
+
     return new FmulReg<ARCH,false>( _.opbase(), 0, _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xde" ) /1 & RM_reg() ))
 
     return new FmulReg<ARCH,true>( _.opbase(), 0, _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xda" ) /1 & RM_mem() ))
-  
+
     return new Fimul<ARCH,GOd>( _.opbase(), _.rmop() );
 
   if (auto _ = match( ic, opcode( "\xde" ) /1 & RM_mem() ))
@@ -1032,12 +1032,12 @@ struct Fnop : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FNOP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xd9\xd0" ) ))
-  
+
     return new Fnop<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
- 
+
 template <class ARCH>
 struct Fsin : public Operation<ARCH>
 {
@@ -1160,42 +1160,42 @@ template <class ARCH> struct DC<ARCH,FMATH> { Operation<ARCH>* get( InputCode<AR
 {
   // FSIN -- Sine
   if (auto _ = match( ic, opcode( "\xd9\xfe" ) ))
-  
+
     return new Fsin<ARCH>( _.opbase() );
-  
+
   // FCOS -- Opcode
   if (auto _ = match( ic, opcode( "\xd9\xff" ) ))
- 
+
     return new Fcos<ARCH>( _.opbase() );
-  
+
   // FSINCOS -- Sine and Cosine
   if (auto _ = match( ic, opcode( "\xd9\xfb" ) ))
 
     return new Fsincos<ARCH>( _.opbase() );
-  
+
   // FPATAN -- Partial Arctangent
   if (auto _ = match( ic, opcode( "\xd9\xf3" ) ))
-  
+
     return new Fpatan<ARCH>( _.opbase() );
-  
+
   // FPTAN -- Partial Tangent
   if (auto _ = match( ic, opcode( "\xd9\xf2" ) ))
-  
+
     return new Fptan<ARCH>( _.opbase() );
-  
+
   // FSQRT -- Square Root
   if (auto _ = match( ic, opcode( "\xd9\xfa" ) ))
-  
+
     return new Fsqrt<ARCH>( _.opbase() );
-  
+
   // FYL2X -- Compute y ∗ log2x
   if (auto _ = match( ic, opcode( "\xd9\xf1" ) ))
-  
+
     return new Fyl2x<ARCH>( _.opbase() );
 
   // FYL2XP1 -- Compute y ∗ log2(x +1)
   if (auto _ = match( ic, opcode( "\xd9\xf9" ) ))
-  
+
     return new Fyl2xp1<ARCH>( _.opbase() );
 
   return 0;
@@ -1209,7 +1209,7 @@ struct Fprem1 : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typename ARCH::f64_t res = eval_fprem1( arch, arch.fread( 0 ), arch.fread( 1 ) );
-    
+
     arch.fwrite( 0, res );
   }
 };
@@ -1222,7 +1222,7 @@ struct Fprem : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typename ARCH::f64_t res = eval_fprem( arch, arch.fread( 0 ), arch.fread( 1 ) );
-    
+
     arch.fwrite( 0, res );
   }
 };
@@ -1230,15 +1230,15 @@ struct Fprem : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FPREM> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FPREM -- Partial Remainder
-  
+
   if (auto _ = match( ic, opcode( "\xd9\xf8" ) ))
-  
+
     return new Fprem<ARCH>( _.opbase() );
-  
+
   if (auto _ = match( ic, opcode( "\xd9\xf5" ) ))
-  
+
     return new Fprem1<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -1247,11 +1247,11 @@ struct Frndint : public Operation<ARCH>
 {
   Frndint( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "frndint"; }
-  
+
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::f64_t f64_t;
-    
+
     f64_t value = arch.fread( 0 );
     value = firound( value, arch.fcwreadRC() );
     arch.fwrite( 0, value );
@@ -1261,11 +1261,11 @@ struct Frndint : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FRNDINT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FRNDINT -- Round to Integer
-  
+
   if (auto _ = match( ic, opcode( "\xd9\xfc" ) ))
-  
+
     return new Frndint<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -1288,15 +1288,15 @@ struct Fsave : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FLSSTATE> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // FRSTOR/FSAVE/FNSAVE  Restore/Store x87 FPU State
-  
+
   if (auto _ = match( ic, opcode( "\xdd" ) /4 & RM_mem() ))
-  
+
     return new  Frstor<ARCH>( _.opbase(), _.rmop(), ic.opsize() == 16 );
-  
+
   if (auto _ = match( ic, opcode( "\xdd" ) /6 & RM_mem() ))
-  
+
     return new  Fsave<ARCH>( _.opbase(), _.rmop(), ic.opsize() == 16 );
-  
+
   return 0;
 }};
 
@@ -1306,7 +1306,7 @@ struct Fscale : public Operation<ARCH>
   typedef typename ARCH::f64_t f64_t;
   Fscale( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fscale"; }
-  void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) * power( f64_t( 2 ), firound( arch.fread( 1 ), intel::x87frnd_toward0 ) ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) * power( f64_t( 2 ), firound( arch.fread( 1 ), typename ARCH::rc_t(intel::x87frnd_toward0) ) ) ); }
 };
 
 template <class ARCH>
@@ -1320,13 +1320,13 @@ struct Fxtract : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FSCALE> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xd9\xfd" ) ))
-  
+
     return new Fscale<ARCH>( _.opbase() );
 
   if (auto _ = match( ic, opcode( "\xd9\xf4" ) ))
-  
+
     return new Fxtract<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -1350,35 +1350,35 @@ struct Fst_stn_st0 : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,FST> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  
+
   if (auto _ = match( ic, opcode( "\xd9" ) /2 & RM_mem() ))
-  
+
     return new  Fst<ARCH,32,false>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdd" ) /2 & RM_mem() ))
-  
+
     return new  Fst<ARCH,64,false>( _.opbase(), _.rmop() );
 
   if (auto _ = match( ic, opcode( "\xdd" ) /2 & RM_reg() ))
-  
+
     return new  Fst_stn_st0<ARCH,false>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xd9" ) /3 & RM_mem() ))
-  
+
     return new  Fst<ARCH,32,true>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdd" ) /3 & RM_mem() ))
-  
+
     return new  Fst<ARCH,64,true>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdb" ) /7 & RM_mem() ))
-  
+
     return new  Fst<ARCH,80,true>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdd" ) /3 & RM_reg() ))
 
     return new  Fst_stn_st0<ARCH,true>( _.opbase(), _.ereg() );
-  
+
   return 0;
 }};
 
@@ -1403,13 +1403,13 @@ struct Fnstsw_ax : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FSTSW> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xdd" ) /7 & RM_mem() ))
-  
+
     return new Fnstsw<ARCH>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdf\xe0" ) ))
-  
+
     return new Fnstsw_ax<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -1445,33 +1445,33 @@ template <class ARCH> struct DC<ARCH,FSUB> { Operation<ARCH>* get( InputCode<ARC
 {
   // FSUB/FSUBP/FISUB -- Subtract
   if (auto _ = match( ic, opcode( "\xd8" ) /4 & RM_mem() ))
-  
+
     return new Fsub<ARCH,32>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdc" ) /4 & RM_mem() ))
-  
+
     return new Fsub<ARCH,64>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xd8" ) /4 & RM_reg() ))
-  
+
     return new FsubReg<ARCH,false>( _.opbase(), _.ereg(), 0 );
-  
+
   if (auto _ = match( ic, opcode( "\xdc" ) /5 & RM_reg() ))
-  
+
     return new FsubReg<ARCH,false>( _.opbase(), 0, _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xde" ) /5 & RM_reg() ))
-  
+
     return new FsubReg<ARCH,true>( _.opbase(), 0, _.ereg() );
 
   if (auto _ = match( ic, opcode( "\xda" ) /4 & RM_mem() ))
-  
+
     return new Fisub<ARCH,GOd>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xde" ) /4 & RM_mem() ))
-  
+
     return new Fisub<ARCH,GOw>( _.opbase(), _.rmop() );
-  
+
   return 0;
 }};
 
@@ -1504,33 +1504,33 @@ struct Fisubr : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FSUBR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xd8" ) /5 & RM_mem() ))
-  
+
     return new Fsubr<ARCH,32>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xdc" ) /5 & RM_mem() ))
-  
+
     return new Fsubr<ARCH,64>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xd8" ) /5 & RM_reg() ))
-  
+
     return new FsubrReg<ARCH,false>( _.opbase(), _.ereg(), 0 );
-  
+
   if (auto _ = match( ic, opcode( "\xdc" ) /4 & RM_reg() ))
-  
+
     return new FsubrReg<ARCH,false>( _.opbase(), 0, _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xde" ) /4 & RM_reg() ))
-  
+
     return new FsubrReg<ARCH,true>( _.opbase(), 0, _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xda" ) /5 & RM_mem() ))
-  
+
     return new Fisubr<ARCH,32>( _.opbase(), _.rmop() );
-  
+
   if (auto _ = match( ic, opcode( "\xde" ) /5 & RM_mem() ))
- 
+
     return new Fisubr<ARCH,16>( _.opbase(), _.rmop() );
-  
+
   return 0;
 }};
 
@@ -1545,9 +1545,9 @@ struct Ftst : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FTST> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xd9\xe4" ) ))
-  
+
     return new Ftst<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -1591,15 +1591,15 @@ struct Fucompp : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FUCOM> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xdd" ) /4 & RM_reg() ))
-  
+
     return new Fucom_st0_stn<ARCH,false>( _.opbase(), _.ereg() );
 
   if (auto _ = match( ic, opcode( "\xdd" ) /5 & RM_reg() ))
-  
+
     return new Fucom_st0_stn<ARCH,true>( _.opbase(), _.ereg() );
-  
+
   if (auto _ = match( ic, opcode( "\xda\xe9" ) ))
-  
+
     return new Fucompp<ARCH>( _.opbase() );
 
   return 0;
@@ -1617,9 +1617,9 @@ struct Fxam : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FXAM> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xd9\xe5" ) ))
-  
+
     return new Fxam<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 
@@ -1641,9 +1641,9 @@ struct Fxch : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FXCH> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xd9" ) /1 & RM_reg() ))
-  
+
     return new Fxch<ARCH>( _.opbase(), _.ereg() );
-  
+
   return 0;
 }};
 
@@ -1659,9 +1659,9 @@ struct Fwait : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,FWAIT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\x9b" ) ))
-  
+
     return new Fwait<ARCH>( _.opbase() );
-  
+
   return 0;
 }};
 

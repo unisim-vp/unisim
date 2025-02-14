@@ -1,2 +1,0 @@
-ppc64dec.cc
-ppc64dec.hh

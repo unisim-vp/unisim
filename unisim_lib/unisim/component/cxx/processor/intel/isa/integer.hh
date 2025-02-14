@@ -2828,3 +2828,43 @@ template <class ARCH> struct DC<ARCH,MOVBE> { Operation<ARCH>* get( InputCode<AR
   return 0;
 }
 };
+
+template <class ARCH, class OP>
+struct Blsr : public Operation<ARCH>
+{
+  Blsr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _vn ) : Operation<ARCH>( opbase ), rmop( _rmop ), vn( _vn ) {}
+  RMOp<ARCH> rmop;
+  uint8_t vn;
+
+  void disasm( std::ostream& sink ) const { sink << "blsr " << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), vn ); }
+
+  void execute( ARCH& arch ) const {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u val_t;
+    typedef typename TypeFor<ARCH,OP::SIZE>::s sval_t;
+    typedef typename ARCH::bit_t bit_t;
+    val_t arg = arch.rmread( OP(), rmop );
+    val_t res = arg & (arg - val_t(1));
+    arch.regwrite( OP(), vn, res );
+    arch.flagwrite( ARCH::FLAG::ZF, bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t(arg == val_t(0)) );
+    arch.flagwrite( ARCH::FLAG::SF, bit_t(sval_t(res) < sval_t(0)) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(false), bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::PF, bit_t(false), bit_t(false) );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,BLSR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (auto _ = match( ic, vex( "\x0f\x38\xf3" ) /1 & RM() ))
+
+    {
+      if ((not ic.vex()) || (ic.vlen() != 128)) return 0;
+      if (ic.mode64() && ic.w())
+	return new Blsr<ARCH,GOq>( _.opbase(), _.rmop(), ic.vreg() );
+      else
+	return new Blsr<ARCH,GOd>( _.opbase(), _.rmop(), ic.vreg() );
+    }
+
+  return 0;
+}};

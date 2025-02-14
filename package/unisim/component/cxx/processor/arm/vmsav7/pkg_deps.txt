@@ -1,10 +1,12 @@
 am/isa_to_hh_tcc
 libc/inttypes
 std/cstring
+std/memory
 std/sstream
 std/stdexcept
 std/string
 unisim/component/cxx/processor/arm
+unisim/component/cxx/processor/arm/cfg/aarch32
 unisim/component/cxx/processor/arm/isa
 unisim/component/cxx/processor/arm/isa/arm32
 unisim/component/cxx/processor/arm/isa/thumb2
@@ -12,6 +14,7 @@ unisim/component/cxx/processor/opcache
 unisim/kernel/variable
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly
+unisim/service/interfaces/instruction_collecting
 unisim/service/interfaces/linux_os
 unisim/service/interfaces/memory
 unisim/service/interfaces/memory_access_reporting
@@ -20,6 +23,7 @@ unisim/service/interfaces/symbol_table_lookup
 unisim/service/interfaces/trap_reporting
 unisim/util/arithmetic
 unisim/util/backtrace
+unisim/util/cfg/intro
 unisim/util/endian
 unisim/util/likely
 unisim/util/os/linux_os

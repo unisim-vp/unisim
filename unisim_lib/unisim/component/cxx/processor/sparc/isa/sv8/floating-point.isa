@@ -219,7 +219,7 @@ fsqrtq.disasm = {
 op fadds( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000001[9]:rs2[5] )
 
 fadds.disasm = {
-  sink << "fadds " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
+  sink << "fadds " << DisasmFPR(rs1) << ", " << DisasmFPR(rs2) << ", " << DisasmFPR(rd);
 }
 
 fadds.execute = {
@@ -229,7 +229,7 @@ fadds.execute = {
 op faddd( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000010[9]:rs2[5] )
 
 faddd.disasm = {
-  sink << "faddd " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
+  sink << "faddd " << DisasmFPR(rs1 & -2) << ", " << DisasmFPR(rs2 & -2) << ", " << DisasmFPR(rd & -2);
 }
 
 faddd.execute = {
@@ -245,7 +245,7 @@ faddq.disasm = {
 op fsubs( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000101[9]:rs2[5] )
 
 fsubs.disasm = {
-  sink << "fsubs " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
+  sink << "fsubs " << DisasmFPR(rs1) << ", " << DisasmFPR(rs2) << ", " << DisasmFPR(rd);
 }
 
 fsubs.execute = {
@@ -255,7 +255,7 @@ fsubs.execute = {
 op fsubd( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000110[9]:rs2[5] )
 
 fsubd.disasm = {
-  sink << "fsubd " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
+  sink << "fsubd " << DisasmFPR(rs1 & -2) << ", " << DisasmFPR(rs2 & -2) << ", " << DisasmFPR(rd & -2);
 }
 
 fsubd.execute = {

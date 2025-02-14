@@ -50,7 +50,7 @@ namespace test
 {
   template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
 
-  struct Arch
+  struct ArchTypes
   {
     typedef uint8_t      u8_t;
     typedef uint16_t     u16_t;
@@ -67,6 +67,7 @@ namespace test
     typedef float        f32_t;
     typedef double       f64_t;
     typedef long double  f80_t;
+    typedef uint8_t      rc_t;
 
     typedef unisim::component::cxx::processor::intel::GObLH GObLH;
     typedef unisim::component::cxx::processor::intel::GOb GOb;
@@ -81,12 +82,17 @@ namespace test
     typedef GOq   GR;
     typedef u64_t gr_type;
 
-    void run(review::Interface::testcode_t testcode, uint64_t* data);
-
     struct OpHeader
     {
       OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
     };
+  };
+
+  struct Arch
+    : ArchTypes
+    , unisim::component::cxx::processor::intel::AES<ArchTypes>
+  {
+    void run(review::Interface::testcode_t testcode, uint64_t* data);
 
     Arch()
       : rip()
@@ -406,7 +412,7 @@ namespace test
   public:
     void                        fnanchk( f64_t value ) {};
     unsigned                    ftopread() { return m_ftop; }
-    int                         fcwreadRC() const { return int( (m_fcw >> 10) & 3 ); }
+    rc_t                        fcwreadRC() const { return int( (m_fcw >> 10) & 3 ); }
     void                        fpush( f64_t value )
     { fnanchk( value ); m_ftop = ((m_ftop + 0x7) & 0x7); m_fregs[m_ftop] = value; /*m_dirtfregs |= (1 << m_ftop);*/ }
     void                        fwrite( unsigned idx, f64_t value )

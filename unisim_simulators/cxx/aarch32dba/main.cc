@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2023,
+ *  Copyright (c) 2015,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <decoder.hh>
+#include <unisim/component/cxx/processor/arm/dba/aarch32/decoder.hh>
 #include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/component/cxx/processor/arm/isa/disasm.hh>
 #include <iostream>
@@ -68,7 +68,7 @@ char const* after(std::string const& s, char const (&ref)[N])
   return &s[size];
 }
 
-bool process( aarch32::Decoder& decoder, std::ostream& sink, std::string exec_flags, char const* as, char const* cs )
+bool process(unisim::component::cxx::processor::arm::dba::aarch32::Decoder& decoder, std::ostream& sink, std::string exec_flags, char const* as, char const* cs )
 {
   exec_flags += ',';
   for (std::string::iterator cur = exec_flags.begin(), end = exec_flags.end(), nxt; cur != end; cur = nxt+1 )
@@ -131,7 +131,7 @@ bool process( aarch32::Decoder& decoder, std::ostream& sink, std::string exec_fl
 int
 main( int argc, char** argv )
 {
-  aarch32::Decoder decoder;
+  unisim::component::cxx::processor::arm::dba::aarch32::Decoder decoder;
 
   if (strcmp(argv[1], "file") == 0)
     {

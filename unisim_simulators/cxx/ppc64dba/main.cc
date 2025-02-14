@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <decoder.hh>
+#include <unisim/component/cxx/processor/powerpc/dba/arch64/decoder.hh>
 #include <iostream>
 #include <cstdlib>
 #include <inttypes.h>
@@ -72,7 +72,7 @@ main( int argc, char** argv )
       return 1;
     }
 
-  ppc64::Decoder decoder;
+  unisim::component::cxx::processor::powerpc::dba::arch64::Decoder decoder;
 
   decoder.process( std::cout, addr, code );
 

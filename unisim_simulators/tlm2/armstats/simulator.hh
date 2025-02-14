@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2021,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *

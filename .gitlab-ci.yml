@@ -141,22 +141,6 @@ build_unisim:
         directory: $(pwd)/unisim_tools/genisslib
         package_dir: package
         enabled: true
-      - name: aarch32dba
-        directory: $(pwd)/unisim_simulators/cxx/aarch32dba
-        package_dir: package
-        enabled: true
-      - name: aarch64dba
-        directory: $(pwd)/unisim_simulators/cxx/aarch64dba
-        package_dir: package
-        enabled: true
-      - name: ppc64dba
-        directory: $(pwd)/unisim_simulators/cxx/ppc64dba
-        package_dir: package
-        enabled: true
-      - name: amd64dba
-        directory: $(pwd)/unisim_simulators/cxx/amd64dba
-        package_dir: package
-        enabled: true
     projects:
     EOF
     for FILE in $(find unisim_simulators -name "distrib.conf"); do

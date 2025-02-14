@@ -1,12 +1,12 @@
 /*
- *  Copyright (c) 2010-2023,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
+ *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, 
+ *   - Redistributions of source code must retain the above copyright notice,
  *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
@@ -14,19 +14,19 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific 
+ *     endorse or promote products derived from this software without specific
  *     prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
- *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
@@ -41,6 +41,7 @@
 #include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
+#include <unisim/service/interfaces/instruction_collecting.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/disassembly.hh>
@@ -50,6 +51,7 @@
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/kernel/variable/variable.hh>
+#include <unisim/util/cfg/intro/intro.hh>
 #include <unisim/util/likely/likely.hh>
 #include <string>
 #include <inttypes.h>
@@ -84,7 +86,7 @@ struct TLB
    * 11 ..  5: idx
    *  4 ..  0: lsb
    */
-  
+
   TLB();
 
   template <class POLICY>
@@ -113,6 +115,7 @@ struct TLB
 template <class CPU_IMPL>
 struct CPU
   : public unisim::component::cxx::processor::arm::CPU<simfloat::FP,CPU_IMPL>
+  , public unisim::kernel::Client<unisim::service::interfaces::InstructionCollecting<uint32_t> >
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
   , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint32_t> >
@@ -144,6 +147,8 @@ struct CPU
     static bool const     hasAdvSIMD = false;
   };
 
+  struct OpStat { unisim::util::cfg::intro::BranchInfo branch; };
+
   typedef CPU this_type;
   typedef unisim::component::cxx::processor::arm::CPU<simfloat::FP,CPU_IMPL> PCPU;
   typedef typename PCPU::CP15Reg CP15Reg;
@@ -171,7 +176,8 @@ struct CPU
   //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
-		
+
+  unisim::kernel::ServiceImport<unisim::service::interfaces::InstructionCollecting<uint32_t> > instruction_collecting_import;
   unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
   unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint32_t> > memory_access_reporting_import;
   unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint32_t> > disasm_export;
@@ -242,6 +248,13 @@ struct CPU
 	
   virtual void PerformExit(int ret);
 
+  //=====================================================================
+  //=             instruction collection interface methods              =
+  //=====================================================================
+
+  template <class Operation>
+  void CollectInstruction(Operation* op);
+
   /**************************************************************/
   /* Memory access methods       START                          */
   /**************************************************************/
@@ -264,7 +277,7 @@ struct CPU
   uint32_t PerformUReadAccess( uint32_t addr, uint32_t size );
 
   void CheckAlignment( uint32_t addr, uint32_t alignment ) { if (alignment and (addr & (alignment-1))) throw 0; /*DataAbort*/ }
-  
+
   void     SetExclusiveMonitors( uint32_t addr, unsigned size ) { /*TODO: MP support*/ }
   bool     ExclusiveMonitorsPass( uint32_t addr, unsigned size ) { /*TODO: MP support*/ return true; }
   void     ClearExclusiveLocal() {}
@@ -282,8 +295,8 @@ struct CPU
   //  struct AddressDescriptor;
   void RefillInsnPrefetchBuffer( uint32_t mva, AddressDescriptor const& line_loc );
 
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn );
+  void ReadInsnA( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
+  void ReadInsnT( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn );
 
   /**************************************************************/
   /* Memory access methods       END                            */
@@ -364,7 +377,7 @@ protected:
   /*************************/
 
   void      TakeReset();
-  
+
   /**************************/
   /* CP15 Interface   START */
   /**************************/

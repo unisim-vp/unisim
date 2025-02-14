@@ -61,15 +61,15 @@ namespace intel {
   template <> struct CTypeFor<64> { typedef int64_t s; typedef uint64_t u; typedef double f; };
   template <> struct CTypeFor<80> { typedef double f; };
 
-  struct GObLH { enum { SIZE=8 }; static unsigned size() { return 8; } };
-  struct GOb { enum { SIZE=8 };   static unsigned size() { return 8; } };
-  struct GOw { enum { SIZE=16 };  static unsigned size() { return 16; } };
-  struct GOd { enum { SIZE=32 };  static unsigned size() { return 32; } };
-  struct GOq { enum { SIZE=64 };  static unsigned size() { return 64; } };
+  struct GObLH { enum { SIZE=8 }; static constexpr unsigned size() { return 8; } };
+  struct GOb { enum { SIZE=8 };   static constexpr unsigned size() { return 8; } };
+  struct GOw { enum { SIZE=16 };  static constexpr unsigned size() { return 16; } };
+  struct GOd { enum { SIZE=32 };  static constexpr unsigned size() { return 32; } };
+  struct GOq { enum { SIZE=64 };  static constexpr unsigned size() { return 64; } };
 
-  struct SSE { enum { SIZE=128 }; static unsigned size() { return 128; } static bool vex() { return false; } };
-  struct XMM { enum { SIZE=128 }; static unsigned size() { return 128; } static bool vex() { return true; } };
-  struct YMM { enum { SIZE=256 }; static unsigned size() { return 256; } static bool vex() { return true; } };
+  struct SSE { enum { SIZE=128 }; static constexpr unsigned size() { return 128; } static bool vex() { return false; } };
+  struct XMM { enum { SIZE=128 }; static constexpr unsigned size() { return 128; } static bool vex() { return true; } };
+  struct YMM { enum { SIZE=256 }; static constexpr unsigned size() { return 256; } static bool vex() { return true; } };
 
   template <unsigned SIZE> struct GTypeFor {};
   

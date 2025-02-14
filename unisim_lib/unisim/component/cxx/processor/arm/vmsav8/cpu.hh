@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2021,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -55,6 +55,7 @@
 #else
 #include <unisim/util/floating_point/floating_point.hh>
 #endif
+#include <unisim/util/cfg/intro/intro.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/register.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
@@ -133,6 +134,8 @@ struct CPU
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
 {
+  struct OpStat { unisim::util::cfg::intro::BranchInfo branch; };
+
   typedef CPU<CPU_IMPL> this_type;
 
   enum { FPCR_MASK=0x7C00000 }; /* FIXME: this is for cortex-a53 */
@@ -148,13 +151,6 @@ struct CPU
   typedef this_type DisasmState;
 
   using typename regs64::CPU<CPU_IMPL, ArchTypes>::branch_type_t;
-  using typename regs64::CPU<CPU_IMPL, ArchTypes>::branch_mode_t;
-  using          regs64::CPU<CPU_IMPL, ArchTypes>::B_JMP;
-  using          regs64::CPU<CPU_IMPL, ArchTypes>::B_COND;
-  using          regs64::CPU<CPU_IMPL, ArchTypes>::B_CALL;
-  using          regs64::CPU<CPU_IMPL, ArchTypes>::B_RET;
-  using          regs64::CPU<CPU_IMPL, ArchTypes>::B_DIRECT;
-  using          regs64::CPU<CPU_IMPL, ArchTypes>::B_INDIRECT;
   using          regs64::CPU<CPU_IMPL, ArchTypes>::gpr;
 
   /**********************************************************************
@@ -337,15 +333,7 @@ struct CPU
   //=====================================================================
 
   /** Set the next Program Counter */
-  void BranchTo( U64 addr, branch_type_t branch_type ) { BranchTo(true, addr, branch_type, B_DIRECT); }
-  void BranchTo( U64 addr, branch_type_t branch_type, branch_mode_t branch_mode ) { BranchTo(true, addr, branch_type, branch_mode); }
-  void BranchTo( bool predicate, U64 addr, branch_type_t branch_type ) { BranchTo( predicate, addr, branch_type, B_DIRECT); }
-  void BranchTo( bool predicate, U64 addr, branch_type_t branch_type, branch_mode_t branch_mode )
-  {
-    if(unlikely(instruction_collecting_import)) CollectBranch(addr, next_insn_addr, branch_type, branch_mode);
-
-    if(predicate) next_insn_addr = addr;
-  }
+  void BranchTo( uint64_t addr, branch_type_t branch_type ) { next_insn_addr = addr; }
   bool Test( bool cond ) { return cond; }
   void SoftwareBreakpoint( uint32_t imm );
   void CallSupervisor( uint32_t imm );
@@ -446,9 +434,6 @@ protected:
   U32 fpsr;
   uint64_t current_insn_addr, next_insn_addr;
 
-  unisim::service::interfaces::InstructionInfo<uint64_t> instr_info;
-
-  void CollectBranch(uint64_t target, uint64_t fallthrough, branch_type_t branch_type, branch_mode_t branch_mode);
   void CollectInstruction(Operation *op);
 
   uint64_t TPIDRURW; //< User Read/Write Thread ID Register

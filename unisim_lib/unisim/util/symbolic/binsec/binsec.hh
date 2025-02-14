@@ -37,6 +37,7 @@
 
 #include <unisim/util/symbolic/symbolic.hh>
 #include <iostream>
+#include <vector>
 #include <map>
 #include <set>
 
@@ -67,37 +68,19 @@ namespace binsec {
     void                    commit_stats();
     std::map<Expr,unsigned> const& get_sestats() const { return sestats; }
     std::set<Expr> const&   get_sinks() const { return updates; }
-    void                    generate(std::ostream& sink, unsigned bytes, uint64_t address) const;
+    void                    generate(std::ostream& sink, unsigned bytes, uint64_t address, bool with_opaque=false) const;
 
   private:
     std::map<Expr,unsigned> sestats;
   };
 
-  struct Instruction;
-
-  struct Point
-  {
-    Point(Instruction* _insn) : insn(_insn) {}
-    Point(Point const&) = default;
-    Point& operator = (Point const&) = default;
-
-    void connect( Point const& point );
-    Point& append( Instruction* nins ) { Point np(nins); this->connect(np); return *this = np; }
-    Point& prepend( Instruction* nins ) { Point np(nins); np.connect(*this); return *this = np; }
-
-    Instruction* operator -> () const { return insn; }
-    Instruction* get() const { return insn; }
-
-    Instruction* insn;
-  };
-
-  typedef std::map<Expr,std::pair<std::string,int>> Variables;
+  struct Scope;
 
   struct ASExprNode : public ExprNode
   {
     virtual ConstNodeBase const* Simplify( Expr const& mask, Expr& expr ) const;
-    virtual int GenCode( std::ostream& sink, Variables& vars, Point& head ) const = 0;
-    static  int GenerateCode( Expr const& expr, std::ostream& sink, Variables& vars, Point& head );
+    virtual int GenCode( std::ostream& sink, Scope& scope ) const = 0;
+    static  int GenerateCode( Expr const& expr, std::ostream& sink, Scope& scope );
     static  int GenConstCode( ConstNodeBase const* node, std::ostream& sink );
   };
 
@@ -107,7 +90,7 @@ namespace binsec {
 
     virtual BitFilter* Mutate() const override { return new BitFilter( *this ); }
     virtual ValueType GetType() const { return ValueType(extend == 1 ? ValueType::BOOL : ValueType::UNSIGNED, extend); }
-    virtual int GenCode( std::ostream& sink, Variables& vars, Point& head ) const override;
+    virtual int GenCode( std::ostream& sink, Scope& scope ) const override;
     virtual void Repr( std::ostream& sink ) const;
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<BitFilter const&>( rhs ) ); }
     int compare( BitFilter const& rhs ) const;
@@ -146,7 +129,7 @@ namespace binsec {
     int compare(BitInsertNode const& rhs) const { if (int delta = int(size) - int(rhs.size)) return delta; return int(pos) - int(rhs.pos); }
     ExprNode* Mutate() const { return new BitInsertNode(*this); }
     ValueType GetType() const override { return dst->GetType(); }
-    int GenCode(std::ostream&, Variables&, Point&) const override;
+    int GenCode(std::ostream&, Scope&) const override;
     ConstNodeBase const* Simplify( Expr const&, Expr& ) const override;
 
     friend class BitSimplify;
@@ -166,24 +149,24 @@ namespace binsec {
 
   struct GetCode
   {
-    GetCode(Expr const& _expr, Variables& _vars, Point& _head, int _expected=-1)
-      : expr(_expr), vars(_vars), head(_head), expected(-1)
+    GetCode(Expr const& _expr, Scope& _scope, int _expected=-1)
+      : expr(_expr), scope(_scope), expected(_expected)
     {}
 
     friend std::ostream& operator << ( std::ostream& sink, GetCode const& gc )
     {
-      int size = ASExprNode::GenerateCode( gc.expr, sink, gc.vars, gc.head );
+      int size = ASExprNode::GenerateCode( gc.expr, sink, gc.scope );
       if (gc.expected >= 0 and gc.expected != size) { struct TypeSizeMisMatch {}; throw TypeSizeMisMatch(); }
       return sink;
     }
 
-    Expr const& expr; Variables& vars; Point& head; int expected;
+    Expr const& expr; Scope& scope; int expected;
   };
 
   struct RegReadBase : public ASExprNode
   {
     virtual void GetRegName( std::ostream& ) const = 0;
-    virtual int GenCode( std::ostream& sink, Variables& vars, Point& head ) const;
+    virtual int GenCode( std::ostream& sink, Scope& scope ) const;
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 0; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegReadBase const&>( rhs ) ); }
@@ -205,16 +188,20 @@ namespace binsec {
     RID id;
   };
 
-  struct Assignment : public ExprNode
+  struct SideEffect : public ExprNode
+  {
+    virtual void GenerateCode( std::ostream& sink, Scope& scope ) const = 0;
+  };
+
+  struct Assignment : public SideEffect
   {
     Assignment( Expr const& _value ) : value(_value) {}
 
     virtual ValueType GetType() const override { return NoValueType(); }
     virtual unsigned SubCount() const override { return 1; }
     virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-    virtual void GenerateCode( std::ostream& sink, Variables& vars ) const = 0;
     virtual Expr SourceRead() const = 0;
-    static int GenInputCode( Expr const& input, Variables& vars, std::ostream& sink );
+    static int GenInputCode( Expr const& input, Scope& scope, std::ostream& sink );
 
     Expr value;
   };
@@ -226,7 +213,7 @@ namespace binsec {
 
     virtual void GetRegName( std::ostream& ) const = 0;
 
-    virtual void GenerateCode( std::ostream& sink, Variables& vars ) const override;
+    virtual void GenerateCode( std::ostream& sink, Scope& scope ) const override;
     virtual void Repr( std::ostream& sink ) const override;
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWriteBase const&>( rhs ) ); }
     Expr source_read( RegReadBase* reg_read ) const;
@@ -263,68 +250,49 @@ namespace binsec {
     virtual void annotate(std::ostream& sink) const {};
     virtual int cmp( ExprNode const& rhs ) const override { return 0; }
     virtual void Repr( std::ostream& sink ) const override;
-    virtual void GenerateCode( std::ostream& sink, Variables& vars ) const override;
+    virtual void GenerateCode( std::ostream& sink, Scope& scope ) const override;
     virtual Expr SourceRead() const override { return Expr(); }
   };
 
+  struct CallBase : public Branch
+  {
+    CallBase(Expr const& target) : Branch(target) {}
+    virtual dbx PrintRA() const = 0;
+    virtual void annotate(std::ostream& sink) const override;
+    virtual void Repr( std::ostream& sink ) const override;
+  };
+
   template <typename T>
-  struct Call : public Branch
+  struct Call : public CallBase
   {
     typedef Call<T> this_type;
-    Call( Expr const& target, T ra ) : Branch(target), return_address(ra) {}
+    Call( Expr const& target, T ra ) : CallBase(target), return_address(ra) {}
     virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual void annotate(std::ostream& sink) const override
-    {
-      sink << " // call (" << binsec::dbx(sizeof(T), return_address) << ",0)";
-    }
-    virtual void Repr( std::ostream& sink ) const
-    {
-      sink << "Call(";
-      Branch::Repr(sink);
-      sink << ", " << binsec::dbx(sizeof(T), return_address) << ")";
-    }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
-    int compare( this_type const& rhs ) const
-    {
-      if (return_address < rhs.return_address) return -1;
-      return int(return_address > rhs.return_address);
-    }
+    int compare( this_type const& rhs ) const { return return_address < rhs.return_address ? -1 : return_address > rhs.return_address ? +1 : 0; }
+    virtual dbx PrintRA() const override { return dbx(sizeof(T), return_address); }
 
     T return_address;
   };
 
-  template <typename T>
   struct Ret : public Branch
   {
-    typedef Ret<T> this_type;
     Ret( Expr const& target ) : Branch(target) {}
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual void annotate(std::ostream& sink) const override
-    {
-      sink << " // ret";
-    }
-    virtual void Repr( std::ostream& sink ) const
-    {
-      sink << "Ret(";
-      Branch::Repr(sink);
-      sink << ")";
-    }
+    virtual Ret* Mutate() const override { return new Ret( *this ); }
+    virtual void Repr( std::ostream& sink ) const override;
+    virtual void annotate(std::ostream& sink) const override;
   };
 
-  struct AssertFalse : public ASExprNode
+  struct AssertFalse : public SideEffect
   {
     AssertFalse() {}
     virtual AssertFalse* Mutate() const override { return new AssertFalse( *this ); }
-    virtual int GenCode( std::ostream& sink, Variables& vars, Point& head ) const override
-    {
-      sink << "assert (false)";
-      return 0;
-    }
+    virtual void GenerateCode( std::ostream& sink, Scope& scope ) const override;
     virtual ValueType GetType() const override{ return NoValueType(); }
 
     virtual int cmp( ExprNode const& brhs ) const override { return 0; }
     virtual unsigned SubCount() const override { return 0; }
-    virtual void Repr( std::ostream& sink ) const override { sink << "assert (false)"; }
+    virtual void Repr( std::ostream& sink ) const override;
   };
 
   struct MemAccess
@@ -358,7 +326,7 @@ namespace binsec {
     int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<MemAccess const&>( rhs ) ); }
     virtual Load* Mutate() const override { return new Load(*this); }
     virtual ValueType GetType() const override { return CValueType(ValueType::UNSIGNED, 8*bytecount()); }
-    virtual int GenCode( std::ostream& sink, Variables& vars, Point& head ) const override;
+    virtual int GenCode( std::ostream& sink, Scope& scope ) const override;
     virtual void Repr( std::ostream& sink ) const override { MemAccess::Repr(sink); }
     virtual unsigned SubCount() const override { return 1; }
     virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
@@ -376,7 +344,7 @@ namespace binsec {
     virtual unsigned SubCount() const override { return 2; }
     virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return value; case 1: return addr; } return ExprNode::GetSub(idx); }
     virtual Expr SourceRead() const override { return new Load( *this ); }
-    virtual void GenerateCode( std::ostream& sink, Variables& vars ) const override;
+    virtual void GenerateCode( std::ostream& sink, Scope& scope ) const override;
   };
 
   struct UndefinedValueBase : public ASExprNode
@@ -384,7 +352,7 @@ namespace binsec {
     virtual unsigned SubCount() const override { return 0; };
     virtual void Repr( std::ostream& sink ) const override;
     virtual int cmp( ExprNode const& rhs ) const override { return this > &rhs ? +1 : this < &rhs ? -1 : 0; }
-    virtual int GenCode( std::ostream& sink, Variables& vars, Point& head ) const override;
+    virtual int GenCode( std::ostream& sink, Scope& scope ) const override;
   };
 
   template <typename T>
@@ -398,6 +366,43 @@ namespace binsec {
 
   template <typename VALUE_TYPE>
   Expr make_undefined_value( VALUE_TYPE ) { return Expr( new UndefinedValue<VALUE_TYPE>() ); }
+
+  struct OpaqueBase : public ASExprNode
+  {
+    OpaqueBase(std::initializer_list<Expr> l) : sources(l) {}
+
+    virtual unsigned SubCount() const override { return sources.size(); }
+    virtual Expr const& GetSub(unsigned idx) const { if (idx < sources.size()) return sources[idx]; return ExprNode::GetSub(idx); }
+    virtual void Repr( std::ostream& sink ) const override;
+    virtual int cmp( ExprNode const& rhs ) const override { return this > &rhs ? +1 : this < &rhs ? -1 : 0; }
+    virtual int GenCode( std::ostream& sink, Scope& scope ) const override;
+
+    std::vector<Expr> sources;
+  };
+
+  template <typename T>
+  struct Opaque : public OpaqueBase
+  {
+    Opaque(std::initializer_list<Expr> l) : OpaqueBase(l) {}
+
+    typedef Opaque<T> this_type;
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
+    virtual ValueType GetType() const override { return CValueType(T()); }
+  };
+
+  template <typename VALUE_TYPE>
+  Expr make_opaque(VALUE_TYPE, std::initializer_list<Expr> l)
+  {
+    return new Opaque<VALUE_TYPE>(l);
+  }
+
+  struct OpaqueBV : public OpaqueBase
+  {
+    OpaqueBV(int bits, std::initializer_list<Expr> l) : OpaqueBase(l), bitsize(bits) {}
+    virtual OpaqueBV* Mutate() const override { return new OpaqueBV( *this ); }
+    virtual ValueType GetType() const override { return ValueType(ValueType::UNSIGNED, bitsize); }
+    int bitsize;
+  };
 
 } /* end of namespace binsec */
 } /* end of namespace symbolic */

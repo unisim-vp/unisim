@@ -239,7 +239,7 @@ class Operation:
         self.name, self.bitfields, self.fileloc = name, bitfields, fileloc
         self.actions, self.variables, self.condition = {}, {}, None
 
-        
+
         self.cname = 'Op' + self.name[0].upper() + self.name[1:]
 
     def match_info(self, little_endian):
@@ -414,6 +414,7 @@ class Isa:
         self.namespace = ()            #< Encapsulating namespace of the iss
         self.tparams = []              #< Template parameters of the iss
         self.variables = {}            #< Global variables used by the iss
+        self.bases = {}                #< Inherited classes for base Operation
         self.actionprotos = {}         #< Action prototypes of operations
         self.opmap = {}                #< Defined instructions
         self.operations = []           #< Defined instructions
@@ -764,7 +765,7 @@ class Scanner:
         self.sourcename = filename
         try:
             self.reader = self.read2(open(filename))
-        except FileNotFound:
+        except FileNotFoundError:
             raise Abort('cannot open {!r}'.format(filename))
         self.loc = None
 
@@ -933,6 +934,20 @@ class Scanner:
             varlist.append( Variable(varname, c_type, c_init) )
         return varlist, nxt
 
+    def getBaseListAndLexeme(self):
+        nxt, baselist = ',', []
+        while nxt == ',':
+            self.expect( '{}'[0], self.getLexeme() )
+            c_type = self.getSourceCode()
+            c_init = None
+            nxt = self.getLexeme()
+            if nxt == '=':
+                self.expect( '{}'[0], self.getLexeme() )
+                c_init = self.getSourceCode()
+                nxt = self.getLexeme()
+            baselist.append( Variable(None, c_type, c_init) )
+        return baselist, nxt
+
     def getNamespaceAndLexeme(self):
         nmspc = []
         nxt = '::'
@@ -1010,7 +1025,7 @@ class Scanner:
     def parse_error(self, msg):
         raise Abort( 'parse error:\n{}: {}'.format(self.getFileLoc(), msg) )
 
-def parse(filename, app, isa):
+def parse(filename, app, isa, excluded_attributes=[]):
     app.opening(filename)
     isa.includes.append(filename)
     source = Scanner(filename)
@@ -1084,7 +1099,13 @@ def parse(filename, app, isa):
             root = source.getLexeme()
 
         elif root == 'include':
-            filename = source.getLexeme()
+            xattr_list = []
+            while True:
+                l = source.getLexeme()
+                if l != '^':
+                    filename = l
+                    break
+                xattr_list.append(source.getLexeme())
             if filename[0] != '"':
                 source.parse_error( 'expected a string here (got {!r})'.format(filename) )
             filename = app.locate( eval(filename) )
@@ -1092,7 +1113,7 @@ def parse(filename, app, isa):
             if not os.path.isabs(filename):
                 filename = os.getcwd() + '/' + filename
             try:
-                parse(filename, app, isa)
+                parse(filename, app, isa, xattr_list)
             except Abort as abort:
                 raise Abort( 'From {}\n'.format(source.getFileLoc()) + abort.msg )
             root = source.getLexeme()
@@ -1202,12 +1223,22 @@ def parse(filename, app, isa):
 
         elif root == 'var':
             variables, root = source.getVarListAndLexeme()
-            for v in variables:
-                p = isa.variables.get(v.name)
-                if p is not None:
+            for n in variables:
+                p = isa.variables.get(n.name)
+                if p is not None: # overwriting previous entry ?
                     msg = 'parse error:\n{}: variable {!r} redefined\n{}: previously defined here.'
-                    raise Abort( msg.format(v.c_type.fileloc, v.name, p.c_type.fileloc) )
-                isa.variables[v.name] = v
+                    raise Abort( msg.format(n.c_type.fileloc, n.name, p.c_type.fileloc) )
+                isa.variables[n.name] = n
+
+        elif root == 'base':
+            bases, root = source.getBaseListAndLexeme()
+            for n in bases:
+                ident = n.c_type.content
+                p = isa.bases.get(ident)
+                if p is not None: # overwriting previous entry ?
+                    msg = 'parse error:\n{}: base {!r} redefined\n{}: previously defined here.'
+                    raise Abort( msg.format(n.c_type.fileloc, ident, p.c_type.fileloc) )
+                isa.bases[ident] = n
 
         elif root == 'group':
             name = source.expectName(source.getLexeme())
@@ -1278,7 +1309,8 @@ def parse(filename, app, isa):
                         if prev is not None:
                             redef = "action '{}.{}' redefined\n{}: previously defined here"
                             source.parse_error( redef.format(name, attribute, prev.fileloc) )
-                        op.actions[ap.name] = Action(op, ap, sc, attrfl)
+                        if ap.name not in excluded_attributes:
+                            op.actions[ap.name] = Action(op, ap, sc, attrfl)
                 except isa.NotFound:
                     source.parse_error('unknown operation or group {!r}'.format(name))
                 root = source.getLexeme()
@@ -1293,6 +1325,14 @@ def least_ctype_size(bits):
     if size > 64:
         raise Abort('Cannot encode more than 64 bits with standard C/C++ integer types')
     return size
+
+class Sep:
+    def __init__(self, base, init):
+        self.base, self.value = base, init
+
+    def get(self):
+        self.value, res = self.base, self.value
+        return res
 
 class Product:
     def __init__(self, filename, sourcelines):
@@ -1347,10 +1387,9 @@ class Product:
         if not tparams:
             return self
         self.write('template <')
-        sep = ''
+        sep = Sep(',', '')
         for ctype, csymbol in tparams:
-            self.write( sep ).write('\t').usercode(ctype).write('\t').usercode(csymbol)
-            sep = ','
+            self.write( sep.get() ).write('\t').usercode(ctype).write('\t').usercode(csymbol)
         self.write('>\n')
         return self
 
@@ -1358,10 +1397,9 @@ class Product:
         if not tparams:
             return self
         self.write('<')
-        sep = ''
+        sep = Sep(',','')
         for ctype, csymbol in tparams:
-            self.write( sep ).write('\t').usercode(csymbol)
-            sep = ','
+            self.write( sep.get() ).write('\t').usercode(csymbol)
         self.write('>')
         return self
 
@@ -1506,9 +1544,11 @@ class Generator:
 
     def operation_decl(self, product):
         product.template_signature( self.source.tparams )
-        product.code( "class Operation\n" )
-        product.code( "{\n" )
-        product.code( "public:\n" )
+        sep = Sep('\n , ', '\n : ')
+        product.code( "struct Operation" )
+        for base in self.source.bases.values():
+            product.code( sep.get() ).usercode( base.c_type )
+        product.code( "\n{\n" )
         product.code( " Operation(%s code, %s addr, const char *name);\n", self.codetype_constref(), self.source.addrtype )
         product.code( " virtual ~Operation();\n" )
         if self.source.withencode:
@@ -1522,11 +1562,12 @@ class Generator:
         self.op_match( product, "_code" )
         product.code( " and GetAddr() == _addr; }\n" )
 
-        product.code( " static unsigned int const minsize = %d;\n", min(self.source.insnsizes) )
-        product.code( " static unsigned int const maxsize = %d;\n", max(self.source.insnsizes) )
+        product.write( " typedef Decoder" )
+        product.template_abbrev( self.source.tparams )
+        product.write( " decoder_type;\n" )
 
         for variable in self.source.variables.values():
-            product.code(" ").usercode( variable.c_type ).code( " %s;", variable.name )
+            product.code(" ").usercode( variable.c_type ).code( f" {variable.name};\n" )
 
         if self.source.withsource:
             # base declaration for internal encoding and decoding code
@@ -1548,18 +1589,17 @@ class Generator:
             product.code( " %s(", ap.name )
 
             if ap.param_list:
-                sep = ' '
+                sep = Sep(',\n', ' ')
                 for ctype, csymbol in ap.param_list:
-                    product.code( sep ).usercode( ctype ).code( " " ).usercode( csymbol )
-                    sep = ',\n'
+                    product.code( sep.get() ).usercode( ctype ).code( " " ).usercode( csymbol )
 
             product.code( " )%s;\n", " const" if ap.constness else "" )
 
         product.code( "protected:\n" )
 
-        product.code( " %s encoding;\n", self.codetype_name() )
-        product.code( " %s addr;\n", self.source.addrtype )
         product.code( " const char *name;\n" )
+        product.code( " %s addr;\n", self.source.addrtype )
+        product.code( " %s encoding;\n", self.codetype_name() )
 
         product.code( "};\n\n" )
 
@@ -1567,18 +1607,21 @@ class Generator:
         product.template_signature( self.source.tparams )
         product.code( "Operation" )
         product.template_abbrev( self.source.tparams )
-        product.code( "::Operation(%s _code, %s _addr, const char *_name)\n", self.codetype_constref(), self.source.addrtype )
-        product.code( ": \n")
+        product.code( "::Operation(%s _code, %s _addr, const char *_name)", self.codetype_constref(), self.source.addrtype )
+        sep = Sep('\n , ','\n : ')
+
+        for base in self.source.bases.values():
+            if base.c_init is None: continue
+            product.write( sep.get() ).usercode( base.c_type ).write( '(' ).usercode( base.c_init ).write( ')' )
 
         for variable in self.source.variables.values():
             if variable.c_init is None: continue
-            product.write( ' ' + variable.name ).usercode( variable.c_init ).write( "),\n" )
+            product.write( f'{sep.get()}{variable.name}(' ).usercode( variable.c_init ).write( ')' )
 
-        product.code( " encoding(_code),\n" )
-        product.code( " addr(_addr),\n" )
-        product.code( " name(_name)\n" )
-        product.code( "{\n" )
-        product.code( "}\n\n" )
+        product.code( sep.get() + 'name(_name)' )
+        product.code( sep.get() + 'addr(_addr)' )
+        product.code( sep.get() + 'encoding(_code)' )
+        product.code( "\n{\n}\n\n" )
         product.template_signature( self.source.tparams )
         product.code( "Operation" )
         product.template_abbrev( self.source.tparams )
@@ -1620,10 +1663,9 @@ class Generator:
             product.code( "::%s(", ap.name )
 
             if ap.param_list:
-                sep = ' '
+                sep = Sep(',\n', ' ')
                 for ctype, csymbol in ap.param_list:
-                    product.code( sep ).usercode( ctype ).code( " " ).usercode( csymbol )
-                    sep = ',\n'
+                    product.code( sep.get() ).usercode( ctype ).code( " " ).usercode( csymbol )
 
             product.code( ")%s\n{\n", " const" if ap.constness else "" )
             product.usercode( ap.defaultcode, "{", "}" )
@@ -1631,14 +1673,13 @@ class Generator:
 
     def decoder_decl(self, product):
         product.template_signature( self.source.tparams )
-        product.code( "class Operation;\n" )
+        product.code( "struct Operation;\n" )
 
         if self.source.withcache:
             product.code( "const unsigned int NUM_OPERATIONS_PER_PAGE = 4096;\n" )
             product.template_signature( self.source.tparams )
-            product.code( "class DecodeMapPage\n" )
+            product.code( "struct DecodeMapPage\n" )
             product.code( "{\n" )
-            product.code( "public:\n" )
             product.code( " DecodeMapPage(%s key);\n", self.source.addrtype )
             product.code( " ~DecodeMapPage();\n" )
             product.code( " %s key;\n", self.source.addrtype )
@@ -1649,9 +1690,8 @@ class Generator:
             product.code( "};\n\n" )
 
         product.template_signature( self.source.tparams )
-        product.code( "class DecodeTableEntry\n" )
+        product.code( "struct DecodeTableEntry\n" )
         product.code( "{\n" )
-        product.code( "public:\n" )
         product.code( " DecodeTableEntry(%s opcode, %s opcode_mask, Operation", self.codetype_constref(), self.codetype_constref() )
         product.template_abbrev( self.source.tparams )
         product.code( " *(*decode)(%s, %s));\n", self.codetype_constref(), self.source.addrtype )
@@ -1666,15 +1706,18 @@ class Generator:
             product.code( "const unsigned int NUM_DECODE_HASH_TABLE_ENTRIES = 4096;\n" )
 
         product.template_signature( self.source.tparams )
-        product.code( "class Decoder\n" )
+        product.code( "struct Decoder\n" )
         product.code( "{\n" )
-        product.code( "public:\n" )
         product.code( " typedef Operation" )
         product.template_abbrev( self.source.tparams )
         product.code( " operation_type;\n" )
         product.code( " typedef %s address_type;\n", self.source.addrtype )
         product.code( " typedef CodeType code_type;\n" )
-        product.code( " enum { alignment = %u };\n\n", self.source.gcd() )
+        product.write( ' enum { ' )
+        product.write( f'little_endian = {int(self.source.little_endian)}, alignment = {self.source.gcd()}' )
+        product.write( f', minsize = {min(self.source.insnsizes)}, maxsize = {max(self.source.insnsizes)}' )
+        product.write( ' };\n',  )
+
         product.code( " Decoder();\n" )
         product.code( " virtual ~Decoder();\n" )
         product.code( "\n" )
@@ -1990,11 +2033,10 @@ class Generator:
     def isa_operations_decl(self, product):
         for op in self.source.operations:
             product.template_signature( self.source.tparams )
-            product.code( "class %s : public Operation", op.cname )
+            product.code( "struct %s : public Operation", op.cname )
             product.template_abbrev( self.source.tparams )
             product.code( "\n" )
             product.code( "{\n" )
-            product.code( "public:\n" )
             product.code( " %s(%s code, %s addr);\n", op.cname, self.codetype_constref(), self.source.addrtype )
             self.insn_destructor_decl( product, op )
             self.insn_getlen_decl( product, op )
@@ -2044,10 +2086,9 @@ class Generator:
                 product.code( " %s(", actionproto.name )
 
                 if actionproto.param_list:
-                    sep = " "
+                    sep = Sep(',\n', ' ')
                     for ctype, csymbol in actionproto.param_list:
-                        product.code( sep ).usercode( ctype ).code( " " ).usercode( csymbol )
-                        sep = ',\n'
+                        product.code( sep.get() ).usercode( ctype ).code( " " ).usercode( csymbol )
                     product.code( " " )
 
                 product.code( ")%s;\n", " const" if actionproto.constness else "" )
@@ -2096,10 +2137,9 @@ class Generator:
                 product.code( "::%s(", actionproto.name )
 
                 if actionproto.param_list:
-                    sep = " "
+                    sep = Sep(',\n', ' ')
                     for ctype, csymbol in actionproto.param_list:
-                        product.code( sep ).usercode( ctype ).code( " " ).usercode( csymbol )
-                        sep = ',\n'
+                        product.code( sep.get() ).usercode( ctype ).code( " " ).usercode( csymbol )
 
                 product.code( ")%s\n{\n", " const" if actionproto.constness else "" )
                 product.usercode( action.sourcecode, "{", "}" )
@@ -2183,7 +2223,7 @@ class ScalarGenerator(Generator):
         vlen = len(self.source.insnsizes) != 1
         mask = '0x{:x}{}'.format( (1 << maxsize)-1, self.insn_cpostfix )
         skipmask = maxsize == self.insn_ctype_size
-        
+
         if     self.source.little_endian and vlen:
             delta = '({} << ({} - this->GetLength()))'.format(delta, maxsize)
             skipmask = False # Defensive programming against C type promotions
@@ -2192,7 +2232,7 @@ class ScalarGenerator(Generator):
         if not self.source.little_endian and vlen:
             delta = '({} >> ({} - this->GetLength()))'.format(delta, maxsize)
         product.code( '%s == 0', delta )
-        
+
     def insn_id_expr(self, addrname):
         # TODO: generic method: addr / (gcd/8)
         if len(self.source.insnsizes) != 1:
@@ -2539,7 +2579,7 @@ class BufferGenerator(Generator):
                 product.code( "%s = ", bf.name )
                 opsize = self.membersize( bf.dstsize() )
 
-                src, sep = beg, ''
+                src, sep = beg, Sep(' | ', '')
                 while src < end:
                     nsrc = min((src+8) & -8, end)
                     shift = src & 7
@@ -2552,10 +2592,9 @@ class BufferGenerator(Generator):
                     if shift: component = '(%s >> %u)' % (component, shift)
                     component = '(%s & 0x%x)' % (component, mask)
                     if dst: component = '(%s << %u)' % (component, dst)
-                    product.code( sep ).write( component )
-                    
+                    product.code( sep.get() ).write( component )
+
                     src = nsrc
-                    sep = ' | '
 
                 product.code( ";\n" )
 

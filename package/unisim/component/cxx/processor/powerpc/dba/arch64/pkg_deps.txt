@@ -1,0 +1,9 @@
+am/isa_to_hh_cc
+libc/inttypes
+std/iomanip
+std/iosfwd
+std/iostream
+unisim/component/cxx/processor/powerpc/dba
+unisim/component/cxx/processor/powerpc/dba/ppc64
+unisim/util/symbolic
+unisim/util/symbolic/binsec

@@ -35,6 +35,7 @@ COVERAGE='no'
 SYNTHESIZE='no'
 RUN_BUILD_COMMAND='yes'
 OPTIONS=()
+MIKEFARAH_YQ_DETECTED=false
 
 ################################################ from config.yaml ######################################################
 
@@ -124,6 +125,13 @@ function bad()
   exit 1
 }
 
+################################################# cleanup ##########################################################
+
+function cleanup()
+{
+	[ -z "${TMP_CONFIG_YAML+x}" ] || rm -f "${TMP_CONFIG_YAML}"
+}
+
 ############################################# utility functions #####################################################
 
 # sort lines of a file
@@ -193,23 +201,23 @@ Details:
       - name: unisim_lib
         path: /path/to/unisim_lib
         package_dir: ../package
-        enabled: yes
-        default: yes
+        enabled: true
+        default: true
       - name: genisslib
         path: /path/to/genisslib
         package_dir: package
-        enabled: yes
+        enabled: true
     projects:
       - name: simulator
         path: /path/to/simulator
         config_file: ${DEFAULT_PROJECT_DISTRIB_FILE}
-        enabled: yes
+        enabled: true
     builds:
       - name: simulator
         project: simulator
         build_dir: /path/to/build_dir
         dist_dir: /path/to/dist_dir
-        enabled: yes
+        enabled: true
         command: |
           ./configure
           make
@@ -566,7 +574,9 @@ function check_external_programs()
 	fi
 
 	if ! command -v yq &> /dev/null; then
-		die "Please install yq (https://github.com/mikefarah/yq)"
+		die "Please install yq (https://pypi.org/project/yq)"
+	elif [[ $(yq --version) =~ mikefarah ]]; then
+		MIKEFARAH_YQ_DETECTED=true
 	fi
 
 	if ! command -v jq &> /dev/null; then
@@ -588,10 +598,28 @@ function tilda_expansion()
 	sed -e "s/^~/${REPLACEMENT}/"
 }
 
+function yquery()
+{
+	local QUERY="$1"' | join("\u0000")'
+	if $MIKEFARAH_YQ_DETECTED; then
+		cat "${CONFIG_YAML}" | yq "." -M -p=y -o=j | jq -j "$QUERY" && echo -n -e '\0'
+	else
+		yq -j "$QUERY" "${CONFIG_YAML}" && echo -n -e '\0'
+	fi
+}
+
 # Load configuration file (~/.config/unisimatic/config.yaml)
 function config()
 {
-	[ -f "${CONFIG_YAML}" ] || die "${APP_NAME^} configuration file ${CONFIG_YAML} not found"
+	if [ -p "${CONFIG_YAML}" ]; then
+		TMP_CONFIG_YAML="$(mktemp --tmpdir --suffix=.yaml config.XXXXXXXXXX)"
+		[ $? -eq 0 ] || die "Unable to create file ${TMP_CONFIG_YAML} to save configuration file ${CONFIG_YAML}"
+		cat "${CONFIG_YAML}" > "${TMP_CONFIG_YAML}" || die "Can't copy content of configuration file ${CONFIG_YAML} into temporary file ${TMP_CONFIG_YAML}"
+		CONFIG_YAML="${TMP_CONFIG_YAML}"
+	else
+		CONFIG_YAML="$(realpath -m -q "${CONFIG_YAML}")"
+		[ -f "${CONFIG_YAML}" ] || die "${APP_NAME^} configuration file ${CONFIG_YAML} not found"
+	fi
 	
 	local PROPERTY
 	local PROP_IDX
@@ -605,7 +633,8 @@ function config()
 	local REPO_DEFAULT
 	local REPO_IDX=0
 	PROP_IDX=0
-	while IFS= read -r -d $'\0' PROPERTY; do
+	readarray -d $'\0' PROPERTIES < <(yquery '.repositories | to_entries | map(.value.enabled // false, .value.name // "", .value.directory // "", .value.package_dir // "", .value.default // false)')
+	for PROPERTY in "${PROPERTIES[@]}"; do
 		case ${PROP_IDX} in
 			0)
 				REPO_ENABLED="${PROPERTY}"
@@ -683,7 +712,7 @@ function config()
 		esac
 		PROP_IDX=$((${PROP_IDX}+1))
 		[ ${PROP_IDX} -le 4 ] || PROP_IDX=0
-	done < <(yq -j '.repositories | to_entries | map(.value.enabled // false, .value.name // "", .value.directory // "", .value.package_dir // "", .value.default // false) | join("\u0000")' "${CONFIG_YAML}" && echo -e -n '\0')
+	done
 
 	# Projects
 
@@ -694,7 +723,8 @@ function config()
 	local PROJECT_DISTRIB_FILE
 	local PROJECT_IDX=0
 	PROP_IDX=0
-	while IFS= read -r -d $'\0' PROPERTY; do
+	readarray -d $'\0' PROPERTIES < <(yquery '.projects | to_entries | map(.value.enabled, .value.name, .value.directory, .value.distrib_file)')
+	for PROPERTY in "${PROPERTIES[@]}"; do
 		case ${PROP_IDX} in
 			0)
 				PROJECT_ENABLED="${PROPERTY}"
@@ -756,7 +786,7 @@ function config()
 		esac
 		PROP_IDX=$((${PROP_IDX}+1))
 		[ ${PROP_IDX} -le 3 ] || PROP_IDX=0
-	done < <(yq -r '.projects | to_entries | map(.value.enabled, .value.name, .value.directory, .value.distrib_file) | join("\u0000")' "${CONFIG_YAML}" && echo -e '\0')
+	done
 
 	# Builds
 
@@ -769,7 +799,8 @@ function config()
 	local BUILD_COMMAND
 	local BUILD_IDX=0
 	PROP_IDX=0
-	while IFS= read -r -d $'\0' PROPERTY; do
+	readarray -d $'\0' PROPERTIES < <(yquery '.builds | to_entries | map(.value.enabled // false, .value.name // "", .value.project // "", .value.build_dir // "", .value.dist_dir // "", .value.command // "")')
+	for PROPERTY in "${PROPERTIES[@]}"; do
 		case ${PROP_IDX} in
 			0)
 				BUILD_ENABLED="${PROPERTY}"
@@ -864,7 +895,7 @@ function config()
 		esac
 		PROP_IDX=$((${PROP_IDX}+1))
 		[ ${PROP_IDX} -le 5 ] || PROP_IDX=0
-	done < <(yq -r -j '.builds | to_entries | map(.value.enabled // false, .value.name // "", .value.project // "", .value.build_dir // "", .value.dist_dir // "", .value.command // "") | join("\u0000")' "${CONFIG_YAML}" && echo -e '\0')
+	done
 
 	debug "Global configuration from ${CONFIG_YAML}:\n"
 	if [ ${#REPOSITORY_NAMES[@]} -ne 0 ]; then
@@ -2682,6 +2713,8 @@ function orphans()
 # main function
 function main()
 {
+	trap cleanup EXIT
+
 	# parse command line options
 	while [ $# -ne 0 ]; do
 		case "$1" in
@@ -2720,7 +2753,7 @@ function main()
 				;;
 			--config=*)
 				OPTIONS+=("$1")
-				CONFIG_YAML="$(realpath -m -q "${1##--config=}")"
+				CONFIG_YAML="${1##--config=}"
 				shift
 				;;
 			--coverage)

@@ -60,7 +60,7 @@ namespace sv8 {
   struct DisasmGPR : public DisasmObject
   {
     DisasmGPR( unsigned _rid ) : rid(_rid) {} unsigned rid;
-    void operator () ( std::ostream& sink ) const { sink << "%r" << std::dec << rid; }
+    void operator () ( std::ostream& sink ) const { sink << '%' << "goli"[rid / 8] << std::dec << (rid % 8); }
   };
 
   struct DisasmFPR : public DisasmObject

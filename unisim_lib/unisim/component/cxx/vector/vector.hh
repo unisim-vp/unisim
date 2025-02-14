@@ -132,6 +132,7 @@ namespace vector {
     static void initial( Byte*, void*, unsigned, bool ) {}
 
     VUnion() : transfer( &initial ), size(0) {}
+    VUnion(VUnion const&) =delete;
 
     void Clear( void* storage )
     {

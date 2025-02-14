@@ -88,23 +88,23 @@ Below is a sample configuration file for Unisimatic:
 	  - name: unisim_lib
 	    path: /path/to/unisim_lib
 	    package_dir: ../package
-	    enabled: yes
-	    default: yes
+	    enabled: true
+	    default: true
 	  - name: genisslib
 	    path: /path/to/genisslib
 	    package_dir: package
-	    enabled: yes
+	    enabled: true
 	projects:
 	  - name: simulator
 	    path: /path/to/simulator
 	    config_file: distrib.conf
-	    enabled: yes
+	    enabled: true
 	builds:
 	  - name: simulator
 	    project: simulator
 	    build_dir: /path/to/build_dir
 	    dist_dir: /path/to/dist_dir
-	    enabled: yes
+	    enabled: true
 	    command: |
 	      ./configure
 	      make

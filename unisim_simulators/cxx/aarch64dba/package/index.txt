@@ -1,4 +1,0 @@
-aarch64dec.isa
-decoder.cc
-decoder.hh
-main.cc

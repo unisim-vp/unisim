@@ -1,32 +1,33 @@
 /*
- *  Copyright (c) 2010, Commissariat a l'Energie Atomique (CEA) All rights
- *  reserved.
+ *  Copyright (c) 2010,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are met:
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice,
- *   this list of conditions and the following disclaimer.
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *   endorse or promote products derived from this software without specific
- *   prior written permission.
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- *  ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
@@ -80,18 +81,18 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   param_enable_inline_debugger.SetMutable(false);
   param_enable_profiler.SetMutable(false);
   param_enable_cfg_builder.SetMutable(false);
-  
+
   logger_console_printer = new LOGGER_CONSOLE_PRINTER();
   logger_text_file_writer = new LOGGER_TEXT_FILE_WRITER();
   logger_http_writer = new LOGGER_HTTP_WRITER();
   logger_xml_file_writer = new LOGGER_XML_FILE_WRITER();
   logger_netstream_writer = new LOGGER_NETSTREAM_WRITER();
-  
+
   instrumenter = new INSTRUMENTER("instrumenter", this);
   http_server = new HTTP_SERVER("http-server");
-  
+
   // - debugger
-  if (enable_gdb_server or enable_inline_debugger or enable_profiler or enable_cfg_builder)
+  if (enable_gdb_server or enable_inline_debugger or enable_profiler)
     debugger = new DEBUGGER("debugger");
   if (enable_gdb_server)
     gdb_server = new GDB_SERVER("gdb-server");
@@ -101,13 +102,13 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
     profiler = new PROFILER("profiler");
   if (enable_cfg_builder)
     cfg_builder = new CFG_BUILDER("cfg-builder");
-  
+
   // In Linux mode, the system is not entirely simulated.
   // This mode allows to run Linux applications without simulating all the peripherals.
 
   cpu.master_socket(memory.slave_sock);
-  
-  // CPU <-> Memory connections                                                                                                                       
+
+  // CPU <-> Memory connections
   cpu.memory_import >> memory.memory_export;
 
   // CPU <-> LinuxOS connections
@@ -127,11 +128,11 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
       *debugger->memory_import[0]                          >> cpu.memory_export;
       *debugger->registers_import[0]                       >> cpu.registers_export;
       *debugger->memory_access_reporting_control_import[0] >> cpu.memory_access_reporting_control_export;
-      
+
       // Debugger <-> LinuxOS connections
       debugger->blob_import >> linux_os.blob_export_;
     }
-  
+
   {
     unsigned idx = 0;
     if (gdb_server)
@@ -146,7 +147,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
         gdb_server->memory_import                   >> *debugger->memory_export[idx];
         gdb_server->registers_import                >> *debugger->registers_export[idx];
       }
-      
+
     if (inline_debugger)
       {
         // inline-debugger <-> debugger connections
@@ -165,7 +166,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
         inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[idx];
         inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[idx];
       }
-    
+
     if (profiler)
       {
         // profiler <-> debugger connections
@@ -184,16 +185,15 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
         profiler->data_object_lookup_import         >> *debugger->data_object_lookup_export[idx];
         profiler->subprogram_lookup_import          >> *debugger->subprogram_lookup_export[idx];
       }
-      
-    if (cfg_builder)
-      {
-        // CFG builder <-> debugger connections
-        ++idx;
-        cpu.instruction_collecting_import >> cfg_builder->instruction_collecting_export;
-        cfg_builder->disasm_import >> cpu.disasm_export;
-        cfg_builder->symbol_table_lookup_import >> *debugger->symbol_table_lookup_export[idx];
-      }
   }
+
+  if (cfg_builder)
+    {
+      // CFG builder <-> debugger connections
+      cpu.instruction_collecting_import >> cfg_builder->instruction_collecting_export;
+      cfg_builder->disasm_import >> cpu.disasm_export;
+      cfg_builder->symbol_table_lookup_import >> linux_os.symbol_table_lookup_export;
+    }
 
   {
     unsigned idx = 0;
@@ -242,7 +242,7 @@ Simulator::Run()
   // std::cerr << "Simulation run-time parameters:" << std::endl;
   // DumpParameters(std::cerr);
   // std::cerr << std::endl;
-  // 
+  //
   // std::cerr << "Simulation statistics:" << std::endl;
   // DumpStatistics(std::cerr);
   // std::cerr << std::endl;
@@ -278,14 +278,14 @@ bool Simulator::EndSetup()
   {
     http_server->AddJSAction(
       unisim::service::interfaces::ToolbarOpenTabAction(
-        /* name */      profiler->GetName(), 
+        /* name */      profiler->GetName(),
         /* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\" alt=\"Profile\">",
         /* tips */      std::string("Profile of ") + cpu.GetName(),
         /* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
         /* uri */       profiler->URI()
     ));
   }
-  
+
   return true;
 }
 
@@ -307,7 +307,7 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   //=========================================================================
   //===                     Component run-time configuration              ===
   //=========================================================================
-  
+
   sim->SetVariable("logger.std_err", true);
   sim->SetVariable("logger.std_err_color", true);
 
@@ -320,7 +320,7 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("HARDWARE.cpu.ipc",                  1.0);
   sim->SetVariable("HARDWARE.cpu.voltage",              1.8 * 1e3); // 1800 mV
   sim->SetVariable("HARDWARE.cpu.enable-dmi",           true); // Enable SystemC TLM 2.0 DMI
-  sim->SetVariable("HARDWARE.memory.bytesize",          0xffffffffUL); 
+  sim->SetVariable("HARDWARE.memory.bytesize",          0xffffffffUL);
   sim->SetVariable("HARDWARE.memory.cycle-time",        "31250 ps");
   sim->SetVariable("HARDWARE.memory.read-latency",      "31250 ps");
   sim->SetVariable("HARDWARE.memory.write-latency",     "0 ps");
@@ -372,6 +372,6 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("dl1-power-estimator.tag-width", 32); // to fix
   sim->SetVariable("dl1-power-estimator.access-mode", "fast");
   sim->SetVariable("dl1-power-estimator.verbose", false);
-  
+
   sim->SetVariable("http-server.http-port", 12360);
 }

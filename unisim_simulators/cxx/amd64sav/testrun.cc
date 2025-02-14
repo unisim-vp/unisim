@@ -372,8 +372,6 @@ namespace test
   //   }
   // }
 
-  // struct FPException : public std::exception {};
-
   void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor )
   {
     if (not divisor) arch._DE();

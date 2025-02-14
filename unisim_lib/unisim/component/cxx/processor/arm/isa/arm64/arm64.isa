@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2024,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -39,7 +39,7 @@
 **********************************************/
 
 namespace unisim::component::cxx::processor::arm::isa::arm64
-set endianness little;
+set endianness little
 set addressclass {uint64_t}
 template <{typename} {ARCH}>
 
@@ -56,9 +56,6 @@ impl {
 #include <iostream>
 #include <cmath>
 
-#include <unisim/util/likely/likely.hh>
-#define evenly(x) (x)
-
 using unisim::util::arithmetic::RotateRight;
 using unisim::util::arithmetic::BitScanReverse;
 using unisim::util::arithmetic::PopCount;
@@ -66,6 +63,8 @@ using unisim::util::arithmetic::PopCount;
 #include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
 }
+
+base {ARCH::OpStat} = {};
 
 action {void} execute({ARCH &} {cpu}) const {
   cpu.UndefinedInstruction(this);
@@ -78,6 +77,6 @@ action {void} disasm({typename ARCH::DisasmState &} {cpu}, {std::ostream&} {sink
 impl {
 } // end of impl
 
-include "base.isa"
-include "simd.isa"
-include "floating-point.isa"
+include "unisim/component/cxx/processor/arm/isa/arm64/base.isa"
+include "unisim/component/cxx/processor/arm/isa/arm64/simd.isa"
+include "unisim/component/cxx/processor/arm/isa/arm64/floating-point.isa"

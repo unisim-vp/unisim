@@ -31,7 +31,7 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
 #ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 #define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 
@@ -84,21 +84,21 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, param_filename("filename", this, filename,
 			"the ELF filename to load into memory")
 	, param_architecture("architecture", this, architecture, "Overload the architecture of the ELF file")
-	, param_base_addr("base-addr", this, base_addr, 
+	, param_base_addr("base-addr", this, base_addr,
 			"if force-base-addr is true"
 			" force base address for a unique program segment,"
 			" otherwise ignored")
 	, param_force_base_addr("force-base-addr", this, force_base_addr,
 			"if true force base address for a unique program segment")
-	, param_force_use_virtual_address("force-use-virtual-address", this, 
-			force_use_virtual_address, 
+	, param_force_use_virtual_address("force-use-virtual-address", this,
+			force_use_virtual_address,
 			"force use of virtual addresses instead of physical addresses (default false)")
 	, param_initialize_extra_segment_bytes("initialize-extra-segment-bytes", this, initialize_extra_segment_bytes, "whether to initialize extra bytes in segments (p_filesz < p_memsz) to zero (true for standard ELF files)")
-	, param_dump_headers("dump-headers", this, dump_headers, 
+	, param_dump_headers("dump-headers", this, dump_headers,
 			"dump headers while loading ELF file")
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
-	, param_dwarf_to_html_output_directory("dwarf-to-html-output-directory", 
-			this, dwarf_to_html_output_directory, 
+	, param_dwarf_to_html_output_directory("dwarf-to-html-output-directory",
+			this, dwarf_to_html_output_directory,
 			"DWARF v2/v3 to HTML output directory")
 	, param_dwarf_to_xml_output_filename("dwarf-to-xml-output-filename", this, dwarf_to_xml_output_filename, "DWARF v2/v3 to XML output filename")
 	, param_dwarf_register_number_mapping_filename("dwarf-register-number-mapping-filename", this, dwarf_register_number_mapping_filename, "DWARF register number mapping filename")
@@ -167,11 +167,8 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		elf_loader = 0;
 	}
 
-	elf_loader = new unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>();
-
-	elf_loader->SetDebugInfoStream(logger.DebugInfoStream());
-	elf_loader->SetDebugWarningStream(logger.DebugWarningStream());
-	elf_loader->SetDebugErrorStream(logger.DebugErrorStream());
+	typedef unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym> LoaderImpl;
+	elf_loader = new LoaderImpl(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
 	elf_loader->SetRegistersInterface(/* prc_num */ 0, registers_import);
 	elf_loader->SetMemoryInterface(/* prc_num */ 0, memory_import);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str());

@@ -8,4 +8,3 @@ std/sstream
 unisim/component/cxx/processor/arm/isa
 unisim/util/arithmetic
 unisim/util/floating_point
-unisim/util/likely

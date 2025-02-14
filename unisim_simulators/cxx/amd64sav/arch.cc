@@ -45,10 +45,10 @@ struct FIRoundOp
   friend std::ostream& operator << (std::ostream& sink, FIRoundOp const& op) { return (sink << "firound." << op.rm); }
 };
 
-template <typename FPT> FPT firound( FPT const& src, int x87frnd_mode )
+template <typename FPT> FPT firound( FPT const& src, review::Arch::rc_t x87frnd_mode )
 {
   //return FPT( unisim::util::symbolic::Expr( new ut::FIRound<typename FPT::value_type>( src.expr, x87frnd_mode ) ) );
-  return unisim::util::sav::make_weirdop<FPT>( FIRoundOp(x87frnd_mode), src );
+  return unisim::util::sav::make_weirdop<FPT>( "firound", x87frnd_mode, src );
 }
 
 } /* namespace unisim */ } /* namespace component */ } /* namespace cxx */ } /* namespace processor */ } /* namespace intel */
