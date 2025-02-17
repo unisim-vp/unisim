@@ -3067,41 +3067,59 @@ unsigned /* tag */ Builder<CONFIG>::ProcessTail(const Instruction<CONFIG>& tail,
 	}
 	else if(type == BRANCH)
 	{
-		ADDRESS branch_fallthrough = tail.GetFallthrough();
-		if(branch_fallthrough != target_addr) ProcessBranch(branch_fallthrough, target_addr, FALLTHROUGH); else tag = FALLTHROUGH;
-		if(tail.GetMode() == DIRECT)
+		ADDRESS branch_target = tail.GetTarget();
+		if(branch_target != target_addr)
 		{
-			ADDRESS branch_target = tail.GetTarget();
-			if(branch_target != target_addr) ProcessBranch(branch_target, target_addr, TARGET); else tag = TARGET;
-		}
-	}
-	else if(type == CALL)
-	{
-		CFG<CONFIG> *called = mapping.Get(target_addr);
-		if(!called) mapping.Put(target_addr, called = new CFG<CONFIG>(target_addr));
-		assert(state.current.working->GetCategory() == BLOCK);
-		state.current.working->AsBlock().AddCall(called, 1);
-		state.callstack.Push(state.current, tail.GetFallthrough());
-		state.current = Current(called, called->GetEntry());
-	}
-	else if(type == RETURN)
-	{
-		if(state.callstack.Has(target_addr))
-		{
-			do
-			{
-				CallStackEntry<CONFIG>& call_stack_entry = state.callstack.Top();
-				ADDRESS ret_addr = call_stack_entry.ret_addr;
-				state.current.cfg->AddEdge(state.current.working, state.current.cfg->GetExit(), 1);
-				state.current = call_stack_entry.current;
-				state.callstack.Pop();
-				if(ret_addr == target_addr) break;
-			}
-			while(!state.callstack.Empty());
+			if(tail.GetMode() == DIRECT) ProcessBranch(branch_target, target_addr, TARGET);
 		}
 		else
 		{
-			// do nothing as if it was an unconditional jump
+			tag = TARGET;
+		}
+		ADDRESS branch_fallthrough = tail.GetFallthrough();
+		if(branch_fallthrough != target_addr) ProcessBranch(branch_fallthrough, target_addr, FALLTHROUGH); else tag = FALLTHROUGH;
+	}
+	else if(type == CALL)
+	{
+		if(tail.GetFallthrough() != target_addr)
+		{
+			CFG<CONFIG> *called = mapping.Get(target_addr);
+			if(!called) mapping.Put(target_addr, called = new CFG<CONFIG>(target_addr));
+			assert(state.current.working->GetCategory() == BLOCK);
+			state.current.working->AsBlock().AddCall(called, 1);
+			state.callstack.Push(state.current, tail.GetFallthrough());
+			state.current = Current(called, called->GetEntry());
+		}
+		else
+		{
+			// do nothing as if it was a nop
+		}
+	}
+	else if(type == RETURN)
+	{
+		if((tail.GetAddress() + tail.GetSize()) != target_addr)
+		{
+			if(state.callstack.Has(target_addr))
+			{
+				do
+				{
+					CallStackEntry<CONFIG>& call_stack_entry = state.callstack.Top();
+					ADDRESS ret_addr = call_stack_entry.ret_addr;
+					state.current.cfg->AddEdge(state.current.working, state.current.cfg->GetExit(), 1);
+					state.current = call_stack_entry.current;
+					state.callstack.Pop();
+					if(ret_addr == target_addr) break;
+				}
+				while(!state.callstack.Empty());
+			}
+			else
+			{
+				// do nothing as if it was an unconditional jump
+			}
+		}
+		else
+		{
+			// do nothing as if it was a nop
 		}
 	}
 	else
