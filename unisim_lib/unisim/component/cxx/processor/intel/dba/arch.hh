@@ -530,8 +530,7 @@ struct Processor : public ProcessorBase
   template <class VR, class ELEM>
   struct VmmIndirectRead : public VmmIndirectReadBase
   {
-    typedef unisim::util::symbolic::TypeInfo<typename ELEM::value_type> traits;
-    enum { elemcount = VR::SIZE / traits::BITSIZE };
+    enum { elemsize = unisim::util::numeric::Numeric<ELEM>::bitsize, elemcount = VR::SIZE / elemsize };
 
     VmmIndirectRead( ELEM const* elems, u8_t const& _index)
       : VmmIndirectReadBase(_index.expr)
@@ -559,7 +558,7 @@ struct Processor : public ProcessorBase
         sink << "(if";
         ASExprNode::GenerateCode( GetSub(elemcount), sink, scope );
         sink << " = "
-             << unisim::util::symbolic::binsec::dbx(traits::BITSIZE/8, i)
+             << unisim::util::symbolic::binsec::dbx(elemsize/8, i)
              << " then ";
         ASExprNode::GenerateCode( GetSub(i), sink, scope );
         sink << " else ";
@@ -568,7 +567,7 @@ struct Processor : public ProcessorBase
       for (int i = 0; i < elemcount - 1; i += 1) {
         sink << ')';
       }
-      return traits::BITSIZE;
+      return elemsize;
     }
 
     virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<this_type const&>(brhs) ); }

@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_CFG_INTRO_HH__
 
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/numeric/numeric.hh>
 #include <unisim/util/floating_point/floating_point.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/instruction_collecting.hh>
@@ -53,6 +54,7 @@ namespace intro {
   struct XValue
   {
     typedef VALUE_TYPE value_type;
+    typedef unisim::util::numeric::Numeric<value_type> numeric_type;
     typedef XValue<value_type> this_type;
 
     XValue() : value(), determined(false) {}

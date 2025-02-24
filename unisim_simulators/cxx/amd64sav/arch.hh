@@ -726,8 +726,7 @@ namespace review
     template <class VR, class ELEM>
     struct VmmIndirectRead : public ExprNode
     {
-      typedef unisim::util::symbolic::TypeInfo<typename ELEM::value_type> traits;
-      enum { elemcount = VR::SIZE / traits::BITSIZE };
+      enum { elemsize = unisim::util::numeric::Numeric<ELEM>::bitsize, elemcount = VR::SIZE / elemsize };
       VmmIndirectRead( ELEM const* elems, u8_t const& _sub) : sub(_sub.expr) { for (unsigned idx = 0, end = elemcount; idx < end; ++idx) sources[idx] = elems[idx].expr; }
       typedef VmmIndirectRead<VR,ELEM> this_type;
       virtual this_type* Mutate() const override { return new this_type( *this ); }

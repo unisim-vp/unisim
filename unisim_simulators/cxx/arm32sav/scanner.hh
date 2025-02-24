@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2020-2023,
+ *  Copyright (c) 2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -51,7 +51,12 @@ struct NeonRegister
   : public unisim::util::symbolic::WithValueType<NeonRegister>
 {
   enum { BYTECOUNT = 8 };
-  struct value_type { char _[BYTECOUNT]; };
+  struct value_type
+  {
+    struct numeric_type { enum nfo { is_signed = 0, is_integral = 1, is_floating_point = 0, bitsize = 8*BYTECOUNT }; };
+    char _[BYTECOUNT];
+  };
+
   NeonRegister() = default;
   NeonRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
   unisim::util::symbolic::Expr expr;

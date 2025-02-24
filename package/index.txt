@@ -2494,6 +2494,7 @@ unisim/util/netstub/netstub.hh
 unisim/util/netstub/netstub.tcc
 unisim/util/nodejs/nodejs.cc
 unisim/util/nodejs/nodejs.hh
+unisim/util/numeric/numeric.hh
 unisim/util/os/linux_os/aarch64.hh
 unisim/util/os/linux_os/amd64.hh
 unisim/util/os/linux_os/arm.hh
