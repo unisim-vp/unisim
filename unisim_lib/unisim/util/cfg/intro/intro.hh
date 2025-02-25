@@ -35,11 +35,11 @@
 #ifndef __UNISIM_UTIL_CFG_INTRO_HH__
 #define __UNISIM_UTIL_CFG_INTRO_HH__
 
+#include <unisim/service/interfaces/instruction_collecting.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/numeric/numeric.hh>
 #include <unisim/util/floating_point/floating_point.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/service/interfaces/instruction_collecting.hh>
 #include <cstdint>
 
 namespace unisim {

@@ -45,6 +45,7 @@
 #include <unisim/util/symbolic/vector/vector.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <unisim/util/arithmetic/integer.hh>
+#include <unisim/util/numeric/numeric.hh>
 #include <bitset>
 #include <set>
 #include <memory>

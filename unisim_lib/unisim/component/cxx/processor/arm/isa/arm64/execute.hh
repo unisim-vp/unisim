@@ -39,7 +39,6 @@
 #include <inttypes.h>
 #include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
-#include <sstream>
 
 #define DEBUG_FP 0
 
@@ -109,30 +108,23 @@ OUT PolyMod2(IN value, uint32_t _poly)
   template <class ARCH, typename T>
   T Abs( ARCH& arch, T value, bool sat = false)
   {
-    if (sat && arch.Test(value == unisim::util::numeric::Integers<T>::min()))
+    if (unisim::util::numeric::Numeric<T>::is_signed and sat and arch.Test(value == unisim::util::numeric::Integers<T>::min()))
       {
         arch.SetQC();
         return unisim::util::numeric::Integers<T>::max();
       }
-    else
-      {
-        return arch.Test(value >= T()) ? value : -value;
-      }
+    return arch.Test(value < T(0)) ? -value : value;
   }
 
   template <class ARCH, typename T>
   T Neg( ARCH& arch, T value, bool sat = false)
   {
-    if (unisim::util::numeric::Numeric<T>::is_signed && sat)
+    if (unisim::util::numeric::Numeric<T>::is_signed and sat and arch.Test(value == unisim::util::numeric::Integers<T>::min()))
       {
-        T res((unisim::util::numeric::Numeric<T>::is_signed && arch.Test(value < T(0))) ? unisim::util::numeric::Integers<T>::max() : unisim::util::numeric::Integers<T>::min());
-        if (arch.Test(value == unisim::util::numeric::Integers<T>::min())) arch.SetQC(); else res = -value;
-        return res;
+        arch.SetQC();
+        return unisim::util::numeric::Integers<T>::max();
       }
-    else
-      {
-        return -value;
-      }
+    return -value;
   }
 
   template <typename DST, class ARCH, typename SRC>

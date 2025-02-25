@@ -6,4 +6,5 @@ std/sstream
 std/stdexcept
 unisim/util/arithmetic
 unisim/util/identifier
+unisim/util/numeric
 unisim/util/truth_table

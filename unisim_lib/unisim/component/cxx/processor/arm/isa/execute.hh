@@ -43,6 +43,7 @@
 #include <inttypes.h>
 #include <stdexcept>
 #include <cmath>
+
 namespace unisim {
 namespace component {
 namespace cxx {

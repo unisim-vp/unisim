@@ -44,6 +44,7 @@
 #include <unisim/util/symbolic/vector/vector.hh>
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
+#include <unisim/util/numeric/numeric.hh>
 
 namespace unisim {
 namespace component {

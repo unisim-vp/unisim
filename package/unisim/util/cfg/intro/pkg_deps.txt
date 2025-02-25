@@ -4,3 +4,4 @@ unisim/service/interfaces/instruction_collecting
 unisim/util/arithmetic
 unisim/util/endian
 unisim/util/floating_point
+unisim/util/numeric
