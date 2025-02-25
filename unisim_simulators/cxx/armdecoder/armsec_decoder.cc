@@ -2,6 +2,7 @@
 #include <unisim/component/cxx/processor/arm/isa/disasm.hh>
 #include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/util/forbint/contract/contract.hh>
+#include <unisim/util/numeric/numeric.hh>
 #include <unisim/util/identifier/identifier.hh>
 #include <unisim/util/likely/likely.hh>
 #include <functional>
@@ -184,6 +185,9 @@ protected:
     : unisim::util::forbint::contract::DomainValue(empty, ref), fConstant(false) {}
 
 public:
+  typedef bool value_type;
+  typedef unisim::util::numeric::Numeric<bool> numeric_type;
+
   DomainBitValue() : fConstant(false) {}
   DomainBitValue(DomainBitElement&& value, struct _DomainElementFunctions* functions, DomainEvaluationEnvironment* env)
     : unisim::util::forbint::contract::DomainValue(std::move(value), functions, env), fConstant(false) {}
@@ -385,6 +389,7 @@ private:
 
 public:
   typedef VALUE_TYPE value_type;
+  typedef unisim::util::numeric::Numeric<value_type> numeric_type;
 
   DomainMultiBitValue() : uConstant(0) {}
 
@@ -937,6 +942,9 @@ private:
   friend class DomainMultiFloatValue;
 
 public:
+  typedef VALUE_TYPE value_type;
+  typedef unisim::util::numeric::Numeric<value_type> numeric_type;
+
   DomainMultiFloatValue() : vtConstant(0.0) {}
   DomainMultiFloatValue(VALUE_TYPE val) : vtConstant(val) {}
   DomainMultiFloatValue(Empty empty, const unisim::util::forbint::contract::DomainValue& ref)
