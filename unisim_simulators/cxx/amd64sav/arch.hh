@@ -754,7 +754,8 @@ namespace review
     bool _vmm_diff( unsigned reg );
 
     template <class VR, class ELEM>
-    ELEM vmm_read( VR const& vr, unsigned reg, u8_t const& sub, ELEM const& e )
+    ELEM
+    vmm_read( VR const& vr, unsigned reg, u8_t const& sub, ELEM const& e )
     {
       vmm_touch( reg, false );
       ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
@@ -769,20 +770,20 @@ namespace review
       return elems[sub];
     }
 
-    template <class VR, class ELEM>
-    void vmm_write( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
+    template <class VR, class SUB, class ELEM>
+    void vmm_write( VR const& vr, unsigned reg, SUB sub, ELEM const& e )
     {
       vmm_touch( reg, true );
       ELEM* elems = umms[reg].GetStorage( &vmm_storage[reg][0], e, vmm_wsize( vr ) );
       elems[sub] = e;
     }
 
-    template <class VR, class ELEM>
+    template <class VR, class SUB, class ELEM>
     ELEM
-    vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
+    vmm_read( VR const& vr, RMOp const& rmop, SUB sub, ELEM const& e )
     {
       if (not rmop.ismem()) return vmm_read( vr, rmop.ereg(), sub, e );
-      return vmm_memread( rmop->segment, rmop->effective_address( *this ), sub, e );
+      return vmm_memread( rmop->segment, rmop->effective_address( *this ), addr_t(sub)*addr_t(VUConfig::template TypeInfo<ELEM>::bytecount), e );
     }
 
     template <class VR, class ELEM>
@@ -790,19 +791,19 @@ namespace review
     vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
       if (not rmop.ismem()) return vmm_write( vr, rmop.ereg(), sub, e );
-      return vmm_memwrite( rmop->segment, rmop->effective_address( *this ), sub, e );
+      return vmm_memwrite( rmop->segment, rmop->effective_address( *this ), addr_t(sub*VUConfig::TypeInfo<ELEM>::bytecount), e );
     }
 
-    template <class ELEM> ELEM vmm_memread( unsigned seg, addr_t addr, unsigned sub, ELEM const& e )
+    template <class ELEM> ELEM vmm_memread( unsigned seg, addr_t addr, addr_t offset, ELEM const& e )
     {
       any_memread( seg, addr, e); // Make sure that we access vector base
-      return any_memread( seg, addr + addr_t(sub*VUConfig::TypeInfo<ELEM>::bytecount), e );
+      return any_memread( seg, addr + offset, e );
     }
 
-    template <class ELEM> void vmm_memwrite( unsigned seg, addr_t addr, unsigned sub, ELEM const& e )
+    template <class ELEM> void vmm_memwrite( unsigned seg, addr_t addr, addr_t offset, ELEM const& e )
     {
       any_memwrite( seg, addr, e); // Make sure that we access vector base
-      any_memwrite( seg, addr + addr_t(sub*VUConfig::TypeInfo<ELEM>::bytecount), e);
+      any_memwrite( seg, addr + offset, e);
     }
 
     // Integer case

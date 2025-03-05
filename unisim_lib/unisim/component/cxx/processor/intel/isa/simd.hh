@@ -3081,31 +3081,55 @@ Operation<ARCH>* newPmov_x( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbas
 // psadbw_vdq_wdq.disasm = { _sink << "psadbw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 //
 
-template <class ARCH, class VR>
+template <class ARCH>
 struct Vpermq : public Operation<ARCH>
 {
   Vpermq( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, uint8_t _oo ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), oo(_oo) {} RMOp<ARCH> rm; uint8_t gn, oo;
   void disasm( std::ostream& sink ) const
   {
-    sink << (VR::vex() ? "v" : "") << "permq " << DisasmI(oo) << ',' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn );
+    sink << (YMM::vex() ? "v" : "") << "permq " << DisasmI(oo) << ',' << DisasmW( YMM(), rm ) << ',' << DisasmV( YMM(), gn );
   }
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::u64_t u64_t;
 
-    for (unsigned chunk = 0, cend = VR::size() / 256; chunk < cend; ++ chunk)
-      {
-	u64_t res[256 / 64];
+    u64_t res[256 / 64];
 
-        for (unsigned idx = 0, end = 256 / 64; idx < end; ++idx)
-          {
-            unsigned part = (oo >> 2*idx) % 4;
-            res[idx] = arch.vmm_read( VR(), rm, part + chunk*end, u64_t() );
-          }
-	for (unsigned idx = 0, end = 256 / 64; idx < end; ++idx)
-          {
-            arch.vmm_write( VR(), gn, idx + chunk*end, res[idx] );
-          }
+    for (unsigned idx = 0, end = 256 / 64; idx < end; ++idx)
+      {
+        unsigned part = (oo >> 2*idx) % 4;
+        res[idx] = arch.vmm_read( YMM(), rm, part, u64_t() );
+      }
+    for (unsigned idx = 0, end = 256 / 64; idx < end; ++idx)
+      {
+        arch.vmm_write( YMM(), gn, idx, res[idx] );
+      }
+  }
+};
+
+template <class ARCH>
+struct Vpermd : public Operation<ARCH>
+{
+  Vpermd( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn) {} RMOp<ARCH> rm; uint8_t vn, gn;
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (YMM::vex() ? "v" : "") << "permq " << DisasmW( YMM(), rm ) << ',' << DisasmV( YMM(), vn ) << ',' << DisasmV( YMM(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::u8_t u8_t;
+
+    u32_t res[256 / 32];
+
+    for (unsigned idx = 0, end = 256 / 32; idx < end; ++idx)
+      {
+        u32_t sub = arch.vmm_read( YMM(), vn, idx, u32_t() ) & u32_t(0b111);
+        res[idx] = arch.vmm_read( YMM(), rm, u8_t(sub), u32_t() );
+      }
+    for (unsigned idx = 0, end = 256 / 32; idx < end; ++idx)
+      {
+        arch.vmm_write( YMM(), gn, idx, res[idx] );
       }
   }
 };
@@ -3117,8 +3141,14 @@ template <class ARCH> struct DC<ARCH,VPERMQ> { Operation<ARCH>* get( InputCode<A
 
   if (auto _ = match( ic, vex( "\x66\x0f\x3a\x00" ) & RM() & Imm<8>() ))
     {
-      if (ic.vreg() || ic.w() == 0) return 0;
-      if (ic.vlen() == 256) return new Vpermq<ARCH,YMM>( _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()) );
+      if (ic.vreg() or ic.w() == 0 or ic.vlen() != 256) return 0;
+      return new Vpermq<ARCH>( _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()) );
+    }
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x36" ) & RM() ))
+    {
+      if (ic.w() == 1 or ic.vlen() != 256) return 0;
+      return new Vpermd<ARCH>( _.opbase(), _.rmop(), _.vreg(), _.greg() );
     }
 
   return 0;

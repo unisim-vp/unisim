@@ -600,11 +600,11 @@ struct Processor : public ProcessorBase
     elems[sub] = e;
   }
 
-  template <class VR, class ELEM>
-  ELEM vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
+  template <class VR, class SUB, class ELEM>
+  ELEM vmm_read( VR const& vr, RMOp const& rmop, SUB sub, ELEM const& e )
   {
     if (not rmop.ismem()) return vmm_read( vr, rmop.ereg(), sub, e );
-    return vmm_memread( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*VUConfig::template TypeInfo<ELEM>::bytecount), e );
+    return vmm_memread( rmop->segment, rmop->effective_address( *this ) + addr_t(sub)*addr_t(VUConfig::template TypeInfo<ELEM>::bytecount), e );
   }
 
   template <class VR, class ELEM>
