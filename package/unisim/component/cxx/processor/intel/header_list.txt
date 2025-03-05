@@ -1,4 +1,5 @@
 unisim/component/cxx/processor/intel/aes.hh
+unisim/component/cxx/processor/intel/bmi.hh
 unisim/component/cxx/processor/intel/disasm.hh
 unisim/component/cxx/processor/intel/execute.hh
 unisim/component/cxx/processor/intel/math.hh

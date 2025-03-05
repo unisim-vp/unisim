@@ -306,12 +306,20 @@ struct ProcessorBase
     FRegID( char const* _code ) : code(end) { init( _code ); }
   };
 
-  static u128_t aesdec         ( u128_t src1, u128_t src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src1.expr, src2.expr}) ); }
-  static u128_t aesdeclast     ( u128_t src1, u128_t src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src1.expr, src2.expr}) ); }
-  static u128_t aesenc         ( u128_t src1, u128_t src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src1.expr, src2.expr}) ); }
-  static u128_t aesenclast     ( u128_t src1, u128_t src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src1.expr, src2.expr}) ); }
-  static u128_t aesimc         ( u128_t src )               { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src.expr}) ); }
-  static u128_t aeskeygenassist( u128_t src, uint8_t im )   { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src.expr, u8_t(im).expr}) ); }
+  struct aes
+  {
+    static u128_t dec         ( u128_t src1, u128_t src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src1.expr, src2.expr}) ); }
+    static u128_t declast     ( u128_t src1, u128_t src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src1.expr, src2.expr}) ); }
+    static u128_t enc         ( u128_t src1, u128_t src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src1.expr, src2.expr}) ); }
+    static u128_t enclast     ( u128_t src1, u128_t src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src1.expr, src2.expr}) ); }
+    static u128_t imc         ( u128_t src )               { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src.expr}) ); }
+    static u128_t keygenassist( u128_t src, uint8_t im )   { return Expr( new unisim::util::symbolic::binsec::Opaque<uint128_t>({src.expr, u8_t(im).expr}) ); }
+  };
+
+  struct bmi {
+    template <class OP>
+    static OP pdep( OP src1, OP src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<OP>({src1.expr, src2.expr}) ); }
+  };
 };
 
 template <class MODE>

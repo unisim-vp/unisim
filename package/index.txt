@@ -277,6 +277,7 @@ unisim/component/cxx/processor/hcs12x/xgate.hh
 unisim/component/cxx/processor/intel/aes.hh
 unisim/component/cxx/processor/intel/arch32/arch.cc
 unisim/component/cxx/processor/intel/arch32/arch.hh
+unisim/component/cxx/processor/intel/bmi.hh
 unisim/component/cxx/processor/intel/dba/arch.cc
 unisim/component/cxx/processor/intel/dba/arch.hh
 unisim/component/cxx/processor/intel/dba/decode.cc

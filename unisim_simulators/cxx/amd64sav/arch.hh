@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/component/cxx/processor/intel/aes.hh>
+#include <unisim/component/cxx/processor/intel/bmi.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/util/sav/sav.hh>
 #include <unisim/util/symbolic/vector/vector.hh>
@@ -216,8 +217,10 @@ namespace review
 
   struct Arch
     : ArchTypes
-    , unisim::component::cxx::processor::intel::AES<ArchTypes>
   {
+    typedef unisim::component::cxx::processor::intel::AES<ArchTypes> aes;
+    typedef unisim::component::cxx::processor::intel::BMI<ArchTypes> bmi;
+
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
     typedef unisim::util::symbolic::ValueType ValueType;

@@ -90,8 +90,10 @@ namespace test
 
   struct Arch
     : ArchTypes
-    , unisim::component::cxx::processor::intel::AES<ArchTypes>
   {
+    typedef unisim::component::cxx::processor::intel::AES<ArchTypes> aes;
+    typedef unisim::component::cxx::processor::intel::BMI<ArchTypes> bmi;
+
     void run(review::Interface::testcode_t testcode, uint64_t* data);
 
     Arch()
