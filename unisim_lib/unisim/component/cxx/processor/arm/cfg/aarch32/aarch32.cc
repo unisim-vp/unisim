@@ -305,7 +305,12 @@ void BranchAnalyzer<false>::GetInfo(unisim::util::cfg::intro::BranchInfo& branch
   {
     enum { thumb = false };
     std::unique_ptr<typename Decoder::operation_type> op;
-    void execute(Core& ab) { if (unisim::component::cxx::processor::arm::CheckCondition(ab, op->GetEncoding() >> 28)) op->execute( ab ); }
+    void execute(Core& ab)
+    {
+      unsigned cond = op->GetEncoding() >> 28;
+      if ((cond >= 14) or unisim::component::cxx::processor::arm::CheckCondition(ab, cond))
+        op->execute( ab );
+    }
   };
   static Decoder decoder;
   ComputeBranchInfo(branch, Instruction{mkuniq(decoder.NCDecode( insn_addr, insn ))}, insn_addr, insn_length);
