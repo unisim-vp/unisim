@@ -6,11 +6,11 @@ Requirements:
   - dune (>= 3.0)
 
 Building instructions:
-\`\`\`console
+```console
 $ dune build @install
-\`\`\`
+```
 
 Installing (optional):
-\`\`\`console
+```console
 $ dune install
-\`\`\`
+```
