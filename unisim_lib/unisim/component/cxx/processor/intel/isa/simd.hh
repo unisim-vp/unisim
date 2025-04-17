@@ -917,14 +917,14 @@ struct MovfpcVW : public Op3V<ARCH,VR>
 
   using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
 
-  void disasm( std::ostream& sink ) const { sink << vprefix() << (hi ? "movhp" : "movlp") << SizeID<OPSIZE>::fid() << ' '; disasmVVW(sink); }
+  void disasm( std::ostream& sink ) const { sink << vprefix() << "mov" << (rm.ismem() ? "" : hi ? "l" : "h") << (hi ? 'h' : 'l') << 'p' << SizeID<OPSIZE>::fid() << ' '; disasmVVW(sink); }
 
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OPSIZE>::f f_type;
-    for (unsigned idx = 0, end = VR::size()/2/OPSIZE, withrm = hi*end, withvn = end-withrm; idx < end; ++idx)
+    for (unsigned idx = 0, end = VR::size()/2/OPSIZE, withrm = hi*end, withvn = end-withrm, asrm = rm.ismem() ? 0 : withvn; idx < end; ++idx)
       {
-        arch.vmm_write( VR(), gn, idx + withrm, arch.vmm_read( VR(), rm, idx, f_type() ) );
+        arch.vmm_write( VR(), gn, idx + withrm, arch.vmm_read( VR(), rm, idx + asrm, f_type() ) );
         arch.vmm_write( VR(), gn, idx + withvn, arch.vmm_read( VR(), vn, idx + withvn, f_type() ) );
       }
   }
@@ -950,11 +950,13 @@ struct MovfpcWV : public Operation<ARCH>
 // /* MOVLPS -- Move Low Packed Single-Precision Floating-Point Value */
 // /* MOVHPD -- Move High Packed Double-Precision Floating-Point Value */
 // /* MOVHPS -- Move High Packed Single-Precision Floating-Point Value */
+// /* MOVHLPS -- Move Packed Single Precision Floating-Point Values High to Low */
+// /* MOVLHPS -- Move Packed Single Precision Floating-Point Values Low to High */
 template <class ARCH> struct DC<ARCH,MOVFPC> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
 
-  if (auto _ = match( ic, vex( "\x0f\x12" ) & RM_mem() ))
+  if (auto _ = match( ic, vex( "\x0f\x12" ) & RM() ))
 
     return newMovFPC<32>( ic, true, _.opbase(), _.rmop(), _.greg(), 0 );
 
@@ -970,7 +972,7 @@ template <class ARCH> struct DC<ARCH,MOVFPC> { Operation<ARCH>* get( InputCode<A
 
     return newMovFPC<64>( ic, false, _.opbase(), _.rmop(), _.greg(), 0 );
 
-  if (auto _ = match( ic, vex( "\x0f\x16" ) & RM_mem() ))
+  if (auto _ = match( ic, vex( "\x0f\x16" ) & RM() ))
 
     return newMovFPC<32>( ic, true, _.opbase(), _.rmop(), _.greg(), 1 );
 
