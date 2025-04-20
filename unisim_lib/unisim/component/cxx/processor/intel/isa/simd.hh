@@ -4467,3 +4467,138 @@ Operation<ARCH>* newInsr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase,
   return  new Insr<ARCH,XMM,GOP>( opbase, imm, std::move(rm), ic.vreg(), gn );
 }
 };
+
+template <class ARCH>
+struct Sha256rnds2 : public Operation<ARCH>
+{
+  Sha256rnds2( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) :
+    Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {}
+  RMOp<ARCH> rm; uint8_t gn; const uint8_t xmm0 = 0;
+
+  void disasm( std::ostream& sink ) const { sink << "sha256rnds2 " << DisasmV( XMM(), xmm0 ) << ',' << DisasmW( XMM(), rm ) << ',' << DisasmV( XMM(), gn );}
+
+  typedef typename ARCH::u32_t u32_t;
+
+  static u32_t
+  ror32(u32_t x, uint8_t n) { return (x >> u32_t(n)) | (x << u32_t(32-n)); }
+
+
+  static u32_t ch(u32_t e, u32_t f, u32_t g) { return (e & f) ^ (~e & g); }
+  static u32_t
+  ma(u32_t a, u32_t b, u32_t c) { return (a & b) ^ (a & c) ^ (b & c); }
+  static u32_t
+  sum0(u32_t a) { return ror32(a, 2) ^ ror32(a, 13) ^ ror32(a, 22); }
+  static u32_t
+  sum1(u32_t e) { return ror32(e, 6) ^ ror32(e, 11) ^ ror32(e, 25); }
+
+  void execute( ARCH& arch ) const
+  {
+    u32_t a[3], b[3], c[3], d[3], e[3], f[3], g[3], h[3], wk[2];
+    a[0] = arch.vmm_read( XMM(), rm, 3, u32_t() );
+    b[0] = arch.vmm_read( XMM(), rm, 2, u32_t() );
+    c[0] = arch.vmm_read( XMM(), gn, 3, u32_t() );
+    d[0] = arch.vmm_read( XMM(), gn, 2, u32_t() );
+    e[0] = arch.vmm_read( XMM(), rm, 1, u32_t() );
+    f[0] = arch.vmm_read( XMM(), rm, 0, u32_t() );
+    g[0] = arch.vmm_read( XMM(), gn, 1, u32_t() );
+    h[0] = arch.vmm_read( XMM(), gn, 0, u32_t() );
+    wk[0] = arch.vmm_read( XMM(), xmm0, 0, u32_t() );
+    wk[1] = arch.vmm_read( XMM(), xmm0, 1, u32_t() );
+
+    for (unsigned i = 0; i < 2; i += 1) {
+      u32_t x = ch(e[i], f[i], g[i]) + sum1(e[i]) + wk[i] + h[i];
+      a[i + 1] = x + ma(a[i], b[i], c[i]) + sum0(a[i]);
+      b[i + 1] = a[i];
+      c[i + 1] = b[i];
+      d[i + 1] = c[i];
+      e[i + 1] = x + d[i];
+      f[i + 1] = e[i];
+      g[i + 1] = f[i];
+      h[i + 1] = g[i];
+    }
+
+    arch.vmm_write( XMM(), gn, 3, a[2] );
+    arch.vmm_write( XMM(), gn, 2, b[2] );
+    arch.vmm_write( XMM(), gn, 1, e[2] );
+    arch.vmm_write( XMM(), gn, 0, f[2] );
+  }
+};
+
+template <class ARCH>
+struct Sha256msg1 : public Operation<ARCH>
+{
+  Sha256msg1( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) :
+    Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {}
+  RMOp<ARCH> rm; uint8_t gn;
+
+  void disasm( std::ostream& sink ) const { sink << "sha256msg1 " << DisasmW( XMM(), rm ) << ',' << DisasmV( XMM(), gn );}
+
+  typedef typename ARCH::u32_t u32_t;
+
+  static u32_t
+  ror32(u32_t x, uint8_t n) { return (x >> u32_t(n)) | (x << u32_t(32-n)); }
+
+  static u32_t s0(u32_t w) { return ror32(w, 7) ^ ror32(w, 18) ^ (w >> 3); }
+
+  void execute( ARCH& arch ) const
+  {
+    u32_t w4 = arch.vmm_read( XMM(), rm, 0, u32_t() );
+    u32_t w3 = arch.vmm_read( XMM(), gn, 3, u32_t() );
+    u32_t w2 = arch.vmm_read( XMM(), gn, 2, u32_t() );
+    u32_t w1 = arch.vmm_read( XMM(), gn, 1, u32_t() );
+    u32_t w0 = arch.vmm_read( XMM(), gn, 0, u32_t() );
+
+    arch.vmm_write( XMM(), gn, 3, w3 + s0(w4) );
+    arch.vmm_write( XMM(), gn, 2, w2 + s0(w3) );
+    arch.vmm_write( XMM(), gn, 1, w1 + s0(w2) );
+    arch.vmm_write( XMM(), gn, 0, w0 + s0(w1) );
+  }
+};
+
+template <class ARCH>
+struct Sha256msg2 : public Operation<ARCH>
+{
+  Sha256msg2( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) :
+    Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {}
+  RMOp<ARCH> rm; uint8_t gn;
+
+  void disasm( std::ostream& sink ) const { sink << "sha256msg2 " << DisasmW( XMM(), rm ) << ',' << DisasmV( XMM(), gn );}
+
+  typedef typename ARCH::u32_t u32_t;
+
+  static u32_t
+  ror32(u32_t x, uint8_t n) { return (x >> u32_t(n)) | (x << u32_t(32-n)); }
+
+  static u32_t s1(u32_t w) { return ror32(w, 17) ^ ror32(w, 19) ^ (w >> 10); }
+
+  void execute( ARCH& arch ) const
+  {
+    u32_t w14 = arch.vmm_read( XMM(), rm, 2, u32_t() );
+    u32_t w15 = arch.vmm_read( XMM(), rm, 3, u32_t() );
+    u32_t w16 = arch.vmm_read( XMM(), gn, 0, u32_t() ) + s1(w14);
+    u32_t w17 = arch.vmm_read( XMM(), gn, 1, u32_t() ) + s1(w15);
+    u32_t w18 = arch.vmm_read( XMM(), gn, 2, u32_t() ) + s1(w16);
+    u32_t w19 = arch.vmm_read( XMM(), gn, 3, u32_t() ) + s1(w17);
+
+    arch.vmm_write( XMM(), gn, 3, w19 );
+    arch.vmm_write( XMM(), gn, 2, w18 );
+    arch.vmm_write( XMM(), gn, 1, w17 );
+    arch.vmm_write( XMM(), gn, 0, w16 );
+  }
+};
+
+
+template <class ARCH> struct DC<ARCH,SHA256> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (auto _ = match( ic, opcode( "\x0f\x38\xcb" ) & RM() ))
+    return new Sha256rnds2<ARCH>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x38\xcc" ) & RM() ))
+    return new Sha256msg1<ARCH>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x38\xcd" ) & RM() ))
+    return new Sha256msg2<ARCH>( _.opbase(), _.rmop(), _.greg() );
+
+  return 0;
+}
+};
