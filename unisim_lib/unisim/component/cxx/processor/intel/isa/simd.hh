@@ -2644,24 +2644,121 @@ Operation<ARCH>* newPCmp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase,
 //
 // phsubsw_vdq_wdq.disasm = { _sink << "phsubsw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 //
-// /* PMADDUBSW --  */
-// op pmaddubsw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x04[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// pmaddubsw_pq_qq.disasm = { _sink << "pmaddubsw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
-//
-// op pmaddubsw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x04[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// pmaddubsw_vdq_wdq.disasm = { _sink << "pmaddubsw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-//
-// /* PMADDWD -- Multiply and Add Packed Integers */
-// op pmaddwd_pq_qq( 0x0f[8]:> <:0xf5[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// pmaddwd_pq_qq.disasm = { _sink << "pmaddwd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
-//
-// op pmaddwd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xf5[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// pmaddwd_vdq_wdq.disasm = { _sink << "pmaddwd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-//
+
+template <class ARCH, class VR>
+struct Pmaddwd : public Op3V<ARCH,VR>
+{
+  Pmaddwd( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t vn, uint8_t gn ) : Op3V<ARCH,VR>(opbase, std::move(rm), vn, gn) {}
+
+  using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
+
+  void disasm(std::ostream& sink) const { sink << vprefix() << "pmaddwd"; disasmVVW(sink << ' '); }
+
+  void execute( ARCH& arch ) const
+  {
+    typedef typename ARCH::s16_t s16_t;
+    typedef typename ARCH::s32_t s32_t;
+
+    const unsigned n = VR::size() / 32;
+    s32_t res[n];
+
+    for (unsigned idx = 0; idx < n; idx += 1)
+      {
+	res[idx] = s32_t(0);
+	for (unsigned j = 0; j < 2; j += 1)
+	  res[idx] += s32_t( arch.vmm_read( VR(), vn, 2*idx+j, s16_t() ) )
+	    * s32_t( arch.vmm_read( VR(), rm, 2*idx+j, s16_t() ) );
+      }
+    for (unsigned idx = 0; idx < n; idx += 1)
+      arch.vmm_write( VR(), gn, idx, res[idx] );
+  }
+};
+
+/* PMADDWD -- Multiply and Add Packed Integers */
+template <class ARCH> struct DC<ARCH,PMADDWD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\xf5" ) & RM() ))
+    return newPmaddwd(ic, _.opbase(), _.rmop(), _.greg());
+
+  return 0;
+}
+
+Operation<ARCH>* newPmaddwd( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t gn )
+{
+  if (not ic.vex()) return new Pmaddwd<ARCH,SSE>( opbase, std::move(rm), gn, gn );
+  unsigned vn = ic.vreg();
+  if (ic.vlen() == 128) return new Pmaddwd<ARCH,XMM>( opbase, std::move(rm), vn, gn );
+  if (ic.vlen() == 256) return new Pmaddwd<ARCH,YMM>( opbase, std::move(rm), vn, gn );
+  return 0;
+}
+};
+
+template <class ARCH, class VR>
+struct Pmaddubsw : public Op3V<ARCH,VR>
+{
+  Pmaddubsw( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t vn, uint8_t gn ) : Op3V<ARCH,VR>(opbase, std::move(rm), vn, gn) {}
+
+  using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
+
+  void disasm(std::ostream& sink) const { sink << vprefix() << "pmaddubsw"; disasmVVW(sink << ' '); }
+
+  typedef typename ARCH::u8_t u8_t;
+  typedef typename ARCH::s8_t s8_t;
+  typedef typename ARCH::s16_t s16_t;
+  typedef typename ARCH::s32_t s32_t;
+
+  const s32_t lbound = s32_t( -32768 );
+  const s32_t hbound = s32_t( 32768 );
+
+  static s16_t saturate16 ( s32_t x )
+  {
+    const s32_t lbound = s32_t( -32768 );
+    const s32_t hbound = s32_t( 32767 );
+    return ConditionalMove( hbound < x, s16_t( hbound ), ConditionalMove( x < lbound, s16_t( lbound ), s16_t( x ) ) );
+  }
+
+
+  void execute( ARCH& arch ) const
+  {
+    const unsigned n = VR::size() / 16;
+    s32_t res[n];
+
+    for (unsigned idx = 0; idx < n; idx += 1)
+      {
+	res[idx] = s32_t(0);
+	for (unsigned j = 0; j < 2; j += 1)
+	  res[idx] += s32_t( arch.vmm_read( VR(), vn, 2*idx+j, u8_t() ) )
+	    * s32_t( arch.vmm_read( VR(), rm, 2*idx+j, s8_t() ) );
+      }
+    for (unsigned idx = 0; idx < n; idx += 1)
+      arch.vmm_write( VR(), gn, idx, saturate16( res[idx] ) );
+  }
+};
+
+/* PMADDUBSW --  */
+template <class ARCH> struct DC<ARCH,PMADDUBSW> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x04" ) & RM() ))
+    return newPmaddubsw(ic, _.opbase(), _.rmop(), _.greg());
+
+  return 0;
+}
+
+Operation<ARCH>* newPmaddubsw( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t gn )
+{
+  if (not ic.vex()) return new Pmaddubsw<ARCH,SSE>( opbase, std::move(rm), gn, gn );
+  unsigned vn = ic.vreg();
+  if (ic.vlen() == 128) return new Pmaddubsw<ARCH,XMM>( opbase, std::move(rm), vn, gn );
+  if (ic.vlen() == 256) return new Pmaddubsw<ARCH,YMM>( opbase, std::move(rm), vn, gn );
+  return 0;
+}
+};
+
+/*--------------------------------------------*/
 
 template <class ARCH, class VR, class GR>
 struct PInsr : public Op3V<ARCH,VR>
