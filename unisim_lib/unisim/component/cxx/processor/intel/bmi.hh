@@ -50,6 +50,9 @@ namespace intel {
 
     template <class OP>
     static OP pdep(OP, OP) { throw Unimplemented(); return OP();  }
+
+    template <class OP>
+    static OP pext(OP, OP) { throw Unimplemented(); return OP();  }
   };
 
 } // end of namespace intel

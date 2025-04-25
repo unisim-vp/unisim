@@ -318,7 +318,27 @@ struct ProcessorBase
 
   struct bmi {
     template <class OP>
-    static OP pdep( OP src1, OP src2 ) { return Expr( new unisim::util::symbolic::binsec::Opaque<OP>({src1.expr, src2.expr}) ); }
+    static OP pdep( OP src1, OP src2 ) {
+      enum { opsz = atpinfo<ProcessorBase,OP>::bitsize };
+      OP res = OP(0), mask = src2, tmp = src1;
+      u8_t k = u8_t(0);
+      for ( unsigned idx = 0; idx < opsz; idx += 1 ) {
+        res |= (((tmp >> k) & (mask >> u8_t(idx))) & OP(1)) << u8_t(idx);
+        k += u8_t(mask >> u8_t(idx)) & u8_t(1);
+      }
+      return res;
+    }
+    template <class OP>
+    static OP pext( OP src1, OP src2 ) {
+      enum { opsz = atpinfo<ProcessorBase,OP>::bitsize };
+      OP res = OP(0), mask = src2, tmp = src1 & mask;
+      u8_t k = u8_t(0);
+      for ( unsigned idx = 0; idx < opsz; idx += 1 ) {
+        res |= ((tmp >> u8_t(idx)) & OP(1)) << k;
+        k += u8_t(mask >> u8_t(idx)) & u8_t(1);
+      }
+      return res;
+    }
   };
 };
 
