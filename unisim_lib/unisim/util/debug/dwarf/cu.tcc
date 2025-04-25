@@ -56,7 +56,6 @@ DWARF_CompilationUnit<MEMORY_ADDR>::DWARF_CompilationUnit(DWARF_Handler<MEMORY_A
 	, version(0)
 	, debug_abbrev_offset(0)
 	, address_size(0)
-	, segment_size(0)
 	, dw_die(0)
 {
 }
@@ -87,12 +86,6 @@ template <class MEMORY_ADDR>
 uint8_t DWARF_CompilationUnit<MEMORY_ADDR>::GetAddressSize() const
 {
 	return address_size;
-}
-
-template <class MEMORY_ADDR>
-uint8_t DWARF_CompilationUnit<MEMORY_ADDR>::GetSegmentSize() const
-{
-	return segment_size;
 }
 
 template <class MEMORY_ADDR>
@@ -218,16 +211,6 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 	rawdata += sizeof(address_size);
 	max_size -= sizeof(address_size);
 	size += sizeof(address_size);
-	
-	if(dw_ver >= DW_VER3)
-	{
-		if(max_size < sizeof(segment_size)) return -1;
-		memcpy(&segment_size, rawdata, sizeof(segment_size));
-		segment_size = Target2Host(file_endianness, segment_size);
-		rawdata += sizeof(segment_size);
-		max_size -= sizeof(segment_size);
-		size += sizeof(segment_size);
-	}
 	
 	dw_die = new DWARF_DIE<MEMORY_ADDR>(this);
 	
