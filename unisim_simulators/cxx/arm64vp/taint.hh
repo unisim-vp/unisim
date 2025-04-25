@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2023,
+ *  Copyright (c) 2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -48,6 +48,7 @@
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/numeric/numeric.hh>
 #include <algorithm>
 #include <limits>
 #include <iosfwd>
@@ -120,16 +121,17 @@ inline std::ostream& operator << (std::ostream& stream, TaintedValue<VALUE_TYPE>
 
 template <typename VALUE_TYPE>
 struct TaintedValue
-{ 
+{
   typedef TaintedValue<VALUE_TYPE>         this_type;
   typedef VALUE_TYPE                       value_type;
+  typedef unisim::util::numeric::Numeric<value_type> numeric_type;
   typedef typename TX<value_type>::as_mask ubits_type;
 
   value_type value; /* concrete value */
   ubits_type ubits; /* uninitialized bits */
-  
+
   ubits_type value_as_mask() const { return TypePunning<ubits_type>(value); }
-    
+
   TaintedValue() : value(), ubits(-1) {}
   TaintedValue(TVCtor, value_type _value, ubits_type _ubits) : value(_value), ubits(_ubits) {}
   explicit TaintedValue( value_type _value ) : value(_value), ubits(0) {}
@@ -138,12 +140,12 @@ struct TaintedValue
   explicit TaintedValue( TaintedValue<SRC_VALUE_TYPE> const& src )
     : value(src.value), ubits(CastUBits<VALUE_TYPE, SRC_VALUE_TYPE>::process(src.ubits, src.value_as_mask()))
   {}
-  
+
   static bool const is_signed = std::numeric_limits<value_type>::is_signed;
 
   template <typename SHT> this_type operator << (SHT sh) const { return this_type(TVCtor(), value << sh, ubits << sh); }
   template <typename SHT> this_type operator >> (SHT sh) const { return this_type(TVCtor(), value >> sh, value_type(ubits) >> sh); }
-  
+
   template <typename SHT> this_type& operator <<= (SHT sh) { value <<= sh; ubits <<= sh; return *this; }
   template <typename SHT> this_type& operator >>= (SHT sh) { value >>= sh; ubits = value_type(ubits) >> sh; return *this; }
 
@@ -163,7 +165,7 @@ struct TaintedValue
   this_type& operator *= ( this_type const& other ) { value *= other.value; ubits = (ubits or other.ubits) ? -1 : 0; return *this; }
   this_type& operator /= ( this_type const& other ) { value /= other.value; ubits = (ubits or other.ubits) ? -1 : 0; return *this; }
   this_type& operator %= ( this_type const& other ) { value %= other.value; ubits = (ubits or other.ubits) ? -1 : 0; return *this; }
-  
+
   this_type& operator ^= ( this_type const& other ) { value ^= other.value; ubits |= other.ubits; return *this; }
   this_type& operator &= ( this_type const& other ) { value &= other.value; ubits = (ubits | other.ubits) & (value | ubits) & (other.value | other.ubits); return *this; }
   this_type& operator |= ( this_type const& other ) { value |= other.value; ubits = (ubits | other.ubits) & (~value | ubits) & (~other.value | other.ubits); return *this; }
@@ -173,7 +175,7 @@ struct TaintedValue
   this_type operator * ( this_type const& other ) const { return this_type( TVCtor(), value * other.value, (ubits or other.ubits) ? -1 : 0 ); }
   this_type operator / ( this_type const& other ) const { return this_type( TVCtor(), value / other.value, (ubits or other.ubits) ? -1 : 0 ); }
   this_type operator % ( this_type const& other ) const { return this_type( TVCtor(), value % other.value, (ubits or other.ubits) ? -1 : 0 ); }
-  
+
   this_type operator ^ ( this_type const& other ) const { return this_type( TVCtor(), value ^ other.value, ubits | other.ubits ); }
   this_type operator & ( this_type const& other ) const { return this_type( TVCtor(), value & other.value, (ubits | other.ubits) & (value | ubits) & (other.value | other.ubits) ); }
   this_type operator | ( this_type const& other ) const { return this_type( TVCtor(), value | other.value, (ubits | other.ubits) & (~value | ubits) & (~other.value | other.ubits) ); }
@@ -211,7 +213,7 @@ struct TaintedTypeInfo
     typedef typename T::ubits_type ubits_type;
 
     ubits_type value = src.value_as_mask(), ubits = src.ubits;
-    
+
     for (unsigned idx = 0; idx < sizeof (ubits_type); ++idx)
       {
         dst[idx].value = value & 0xff; value = (sizeof (ubits_type) > 1) ? (value >> 8) : 0;
@@ -464,7 +466,7 @@ template <typename FLOAT>
 struct TaintedValueFloatingPointStatusAndControl
 {
 	typedef unisim::util::floating_point::Context<FloatingPointStatusAndControl<FLOAT> > Context;
-  
+
 	static void defaultNaN( bool dn ) { FloatingPointStatusAndControl<FLOAT>::defaultNaN( dn ); }
 	static bool defaultNaN() { return FloatingPointStatusAndControl<FLOAT>::defaultNaN(); }
 	static void detectTininess( uint_fast8_t dt ) { FloatingPointStatusAndControl<FLOAT>::detectTininess( dt ); }

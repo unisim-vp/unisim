@@ -335,7 +335,7 @@ namespace binsec {
         // If-conversion of two-way conditional assignments
         Assignment* assignment = dynamic_cast<Assignment*>(as[0]->Mutate());
         assignment->value = make_operation( Op::CMov, as[true]->value, as[false]->value, cond );
-        add_sink(Expr(assignment));
+        add_sink(assignment);
         cmp = 0;
         return true;
       }
@@ -344,7 +344,7 @@ namespace binsec {
     Assignment* assignment = dynamic_cast<Assignment*>(as[side]->Mutate());
     Expr values[2] = {source, assignment->value};
     assignment->value = make_operation( Op::CMov, values[side], values[not side], cond );
-    add_sink(Expr(assignment));
+    add_sink(assignment);
     return true;
   }
 

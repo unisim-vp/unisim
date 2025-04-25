@@ -1,12 +1,12 @@
 /*
- *  Copyright (c) 2007-2019,
+ *  Copyright (c) 2015,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
+ *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, 
+ *   - Redistributions of source code must retain the above copyright notice,
  *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
@@ -14,19 +14,19 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific 
+ *     endorse or promote products derived from this software without specific
  *     prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
- *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
@@ -2653,7 +2653,7 @@ template <class ARCH> struct DC<ARCH,ADJUST> { Operation<ARCH>* get( InputCode<A
     return new AAM<ARCH>( _.opbase(), _.i( uint8_t() ) );
 
   if (auto _ = match( ic, opcode( "\x27" ) ))
- 
+
     return new DAA<ARCH>( _.opbase() );
 
   if (auto _ = match( ic, opcode( "\x2f" ) ))
@@ -2779,6 +2779,39 @@ template <class ARCH> struct DC<ARCH,BZHI> { Operation<ARCH>* get( InputCode<ARC
 	return new Bzhi<ARCH,GOq>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
       else
 	return new Bzhi<ARCH,GOd>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
+    }
+
+  return 0;
+}};
+
+template <class ARCH, class OP>
+struct Pdep : public Operation<ARCH>
+{
+  Pdep( OpBase<ARCH> const& opbase, uint8_t _gn, MOp<ARCH> const* _rm, uint8_t _vn ) : Operation<ARCH>( opbase ), rm( _rm ), vn( _vn ), gn( _gn ) {}
+  RMOp<ARCH> rm;
+  uint8_t vn, gn;
+
+  void disasm( std::ostream& sink ) const { sink << "pdep " << DisasmE( OP(), rm ) << ',' << DisasmG( OP(), vn ) << ',' << DisasmG( OP(), gn ); }
+
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u val_t;
+
+    val_t res = ARCH::bmi::pdep(arch.regread( OP(), vn ), arch.rmread( OP(), rm ));
+    arch.regwrite( OP(), gn, res );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,PDEP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (auto _ = match( ic, vex( "\xf2\x0f\x38\xf5" ) & RM() ))
+
+    {
+      if ((not ic.vex()) or (ic.vlen() != 128)) return 0;
+      if (ic.mode64() && ic.w())
+	return new Pdep<ARCH,GOq>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
+      else
+	return new Pdep<ARCH,GOd>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
     }
 
   return 0;

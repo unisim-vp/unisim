@@ -37,6 +37,7 @@
 
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/component/cxx/processor/intel/aes.hh>
+#include <unisim/component/cxx/processor/intel/bmi.hh>
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
@@ -97,8 +98,10 @@ namespace intel {
 
   struct Arch
     : ArchTypes
-    , AES<ArchTypes>
   {
+    typedef AES<ArchTypes> aes;
+    typedef BMI<ArchTypes> bmi;
+
     // CONSTRUCTORS/DESTRUCTORS
     Arch();
     ~Arch();

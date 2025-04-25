@@ -133,7 +133,7 @@ main( int argc, char** argv )
 {
   unisim::component::cxx::processor::arm::dba::aarch32::Decoder decoder;
 
-  if (strcmp(argv[1], "file") == 0)
+  if (argc > 1 and strcmp(argv[1], "file") == 0)
     {
       if (argc < 3 or argc > 5)
         return usage(std::cerr, argv[0]), 1;

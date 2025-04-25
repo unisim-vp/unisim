@@ -150,22 +150,24 @@ struct Processor
   {
     bool complete = path->close();
     if (branch_type == B_CALL)
-      path->add_sink( Expr( new unisim::util::symbolic::binsec::Call<uint64_t>( next_instruction_address.expr, return_address ) ) );
+      path->add_sink( new unisim::util::symbolic::binsec::Call<uint64_t>( next_instruction_address.expr, return_address ) );
+    else if (branch_type == B_RET)
+      path->add_sink( new unisim::util::symbolic::binsec::Ret( next_instruction_address.expr ) );
     else
-      path->add_sink( Expr( new unisim::util::symbolic::binsec::Branch( next_instruction_address.expr ) ) );
+      path->add_sink( new unisim::util::symbolic::binsec::Branch( next_instruction_address.expr ) );
     if (unpredictable)
       {
-        path->add_sink( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
+        path->add_sink( new unisim::util::symbolic::binsec::AssertFalse() );
         return complete;
       }
 
     for (GPR reg; reg.next();)
       if (gpr[reg.idx()].expr != ref.gpr[reg.idx()].expr)
-        path->add_sink( Expr( newRegWrite( reg, gpr[reg.idx()].expr ) ) );
+        path->add_sink( newRegWrite( reg, gpr[reg.idx()].expr ) );
 
     for (Flag flag; flag.next();)
       if (flags[flag.idx()] != ref.flags[flag.idx()])
-        path->add_sink( Expr( newRegWrite( flag, flags[flag.idx()] ) ) );
+        path->add_sink( newRegWrite( flag, flags[flag.idx()] ) );
 
     for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
       vregsinks(ref, reg);
@@ -404,7 +406,6 @@ struct Processor
   //   =                      Control Transfer methods                     =
   //   =====================================================================
 
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
   void BranchTo(U64 const& npc, branch_type_t bt)
   {
     next_instruction_address = npc;

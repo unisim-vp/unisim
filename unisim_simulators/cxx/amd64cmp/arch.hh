@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/aes.hh>
+#include <unisim/component/cxx/processor/intel/bmi.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -101,11 +102,12 @@ struct ArchTypes
 
 struct Arch
   : ArchTypes
-  , unisim::component::cxx::processor::intel::AES<ArchTypes>
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t>>
   , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t>>
   , public unisim::kernel::Service<unisim::service::interfaces::Registers>
 {
+  typedef unisim::component::cxx::processor::intel::AES<ArchTypes> aes;
+  typedef unisim::component::cxx::processor::intel::BMI<ArchTypes> bmi;
   typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
 
   struct UpdateNode
