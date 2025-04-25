@@ -65,6 +65,9 @@
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/instrumenter/instrumenter.hh>
 #include <unisim/service/debug/profiler/profiler.hh>
+#if HAVE_NODEJS
+#include <unisim/service/debug/nodejs/nodejs.hh>
+#endif
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
@@ -115,6 +118,9 @@ private:
 	typedef unisim::service::os::avr32_t2h_syscalls::AVR32_T2H_Syscalls<CPU_ADDRESS_TYPE> AVR32_T2H_SYSCALLS;
 	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
 	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
+#if HAVE_NODEJS
+	typedef unisim::service::debug::nodejs::NodeJS<typename CONFIG::NODEJS_CONFIG> NODEJS;
+#endif
 	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
 	typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
 	typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
@@ -157,6 +163,10 @@ private:
 	INSTRUMENTER *instrumenter;
 	//  - Profiler
 	PROFILER *profiler;
+#if HAVE_NODEJS
+	// - Node.js
+	NODEJS *nodejs;
+#endif
 	//  - HTTP server
 	HTTP_SERVER *http_server;
 	//  - Logger Console Printer
@@ -173,9 +183,15 @@ private:
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	bool enable_profiler;
+#if HAVE_NODEJS
+	bool enable_nodejs;
+#endif
 	unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
 	unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
 	unisim::kernel::variable::Parameter<bool> param_enable_profiler;
+#if HAVE_NODEJS
+	unisim::kernel::variable::Parameter<bool> param_enable_nodejs;
+#endif
 
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 };

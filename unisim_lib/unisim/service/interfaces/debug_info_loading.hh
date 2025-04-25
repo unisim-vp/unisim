@@ -44,6 +44,7 @@ namespace interfaces {
 
 struct ExecutableBinaryFile : ServiceInterface
 {
+	virtual unsigned GetId() const = 0;                               // identifier starting from 0
 	virtual const char *GetFilename() const = 0;                      // absolute path of executable binary file
 	virtual unisim::util::blob::FileFormat GetFileFormat() const = 0; // file format
 	virtual bool IsEnabled() const = 0;                               // whether this executable binary file is considered when searching in debug infos

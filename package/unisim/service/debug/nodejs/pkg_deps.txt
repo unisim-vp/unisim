@@ -1,4 +1,3 @@
-am/md_to_h
 m4/libedit
 std/limits
 std/regex
@@ -7,7 +6,8 @@ std/unordered_set
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/variable
-unisim/service/debug/nodejs/doc
+unisim/service/debug/nodejs/doc/api
+unisim/service/debug/nodejs/doc/repl
 unisim/service/interfaces/data_object_lookup
 unisim/service/interfaces/debug_event
 unisim/service/interfaces/debug_info_loading

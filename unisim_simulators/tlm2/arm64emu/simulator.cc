@@ -38,6 +38,9 @@
 #include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <unisim/component/tlm2/memory/ram/memory.tcc>
 #include <unisim/service/debug/debugger/debugger.tcc>
+#if HAVE_NODEJS
+#include <unisim/service/debug/nodejs/nodejs.tcc>
+#endif
 #include <unisim/service/analysis/cfg/cfg.tcc>
 #include <iostream>
 #include <vector>
@@ -60,6 +63,9 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   , gdb_server(0)
   , inline_debugger(0)
   , profiler(0)
+#if HAVE_NODEJS
+  , nodejs(0)
+#endif
   , http_server(0)
   , instrumenter(0)
   , cfg_builder(0)
@@ -74,6 +80,10 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   , param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable inline debugger.")
   , enable_profiler(false)
   , param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable profiler.")
+#if HAVE_NODEJS
+  , enable_nodejs(false)
+  , param_enable_nodejs("enable-nodejs", 0, enable_nodejs, "Enable Node.js JavaScript runtime environment debugging front-end")
+#endif
   , enable_cfg_builder(false)
   , param_enable_cfg_builder("enable-cfg-builder", 0, enable_cfg_builder, "Enable control flow graph builder.")
 {
@@ -92,7 +102,11 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   http_server = new HTTP_SERVER("http-server");
 
   // - debugger
-  if (enable_gdb_server or enable_inline_debugger or enable_profiler)
+  if (enable_gdb_server or enable_inline_debugger or enable_profiler
+#if HAVE_NODEJS
+      or enable_nodejs
+#endif
+  )
     debugger = new DEBUGGER("debugger");
   if (enable_gdb_server)
     gdb_server = new GDB_SERVER("gdb-server");
@@ -102,6 +116,10 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
     profiler = new PROFILER("profiler");
   if (enable_cfg_builder)
     cfg_builder = new CFG_BUILDER("cfg-builder");
+#if HAVE_NODEJS
+  if (enable_nodejs)
+    nodejs = new NODEJS("nodejs");
+#endif
 
   // In Linux mode, the system is not entirely simulated.
   // This mode allows to run Linux applications without simulating all the peripherals.
@@ -185,6 +203,22 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
         profiler->data_object_lookup_import         >> *debugger->data_object_lookup_export[idx];
         profiler->subprogram_lookup_import          >> *debugger->subprogram_lookup_export[idx];
       }
+
+#if HAVE_NODEJS
+    if (nodejs)
+      {
+        // nodejs <-> debugger connections
+        ++idx;
+        *debugger->debug_yielding_import[idx] >> nodejs->debug_yielding_export;
+        nodejs->debug_yielding_request_import >> *debugger->debug_yielding_request_export[idx];
+        nodejs->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[idx];
+        nodejs->stmt_lookup_import            >> *debugger->stmt_lookup_export[idx];
+        nodejs->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[idx];
+        nodejs->debug_info_loading_import     >> *debugger->debug_info_loading_export[idx];
+        nodejs->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[idx];
+        nodejs->debug_processors_import       >> *debugger->debug_processors_export[idx];
+      }
+#endif
   }
 
   if (cfg_builder)
@@ -215,6 +249,9 @@ Simulator::~Simulator()
   delete gdb_server;
   delete inline_debugger;
   delete profiler;
+#if HAVE_NODEJS
+  delete nodejs;
+#endif
   delete http_server;
   delete instrumenter;
   delete cfg_builder;
@@ -262,7 +299,11 @@ Simulator::Run()
 
 unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
-  if (inline_debugger or profiler)
+  if (inline_debugger or profiler
+#if HAVE_NODEJS
+      or nodejs
+#endif
+  )
     {
       SetVariable("debugger.parse-dwarf", true);
     }

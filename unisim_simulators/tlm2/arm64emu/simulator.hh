@@ -56,6 +56,9 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/profiler/profiler.hh>
+#if HAVE_NODEJS
+#include <unisim/service/debug/nodejs/nodejs.hh>
+#endif
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/instrumenter/instrumenter.hh>
 #include <unisim/service/analysis/cfg/cfg.hh>
@@ -80,8 +83,18 @@ struct Simulator
     typedef uint64_t ADDRESS;
     typedef sc_core::sc_time TIME_TYPE;
     static const unsigned int NUM_PROCESSORS = 1;
-    /* gdb_server, inline_debugger */
-    static const unsigned int MAX_FRONT_ENDS = 3;
+    /* gdb_server, inline_debugger, profiler (and nodejs) */
+    static const unsigned int MAX_FRONT_ENDS = 3
+#if HAVE_NODEJS
+                                               + 1
+#endif
+    ;
+  };
+
+  struct NODEJS_CONFIG
+  {
+    typedef uint64_t ADDRESS;
+    typedef sc_core::sc_time TIME_TYPE;
   };
 
   struct CFG_BUILDER_CONFIG
@@ -98,6 +111,9 @@ struct Simulator
   typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
   typedef unisim::service::debug::profiler::Profiler<uint64_t> PROFILER;
+#if HAVE_NODEJS
+  typedef unisim::service::debug::nodejs::NodeJS<NODEJS_CONFIG> NODEJS;
+#endif
   typedef unisim::service::http_server::HttpServer HTTP_SERVER;
   typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
   typedef unisim::service::analysis::cfg::Builder<CFG_BUILDER_CONFIG> CFG_BUILDER;
@@ -119,6 +135,9 @@ struct Simulator
   GDB_SERVER*                                gdb_server;
   INLINE_DEBUGGER*                           inline_debugger;
   PROFILER*                                  profiler;
+#if HAVE_NODEJS
+  NODEJS*                                    nodejs;
+#endif
   HTTP_SERVER*                               http_server;
   INSTRUMENTER*                              instrumenter;
   CFG_BUILDER*                               cfg_builder;
@@ -134,6 +153,10 @@ struct Simulator
   unisim::kernel::variable::Parameter<bool>   param_enable_inline_debugger;
   bool                                       enable_profiler;
   unisim::kernel::variable::Parameter<bool>   param_enable_profiler;
+#if HAVE_NODEJS
+  bool                                       enable_nodejs;
+  unisim::kernel::variable::Parameter<bool>   param_enable_nodejs;
+#endif
   bool                                       enable_cfg_builder;
   unisim::kernel::variable::Parameter<bool>   param_enable_cfg_builder;
 };

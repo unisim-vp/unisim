@@ -36,6 +36,8 @@
 #define __UNISIM_UTIL_DEBUG_STMT_TCC__
 
 #include <iostream>
+#include <string>
+#include <cstring>
 
 namespace unisim {
 namespace util {
@@ -107,6 +109,17 @@ template <class MEMORY_ADDR>
 unsigned int Statement<MEMORY_ADDR>::GetDiscriminator() const
 {
 	return discriminator;
+}
+
+template <class MEMORY_ADDR>
+bool Statement<MEMORY_ADDR>::SameLine(const Statement<MEMORY_ADDR>& other) const
+{
+	if(lineno != other.lineno) return false;
+	if(!source_dirname && !other.source_dirname && (::strcmp(source_filename, other.source_filename) != 0)) return false;
+	if(source_dirname && other.source_dirname && ((std::string(source_dirname) + "/" + source_filename) != (std::string(other.source_dirname) + "/" + other.source_filename))) return false;
+	if(!source_dirname && other.source_dirname && ((std::string(source_filename) != std::string(other.source_dirname) + "/" + other.source_filename))) return false;
+	if(source_dirname && !other.source_dirname && ((std::string(source_dirname) + "/" + source_filename) != std::string(other.source_filename))) return false;
+	return true;
 }
 
 template <class MEMORY_ADDR>

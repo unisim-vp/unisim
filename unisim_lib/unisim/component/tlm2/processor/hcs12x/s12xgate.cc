@@ -215,7 +215,7 @@ void S12XGATE::Run()
 
 	unsigned int opCycles = 0;
 
-	while(1) {
+	while(!Killed()) {
 
 		if (state == STOP) {
 			wait(xgate_idle_event);

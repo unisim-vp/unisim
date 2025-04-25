@@ -2271,14 +2271,30 @@ Simulator::SetupStatus Simulator::Setup()
 		if(sig_int_cond) break;
 	}
 
-	// Call all services "DoServiceSetup()"
-	for(Objects::iterator object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+	if(sig_int_cond)
 	{
-		Object& object = *object_iter->second;
-		if(!object.DoServiceSetup())
+		switch(status)
 		{
-			status = ST_ERROR;
-			break;
+			case ST_OK_TO_START  :
+			case ST_OK_DONT_START:
+			case ST_WARNING      : return ST_OK_DONT_START;
+			case ST_ERROR        : return ST_ERROR;
+		}
+	}
+	
+	if(status != ST_ERROR)
+	{
+		// Call all services "DoServiceSetup()"
+		for(Objects::iterator object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+		{
+			Object& object = *object_iter->second;
+			if(!object.DoServiceSetup())
+			{
+				status = ST_ERROR;
+				break;
+			}
+			
+			if(sig_int_cond) break;
 		}
 	}
 	

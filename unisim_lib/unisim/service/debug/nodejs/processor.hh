@@ -84,12 +84,12 @@ struct ProcessorWrapper : ObjectWrapper<CONFIG>
 	void WriteMemory(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void GetStackFrameInfos(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void SelectStackFrame(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void GetSelectedStackFrameNumber(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void GetTime(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void GetDataObjectNames(const v8::FunctionCallbackInfo<v8::Value>& args);
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject();
-	static void Help(std::ostream& stream);
 private:
 	friend struct DebugEventWrapper<CONFIG>;
 	

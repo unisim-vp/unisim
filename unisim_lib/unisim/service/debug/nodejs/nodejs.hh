@@ -64,6 +64,7 @@
 #include <unisim/service/debug/nodejs/event_bridge.hh>
 #include <unisim/service/debug/nodejs/processor.hh>
 #include <unisim/service/debug/nodejs/register.hh>
+#include <unisim/service/debug/nodejs/field.hh>
 #include <unisim/service/debug/nodejs/executable_binary_file.hh>
 #include <unisim/service/debug/nodejs/stack_frame_info.hh>
 #include <unisim/service/debug/nodejs/debug_symbol.hh>
@@ -144,7 +145,7 @@ struct NodeJS
 protected:
 
 	virtual v8::Local<v8::ObjectTemplate> CreateGlobalObjectTemplate();
-	virtual void BeforeExecution();
+	virtual bool Initialize();
 
 	v8::Isolate *GetIsolate() const { return Super::GetIsolate(); }
 	v8::Local<v8::Context> GetContext() { return Super::GetContext(); }
@@ -170,6 +171,7 @@ private:
 	friend struct EventBridge<CONFIG>;
 	friend struct ProcessorWrapper<CONFIG>;
 	friend struct RegisterWrapper<CONFIG>;
+	friend struct FieldWrapper<CONFIG>;
 	friend struct ExecutableBinaryFileWrapper<CONFIG>;
 	friend struct StackFrameInfoWrapper<CONFIG>;
 	friend struct DebugSymbolWrapper<CONFIG>;
@@ -200,21 +202,20 @@ private:
 	friend struct VolatileTypeWrapper<CONFIG>;
 	
 	unisim::kernel::logger::Logger logger;
-	bool shell;
+	bool interactive;
+	bool builtin_repl;
 	bool stop_simulation_at_exit;
+	unsigned int memory_atom_size;
 	std::string program_counter_name;
-	unsigned int arguments_length;
-	typedef unisim::kernel::variable::Parameter<std::string> ParamArgument;
-	typedef std::vector<ParamArgument *> ParamArguments;
-	ParamArguments param_arguments;
+	std::string filename;
 	
 	unisim::kernel::variable::Parameter<bool> param_verbose;
 	unisim::kernel::variable::Parameter<bool> param_debug;
-	unisim::kernel::variable::Parameter<bool> param_shell;
+	unisim::kernel::variable::Parameter<bool> param_interactive;
 	unisim::kernel::variable::Parameter<bool> param_stop_simulation_at_exit;
+	unisim::kernel::variable::Parameter<unsigned int> param_memory_atom_size;
 	unisim::kernel::variable::Parameter<std::string> param_program_counter_name;
 	unisim::kernel::variable::Parameter<std::string> param_filename;
-	unisim::kernel::variable::Parameter<unsigned int> param_arguments_length;
 	
 	std::ostream *std_output_stream;
 	std::ostream *std_error_stream;
@@ -222,6 +223,8 @@ private:
 	
 	bool trap;
 	bool cont;
+	bool interrupted;
+	bool pending_promise;
 	
 	typedef std::vector<v8::Global<v8::Promise::Resolver> > Resolvers;
 	Resolvers cont_exec_resolvers;
@@ -234,15 +237,12 @@ private:
 	typedef std::vector<std::string> Commands;
 
 	bool GetCommand(std::string& cmd);
-	bool GetLine(std::string& line);
-	static char **Completion(char *text, int start, int end);
-	static char *CompletionGenerator(char *text, int state, Commands& commands);
-	static char *GlobalCompletionGenerator(char *text, int state);
-	static char *HelpCompletionGenerator(char *text, int state);
-	static char *ConstructorCompletionGenerator(char *text, int state);
-	static char *ProcessorCompletionGenerator(char *text, int state);
-	static char *RegisterCompletionGenerator(char *text, int state);
-	static void Help(std::ostream& stream, const std::string& section = std::string());
+	bool GetLine(std::string& line, const char *prompt);
+	static NodeJS<CONFIG> *rl_nodejs;
+	char **Completion(char *text, int start, int end);
+	static char **StaticCompletion(char *text, int start, int end);
+	static std::string Str(const std::string& s);
+	static std::string StrOrUndefined(const std::string& s);
 	
 	bool LocateFile(const std::string& file_path, std::string& match_file_path, bool lazy_match = false);
 	std::string LocateFile(const std::string& filename, bool lazy_match = false);
@@ -260,6 +260,7 @@ private:
 	void FindStatement(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void FindStatements(const v8::FunctionCallbackInfo<v8::Value>& args);
 	void FindSubProgram(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void LocateFileCb(const v8::FunctionCallbackInfo<v8::Value>& args);
 	
 	bool ArgToSourceCodeLocation(v8::Local<v8::Value> arg, const std::string& err_msg_context, const char *arg_name, unisim::util::debug::SourceCodeLocation& source_code_location);
 	
@@ -267,6 +268,7 @@ private:
 	void Reject(const v8::FunctionCallbackInfo<v8::Value>& args);
 	
 	void Continue();
+	void ClearContinueExecutionResolvers();
 	void ResolveContinue(v8::Local<v8::Value> value);
 };
 

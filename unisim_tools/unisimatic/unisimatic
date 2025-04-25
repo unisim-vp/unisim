@@ -1125,7 +1125,8 @@ function is_source_code()
 	local hh_regex='\.hh$|\.h$\.hpp$'
 	local tcc_regex='\.tcc$|\.tpp$'
 	local isa_regex='\.isa$'
-	local src_regex="${cc_regex}|${hh_regex}|${tcc_regex}|${isa_regex}"
+	local js_regex='\.js$'
+	local src_regex="${cc_regex}|${hh_regex}|${tcc_regex}|${isa_regex}|${js_regex}"
 	[[ "${FILEPATH}" =~ ${src_regex} ]]
 }
 
@@ -1139,6 +1140,14 @@ function include_deps()
 		if [[ "${FILEPATH}" =~ ${isa_regex} ]]; then
 			grep -E '^[[:blank:]]*include[[:blank:]]*"' "${FILEPATH}" | sed -e 's/^[[:blank:]]*include[[:blank:]]*"//g' -e 's/".*$//g'
 		fi
+	fi
+}
+
+function pkg_deps()
+{
+	local FILEPATH="$1"
+	if is_source_code "${FILEPATH}"; then
+		grep -E '^\.pkg-dep' "${FILEPATH}" | sed -e 's/^\.pkg-dep[[:blank:]]*//g'
 	fi
 }
 
@@ -1507,6 +1516,10 @@ function discover_file_deps()
 	local PKG_DEPS_TXT="$(concat_paths "${OWN_PACKAGE_DIR}" "${BASE}")/pkg_deps.txt"
 	
 	if is_source_code "${FILEPATH}"; then
+		for PKG_DEP in $(pkg_deps "${FILEPATH}"); do
+			PKG_DEP="$(normalize_include_dependency "${OWN_REPO_DIR}" "$(dirname "${FILEPATH}")" "${PKG_DEP}")"
+			resolve_pkg_dep "${OWN_REPO_DIR}" "${OWN_PACKAGE_DIR}" "${PKG_DEP}" >> "${PKG_DEPS_TXT}"
+		done
 		for INCLUDE_DEP in $(include_deps "${FILEPATH}"); do
 			INCLUDE_DEP="$(normalize_include_dependency "${OWN_REPO_DIR}" "$(dirname "${FILEPATH}")" "${INCLUDE_DEP}")"
 			PKG_DEP="$(pkg_dep "${INCLUDE_DEP}")"

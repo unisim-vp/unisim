@@ -302,7 +302,7 @@ private:
 		
 		// intermediate result
 		const DWARF_DIE<MEMORY_ADDR> *dw_die_type; // Input/Output
-		bool match_or_optimized_out;               // Output
+		bool match;                                // Output
 		unsigned int dim;                          // Input/Output
 		
 		// outputs
@@ -310,7 +310,7 @@ private:
 		DWARF_Location<MEMORY_ADDR> *dw_data_object_loc; // Input/Output
 		const unisim::util::debug::Type *dw_data_object_type;
 		
-		FindDataObjectArguments() : c_loc_operation_stream(), dw_die_type(0), match_or_optimized_out(false), dim(0), matched_data_object_name(), dw_data_object_loc(0), dw_data_object_type(0) {}
+		FindDataObjectArguments() : c_loc_operation_stream(), dw_die_type(0), /*match_or_optimized_out(false),*/ match(false), dim(0), matched_data_object_name(), dw_data_object_loc(0), dw_data_object_type(0) {}
 	};
 	bool FindDataObject(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, FindDataObjectArguments& args) const;
 	bool FindDataObjectProlog(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, FindDataObjectArguments& args) const;

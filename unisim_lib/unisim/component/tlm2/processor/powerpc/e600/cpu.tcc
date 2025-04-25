@@ -639,7 +639,7 @@ void CPU<TYPES, CONFIG>::Run()
 {
 	sc_core::sc_time time_per_instruction = cpu_cycle_time / ipc;
 	
-	while(1)
+	while(!this->Killed())
 	{
 		Super::StepOneInstruction();
 		// update local time (relative to sc_time_stamp)

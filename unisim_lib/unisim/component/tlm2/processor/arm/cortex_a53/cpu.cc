@@ -137,7 +137,7 @@ CPU::~CPU()
 void
 CPU::Run()
 {
-  for (;;)
+  while (!Killed())
     {
       StepInstruction();
       

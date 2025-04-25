@@ -233,11 +233,8 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 			size += sizeof(address_size);
 			break;
 		default:
-		{
-			unsigned int arch_address_size = dw_handler->GetArchAddressSize();
-			address_size = (arch_address_size < 4) ? 4 : arch_address_size; //(dw_fmt == FMT_DWARF64) ? 8 : 4;
+			address_size = (dw_fmt == FMT_DWARF64) ? 8 : 4;
 			break;
-		}
 	}
 	
 	switch(dw_ver)

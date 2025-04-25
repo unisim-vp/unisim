@@ -111,7 +111,7 @@ struct Simulator
   {
     std::cerr << "\n*** Run ***" << std::endl;
     //cpu.gdbchecker.start(cpu);
-    while (not linux64.exited)
+    while (not Killed() and not linux64.exited)
       {
         cpu.StepInstruction();
         // if (cpu.instruction_count >= 0x100000)
@@ -142,6 +142,7 @@ void Simulator::default_config(unisim::kernel::Simulator* sim)
   sim->SetVariable("top.debugger.gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_amd64.xml");
   sim->SetVariable("top.debugger.gdb-server.verbose", false);
   sim->SetVariable("top.debugger.inline-debugger.program-counter-name", "rip");
+  sim->SetVariable("top.debugger.nodejs.program-counter-name", "rip");
 
   new unisim::kernel::config::json::JSONConfigFileHelper(sim);
 }

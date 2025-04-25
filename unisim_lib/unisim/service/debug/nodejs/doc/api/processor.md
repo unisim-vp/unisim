@@ -38,11 +38,16 @@ Example of use:
 
 	processor.stepInstruction(() => console.log('instruction stepped'));
 
-## `(async) stepInstruction() => Promise`
+## `(async) stepInstruction([options: object]) => Promise`
 
 Asynchronously step an instruction.
 
 Once instruction has been stepped, the returned promise is resolved.
+
+Options:
+
+* `unblock`: if true and simulator is in interactive mode, this function also let simulator
+  runs until any debug events occur, or Ctrl-C is pressed in REPL.
 
 Example of use:
 
@@ -61,11 +66,16 @@ Example of use:
 
 	processor.nextInstruction(() => console.log('instruction stepped over'));
 
-## `(async) nextInstruction() => Promise`
+## `(async) nextInstruction([options: object]) => Promise`
 
 Asynchronously step over an instruction.
 
 Once instruction has been stepped over, the returned promise is resolved.
+
+Options:
+
+* `unblock`: if true and simulator is in interactive mode, this function also let simulator
+  runs until any debug events occur, or Ctrl-C is pressed in REPL.
 
 Example of use:
 
@@ -85,12 +95,17 @@ Example of use:
 
 	processor.nextInstruction(() => console.log('instruction stepped'));
 
-## `(async) step() => Promise`
+## `(async) step([options: object]) => Promise`
 
 Asynchronously step into a source code statement.
 Function `stepInto'` is an alias of this function.
 
 Once source code statement has been stepped, the returned promise is resolved.
+
+Options:
+
+* `unblock`: if true and simulator is in interactive mode, this function also let simulator
+  runs until any debug events occur, or Ctrl-C is pressed in REPL.
 
 Example of use:
 
@@ -110,12 +125,17 @@ Example of use:
 
 	processor.nextInstruction(() => console.log('instruction stepped over'));
 
-## `(async) next() => Promise`
+## `(async) next([options: object]) => Promise`
 
 Asynchronously step into a source code statement.
 Function `stepOver'` is an alias of this function.
 
 Once source code statement has been stepped over, the returned promise is resolved.
+
+Options:
+
+* `unblock`: if true and simulator is in interactive mode, this function also let simulator
+  runs until any debug events occur, or Ctrl-C is pressed in REPL.
 
 Example of use:
 
@@ -134,12 +154,17 @@ Example of use:
 
 	processor.finish(() => console.log('function has returned'));
 
-## `(async) finish() => Promise`
+## `(async) finish([options: object]) => Promise`
 
 Asynchronously finish current function.
 Function `stepOut'` is an alias of this function.
 
 Once current function has returned, the returned promise is resolved.
+
+Options:
+
+* `unblock`: if true and simulator is in interactive mode, this function also let simulator
+  runs until any debug events occur, or Ctrl-C is pressed in REPL.
 
 Example of use:
 
@@ -202,3 +227,7 @@ Get information about stack frames.
 Select a stack frame.
 
 Subsequent commands will be related to the selected frame until execution resumes.
+
+## `getSelectedStackFrameNumber() => Number`
+
+Get number of selected stack frame.

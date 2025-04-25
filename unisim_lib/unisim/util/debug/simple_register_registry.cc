@@ -73,6 +73,11 @@ std::string SimpleRegisterRegistry::Key(const char *reg_name)
 	return key;
 }
 
+bool SimpleRegisterRegistry::HasRegister(const char *name) const
+{
+	return registers_registry.find(Key(name)) != registers_registry.end();
+}
+
 void SimpleRegisterRegistry::AddRegisterInterface(unisim::service::interfaces::Register *reg_if, bool is_owner)
 {
 	std::string key(Key(reg_if->GetName()));

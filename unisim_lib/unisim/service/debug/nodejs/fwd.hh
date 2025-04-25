@@ -49,6 +49,7 @@ template <typename CONFIG> struct NodeJS;
 template <typename CONFIG> struct ObjectWrapper;
 template <typename CONFIG> struct ProcessorWrapper;
 template <typename CONFIG> struct RegisterWrapper;
+template <typename CONFIG> struct FieldWrapper;
 template <typename CONFIG> struct EventBridge;
 template <typename CONFIG> struct SourceCodeLocationWrapper;
 template <typename CONFIG> struct DebugEventWrapper;

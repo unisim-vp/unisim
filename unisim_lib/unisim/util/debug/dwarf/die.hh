@@ -697,7 +697,7 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindParentDIE(unsigned int dw_tag) const;
 	
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindDataMemberDIE(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDataMemberDIE(const char *name, std::vector<const DWARF_DIE<MEMORY_ADDR> *> *dw_data_member_die_rev_path = 0) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindVariableDIE(const char *name) const;
 

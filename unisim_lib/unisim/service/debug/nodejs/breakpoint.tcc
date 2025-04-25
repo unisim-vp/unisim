@@ -67,6 +67,7 @@ v8::Local<v8::FunctionTemplate> BreakpointWrapper<CONFIG>::CreateFunctionTemplat
 	// Set accessors
 	struct { const char *property_name; v8::AccessorNameGetterCallback accessor_getter_callback; v8::AccessorNameSetterCallback accessor_setter_callback; } accessors_config[] =
 	{
+		{ "id"     , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetId     >, 0 },
 		{ "address", unisim::util::nodejs::AccessorGetterCallback<This, &This::GetAddress>, 0 }
 	};
 	for(auto accessor_config : accessors_config)
@@ -76,6 +77,19 @@ v8::Local<v8::FunctionTemplate> BreakpointWrapper<CONFIG>::CreateFunctionTemplat
 			accessor_config.accessor_getter_callback,
 			accessor_config.accessor_setter_callback
 		);
+	}
+	
+	// Get the prototype template
+	v8::Local<v8::Template> prototype_template = breakpoint_function_template->PrototypeTemplate();
+	
+	// Add methods
+	struct { const char *method_name; v8::FunctionCallback callback; } methods_config[] =
+	{
+		{ "toString", &unisim::util::nodejs::FunctionCallback<This, &This::ToString> }
+	};
+	for(auto method_config : methods_config)
+	{
+		prototype_template->Set(isolate, method_config.method_name, v8::FunctionTemplate::New(isolate, method_config.callback));
 	}
 	
 	// Inherit from "DebugEvent"
@@ -99,10 +113,10 @@ void BreakpointWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionC
 	
 	ProcessorWrapper<CONFIG> *processor_wrapper = 0;
 	unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = 0;
-	if(args.Length() != 0)
+	v8::Local<v8::Value> arg0 = args[0];
+	if(!arg0->IsUndefined())
 	{
 		struct Synopsis { std::string str() const { return std::string(CLASS_NAME) + "(processor: Processor, addr : Number)"; } };
-		v8::Local<v8::Value> arg0 = args[0];
 		if(!arg0->IsObject() || !(processor_wrapper = ProcessorWrapper<CONFIG>::GetInstance(arg0)))
 		{
 			nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a Processor for 'processor'"));
@@ -121,6 +135,7 @@ void BreakpointWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionC
 	
 	BreakpointWrapper<CONFIG> *breakpoint_wrapper = new BreakpointWrapper<CONFIG>(nodejs, processor_wrapper, breakpoint);
 	breakpoint_wrapper->template BindObject<This>(args.This());
+	breakpoint_wrapper->SetListenerArgument(processor_wrapper->ThisObject());
 	args.GetReturnValue().Set(args.This());
 }
 
@@ -143,17 +158,21 @@ unisim::util::debug::Breakpoint<typename CONFIG::ADDRESS> *BreakpointWrapper<CON
 }
 
 template <typename CONFIG>
+void BreakpointWrapper<CONFIG>::GetId(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	if(breakpoint) info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), breakpoint->GetId()));
+}
+
+template <typename CONFIG>
 void BreakpointWrapper<CONFIG>::GetAddress(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	if(breakpoint) info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), breakpoint->GetAddress()));
 }
 
 template <typename CONFIG>
-void BreakpointWrapper<CONFIG>::Help(std::ostream& stream)
+void BreakpointWrapper<CONFIG>::ToString(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	stream <<
-#include <unisim/service/debug/nodejs/doc/breakpoint.h>
-	;
+	if(breakpoint) args.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), unisim::util::ostream::ToString(*breakpoint).c_str()).ToLocalChecked());
 }
 
 //////////////////////////////// SubProgramBreakpointWrapper<> /////////////////////////////////
@@ -179,6 +198,7 @@ v8::Local<v8::FunctionTemplate> SubProgramBreakpointWrapper<CONFIG>::CreateFunct
 	// Set accessors
 	struct { const char *property_name; v8::AccessorNameGetterCallback accessor_getter_callback; v8::AccessorNameSetterCallback accessor_setter_callback; } accessors_config[] =
 	{
+		{ "id"        , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetId        >, 0 },
 		{ "subprogram", unisim::util::nodejs::AccessorGetterCallback<This, &This::GetSubProgram>, 0 }
 	};
 	for(auto accessor_config : accessors_config)
@@ -188,6 +208,19 @@ v8::Local<v8::FunctionTemplate> SubProgramBreakpointWrapper<CONFIG>::CreateFunct
 			accessor_config.accessor_getter_callback,
 			accessor_config.accessor_setter_callback
 		);
+	}
+	
+	// Get the prototype template
+	v8::Local<v8::Template> prototype_template = subprogram_breakpoint_function_template->PrototypeTemplate();
+	
+	// Add methods
+	struct { const char *method_name; v8::FunctionCallback callback; } methods_config[] =
+	{
+		{ "toString", &unisim::util::nodejs::FunctionCallback<This, &This::ToString> }
+	};
+	for(auto method_config : methods_config)
+	{
+		prototype_template->Set(isolate, method_config.method_name, v8::FunctionTemplate::New(isolate, method_config.callback));
 	}
 	
 	// Inherit from "DebugEvent"
@@ -211,11 +244,11 @@ void SubProgramBreakpointWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8:
 	
 	ProcessorWrapper<CONFIG> *processor_wrapper = 0;
 	unisim::util::debug::SubProgramBreakpoint<ADDRESS> *subprogram_breakpoint = 0;
-	if(args.Length() != 0)
+	v8::Local<v8::Value> arg0 = args[0];
+	if(!arg0->IsUndefined())
 	{
 		struct Synopsis { std::string str() const { return std::string(CLASS_NAME) + "(processor: Processor, subprogram: SubProgram)"; } };
 	
-		v8::Local<v8::Value> arg0 = args[0];
 		if(!arg0->IsObject() || !(processor_wrapper = ProcessorWrapper<CONFIG>::GetInstance(arg0)))
 		{
 			nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a Processor for 'processor'"));
@@ -235,6 +268,7 @@ void SubProgramBreakpointWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8:
 	SubProgramBreakpointWrapper<CONFIG> *subprogram_breakpoint_wrapper = new SubProgramBreakpointWrapper<CONFIG>(nodejs, processor_wrapper, subprogram_breakpoint);
 	
 	subprogram_breakpoint_wrapper->template BindObject<This>(args.This());
+	subprogram_breakpoint_wrapper->SetListenerArgument(processor_wrapper->ThisObject());
 	args.GetReturnValue().Set(args.This());
 }
 
@@ -257,6 +291,12 @@ unisim::util::debug::SubProgramBreakpoint<typename CONFIG::ADDRESS> *SubProgramB
 }
 
 template <typename CONFIG>
+void SubProgramBreakpointWrapper<CONFIG>::GetId(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	if(subprogram_breakpoint) info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), subprogram_breakpoint->GetId()));
+}
+
+template <typename CONFIG>
 void SubProgramBreakpointWrapper<CONFIG>::GetSubProgram(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	if(subprogram_breakpoint)
@@ -271,11 +311,9 @@ void SubProgramBreakpointWrapper<CONFIG>::GetSubProgram(v8::Local<v8::Name> prop
 }
 
 template <typename CONFIG>
-void SubProgramBreakpointWrapper<CONFIG>::Help(std::ostream& stream)
+void SubProgramBreakpointWrapper<CONFIG>::ToString(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	stream <<
-#include <unisim/service/debug/nodejs/doc/subprogram_breakpoint.h>
-	;
+	if(subprogram_breakpoint) args.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), unisim::util::ostream::ToString(*subprogram_breakpoint).c_str()).ToLocalChecked());
 }
 
 //////////////////////////////// SourceCodeBreakpointWrapper<> /////////////////////////////////
@@ -301,8 +339,9 @@ v8::Local<v8::FunctionTemplate> SourceCodeBreakpointWrapper<CONFIG>::CreateFunct
 	// Set accessors
 	struct { const char *property_name; v8::AccessorNameGetterCallback accessor_getter_callback; v8::AccessorNameSetterCallback accessor_setter_callback; } accessors_config[] =
 	{
+		{ "id"  , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetId  >, 0 },
 		{ "file", unisim::util::nodejs::AccessorGetterCallback<This, &This::GetFile>, 0 },
-		{ "loc" , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetLoc> , 0 }
+		{ "loc" , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetLoc >, 0 }
 	};
 	for(auto accessor_config : accessors_config)
 	{
@@ -313,6 +352,19 @@ v8::Local<v8::FunctionTemplate> SourceCodeBreakpointWrapper<CONFIG>::CreateFunct
 		);
 	}
 	
+	// Get the prototype template
+	v8::Local<v8::Template> prototype_template = source_code_breakpoint_function_template->PrototypeTemplate();
+	
+	// Add methods
+	struct { const char *method_name; v8::FunctionCallback callback; } methods_config[] =
+	{
+		{ "toString", &unisim::util::nodejs::FunctionCallback<This, &This::ToString> }
+	};
+	for(auto method_config : methods_config)
+	{
+		prototype_template->Set(isolate, method_config.method_name, v8::FunctionTemplate::New(isolate, method_config.callback));
+	}
+	
 	// Inherit from "DebugEvent"
 	source_code_breakpoint_function_template->Inherit(nodejs.template GetCtorFunctionTemplate<DebugEventWrapper<CONFIG> >());
 
@@ -320,7 +372,7 @@ v8::Local<v8::FunctionTemplate> SourceCodeBreakpointWrapper<CONFIG>::CreateFunct
 }
 
 // SourceCodeBreakpoint() => SourceCodeBreakpoint
-// SourceCodeBreakpoint(processor: Processor, file : string, loc : (Object|string)) => SourceCodeBreakpoint
+// SourceCodeBreakpoint(processor: Processor, loc : (Object|string), [file : string]) => SourceCodeBreakpoint
 template <typename CONFIG>
 void SourceCodeBreakpointWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -334,33 +386,37 @@ void SourceCodeBreakpointWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8:
 	
 	ProcessorWrapper<CONFIG> *processor_wrapper = 0;
 	unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = 0;
-	if(args.Length() != 0)
+	v8::Local<v8::Value> arg0 = args[0]; // processor
+	if(!arg0->IsUndefined())
 	{
-		struct Synopsis { std::string str() const { return std::string(CLASS_NAME) + "(processor: Processor, file : string, loc : (Object|string))"; } };
+		struct Synopsis { std::string str() const { return std::string(CLASS_NAME) + "(processor: Processor, loc : (Object|string), [file : string])"; } };
 		
-		v8::Local<v8::Value> arg0 = args[0]; // processor
 		if(!arg0->IsObject() || !(processor_wrapper = ProcessorWrapper<CONFIG>::GetInstance(arg0)))
 		{
 			nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a Processor for 'processor'"));
 			return;
 		}
-		v8::Local<v8::Value> arg1 = args[1]; // file
-		std::string file;
-		if(arg1->IsNullOrUndefined() || !ToString(args.GetIsolate(), arg1, file))
-		{
-			nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a string for 'file'"));
-			return;
-		}
-		v8::Local<v8::Value> arg2 = args[2]; // loc
+		v8::Local<v8::Value> arg1 = args[1]; // loc
 		
 		unisim::util::debug::SourceCodeLocation source_code_location;
-		if(!nodejs.ArgToSourceCodeLocation(arg2, Synopsis().str(), "loc", source_code_location)) return;
+		if(!nodejs.ArgToSourceCodeLocation(arg1, Synopsis().str(), "loc", source_code_location)) return;
+		std::string file;
+		v8::Local<v8::Value> arg2 = args[2]; // file
+		if(!arg2->IsUndefined())
+		{
+			if(arg2->IsNull() || !unisim::util::nodejs::ToString(args.GetIsolate(), arg2, file))
+			{
+				nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a string for 'file'"));
+				return;
+			}
+		}
 		
 		source_code_breakpoint = processor_wrapper->GetProcessor()->CreateSourceCodeBreakpoint(source_code_location, nodejs.LocateFile(file));
 	}
 	
 	SourceCodeBreakpointWrapper<CONFIG> *source_code_breakpoint_wrapper = new SourceCodeBreakpointWrapper<CONFIG>(nodejs, processor_wrapper, source_code_breakpoint);
 	source_code_breakpoint_wrapper->template BindObject<This>(args.This());
+	source_code_breakpoint_wrapper->SetListenerArgument(processor_wrapper->ThisObject());
 	args.GetReturnValue().Set(args.This());
 }
 
@@ -383,6 +439,12 @@ unisim::util::debug::SourceCodeBreakpoint<typename CONFIG::ADDRESS> *SourceCodeB
 }
 
 template <typename CONFIG>
+void SourceCodeBreakpointWrapper<CONFIG>::GetId(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	if(source_code_breakpoint) info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), source_code_breakpoint->GetId()));
+}
+
+template <typename CONFIG>
 void SourceCodeBreakpointWrapper<CONFIG>::GetFile(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	if(source_code_breakpoint) info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), source_code_breakpoint->GetFilename().c_str()).ToLocalChecked());
@@ -399,11 +461,9 @@ void SourceCodeBreakpointWrapper<CONFIG>::GetLoc(v8::Local<v8::Name> property, c
 }
 
 template <typename CONFIG>
-void SourceCodeBreakpointWrapper<CONFIG>::Help(std::ostream& stream)
+void SourceCodeBreakpointWrapper<CONFIG>::ToString(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	stream <<
-#include <unisim/service/debug/nodejs/doc/source_code_breakpoint.h>
-	;
+	if(source_code_breakpoint) args.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), unisim::util::ostream::ToString(*source_code_breakpoint).c_str()).ToLocalChecked());
 }
 
 } // end of namespace nodejs

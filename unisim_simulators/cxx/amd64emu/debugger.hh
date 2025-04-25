@@ -35,9 +35,16 @@
 #ifndef __ARM64VP_DEBUGGER_HH__
 #define __ARM64VP_DEBUGGER_HH__
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
+#if HAVE_NODEJS
+#include <unisim/service/debug/nodejs/nodejs.hh>
+#endif
 #include <unisim/util/identifier/identifier.hh>
 #include <iosfwd>
 #include <memory>
@@ -55,22 +62,46 @@ struct Debugger
     typedef uint64_t TIME_TYPE;
     static const unsigned int NUM_PROCESSORS = 1;
     /* gdb_server, inline_debugger and/or monitor */
-    static const unsigned int MAX_FRONT_ENDS = 2;
+    static const unsigned int MAX_FRONT_ENDS = 2
+#if HAVE_NODEJS
+                                               + 1
+#endif
+    ;
   };
+
+#if HAVE_NODEJS
+  struct NODEJS_CONFIG
+  {
+    typedef uint64_t ADDRESS;
+    typedef uint64_t TIME_TYPE;
+  };
+#endif
 
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebugHub;
   typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDBServer;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> InlineDebugger;
+#if HAVE_NODEJS
+  typedef unisim::service::debug::nodejs::NodeJS<NODEJS_CONFIG> NodeJS;
+#endif
 
   Debugger(char const*, unisim::kernel::Object*, Arch&, LinuxOS&);
 
   DebugHub debug_hub;
   std::unique_ptr<GDBServer> gdb_server;
   std::unique_ptr<InlineDebugger> inline_debugger;
+#if HAVE_NODEJS
+  std::unique_ptr<NodeJS> nodejs;
+#endif
   bool enable_gdb_server;
   bool enable_inline_debugger;
+#if HAVE_NODEJS
+  bool enable_nodejs;
+#endif
   unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
   unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
+#if HAVE_NODEJS
+  unisim::kernel::variable::Parameter<bool> param_enable_nodejs;
+#endif
 };
 
 #endif // __ARM64VP_LINUX_DEBUGGER_HH__

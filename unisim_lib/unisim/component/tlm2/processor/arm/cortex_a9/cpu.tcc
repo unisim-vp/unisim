@@ -363,7 +363,7 @@ CPU<CPU_IMPL>::Run()
                         << EndDebugInfo;
     }
     
-  for (;;)
+  while (not this->Killed())
   {
     if (GetExternalEvent()) {
       if (not nRESETm) {

@@ -68,6 +68,7 @@ v8::Local<v8::FunctionTemplate> ExecutableBinaryFileWrapper<CONFIG>::CreateFunct
 	// Set accessors
 	struct { const char *property_name; v8::AccessorNameGetterCallback accessor_getter_callback; v8::AccessorNameSetterCallback accessor_setter_callback; } accessors_config[] =
 	{
+		{ "id"        , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetId        >, 0                                                                    },
 		{ "file"      , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetFile      >, 0                                                                    },
 		{ "fileFormat", unisim::util::nodejs::AccessorGetterCallback<This, &This::GetFileFormat>, 0                                                                    },
 		{ "enable"    , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetEnable    >, unisim::util::nodejs::AccessorSetterCallback<This, &This::SetEnable> }
@@ -109,7 +110,7 @@ ExecutableBinaryFileWrapper<CONFIG> *ExecutableBinaryFileWrapper<CONFIG>::Wrap(N
 
 template <typename CONFIG>
 ExecutableBinaryFileWrapper<CONFIG>::ExecutableBinaryFileWrapper(NodeJS<CONFIG>& _nodejs, unisim::service::interfaces::ExecutableBinaryFile *_executable_binary_file, std::size_t size)
-	: Super(_nodejs, /* ptr */ 0, size ? size : sizeof(*this))
+	: Super(_nodejs, _executable_binary_file, size ? size : sizeof(*this))
 	, executable_binary_file(_executable_binary_file)
 {
 }
@@ -123,6 +124,12 @@ template <typename CONFIG>
 unisim::service::interfaces::ExecutableBinaryFile *ExecutableBinaryFileWrapper<CONFIG>::GetExecutableBinaryFile() const
 {
 	return executable_binary_file;
+}
+
+template <typename CONFIG>
+void ExecutableBinaryFileWrapper<CONFIG>::GetId(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	if(executable_binary_file) info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), executable_binary_file->GetId()));
 }
 
 template <typename CONFIG>
@@ -147,14 +154,6 @@ template <typename CONFIG>
 void ExecutableBinaryFileWrapper<CONFIG>::SetEnable(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
 	if(executable_binary_file) executable_binary_file->Enable(value->ToBoolean(this->GetIsolate())->Value());
-}
-
-template <typename CONFIG>
-void ExecutableBinaryFileWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/executable_binary_file.h>
-	;
 }
 
 } // end of namespace nodejs

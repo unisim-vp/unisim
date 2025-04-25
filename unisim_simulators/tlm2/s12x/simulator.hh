@@ -77,6 +77,10 @@
 
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
+#if HAVE_NODEJS
+#include <unisim/service/debug/nodejs/nodejs.hh>
+#endif
+
 #include <xml_atd_pwm_stub.hh>
 #include <can_stub.hh>
 #include <tle8264_2e.hh>
@@ -357,10 +361,23 @@ private:
 		typedef sc_core::sc_time TIME_TYPE;
 		static const unsigned int NUM_PROCESSORS = 1;
 		/* gdb_server, inline_debugger, pim_server, monitor, and profiler */
-		static const unsigned int MAX_FRONT_ENDS = 5;
+		static const unsigned int MAX_FRONT_ENDS = 5
+#if HAVE_NODEJS
+		                                           + 1
+#endif
+		;
 	};
 	typedef typename unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
-       
+
+#if HAVE_NODEJS
+	struct NODEJS_CONFIG
+	{
+		typedef uint32_t ADDRESS;
+		typedef sc_core::sc_time TIME_TYPE;
+	};
+	typedef typename unisim::service::debug::nodejs::NodeJS<NODEJS_CONFIG> NODEJS;
+#endif
+
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<CPU_ADDRESS_TYPE, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
 	typedef unisim::service::tee::registers::RegistersTee<32> RegistersTee;
@@ -439,6 +456,9 @@ private:
 	PIMServer<CPU_ADDRESS_TYPE>*      pim_server;      //< PIM server
 	InlineDebugger<CPU_ADDRESS_TYPE>* inline_debugger; //< Inline debugger
 	MONITOR*                          monitor;         //< Monitoring tool: ARTiMon or EACSEL
+#if HAVE_NODEJS
+	NODEJS*                           nodejs;          //< Node.js
+#endif
 
 	// - telnet
 	TELNET* sci_telnet;
@@ -482,12 +502,18 @@ private:
 	bool enable_inline_debugger;
 	bool enable_monitor;
 	bool enable_profiler;
+#if HAVE_NODEJS
+	bool enable_nodejs;
+#endif
 
 	Parameter<bool> param_enable_pim_server;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
 	Parameter<bool> param_enable_monitor;
 	Parameter<bool> param_enable_profiler;
+#if HAVE_NODEJS
+	Parameter<bool> param_enable_nodejs;
+#endif
 
 	string endian;
 	Parameter<string> *param_endian;

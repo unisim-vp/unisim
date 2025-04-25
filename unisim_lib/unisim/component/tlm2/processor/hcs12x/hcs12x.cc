@@ -241,7 +241,7 @@ HCS12X ::
 Run() {
 	uint8_t opCycles = 0;
 
-	while(1) {
+	while(!Killed()) {
 
 
 		if(debug_enabled && verbose_tlm_run_thread)

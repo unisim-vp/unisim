@@ -35,6 +35,10 @@
 #ifndef SIMULATOR_HH_
 #define SIMULATOR_HH_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/kernel/logger/console/console_printer.hh>
@@ -55,6 +59,9 @@
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/monitor/monitor.hh>
 #include <unisim/service/debug/profiler/profiler.hh>
+#if HAVE_NODEJS
+#include <unisim/service/debug/nodejs/nodejs.hh>
+#endif
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/instrumenter/instrumenter.hh>
 #include <unisim/service/analysis/cfg/cfg.hh>
@@ -65,10 +72,6 @@
 #include <string>
 #include <getopt.h>
 #include <cstdlib>
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #ifdef WIN32
 
@@ -118,8 +121,20 @@ class Simulator
     typedef sc_core::sc_time TIME_TYPE;
     static const unsigned int NUM_PROCESSORS = 1;
     /* gdb_server, inline_debugger and/or monitor */
-    static const unsigned int MAX_FRONT_ENDS = 4;
+    static const unsigned int MAX_FRONT_ENDS = 4
+#if HAVE_NODEJS
+                                               + 1
+#endif
+    ;
   };
+
+#if HAVE_NODEJS
+  struct NODEJS_CONFIG
+  {
+    typedef uint32_t ADDRESS;
+    typedef sc_core::sc_time TIME_TYPE;
+  };
+#endif
 
   struct CFG_BUILDER_CONFIG
   {
@@ -136,6 +151,9 @@ class Simulator
   typedef unisim::service::analysis::cfg::Builder<CFG_BUILDER_CONFIG> CFG_BUILDER;
   typedef unisim::service::time::sc_time::ScTime                      ScTime;
   typedef unisim::service::time::host_time::HostTime                  HostTime;
+#if HAVE_NODEJS
+  typedef unisim::service::debug::nodejs::NodeJS<NODEJS_CONFIG>       NODEJS;
+#endif
 
   CPU                   cpu;
   MEMORY                memory;
@@ -150,6 +168,9 @@ class Simulator
   INLINE_DEBUGGER*         inline_debugger;
   MONITOR*                 monitor;
   PROFILER*                profiler;
+#if HAVE_NODEJS
+  NODEJS*                  nodejs;
+#endif
   HTTP_SERVER*             http_server;
   INSTRUMENTER*            instrumenter;
   CFG_BUILDER*             cfg_builder;
@@ -167,7 +188,10 @@ class Simulator
   unisim::kernel::variable::Parameter<bool> param_enable_profiler;
   bool                                     enable_cfg_builder;
   unisim::kernel::variable::Parameter<bool> param_enable_cfg_builder;
-
+#if HAVE_NODEJS
+  bool                                     enable_nodejs;
+  unisim::kernel::variable::Parameter<bool> param_enable_nodejs;
+#endif
   static bool enable_monitor;
 };
 

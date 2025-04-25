@@ -43,6 +43,7 @@ namespace debug {
 namespace nodejs {
 
 using unisim::util::nodejs::ToInt;
+using unisim::util::nodejs::MakeInteger;
 
 ///////////////////////////////////////////////////////////////////////////////
 //                                Definitions                                //
@@ -131,7 +132,14 @@ void PointerWrapper<CONFIG>::Set(const v8::FunctionCallbackInfo<v8::Value>& args
 		return;
 	}
 	
-	pointer_data_object = addr;
+	try
+	{
+		pointer_data_object = addr;
+	}
+	catch(typename unisim::util::debug::DataObject<ADDRESS>::Error& data_object_error)
+	{
+		this->Throw(this->Error(data_object_error.what()));
+	}
 }
 
 // Pointer.get() => Number
@@ -139,33 +147,35 @@ template <typename CONFIG>
 void PointerWrapper<CONFIG>::Get(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::HandleScope handle_scope(args.GetIsolate());
-	ADDRESS addr = pointer_data_object;
-	v8::Local<v8::Value> address;
-	if(std::numeric_limits<ADDRESS>::max() > std::numeric_limits<uint32_t>::max())
+	ADDRESS addr = 0;
+	try
 	{
-		address = v8::BigInt::NewFromUnsigned(this->GetIsolate(), addr);
+		addr = pointer_data_object;
 	}
-	else
+	catch(typename unisim::util::debug::DataObject<ADDRESS>::Error& data_object_error)
 	{
-		address = v8::Integer::NewFromUnsigned(this->GetIsolate(), uint32_t(addr));
+		this->Throw(this->Error(data_object_error.what()));
+		return;
 	}
-	args.GetReturnValue().Set(address);
+	args.GetReturnValue().Set(MakeInteger(this->GetIsolate(), addr));
 }
 
 // Pointer.deref() => DataObject
 template <typename CONFIG>
 void PointerWrapper<CONFIG>::Deref(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	DataObjectWrapper<CONFIG> *target_object_wrapper = new DataObjectWrapper<CONFIG>(this->nodejs, this->processor_wrapper, *pointer_data_object);
+	unisim::util::debug::DataObjectRef<ADDRESS> derefenced_data_object;
+	try
+	{
+		derefenced_data_object = *pointer_data_object;
+	}
+	catch(typename unisim::util::debug::DataObject<ADDRESS>::Error& data_object_error)
+	{
+		this->Throw(this->Error(data_object_error.what()));
+		return;
+	}
+	DataObjectWrapper<CONFIG> *target_object_wrapper = new DataObjectWrapper<CONFIG>(this->nodejs, this->processor_wrapper, derefenced_data_object);
 	args.GetReturnValue().Set(target_object_wrapper->MakeObject());
-}
-
-template <typename CONFIG>
-void PointerWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/pointer.h>
-	;
 }
 
 } // end of namespace nodejs

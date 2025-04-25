@@ -61,6 +61,7 @@
 #include <unisim/service/debug/nodejs/stub.tcc>
 #include <unisim/service/debug/nodejs/processor.tcc>
 #include <unisim/service/debug/nodejs/register.tcc>
+#include <unisim/service/debug/nodejs/field.tcc>
 #include <unisim/service/debug/nodejs/executable_binary_file.tcc>
 #include <unisim/service/debug/nodejs/stack_frame_info.tcc>
 #include <unisim/service/debug/nodejs/debug_symbol.tcc>
@@ -73,6 +74,13 @@ namespace unisim {
 namespace service {
 namespace debug {
 namespace nodejs {
+
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 using unisim::util::nodejs::ToString;
 using unisim::util::ostream::ToString;
@@ -99,9 +107,12 @@ template <typename CONFIG>
 std::mutex NodeJS<CONFIG>::rl_mutex;
 
 template <typename CONFIG>
+NodeJS<CONFIG> *NodeJS<CONFIG>::rl_nodejs = 0;
+
+template <typename CONFIG>
 NodeJS<CONFIG>::NodeJS(const char *_name, unisim::kernel::Object *_parent)
 	: unisim::kernel::Object(_name, _parent, "this service implements a debugging front-end for the Node.js JavaScript runtime environment")
-	, unisim::util::nodejs::NodeJS(unisim::kernel::Simulator::Instance()->GetExecutablePath())
+	, unisim::util::nodejs::NodeJS()
 	, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
@@ -119,50 +130,49 @@ NodeJS<CONFIG>::NodeJS(const char *_name, unisim::kernel::Object *_parent)
 	, subprogram_lookup_import("subprogram-lookup-import", this)
 	, debug_processors_import("processors-import", this)
 	, logger(*this)
-	, shell(false)
+	, interactive(true)
+	, builtin_repl(false)
 	, stop_simulation_at_exit(false)
+	, memory_atom_size(1)
 	, program_counter_name("pc")
-	, arguments_length(0)
-	, param_arguments()
+	, filename("unisim/service/debug/nodejs/dbg_repl.js")
 	, param_verbose("verbose", this, this->verbose, "Enable/Disable verbosity")
 	, param_debug("debug", this, this->debug, "Enable/Disable debug (intended for developper)")
-	, param_shell("shell", this, this->shell, "Enable/Disable interactive shell")
+	, param_interactive("interactive", this, this->interactive, "Enable/Disable interactive (blocking) mode")
 	, param_stop_simulation_at_exit("stop-simulation-at-exit", this, stop_simulation_at_exit, "Enable/Disable stopping simulation when Javascript script exits")
+	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
 	, param_program_counter_name("program-counter-name", this, program_counter_name, "name of program counter")
 	, param_filename("filename", this, this->filename, "Filename of Javascript script (.js) to run")
-	, param_arguments_length("arguments-length", this, this->arguments_length, "Number of command line arguments to pass to Javascript script")
 	, std_output_stream(&std::cout)
 	, std_error_stream(&std::cerr)
 	, prompt(std::string(_name) + "> ")
 	, trap(false)
 	, cont(false)
+	, interrupted(false)
+	, pending_promise(false)
 	, cont_exec_resolvers()
 {
+	param_memory_atom_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	
+	Super::SetExecutablePath(unisim::kernel::Simulator::Instance()->GetExecutablePath());
+	
+	std::vector<std::string> args;
+	unisim::kernel::VariableBase *param_cmd_args = unisim::kernel::Simulator::Instance()->FindVariable("cmd-args");
+	if(param_cmd_args)
+	{
+		unsigned cmd_args_length = param_cmd_args->GetLength();
+		for(unsigned i = 0; i < cmd_args_length; ++i) args.push_back((const std::string&)(*param_cmd_args)[i]);
+	}
+	Super::SetArguments(args);
+	
 	this->SetDebugInfoStream(logger.DebugInfoStream());
 	this->SetDebugWarningStream(logger.DebugWarningStream());
 	this->SetDebugErrorStream(logger.DebugErrorStream());
-	
-	param_arguments_length.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
-	
-	this->arguments.resize(arguments_length);
-	for(unsigned int i = 0; i < arguments_length; ++i)
-	{
-		std::stringstream param_argument_name, param_argument_desc;
-		param_argument_name << "arguments[" << i << "]";
-		param_argument_desc << "Javascript script command line argument #" << i;
-		ParamArgument *param_argument = new ParamArgument(param_argument_name.str().c_str(), this, this->arguments[i], param_argument_desc.str().c_str());
-		param_arguments.push_back(param_argument);
-	}
 }
 
 template <typename CONFIG>
 NodeJS<CONFIG>::~NodeJS()
 {
-	for(ParamArguments::iterator it = param_arguments.begin(); it != param_arguments.end(); ++it)
-	{
-		ParamArgument *param_argument = *it;
-		delete param_argument;
-	}
 }
 
 template <typename CONFIG>
@@ -174,11 +184,12 @@ void NodeJS<CONFIG>::Trap()
 template <typename CONFIG>
 void NodeJS<CONFIG>::Interrupt()
 {
-	if(shell)
+	if(builtin_repl)
 	{
 		Trap();
 	}
-		
+	interrupted = true;
+	
 	if(debug_yielding_request_import)
 	{
 		debug_yielding_request_import->DebugYieldRequest();
@@ -186,14 +197,35 @@ void NodeJS<CONFIG>::Interrupt()
 }
 
 template <typename CONFIG>
+std::string NodeJS<CONFIG>::Str(const std::string& s)
+{
+	std::string ret(1, '"');
+	for(std::size_t i = 0; i < s.length(); ++i)
+	{
+		char ch = s[i];
+		if(ch == '"') ret += '\\';
+		ret += ch;
+	}
+	ret += '"';
+	return ret;
+}
+
+template <typename CONFIG>
+std::string NodeJS<CONFIG>::StrOrUndefined(const std::string& s)
+{
+	return s.empty() ? std::string("undefined") : Str(s);
+}
+
+template <typename CONFIG>
 bool NodeJS<CONFIG>::GetCommand(std::string& cmd)
 {
 	std::string line;
 	int line_count = 0;
+	bool first = true;
 	
 	while(!Killed())
 	{
-		if(!GetLine(line)) return !Killed() && (line_count != 0);
+		if(!GetLine(line, first ? prompt.c_str() : "...")) return !Killed() && (line_count != 0);
 		if(!line_count++) cmd.clear();
 		if((line.length() == 0) || (line.back() != '\\'))
 		{
@@ -205,38 +237,45 @@ bool NodeJS<CONFIG>::GetCommand(std::string& cmd)
 		}
 		cmd.append(line, 0, line.length() - 1);
 		line.clear();
+		first = false;
 	}
 	
 	return false;
 }
 
 template <typename CONFIG>
-bool NodeJS<CONFIG>::GetLine(std::string& line)
+bool NodeJS<CONFIG>::GetLine(std::string& line, const char *prompt)
 {
 #if defined(HAVE_LIBEDIT)
 	struct ReadLineScope
 	{
 		rl_completion_func_t *old_rl_attempted_completion_function;
 		const char * old_rl_basic_word_break_characters;
+		int old_rl_completion_append_character;
 		
-		ReadLineScope()
+		ReadLineScope(NodeJS<CONFIG> *nodejs)
 			: old_rl_attempted_completion_function(rl_attempted_completion_function)
 			, old_rl_basic_word_break_characters(rl_basic_word_break_characters)
+			, old_rl_completion_append_character(rl_completion_append_character)
 		{
-			rl_attempted_completion_function = (rl_completion_func_t *) &NodeJS<CONFIG>::Completion;
-			rl_basic_word_break_characters = " \t\n,.()[]:{}+-/*%&|;?\"'<=>";
+			rl_attempted_completion_function = (rl_completion_func_t *) &NodeJS<CONFIG>::StaticCompletion;
+			rl_basic_word_break_characters = " ";
+			rl_completion_append_character = 0;
+			rl_nodejs = nodejs;
 		}
 		
 		~ReadLineScope()
 		{
-			rl_basic_word_break_characters = old_rl_basic_word_break_characters;
 			rl_attempted_completion_function = old_rl_attempted_completion_function;
+			rl_basic_word_break_characters = old_rl_basic_word_break_characters;
+			rl_completion_append_character = old_rl_completion_append_character;
+			rl_nodejs = 0;
 		}
 	};
 	
 	std::unique_lock<std::mutex> lock(rl_mutex);
 	{
-		ReadLineScope rl_scope;
+		ReadLineScope rl_scope(this);
 		
 		char *line_read;
 		do
@@ -245,7 +284,7 @@ bool NodeJS<CONFIG>::GetLine(std::string& line)
 			{
 				(*std_output_stream) << prompt;
 			}
-			line_read = readline(prompt.c_str());
+			line_read = readline(prompt);
 			if(Killed())
 			{
 				return false;
@@ -286,226 +325,52 @@ bool NodeJS<CONFIG>::GetLine(std::string& line)
 template <typename CONFIG>
 char **NodeJS<CONFIG>::Completion(char *text, int start, int end)
 {
-	rl_compentry_func_t *generator = 0;
-	do
+	v8::Locker locker(GetIsolate());
+	v8::Isolate::Scope isolate_scope(GetIsolate());
+	v8::HandleScope handle_scope(isolate);
+	v8::Local<v8::Context> context = this->GetContext();
+	v8::Context::Scope context_scope(context);
+
+	v8::Local<v8::Value> completions_value = this->Execute(std::string("Dbg.instance.complete(") + Str(rl_line_buffer) + "," + ToString(start) + "," + ToString(end) + ")", "<completer>");
+	if(!completions_value.IsEmpty() && completions_value->IsArray())
 	{
-		if(start)
+		v8::Local<v8::Array> completions_array = completions_value.As<v8::Array>();
+		uint32_t length = completions_array->Length();
+		if(length)
 		{
-			std::string str(&rl_line_buffer[0], start);
-			if(std::regex_match(str, std::regex("^help +$")))
+			char **rl_completions = (char **) malloc((length + 2) * sizeof(char *));
+			char **rl_completion = rl_completions;
+			(*rl_completion++) = 0;
+			for(uint32_t idx = 0; idx < length; ++idx)
 			{
-				generator = (rl_compentry_func_t *) &NodeJS<CONFIG>::HelpCompletionGenerator;
-				break;
+				v8::Local<v8::String> completion_string = completions_array->Get(context, idx).ToLocalChecked().As<v8::String>();
+				std::string completion;
+				if(ToString(GetIsolate(), completion_string, completion))
+				{
+					(*rl_completion++) = strdup(completion.c_str());
+					if(length == 1) (*rl_completions) = strdup(completion.c_str());
+				}
+				else
+				{
+					(*rl_completion++) = strdup("");
+					if(length == 1) (*rl_completions) = strdup("");
+				}
 			}
-			if(std::regex_match(str, std::regex("^.*new +$")))
-			{
-				generator = (rl_compentry_func_t *) &NodeJS<CONFIG>::ConstructorCompletionGenerator;
-				break;
-			}
-			if(std::regex_match(str, std::regex("^.*processors\\[[0-9]+\\] *\\. *$")))
-			{
-				generator = (rl_compentry_func_t *) &NodeJS<CONFIG>::ProcessorCompletionGenerator;
-				break;
-			}
-			if(std::regex_match(str, std::regex("^.*processors\\[[0-9]+\\] *\\. *registers *\\.[a-zA-Z_][a-zA-Z0-9_]* *\\. *$")))
-			{
-				generator = (rl_compentry_func_t *) &NodeJS<CONFIG>::RegisterCompletionGenerator;
-				break;
-			}
-		}
-		
-		generator = (rl_compentry_func_t *) &NodeJS<CONFIG>::GlobalCompletionGenerator;
-	}
-	while(0);
-	
-	rl_attempted_completion_over = 1;
-	rl_completion_append_character = 0;
-	return rl_completion_matches(text, generator);
-}
-
-template <typename CONFIG>
-char *NodeJS<CONFIG>::CompletionGenerator(char *text, int state, Commands& commands)
-{
-	static Commands::size_type index;
-	static size_t len;
-	
-	if(!state)
-	{
-		index = 0;
-		len = strlen(text);
-	}
-
-	while(index < commands.size())
-	{
-		const char *cmd = commands[index].c_str();
-		index++;
-
-		if(strncmp(cmd, text, len) == 0)
-		{
-			return strdup(cmd);
+			(*rl_completion) = 0;
+			if(!*rl_completions) (*rl_completions) = strdup("");
+			
+			return rl_completions;
 		}
 	}
-
-	return (char *) 0;
-}
-
-template <typename CONFIG>
-char *NodeJS<CONFIG>::GlobalCompletionGenerator(char *text, int state)
-{
-	static Commands commands =
-	{
-		"continueExecution()", "quit()", "loadDebugInfo()", "getExecutableBinaryFiles()",
-		"getSymbols()", "findSymbol(", "getStatements()", "findStatement(", "findStatements(",
-		"findSubProgram(", "processors[0]", "console.log(", "help", "new"
-	};
-	return CompletionGenerator(text, state, commands);
-}
-
-template <typename CONFIG>
-char *NodeJS<CONFIG>::HelpCompletionGenerator(char *text, int state)
-{
-	static Commands commands =
-	{
-		SourceCodeLocationWrapper<CONFIG>  ::CLASS_NAME, DebugEventWrapper<CONFIG>          ::CLASS_NAME,
-		BreakpointWrapper<CONFIG>          ::CLASS_NAME, SourceCodeBreakpointWrapper<CONFIG>::CLASS_NAME,
-		SubProgramBreakpointWrapper<CONFIG>::CLASS_NAME, WatchpointWrapper<CONFIG>          ::CLASS_NAME,
-		DataObjectWrapper<CONFIG>          ::CLASS_NAME, PointerWrapper<CONFIG>             ::CLASS_NAME,
-		HookWrapper<CONFIG>                ::CLASS_NAME, AddressHookWrapper<CONFIG>         ::CLASS_NAME,
-		SourceCodeHookWrapper<CONFIG>      ::CLASS_NAME, SubProgramHookWrapper<CONFIG>      ::CLASS_NAME,
-		StubWrapper<CONFIG>                ::CLASS_NAME, ProcessorWrapper<CONFIG>           ::CLASS_NAME,
-		RegisterWrapper<CONFIG>            ::CLASS_NAME, ExecutableBinaryFileWrapper<CONFIG>::CLASS_NAME,
-		StackFrameInfoWrapper<CONFIG>      ::CLASS_NAME, DebugSymbolWrapper<CONFIG>         ::CLASS_NAME,
-		StatementWrapper<CONFIG>           ::CLASS_NAME, SubProgramWrapper<CONFIG>          ::CLASS_NAME,
-		TypeWrapper<CONFIG>                ::CLASS_NAME, NamedTypeWrapper<CONFIG>           ::CLASS_NAME,
-		BaseTypeWrapper<CONFIG>            ::CLASS_NAME, IntegerTypeWrapper<CONFIG>         ::CLASS_NAME,
-		CharTypeWrapper<CONFIG>            ::CLASS_NAME, FloatingPointTypeWrapper<CONFIG>   ::CLASS_NAME,
-		BooleanTypeWrapper<CONFIG>         ::CLASS_NAME, MemberWrapper<CONFIG>              ::CLASS_NAME,
-		CompositeTypeWrapper<CONFIG>       ::CLASS_NAME, StructureTypeWrapper<CONFIG>       ::CLASS_NAME,
-		UnionTypeWrapper<CONFIG>           ::CLASS_NAME, ClassTypeWrapper<CONFIG>           ::CLASS_NAME,
-		InterfaceTypeWrapper<CONFIG>       ::CLASS_NAME, ArrayTypeWrapper<CONFIG>           ::CLASS_NAME,
-		PointerTypeWrapper<CONFIG>         ::CLASS_NAME, TypedefWrapper<CONFIG>             ::CLASS_NAME,
-		FormalParameterWrapper<CONFIG>     ::CLASS_NAME, FunctionTypeWrapper<CONFIG>        ::CLASS_NAME,
-		ConstTypeWrapper<CONFIG>           ::CLASS_NAME, EnumeratorWrapper<CONFIG>          ::CLASS_NAME,
-		EnumTypeWrapper<CONFIG>            ::CLASS_NAME, UnspecifiedTypeWrapper<CONFIG>     ::CLASS_NAME,
-		VolatileTypeWrapper<CONFIG>        ::CLASS_NAME,
-		"continueExecution", "quit", "loadDebugInfo", "getExecutableBinaryFiles", "getSymbols",
-		"findSymbol", "getStatements", "findStatement", "findStatements", "findSubProgram", "processors"
-	};
-	return CompletionGenerator(text, state, commands);
-}
-
-template <typename CONFIG>
-char *NodeJS<CONFIG>::ConstructorCompletionGenerator(char *text, int state)
-{
-	static Commands commands =
-	{
-		std::string(SourceCodeLocationWrapper<CONFIG>  ::CLASS_NAME) + "(",
-		std::string(BreakpointWrapper<CONFIG>          ::CLASS_NAME) + "(",
-		std::string(SourceCodeBreakpointWrapper<CONFIG>::CLASS_NAME) + "(",
-		std::string(SubProgramBreakpointWrapper<CONFIG>::CLASS_NAME) + "(",
-		std::string(WatchpointWrapper<CONFIG>          ::CLASS_NAME) + "(",
-		std::string(DataObjectWrapper<CONFIG>          ::CLASS_NAME) + "(",
-		std::string(AddressHookWrapper<CONFIG>         ::CLASS_NAME) + "(",
-		std::string(SourceCodeHookWrapper<CONFIG>      ::CLASS_NAME) + "(",
-		std::string(SubProgramHookWrapper<CONFIG>      ::CLASS_NAME) + "(",
-		std::string(StubWrapper<CONFIG>                ::CLASS_NAME) + "(",
-	};
-	return CompletionGenerator(text, state, commands);
-}
-
-template <typename CONFIG>
-char *NodeJS<CONFIG>::ProcessorCompletionGenerator(char *text, int state)
-{
-	static Commands commands =
-	{
-		"stepInstruction()", "nextInstruction()", "step()", "stepInto()", "next()", "stepOver()",
-		"finish()", "stepOut()", "returnFromFunction()", "disasm(", "readMemory(", "writeMemory(",
-		"getStackFrameInfos()", "selectStackFrame(", "getTime()", "getDataObjectNames()", "registers."
-	};
-	return CompletionGenerator(text, state, commands);
-}
-
-template <typename CONFIG>
-char *NodeJS<CONFIG>::RegisterCompletionGenerator(char *text, int state)
-{
-	static Commands commands = { "get()", "set()", "name", "description", "size" };
-	return CompletionGenerator(text, state, commands);
-}
-
-template <typename CONFIG>
-void NodeJS<CONFIG>::Help(std::ostream& stream, const std::string& section)
-{
-	if(section.empty())
-	{
-		stream <<
-#include <unisim/service/debug/nodejs/doc/index.h>
-		;
-		return;
-	}
 	
-	if((section == "continueExecution"       ) ||
-	   (section == "quit"                    ) ||
-	   (section == "loadDebugInfo"           ) ||
-	   (section == "getExecutableBinaryFiles") ||
-	   (section == "getSymbols"              ) ||
-	   (section == "findSymbol"              ) ||
-	   (section == "getStatements"           ) ||
-	   (section == "findStatement"           ) ||
-	   (section == "findStatements"          ) ||
-	   (section == "findSubProgram"          ) ||
-	   (section == "processors"              ))
-	{
-		stream <<
-#include <unisim/service/debug/nodejs/doc/global.h>
-		;
-		return;
-	}
-	
-	if(section == SourceCodeLocationWrapper<CONFIG>  ::CLASS_NAME) { SourceCodeLocationWrapper<CONFIG>  ::Help(stream); return; }
-	if(section == DebugEventWrapper<CONFIG>          ::CLASS_NAME) { DebugEventWrapper<CONFIG>          ::Help(stream); return; }
-	if(section == BreakpointWrapper<CONFIG>          ::CLASS_NAME) { BreakpointWrapper<CONFIG>          ::Help(stream); return; }
-	if(section == SourceCodeBreakpointWrapper<CONFIG>::CLASS_NAME) { SourceCodeBreakpointWrapper<CONFIG>::Help(stream); return; }
-	if(section == SubProgramBreakpointWrapper<CONFIG>::CLASS_NAME) { SubProgramBreakpointWrapper<CONFIG>::Help(stream); return; }
-	if(section == WatchpointWrapper<CONFIG>          ::CLASS_NAME) { WatchpointWrapper<CONFIG>          ::Help(stream); return; }
-	if(section == DataObjectWrapper<CONFIG>          ::CLASS_NAME) { DataObjectWrapper<CONFIG>          ::Help(stream); return; }
-	if(section == PointerWrapper<CONFIG>             ::CLASS_NAME) { PointerWrapper<CONFIG>             ::Help(stream); return; }
-	if(section == HookWrapper<CONFIG>                ::CLASS_NAME) { HookWrapper<CONFIG>                ::Help(stream); return; }
-	if(section == AddressHookWrapper<CONFIG>         ::CLASS_NAME) { AddressHookWrapper<CONFIG>         ::Help(stream); return; }
-	if(section == SourceCodeHookWrapper<CONFIG>      ::CLASS_NAME) { SourceCodeHookWrapper<CONFIG>      ::Help(stream); return; }
-	if(section == SubProgramHookWrapper<CONFIG>      ::CLASS_NAME) { SubProgramHookWrapper<CONFIG>      ::Help(stream); return; }
-	if(section == StubWrapper<CONFIG>                ::CLASS_NAME) { StubWrapper<CONFIG>                ::Help(stream); return; }
-	if(section == ProcessorWrapper<CONFIG>           ::CLASS_NAME) { ProcessorWrapper<CONFIG>           ::Help(stream); return; }
-	if(section == RegisterWrapper<CONFIG>            ::CLASS_NAME) { RegisterWrapper<CONFIG>            ::Help(stream); return; }
-	if(section == ExecutableBinaryFileWrapper<CONFIG>::CLASS_NAME) { ExecutableBinaryFileWrapper<CONFIG>::Help(stream); return; }
-	if(section == StackFrameInfoWrapper<CONFIG>      ::CLASS_NAME) { StackFrameInfoWrapper<CONFIG>      ::Help(stream); return; }
-	if(section == DebugSymbolWrapper<CONFIG>         ::CLASS_NAME) { DebugSymbolWrapper<CONFIG>         ::Help(stream); return; }
-	if(section == StatementWrapper<CONFIG>           ::CLASS_NAME) { StatementWrapper<CONFIG>           ::Help(stream); return; }
-	if(section == SubProgramWrapper<CONFIG>          ::CLASS_NAME) { SubProgramWrapper<CONFIG>          ::Help(stream); return; }
-	if(section == TypeWrapper<CONFIG>                ::CLASS_NAME) { TypeWrapper<CONFIG>                ::Help(stream); return; }
-	if(section == NamedTypeWrapper<CONFIG>           ::CLASS_NAME) { NamedTypeWrapper<CONFIG>           ::Help(stream); return; }
-	if(section == BaseTypeWrapper<CONFIG>            ::CLASS_NAME) { BaseTypeWrapper<CONFIG>            ::Help(stream); return; }
-	if(section == IntegerTypeWrapper<CONFIG>         ::CLASS_NAME) { IntegerTypeWrapper<CONFIG>         ::Help(stream); return; }
-	if(section == CharTypeWrapper<CONFIG>            ::CLASS_NAME) { CharTypeWrapper<CONFIG>            ::Help(stream); return; }
-	if(section == FloatingPointTypeWrapper<CONFIG>   ::CLASS_NAME) { FloatingPointTypeWrapper<CONFIG>   ::Help(stream); return; }
-	if(section == BooleanTypeWrapper<CONFIG>         ::CLASS_NAME) { BooleanTypeWrapper<CONFIG>         ::Help(stream); return; }
-	if(section == MemberWrapper<CONFIG>              ::CLASS_NAME) { MemberWrapper<CONFIG>              ::Help(stream); return; }
-	if(section == CompositeTypeWrapper<CONFIG>       ::CLASS_NAME) { CompositeTypeWrapper<CONFIG>       ::Help(stream); return; }
-	if(section == StructureTypeWrapper<CONFIG>       ::CLASS_NAME) { StructureTypeWrapper<CONFIG>       ::Help(stream); return; }
-	if(section == UnionTypeWrapper<CONFIG>           ::CLASS_NAME) { UnionTypeWrapper<CONFIG>           ::Help(stream); return; }
-	if(section == ClassTypeWrapper<CONFIG>           ::CLASS_NAME) { ClassTypeWrapper<CONFIG>           ::Help(stream); return; }
-	if(section == InterfaceTypeWrapper<CONFIG>       ::CLASS_NAME) { InterfaceTypeWrapper<CONFIG>       ::Help(stream); return; }
-	if(section == ArrayTypeWrapper<CONFIG>           ::CLASS_NAME) { ArrayTypeWrapper<CONFIG>           ::Help(stream); return; }
-	if(section == PointerTypeWrapper<CONFIG>         ::CLASS_NAME) { PointerTypeWrapper<CONFIG>         ::Help(stream); return; }
-	if(section == TypedefWrapper<CONFIG>             ::CLASS_NAME) { TypedefWrapper<CONFIG>             ::Help(stream); return; }
-	if(section == FormalParameterWrapper<CONFIG>     ::CLASS_NAME) { FormalParameterWrapper<CONFIG>     ::Help(stream); return; }
-	if(section == FunctionTypeWrapper<CONFIG>        ::CLASS_NAME) { FunctionTypeWrapper<CONFIG>        ::Help(stream); return; }
-	if(section == ConstTypeWrapper<CONFIG>           ::CLASS_NAME) { ConstTypeWrapper<CONFIG>           ::Help(stream); return; }
-	if(section == EnumeratorWrapper<CONFIG>          ::CLASS_NAME) { EnumeratorWrapper<CONFIG>          ::Help(stream); return; }
-	if(section == EnumTypeWrapper<CONFIG>            ::CLASS_NAME) { EnumTypeWrapper<CONFIG>            ::Help(stream); return; }
-	if(section == UnspecifiedTypeWrapper<CONFIG>     ::CLASS_NAME) { UnspecifiedTypeWrapper<CONFIG>     ::Help(stream); return; }
-	if(section == VolatileTypeWrapper<CONFIG>        ::CLASS_NAME) { VolatileTypeWrapper<CONFIG>        ::Help(stream); return; }
-	
-	stream << "No help available in section " << section << std::endl << std::endl;
+	return 0;
+}
+
+template <typename CONFIG>
+char **NodeJS<CONFIG>::StaticCompletion(char *text, int start, int end)
+{
+	rl_attempted_completion_over = 1; // disable default filename completion
+	return rl_nodejs->Completion(text, start, end);
 }
 
 template <typename CONFIG>
@@ -537,93 +402,103 @@ void NodeJS<CONFIG>::DebugYield()
 {
 	if(Killed()) return;
 	
-	this->YieldToNodeJS();
-	
-	if(likely(!shell || !trap))
+	if(likely(!interactive))
 	{
+		this->YieldToNodeJS();
 		return;
 	}
 	
-	// REPL
-	do
+	if(unlikely(interrupted))
 	{
-		if(Killed()) return;
+		v8::Locker locker(GetIsolate());
+		v8::Isolate::Scope isolate_scope(GetIsolate());
+		v8::HandleScope handle_scope(isolate);
+		v8::Local<v8::Context> context = this->GetContext();
+		v8::Context::Scope context_scope(context);
+		ResolveContinue(v8::Undefined(this->GetIsolate()));
+		interrupted = false;
+	}
+	
+	if(unlikely(builtin_repl))
+	{
+		this->YieldToNodeJS();
 		
-		std::string cmd;
-		if(!GetCommand(cmd))
+		if(likely(!trap))
 		{
-			this->Stop(0);
 			return;
 		}
 		
-		if(cmd == "help")
+		// REPL
+		do
 		{
-			Help(std::cout);
-			continue;
-		}
-		
-		std::smatch m;
-		if(std::regex_match(cmd, m, std::regex("^help +(.*)$")) && (m.size() >= 2))
-		{
-			Help(std::cout, m.str(1));
-			continue;
-		}
-		
-		trap = false;
-		cont = false;
-		{
-			v8::Locker locker(GetIsolate());
-			v8::Isolate::Scope isolate_scope(GetIsolate());
-			v8::HandleScope handle_scope(isolate);
-			v8::Local<v8::Context> context = this->GetContext();
-			v8::Context::Scope context_scope(context);
-
-			v8::Local<v8::Value> result = this->Execute(cmd, "<shell>");
-			if(!result.IsEmpty())
+			if(!pending_promise)
 			{
-				if(result->IsPromise())
+				std::string cmd;
+				if(!GetCommand(cmd))
 				{
-					v8::Local<v8::Promise> promise = result.As<v8::Promise>();
-					if(promise->State() == v8::Promise::kPending)
-					{
-						(*std_output_stream) << "Pending promise" << std::endl;
-						v8::Local<v8::Function> resolve = CreateFunction<NodeJS<CONFIG>, &NodeJS<CONFIG>::Resolve>();
-						v8::Local<v8::Function> reject = CreateFunction<NodeJS<CONFIG>, &NodeJS<CONFIG>::Reject>();
-						promise = promise->Then(context, resolve, reject).ToLocalChecked();
-						result.Clear();
-					}
-					else
-					{
-						result = promise->Result();
-						if(promise->State() == v8::Promise::kFulfilled)
-						{
-							(*std_output_stream) << "Fullfilled promise: ";
-						}
-						else // if(promise->State() == v8::Promise::kRejected)
-						{
-							(*std_output_stream) << "Rejected promise: ";
-						}
-					}
+					this->Stop(0);
+					return;
 				}
 				
-				if(!result.IsEmpty())
+				trap = false;
+				cont = false;
 				{
-					std::string result_str;
-					if(ToString(isolate, result, result_str))
+					v8::Locker locker(GetIsolate());
+					v8::Isolate::Scope isolate_scope(GetIsolate());
+					v8::HandleScope handle_scope(isolate);
+					v8::Local<v8::Context> context = this->GetContext();
+					v8::Context::Scope context_scope(context);
+
+					v8::Local<v8::Value> preprocessed_cmd = this->Execute(std::string("Dbg.instance.preprocess(") + StrOrUndefined(cmd) + ")", "<preprocessor>");
+					std::string preprocessed_cmd_str;
+					bool preprocessed = !preprocessed_cmd.IsEmpty() && ToString(isolate, preprocessed_cmd, preprocessed_cmd_str);
+					v8::Local<v8::Value> result = this->Execute(preprocessed ? preprocessed_cmd_str : cmd, "<debugger>");
+					if(!result.IsEmpty())
 					{
-						(*std_output_stream) << result_str << std::endl;
-					}
-					else
-					{
-						(*std_output_stream) << "<unprintable result>" << std::endl;
+						if(preprocessed && result->IsPromise())
+						{
+							v8::Local<v8::Promise> promise = result.As<v8::Promise>();
+							v8::Local<v8::Function> resolve = CreateFunction<NodeJS<CONFIG>, &NodeJS<CONFIG>::Resolve>();
+							v8::Local<v8::Function> reject = CreateFunction<NodeJS<CONFIG>, &NodeJS<CONFIG>::Reject>();
+							promise = promise->Then(context, resolve, reject).ToLocalChecked();
+							result.Clear();
+							pending_promise = true;
+						}
+						
+						if(!result.IsEmpty())
+						{
+							std::string result_str;
+							if(ToString(isolate, result, result_str))
+							{
+								(*std_output_stream) << result_str << std::endl;
+							}
+							else
+							{
+								(*std_output_stream) << "<unprintable result>" << std::endl;
+							}
+						}
 					}
 				}
 			}
+			
+			if(Killed()) return;
+			
+			usleep(10000);
+			this->YieldToNodeJS();
 		}
-		
-		this->YieldToNodeJS();
+		while(!cont);
 	}
-	while(!cont);
+	else
+	{
+		cont = false;
+		this->YieldToNodeJS();
+		
+		while(!cont && !Killed())
+		{
+			usleep(10000);
+			this->YieldToNodeJS();
+		}
+	}
 }
 
 // unisim::kernel::Object
@@ -637,7 +512,29 @@ bool NodeJS<CONFIG>::BeginSetup()
 template <typename CONFIG>
 bool NodeJS<CONFIG>::EndSetup()
 {
-	if(!this->Initialize()) return false;
+	if(!debug_yielding_request_import ||
+	   !debug_event_trigger_import ||
+	   !symbol_table_lookup_import ||
+	   !stmt_lookup_import ||
+	   !debug_info_loading_import ||
+	   !subprogram_lookup_import ||
+	   !debug_processors_import)
+	{
+		logger << DebugError << "One or more imports are unbound" << EndDebugError;
+		return false;
+	}
+	
+	builtin_repl = interactive && filename.empty();
+	
+	if(builtin_repl)
+	{
+		std::cout << "Welcome to the UNISIM-VP builtin debugger based on Node.js Javascript runtime environment." << std::endl;
+		std::cout << "This debugger is partially written in Javascript." << std::endl;
+		std::cout << "JavaScript code or debugger commands can be intertwined." << std::endl;
+		std::cout << "For help, type \"help\"." << std::endl;
+	}
+	
+	if(!this->Start()) return false;
 
 	Interrupt();
 	
@@ -671,6 +568,12 @@ bool NodeJS<CONFIG>::Killed() const
 
 template <typename CONFIG>
 void NodeJS<CONFIG>::Cleanup()
+{
+	ClearContinueExecutionResolvers();
+}
+
+template <typename CONFIG>
+void NodeJS<CONFIG>::ClearContinueExecutionResolvers()
 {
 	for(typename Resolvers::iterator it = cont_exec_resolvers.begin(); it != cont_exec_resolvers.end(); ++it)
 	{
@@ -743,6 +646,9 @@ v8::Local<v8::ObjectTemplate> NodeJS<CONFIG>::CreateGlobalObjectTemplate()
 	v8::Local<v8::FunctionTemplate> register_function_template = RegisterWrapper<CONFIG>::CreateFunctionTemplate(*this);
 	this->template RegisterCtorFunctionTemplate<RegisterWrapper<CONFIG> >(register_function_template);
 
+	v8::Local<v8::FunctionTemplate> field_function_template = FieldWrapper<CONFIG>::CreateFunctionTemplate(*this);
+	this->template RegisterCtorFunctionTemplate<FieldWrapper<CONFIG> >(field_function_template);
+	
 	v8::Local<v8::FunctionTemplate> executable_binary_file_function_template = ExecutableBinaryFileWrapper<CONFIG>::CreateFunctionTemplate(*this);
 	this->template RegisterCtorFunctionTemplate<ExecutableBinaryFileWrapper<CONFIG> >(executable_binary_file_function_template);
 	
@@ -843,6 +749,7 @@ v8::Local<v8::ObjectTemplate> NodeJS<CONFIG>::CreateGlobalObjectTemplate()
 	global_object_template->Set(isolate, StubWrapper<CONFIG>                ::CLASS_NAME, stub_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 	global_object_template->Set(isolate, ProcessorWrapper<CONFIG>           ::CLASS_NAME, processor_function_template             , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 	global_object_template->Set(isolate, RegisterWrapper<CONFIG>            ::CLASS_NAME, register_function_template              , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, FieldWrapper<CONFIG>               ::CLASS_NAME, field_function_template                 , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 	global_object_template->Set(isolate, ExecutableBinaryFileWrapper<CONFIG>::CLASS_NAME, executable_binary_file_function_template, v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 	global_object_template->Set(isolate, StackFrameInfoWrapper<CONFIG>      ::CLASS_NAME, stack_frame_info_function_template      , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 	global_object_template->Set(isolate, DebugSymbolWrapper<CONFIG>         ::CLASS_NAME, debug_symbol_function_template          , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
@@ -883,12 +790,13 @@ v8::Local<v8::ObjectTemplate> NodeJS<CONFIG>::CreateGlobalObjectTemplate()
 	global_object_template->Set(isolate, "findStatement"           , CreateFunctionTemplate<NodeJS<CONFIG>, &NodeJS<CONFIG>::FindStatement           >(), v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 	global_object_template->Set(isolate, "findStatements"          , CreateFunctionTemplate<NodeJS<CONFIG>, &NodeJS<CONFIG>::FindStatements          >(), v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 	global_object_template->Set(isolate, "findSubProgram"          , CreateFunctionTemplate<NodeJS<CONFIG>, &NodeJS<CONFIG>::FindSubProgram          >(), v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, "locateFile"              , CreateFunctionTemplate<NodeJS<CONFIG>, &NodeJS<CONFIG>::LocateFileCb            >(), v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 	
 	return global_object_template;
 }
 
 template <typename CONFIG>
-void NodeJS<CONFIG>::BeforeExecution()
+bool NodeJS<CONFIG>::Initialize()
 {
 	v8::HandleScope handle_scope(GetIsolate());
 	v8::Local<v8::Object> global_object = GetContext()->Global();
@@ -916,6 +824,20 @@ void NodeJS<CONFIG>::BeforeExecution()
 		v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
 	).ToChecked();
 
+	global_object->DefineOwnProperty(
+		GetContext(),
+		v8::String::NewFromUtf8Literal(GetIsolate(), "inBuiltinREPL"),
+		v8::Boolean::New(GetIsolate(), builtin_repl),
+		v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+	).ToChecked();
+	
+	global_object->DefineOwnProperty(
+		GetContext(),
+		v8::String::NewFromUtf8Literal(GetIsolate(), "inInteractiveMode"),
+		v8::Boolean::New(GetIsolate(), interactive),
+		v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+	).ToChecked();
+	
 	// Create functions like Foo.isFoo()
 	CreateIsInstanceOf<SourceCodeLocationWrapper<CONFIG> >();
 	CreateIsInstanceOf<DebugEventWrapper<CONFIG> >();
@@ -932,6 +854,7 @@ void NodeJS<CONFIG>::BeforeExecution()
 	CreateIsInstanceOf<StubWrapper<CONFIG> >();
 	CreateIsInstanceOf<ProcessorWrapper<CONFIG> >();
 	CreateIsInstanceOf<RegisterWrapper<CONFIG> >();
+	CreateIsInstanceOf<FieldWrapper<CONFIG> >();
 	CreateIsInstanceOf<ExecutableBinaryFileWrapper<CONFIG> >();
 	CreateIsInstanceOf<StackFrameInfoWrapper<CONFIG> >();
 	CreateIsInstanceOf<DebugSymbolWrapper<CONFIG> >();
@@ -960,15 +883,62 @@ void NodeJS<CONFIG>::BeforeExecution()
 	CreateIsInstanceOf<EnumTypeWrapper<CONFIG> >();
 	CreateIsInstanceOf<UnspecifiedTypeWrapper<CONFIG> >();
 	CreateIsInstanceOf<VolatileTypeWrapper<CONFIG> >();
+	
+	if(builtin_repl)
+	{
+		if(this->Execute(
+			std::string("const Dbg = require('") +
+			unisim::kernel::Simulator::Instance()->SearchSharedDataFile("unisim/service/debug/nodejs/dbg.js") +
+			"'); "
+			"class REPL { static dbg = new Dbg(); }"
+			, "").IsEmpty()) return false;
+	}
+	else
+	{
+		std::string resolved_filename = unisim::kernel::Simulator::Instance()->SearchSharedDataFile(filename.c_str());
+
+		std::string source_str;
+		if(!this->LoadSource(resolved_filename, source_str) || this->Execute(source_str, resolved_filename).IsEmpty()) return false;
+	}
+	
+	return true;
 }
 
-// continueExecution() => Promise
+// continueExecution([options : object]) => Promise
 template <typename CONFIG>
 void NodeJS<CONFIG>::ContinueExecution(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
+	struct Synopsis { std::string str() const { return std::string("continueExecution([options: object])"); } };
 	v8::HandleScope handle_scope(args.GetIsolate());
 	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
 	
+	bool unblock = false;
+	v8::Local<v8::Value> arg0 = args[0];
+	if(!arg0->IsUndefined())
+	{
+		if(!arg0->IsObject())
+		{
+			this->Throw(this->TypeError(Synopsis().str() + " expects an object for 'options'"));
+			return;
+		}
+		
+		v8::Local<v8::Object> obj_options = arg0.As<v8::Object>();
+		v8::Local<v8::Value> prop_options_unblock;
+		if(obj_options->Get(
+		   args.GetIsolate()->GetCurrentContext(),
+		   v8::String::NewFromUtf8Literal(args.GetIsolate(), "unblock")
+		  ).ToLocal(&prop_options_unblock) &&
+		  !prop_options_unblock->IsUndefined())
+		{
+			if(!prop_options_unblock->IsBoolean())
+			{
+				this->Throw(this->TypeError(Synopsis().str() + " expects a boolean for property 'options.unblock'"));
+				return;
+			}
+			
+			unblock = prop_options_unblock->ToBoolean(args.GetIsolate())->Value();
+		}
+	}
 	v8::Local<v8::Promise::Resolver> resolver;
 	if(!v8::Promise::Resolver::New(context).ToLocal(&resolver))
 	{
@@ -980,7 +950,7 @@ void NodeJS<CONFIG>::ContinueExecution(const v8::FunctionCallbackInfo<v8::Value>
 	cont_exec_resolvers.back().Reset(args.GetIsolate(), resolver);
 	args.GetReturnValue().Set(resolver->GetPromise());
 
-	Continue();
+	if(unblock) Continue();
 }
 
 // quit()
@@ -1112,9 +1082,9 @@ void NodeJS<CONFIG>::FindSymbol(const v8::FunctionCallbackInfo<v8::Value>& args)
 		return;
 	}
 	const unisim::util::debug::Symbol<ADDRESS> *symbol = 0;
-	if(args.Length() >= 2)
+	v8::Local<v8::Value> arg1 = args[1]; // type
+	if(!arg1->IsUndefined())
 	{
-		v8::Local<v8::Value> arg1 = args[1]; // type
 		std::string type_name;
 		if(!arg1->IsString() || !ToString(args.GetIsolate(), arg1, type_name))
 		{
@@ -1167,9 +1137,9 @@ void NodeJS<CONFIG>::GetStatements(const v8::FunctionCallbackInfo<v8::Value>& ar
 	v8::HandleScope handle_scope(args.GetIsolate());
 	std::string file;
 	const char *filename = 0;
-	if(args.Length() >= 1)
+	v8::Local<v8::Value> arg0 = args[0]; // file
+	if(!arg0->IsUndefined())
 	{
-		v8::Local<v8::Value> arg0 = args[0]; // file
 		std::string file;
 		if(arg0->IsNullOrUndefined() || !ToString(args.GetIsolate(), arg0, file))
 		{
@@ -1231,55 +1201,53 @@ void NodeJS<CONFIG>::FindStatement(const v8::FunctionCallbackInfo<v8::Value>& ar
 	}
 	std::string file;
 	typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope = unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_EXACT_STMT;
-	if(args.Length() >= 2)
+	v8::Local<v8::Value> arg1 = args[1]; // options
+	if(!arg1->IsUndefined())
 	{
-		v8::Local<v8::Value> arg1 = args[1]; // options
 		if(!arg1->IsObject())
 		{
 			this->Throw(this->TypeError(Synopsis().str() + " expects an object for 'options'"));
 			return;
 		}
 		v8::Local<v8::Object> obj_options = arg1.As<v8::Object>();
-		if(obj_options->HasOwnProperty(args.GetIsolate()->GetCurrentContext(), v8::String::NewFromUtf8Literal(args.GetIsolate(), "file")).ToChecked())
+		v8::Local<v8::Value> prop_options_file;
+		if(obj_options->Get(
+		   args.GetIsolate()->GetCurrentContext(),
+		   v8::String::NewFromUtf8Literal(args.GetIsolate(), "file")
+		  ).ToLocal(&prop_options_file) &&
+		  !prop_options_file->IsUndefined() &&
+		  (!prop_options_file->IsString() || !ToString(args.GetIsolate(), prop_options_file, file)))
 		{
-			v8::Local<v8::Value> prop_options_file;
-			if(!obj_options->Get(
-			   args.GetIsolate()->GetCurrentContext(),
-			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "file")
-			  ).ToLocal(&prop_options_file) || !prop_options_file->IsString() || !ToString(args.GetIsolate(), prop_options_file, file))
-			{
-				this->Throw(this->TypeError(Synopsis().str() + " expects a string for property 'options.file'"));
-				return;
-			}
+			this->Throw(this->TypeError(Synopsis().str() + " expects a string for property 'options.file'"));
+			return;
 		}
 		if(by_addr)
 		{
-			if(obj_options->HasOwnProperty(args.GetIsolate()->GetCurrentContext(), v8::String::NewFromUtf8Literal(args.GetIsolate(), "scope")).ToChecked())
+			struct ValidScopes
 			{
-				struct ValidScopes
+				std::string str() const
 				{
-					std::string str() const
+					std::string s;
+					for(typename unisim::service::interfaces::StatementLookupBase::Scope scope : unisim::service::interfaces::StatementLookupBase::Scopes)
 					{
-						std::string s;
-						for(typename unisim::service::interfaces::StatementLookupBase::Scope scope : unisim::service::interfaces::StatementLookupBase::Scopes)
-						{
-							if(!s.empty()) s += ", ";
-							s += "'";
-							s += ToString(scope);
-							s += "'";
-						}
-						return s;
+						if(!s.empty()) s += ", ";
+						s += "'";
+						s += ToString(scope);
+						s += "'";
 					}
-				};
-				v8::Local<v8::Value> prop_options_scope;
-				if(!obj_options->Get(
-					args.GetIsolate()->GetCurrentContext(),
-					v8::String::NewFromUtf8Literal(args.GetIsolate(), "scope")
-					).ToLocal(&prop_options_scope) || !prop_options_scope->IsString() || !ToScope<ADDRESS>(args.GetIsolate(), prop_options_scope, scope))
-				{
-					this->Throw(this->TypeError(Synopsis().str() + " expects a valid string (one of " + ValidScopes().str() + ") for property 'options.scope'"));
-					return;
+					return s;
 				}
+			};
+			v8::Local<v8::Value> prop_options_scope;
+			if(obj_options->Get(
+			   args.GetIsolate()->GetCurrentContext(),
+			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "scope")
+			  ).ToLocal(&prop_options_scope) &&
+			  !prop_options_scope->IsUndefined() &&
+			  (!prop_options_scope->IsString() || !ToScope<ADDRESS>(args.GetIsolate(), prop_options_scope, scope)))
+			{
+				this->Throw(this->TypeError(Synopsis().str() + " expects a valid string (one of " + ValidScopes().str() + ") for property 'options.scope'"));
+				return;
 			}
 		}
 	}
@@ -1323,24 +1291,53 @@ void NodeJS<CONFIG>::FindStatements(const v8::FunctionCallbackInfo<v8::Value>& a
 		return;
 	}
 	std::string file;
-	if(args.Length() >= 2)
+	v8::Local<v8::Value> arg1 = args[1]; // options
+	typename unisim::service::interfaces::StatementLookup<ADDRESS>::Scope scope = unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_EXACT_STMT;
+	if(!arg1->IsUndefined())
 	{
-		v8::Local<v8::Value> arg1 = args[1]; // options
 		if(!arg1->IsObject())
 		{
 			this->Throw(this->TypeError(Synopsis().str() + " expects an object for 'options'"));
 			return;
 		}
 		v8::Local<v8::Object> obj_options = arg1.As<v8::Object>();
-		if(obj_options->HasOwnProperty(args.GetIsolate()->GetCurrentContext(), v8::String::NewFromUtf8Literal(args.GetIsolate(), "file")).ToChecked())
+		v8::Local<v8::Value> prop_options_file;
+		if(obj_options->Get(
+		   args.GetIsolate()->GetCurrentContext(),
+		   v8::String::NewFromUtf8Literal(args.GetIsolate(), "file")
+		  ).ToLocal(&prop_options_file) &&
+		  !prop_options_file->IsUndefined() &&
+		  (!prop_options_file->IsString() || !ToString(args.GetIsolate(), prop_options_file, file)))
 		{
-			v8::Local<v8::Value> prop_options_file;
-			if(!obj_options->Get(
-			   args.GetIsolate()->GetCurrentContext(),
-			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "file")
-			  ).ToLocal(&prop_options_file) || !prop_options_file->IsString() || !ToString(args.GetIsolate(), prop_options_file, file))
+			this->Throw(this->TypeError(Synopsis().str() + " expects a string for property 'options.file'"));
+			return;
+		}
+		if(by_addr)
+		{
+			struct ValidScopes
 			{
-				this->Throw(this->TypeError(Synopsis().str() + " expects a string for property 'options.file'"));
+				std::string str() const
+				{
+					std::string s;
+					for(typename unisim::service::interfaces::StatementLookupBase::Scope scope : unisim::service::interfaces::StatementLookupBase::Scopes)
+					{
+						if(!s.empty()) s += ", ";
+						s += "'";
+						s += ToString(scope);
+						s += "'";
+					}
+					return s;
+				}
+			};
+			v8::Local<v8::Value> prop_options_scope;
+			if(obj_options->Get(
+			   args.GetIsolate()->GetCurrentContext(),
+			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "scope")
+			  ).ToLocal(&prop_options_scope) &&
+			  !prop_options_scope->IsUndefined() &&
+			  (!prop_options_scope->IsString() || !ToScope<ADDRESS>(args.GetIsolate(), prop_options_scope, scope)))
+			{
+				this->Throw(this->TypeError(Synopsis().str() + " expects a valid string (one of " + ValidScopes().str() + ") for property 'options.scope'"));
 				return;
 			}
 		}
@@ -1364,7 +1361,7 @@ void NodeJS<CONFIG>::FindStatements(const v8::FunctionCallbackInfo<v8::Value>& a
 	
 	if(by_addr)
 	{
-		stmt_lookup_import->FindStatements(stmt_scanner, addr, LocateFile(file));
+		stmt_lookup_import->FindStatements(stmt_scanner, addr, LocateFile(file), scope);
 	}
 	else
 	{
@@ -1410,40 +1407,38 @@ void NodeJS<CONFIG>::FindSubProgram(const v8::FunctionCallbackInfo<v8::Value>& a
 		Throw(TypeError(Synopsis().str() + " expects either a number for 'address' or a string for 'name'"));
 		return;
 	}
-	if(args.Length() >= 2)
+	v8::Local<v8::Value> arg1 = args[1]; // options
+	if(!arg1->IsUndefined())
 	{
-		v8::Local<v8::Value> arg1 = args[1]; // options
 		if(!arg1->IsObject())
 		{
 			this->Throw(this->TypeError(Synopsis().str() + " expects an object for 'options'"));
 			return;
 		}
 		v8::Local<v8::Object> obj_options = arg1.As<v8::Object>();
-		if(obj_options->HasOwnProperty(args.GetIsolate()->GetCurrentContext(), v8::String::NewFromUtf8Literal(args.GetIsolate(), "file")).ToChecked())
+		v8::Local<v8::Value> prop_options_file;
+		if(obj_options->Get(
+		   args.GetIsolate()->GetCurrentContext(),
+		   v8::String::NewFromUtf8Literal(args.GetIsolate(), "file")
+		  ).ToLocal(&prop_options_file) &&
+		  !prop_options_file->IsUndefined() &&
+		  (!prop_options_file->IsString() || !ToString(args.GetIsolate(), prop_options_file, file)))
 		{
-			v8::Local<v8::Value> prop_options_file;
-			if(!obj_options->Get(
-			   args.GetIsolate()->GetCurrentContext(),
-			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "file")
-			  ).ToLocal(&prop_options_file) || !prop_options_file->IsString() || !ToString(args.GetIsolate(), prop_options_file, file))
-			{
-				this->Throw(this->TypeError(Synopsis().str() + " expects a string for property 'options.file'"));
-				return;
-			}
+			this->Throw(this->TypeError(Synopsis().str() + " expects a string for property 'options.file'"));
+			return;
 		}
 		if(!by_addr)
 		{
-			if(obj_options->HasOwnProperty(args.GetIsolate()->GetCurrentContext(), v8::String::NewFromUtf8Literal(args.GetIsolate(), "compilationUnit")).ToChecked())
+			v8::Local<v8::Value> prop_options_compilation_unit;
+			if(obj_options->Get(
+			   args.GetIsolate()->GetCurrentContext(),
+			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "compilationUnit")
+			  ).ToLocal(&prop_options_compilation_unit) &&
+			  !prop_options_compilation_unit->IsUndefined() &&
+			  (!prop_options_compilation_unit->IsString() || !ToString(args.GetIsolate(), prop_options_compilation_unit, compilation_unit_name)))
 			{
-				v8::Local<v8::Value> prop_options_compilation_unit;
-				if(!obj_options->Get(
-					args.GetIsolate()->GetCurrentContext(),
-					v8::String::NewFromUtf8Literal(args.GetIsolate(), "compilationUnit")
-					).ToLocal(&prop_options_compilation_unit) || !prop_options_compilation_unit->IsString() || !ToString(args.GetIsolate(), prop_options_compilation_unit, compilation_unit_name))
-				{
-					this->Throw(this->TypeError(Synopsis().str() + " expects a string for property 'options.compilationUnit'"));
-					return;
-				}
+				this->Throw(this->TypeError(Synopsis().str() + " expects a string for property 'options.compilationUnit'"));
+				return;
 			}
 		}
 	}
@@ -1455,6 +1450,52 @@ void NodeJS<CONFIG>::FindSubProgram(const v8::FunctionCallbackInfo<v8::Value>& a
 	{
 		SubProgramWrapper<CONFIG> *subprogram_wrapper = SubProgramWrapper<CONFIG>::Wrap(*this, subprogram);
 		args.GetReturnValue().Set(subprogram_wrapper->MakeObject());
+	}
+}
+
+// locateFile(file: string, [options: Object]) => string
+template <typename CONFIG>
+void NodeJS<CONFIG>::LocateFileCb(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	struct Synopsis { std::string str() const { return std::string("locateFile(file: string, [options: Object])"); } };
+	v8::HandleScope handle_scope(args.GetIsolate());
+	v8::Local<v8::Value> arg0 = args[0]; // file
+	std::string file;
+	if(!arg0->IsString() || !ToString(args.GetIsolate(), arg0, file))
+	{
+		this->Throw(this->TypeError(Synopsis().str() + " expects a string for 'file'"));
+		return;
+	}
+	bool lazy_match = false;
+	v8::Local<v8::Value> arg1 = args[1]; // options
+	if(!arg1->IsUndefined())
+	{
+		if(!arg1->IsObject())
+		{
+			this->Throw(this->TypeError(Synopsis().str() + " expects an object for 'options'"));
+			return;
+		}
+		v8::Local<v8::Object> obj_options = arg1.As<v8::Object>();
+		v8::Local<v8::Value> prop_options_lazy_match;
+		if(obj_options->Get(
+		   args.GetIsolate()->GetCurrentContext(),
+		   v8::String::NewFromUtf8Literal(args.GetIsolate(), "lazyMatch")
+		  ).ToLocal(&prop_options_lazy_match) &&
+		  !prop_options_lazy_match->IsUndefined())
+		{
+			if(!prop_options_lazy_match->IsBoolean())
+			{
+				this->Throw(this->TypeError(Synopsis().str() + " expects a boolean for property 'options.lazyMatch'"));
+				return;
+			}
+			lazy_match = prop_options_lazy_match->ToBoolean(args.GetIsolate())->Value();
+		}
+	}
+	
+	std::string match_file_path;
+	if(LocateFile(file, match_file_path, lazy_match))
+	{
+		args.GetReturnValue().Set(v8::String::NewFromUtf8(args.GetIsolate(), match_file_path.c_str()).ToLocalChecked());
 	}
 }
 
@@ -1486,17 +1527,15 @@ bool NodeJS<CONFIG>::ArgToSourceCodeLocation(v8::Local<v8::Value> arg, const std
 			return false;
 		}
 		int64_t colno = 0;
-		if(obj_loc->HasOwnProperty(this->GetIsolate()->GetCurrentContext(), v8::String::NewFromUtf8Literal(this->GetIsolate(), "colno")).ToChecked())
+		v8::Local<v8::Value> prop_colno;
+		if(obj_loc->Get(
+		   this->GetIsolate()->GetCurrentContext(),
+		   v8::String::NewFromUtf8Literal(this->GetIsolate(), "colno")
+		  ).ToLocal(&prop_colno) && !prop_colno->IsUndefined() &&
+		  ((!prop_colno->IsNumber() && !prop_colno->IsBigInt()) || !ToInt(this->GetIsolate(), prop_colno, colno) || (colno < 1) || (colno > std::numeric_limits<unsigned>::max())))
 		{
-			v8::Local<v8::Value> prop_colno;
-			if(!obj_loc->Get(
-					this->GetIsolate()->GetCurrentContext(),
-					v8::String::NewFromUtf8Literal(this->GetIsolate(), "colno")
-				).ToLocal(&prop_colno) || (!prop_colno->IsNumber() && !prop_colno->IsBigInt()) || !ToInt(this->GetIsolate(), prop_colno, colno) || (colno < 1) || (colno > std::numeric_limits<unsigned>::max()))
-			{
-					this->Throw(this->TypeError(err_msg_context + " expects a number in range [1," + ToString(std::numeric_limits<unsigned>::max()) + "] for property '" + arg_name + ".colno'"));
-					return false;
-			}
+			this->Throw(this->TypeError(err_msg_context + " expects a number in range [1," + ToString(std::numeric_limits<unsigned>::max()) + "] for property '" + arg_name + ".colno'"));
+			return false;
 		}
 		
 		source_code_location = unisim::util::debug::SourceCodeLocation(source_code_filename, lineno, colno);
@@ -1538,6 +1577,7 @@ void NodeJS<CONFIG>::Resolve(const v8::FunctionCallbackInfo<v8::Value>& args)
 		(*std_output_stream) << "<unprintable result>" << std::endl;
 	}
 	Trap();
+	pending_promise = false;
 }
 
 template <typename CONFIG>
@@ -1556,6 +1596,7 @@ void NodeJS<CONFIG>::Reject(const v8::FunctionCallbackInfo<v8::Value>& args)
 		(*std_output_stream) << "<unprintable result>" << std::endl;
 	}
 	Trap();
+	pending_promise = false;
 }
 
 template <typename CONFIG>
@@ -1576,6 +1617,7 @@ void NodeJS<CONFIG>::ResolveContinue(v8::Local<v8::Value> value)
 			local_resolver->Resolve(this->GetIsolate()->GetCurrentContext(), value).ToChecked();
 		}
 	}
+	ClearContinueExecutionResolvers();
 }
 
 /////////////////////////////// ObjectWrapper<> ////////////////////////////////

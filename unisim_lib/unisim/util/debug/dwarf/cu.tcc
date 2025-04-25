@@ -56,6 +56,7 @@ DWARF_CompilationUnit<MEMORY_ADDR>::DWARF_CompilationUnit(DWARF_Handler<MEMORY_A
 	, version(0)
 	, debug_abbrev_offset(0)
 	, address_size(0)
+	, segment_size(0)
 	, dw_die(0)
 {
 }
@@ -86,6 +87,12 @@ template <class MEMORY_ADDR>
 uint8_t DWARF_CompilationUnit<MEMORY_ADDR>::GetAddressSize() const
 {
 	return address_size;
+}
+
+template <class MEMORY_ADDR>
+uint8_t DWARF_CompilationUnit<MEMORY_ADDR>::GetSegmentSize() const
+{
+	return segment_size;
 }
 
 template <class MEMORY_ADDR>
@@ -211,6 +218,16 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 	rawdata += sizeof(address_size);
 	max_size -= sizeof(address_size);
 	size += sizeof(address_size);
+	
+	if(dw_ver >= DW_VER3)
+	{
+		if(max_size < sizeof(segment_size)) return -1;
+		memcpy(&segment_size, rawdata, sizeof(segment_size));
+		segment_size = Target2Host(file_endianness, segment_size);
+		rawdata += sizeof(segment_size);
+		max_size -= sizeof(segment_size);
+		size += sizeof(segment_size);
+	}
 	
 	dw_die = new DWARF_DIE<MEMORY_ADDR>(this);
 	
@@ -419,34 +436,44 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDataObject
 }
 
 template <class MEMORY_ADDR>
-void DWARF_CompilationUnit<MEMORY_ADDR>::ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner, MEMORY_ADDR pc, bool local_only) const
+void DWARF_CompilationUnit<MEMORY_ADDR>::ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope) const
 {
-	const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion = FindDIEByAddrRange(0 /* any tag */, pc, 1);
-	if(!dw_die_code_portion)
+	if(scope == unisim::service::interfaces::DataObjectLookupBase::SCOPE_GLOBAL_ONLY)
 	{
-		if(debug)
+		if(dw_die)
 		{
-			dw_handler->GetDebugInfoStream() << "can't find any DIE matching PC=0x" << std::hex << pc << std::dec << std::endl;
+			dw_die->ScanDataObjectNames(scanner);
 		}
-		return;
 	}
-	
-	do
+	else
 	{
-		dw_die_code_portion->ScanDataObjectNames(scanner);
-		
-		const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion_parent = dw_die_code_portion->GetParentDIE();
-		
-		if(dw_die_code_portion_parent && debug)
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion = FindDIEByAddrRange(0 /* any tag */, pc, 1);
+		if(!dw_die_code_portion)
 		{
-			dw_handler->GetDebugInfoStream() << "parent of DIE #" << dw_die_code_portion->GetId() << " is DIE #" << dw_die_code_portion_parent->GetId() << std::endl;
+			if(debug)
+			{
+				dw_handler->GetDebugInfoStream() << "can't find any DIE matching PC=0x" << std::hex << pc << std::dec << std::endl;
+			}
+			return;
 		}
 		
-		if(local_only && (dw_die_code_portion->GetTag() == DW_TAG_subprogram)) break;
-		
-		dw_die_code_portion = dw_die_code_portion_parent;
+		do
+		{
+			dw_die_code_portion->ScanDataObjectNames(scanner);
+			
+			const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion_parent = dw_die_code_portion->GetParentDIE();
+			
+			if(dw_die_code_portion_parent && debug)
+			{
+				dw_handler->GetDebugInfoStream() << "parent of DIE #" << dw_die_code_portion->GetId() << " is DIE #" << dw_die_code_portion_parent->GetId() << std::endl;
+			}
+			
+			if((scope == unisim::service::interfaces::DataObjectLookupBase::SCOPE_LOCAL_ONLY) && (dw_die_code_portion->GetTag() == DW_TAG_subprogram)) break;
+			
+			dw_die_code_portion = dw_die_code_portion_parent;
+		}
+		while(dw_die_code_portion);
 	}
-	while(dw_die_code_portion);
 }
 
 template <class MEMORY_ADDR>

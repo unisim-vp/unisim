@@ -35,6 +35,10 @@
 #ifndef __VIRTEX5FXT_CONFIG_HH__
 #define __VIRTEX5FXT_CONFIG_HH__
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <unisim/component/cxx/interrupt/xilinx/xps_intc/config.hh>
 #include <unisim/component/cxx/timer/xilinx/xps_timer/config.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
@@ -71,8 +75,20 @@ public:
     typedef sc_core::sc_time TIME_TYPE;
 		static const unsigned int NUM_PROCESSORS = 1;
 		/* gdb_server, inline_debugger, profiler, user_interface */
-		static const unsigned int MAX_FRONT_ENDS = 4;
+		static const unsigned int MAX_FRONT_ENDS = 4
+#if HAVE_NODEJS
+		                                           + 1
+#endif
+		;
 	};
+	
+#if HAVE_NODEJS
+	struct NODEJS_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		typedef sc_core::sc_time TIME_TYPE;
+	};
+#endif
 	
 	//=========================================================================
 	//===                 MPLB compile time configuration                   ===

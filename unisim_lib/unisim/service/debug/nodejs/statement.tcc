@@ -149,7 +149,14 @@ void StatementWrapper<CONFIG>::GetIsBeginningOfBasicBlock(v8::Local<v8::Name> pr
 template <typename CONFIG>
 void StatementWrapper<CONFIG>::GetSourceDirname(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	if(stmt) info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), stmt->GetSourceDirname()).ToLocalChecked());
+	if(stmt)
+	{
+		const char *source_dirname = stmt->GetSourceDirname();
+		if(source_dirname)
+		{
+			info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), source_dirname).ToLocalChecked());
+		}
+	}
 }
 
 template <typename CONFIG>
@@ -180,14 +187,6 @@ template <typename CONFIG>
 void StatementWrapper<CONFIG>::GetDiscriminator(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	if(stmt) info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), stmt->GetDiscriminator()));
-}
-
-template <typename CONFIG>
-void StatementWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/statement.h>
-	;
 }
 
 } // end of namespace nodejs

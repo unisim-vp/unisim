@@ -60,6 +60,7 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 	, bv(arch_endianness)
 	, hold(false)
 	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
+	, stamp(_dw_mach_state->GetStamp())
 {
 	if(dw_data_object_type)
 	{
@@ -129,6 +130,8 @@ template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Seek() const
 {
 	if(hold) return true;
+	uint64_t curr_stamp = dw_mach_state->GetStamp();
+	if(curr_stamp == stamp) return (dw_data_object_loc != 0) && (dw_data_object_type != 0);
 	
 	if(dw_data_object_loc)
 	{
@@ -155,6 +158,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Seek() const
 		{
 			dw_data_object_type->Catch();
 		}
+		stamp = curr_stamp;
 		return true;
 	}
 	
@@ -666,7 +670,7 @@ T DWARF_DataObject<MEMORY_ADDR>::ToBaseType() const
 {
 	const unisim::util::debug::Type *resolved_type = unisim::util::debug::TypeResolver::Resolve(dw_data_object_type);
 	
-	if(!resolved_type || (!resolved_type->IsBase() && !resolved_type->IsPointer())) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str(), "Can't convert because data object type is neither a base type nor a pointer type");
+	if(!resolved_type || (!resolved_type->IsBase() && !resolved_type->IsPointer() && !resolved_type->IsEnum())) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str(), "Can't convert because data object type is neither a base type nor a pointer type");
 	
 	T ret_value = T();
 	
@@ -910,6 +914,7 @@ DWARF_DataObject<MEMORY_ADDR> *DWARF_DataObject<MEMORY_ADDR>::GetItem(int64_t su
 	typename DWARF_Handler<MEMORY_ADDR>::FindDataObjectArguments args;
 	args.c_loc_operation_stream.Push(new CLocOperation(OP_ARRAY_SUBSCRIPT));
 	args.c_loc_operation_stream.Push(new CLocOpLiteralInteger(subscript));
+	args.dim = dim;
 	args.dw_die_type = dw_die_type;
 	args.matched_data_object_name = data_object_name;
 	args.dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>(*dw_data_object_loc);

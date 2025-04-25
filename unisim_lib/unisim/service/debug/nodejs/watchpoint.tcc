@@ -69,6 +69,7 @@ v8::Local<v8::FunctionTemplate> WatchpointWrapper<CONFIG>::CreateFunctionTemplat
 	// Set accessors
 	struct { const char *property_name; v8::AccessorNameGetterCallback accessor_getter_callback; v8::AccessorNameSetterCallback accessor_setter_callback; } accessors_config[] =
 	{
+		{ "id"              , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetId              >, 0 },
 		{ "memoryAccessType", unisim::util::nodejs::AccessorGetterCallback<This, &This::GetMemoryAccessType>, 0 },
 		{ "memoryType"      , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetMemoryType      >, 0 },
 		{ "address"         , unisim::util::nodejs::AccessorGetterCallback<This, &This::GetAddress         >, 0 },
@@ -82,6 +83,19 @@ v8::Local<v8::FunctionTemplate> WatchpointWrapper<CONFIG>::CreateFunctionTemplat
 			accessor_config.accessor_getter_callback,
 			accessor_config.accessor_setter_callback
 		);
+	}
+	
+	// Get the prototype template
+	v8::Local<v8::Template> prototype_template = watchpoint_function_template->PrototypeTemplate();
+	
+	// Add methods
+	struct { const char *method_name; v8::FunctionCallback callback; } methods_config[] =
+	{
+		{ "toString", &unisim::util::nodejs::FunctionCallback<This, &This::ToString> }
+	};
+	for(auto method_config : methods_config)
+	{
+		prototype_template->Set(isolate, method_config.method_name, v8::FunctionTemplate::New(isolate, method_config.callback));
 	}
 	
 	// Inherit from "DebugEvent"
@@ -124,50 +138,51 @@ void WatchpointWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionC
 		unisim::util::debug::MemoryAccessType memory_access_type = unisim::util::debug::MAT_WRITE;
 		unisim::util::debug::MemoryType memory_type = unisim::util::debug::MT_DATA;
 		bool overlook = true;
-		if(args.Length() >= 4)
+		v8::Local<v8::Value> arg3 = args[3]; // options
+		if(!arg3->IsUndefined())
 		{
-			v8::Local<v8::Value> arg3 = args[3]; // options
 			if(!arg3->IsObject())
 			{
 				nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects an object for 'options'"));
 				return;
 			}
 			v8::Local<v8::Object> obj_options = arg3.As<v8::Object>();
-			if(obj_options->HasOwnProperty(args.GetIsolate()->GetCurrentContext(), v8::String::NewFromUtf8Literal(args.GetIsolate(), "memoryAccessType")).ToChecked())
+			v8::Local<v8::Value> prop_options_mat;
+			if(obj_options->Get(
+			   args.GetIsolate()->GetCurrentContext(),
+			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "memoryAccessType")
+			  ).ToLocal(&prop_options_mat) &&
+			  !prop_options_mat->IsUndefined() &&
+			  (!prop_options_mat->IsString() || !ToMemoryAccessType(args.GetIsolate(), prop_options_mat, memory_access_type)))
 			{
-				v8::Local<v8::Value> prop_options_mat;
-				if(!obj_options->Get(
-						args.GetIsolate()->GetCurrentContext(),
-						v8::String::NewFromUtf8Literal(args.GetIsolate(), "memoryAccessType")
-					).ToLocal(&prop_options_mat) || !prop_options_mat->IsString() || !ToMemoryAccessType(args.GetIsolate(), prop_options_mat, memory_access_type))
-				{
-					nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a string for property 'options.memoryAccessType'"));
-					return;
-				}
+				nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a string for property 'options.memoryAccessType'"));
+				return;
 			}
-			if(obj_options->HasOwnProperty(args.GetIsolate()->GetCurrentContext(), v8::String::NewFromUtf8Literal(args.GetIsolate(), "memoryType")).ToChecked())
+			v8::Local<v8::Value> prop_options_mt;
+			if(obj_options->Get(
+			   args.GetIsolate()->GetCurrentContext(),
+			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "memoryType")
+			  ).ToLocal(&prop_options_mt) &&
+			  !prop_options_mt->IsUndefined() && 
+			  (!prop_options_mt->IsString() || !ToMemoryType(args.GetIsolate(), prop_options_mt, memory_type)))
 			{
-				v8::Local<v8::Value> prop_options_mt;
-				if(!obj_options->Get(
-						args.GetIsolate()->GetCurrentContext(),
-						v8::String::NewFromUtf8Literal(args.GetIsolate(), "memoryType")
-					).ToLocal(&prop_options_mt) || !prop_options_mt->IsString() || !ToMemoryType(args.GetIsolate(), prop_options_mt, memory_type))
-				{
-					nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a string for property 'options.memoryType'"));
-					return;
-				}
+				nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a string for property 'options.memoryType'"));
+				return;
 			}
-			if(obj_options->HasOwnProperty(args.GetIsolate()->GetCurrentContext(), v8::String::NewFromUtf8Literal(args.GetIsolate(), "overlook")).ToChecked())
+			
+			v8::Local<v8::Value> prop_options_overlook;
+			if(obj_options->Get(
+			   args.GetIsolate()->GetCurrentContext(),
+			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "overlook")
+			  ).ToLocal(&prop_options_overlook) &&
+			  !prop_options_overlook->IsUndefined())
 			{
-				v8::Local<v8::Value> prop_options_overlook;
-				if(!obj_options->Get(
-					args.GetIsolate()->GetCurrentContext(),
-					v8::String::NewFromUtf8Literal(args.GetIsolate(), "overlook")
-				).ToLocal(&prop_options_overlook))
+				if(!prop_options_overlook->IsBoolean())
 				{
 					nodejs.Throw(nodejs.TypeError(Synopsis().str() + " expects a boolean for property 'options.overlook'"));
 					return;
 				}
+				
 				overlook = prop_options_overlook->ToBoolean(args.GetIsolate())->Value();
 			}
 		}
@@ -177,6 +192,7 @@ void WatchpointWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionC
 	
 	WatchpointWrapper<CONFIG> *watchpoint_wrapper = new WatchpointWrapper<CONFIG>(nodejs, processor_wrapper, watchpoint);
 	watchpoint_wrapper->template BindObject<This>(args.This());
+	watchpoint_wrapper->SetListenerArgument(processor_wrapper->ThisObject());
 	args.GetReturnValue().Set(args.This());
 }
 
@@ -199,21 +215,27 @@ unisim::util::debug::Watchpoint<typename CONFIG::ADDRESS> *WatchpointWrapper<CON
 }
 
 template <typename CONFIG>
+void WatchpointWrapper<CONFIG>::GetId(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	if(watchpoint) info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), watchpoint->GetId()));
+}
+
+template <typename CONFIG>
 void WatchpointWrapper<CONFIG>::GetMemoryAccessType(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), ToString(watchpoint->GetMemoryAccessType()).c_str()).ToLocalChecked());
+	if(watchpoint) info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), unisim::util::ostream::ToString(watchpoint->GetMemoryAccessType()).c_str()).ToLocalChecked());
 }
 
 template <typename CONFIG>
 void WatchpointWrapper<CONFIG>::GetMemoryType(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), ToString(watchpoint->GetMemoryType()).c_str()).ToLocalChecked());
+	if(watchpoint) info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), unisim::util::ostream::ToString(watchpoint->GetMemoryType()).c_str()).ToLocalChecked());
 }
 
 template <typename CONFIG>
 void WatchpointWrapper<CONFIG>::GetAddress(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), watchpoint->GetAddress()));
+	if(watchpoint) info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), watchpoint->GetAddress()));
 }
 
 template <typename CONFIG>
@@ -225,15 +247,13 @@ void WatchpointWrapper<CONFIG>::GetSize(v8::Local<v8::Name> property, const v8::
 template <typename CONFIG>
 void WatchpointWrapper<CONFIG>::GetOverlook(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	info.GetReturnValue().Set(v8::Boolean::New(this->GetIsolate(), watchpoint->Overlooks()));
+	if(watchpoint) info.GetReturnValue().Set(v8::Boolean::New(this->GetIsolate(), watchpoint->Overlooks()));
 }
 
 template <typename CONFIG>
-void WatchpointWrapper<CONFIG>::Help(std::ostream& stream)
+void WatchpointWrapper<CONFIG>::ToString(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	stream <<
-#include <unisim/service/debug/nodejs/doc/watchpoint.h>
-	;
+	if(watchpoint) args.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), unisim::util::ostream::ToString(*watchpoint).c_str()).ToLocalChecked());
 }
 
 } // end of namespace nodejs

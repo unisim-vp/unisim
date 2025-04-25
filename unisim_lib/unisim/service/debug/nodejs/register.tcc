@@ -134,6 +134,53 @@ RegisterWrapper<CONFIG>::~RegisterWrapper()
 }
 
 template <typename CONFIG>
+v8::Local<v8::Object> RegisterWrapper<CONFIG>::MakeObject()
+{
+	v8::EscapableHandleScope handle_scope(this->GetIsolate());
+	
+	v8::Local<v8::Object> register_object = this->ThisObject();
+	
+	if(register_object.IsEmpty())
+	{
+		register_object = Super::template MakePersistentObject<This>();
+	
+		v8::Local<v8::Object> prop_fields = v8::Object::New(this->GetIsolate());
+		
+		struct FieldScanner : unisim::service::interfaces::FieldScanner
+		{
+			NodeJS<CONFIG>& nodejs;
+			v8::Local<v8::Object>& prop_fields;
+			
+			FieldScanner(NodeJS<CONFIG>& _nodejs, v8::Local<v8::Object>& _prop_fields) : nodejs(_nodejs), prop_fields(_prop_fields) {}
+			
+			virtual void Append(unisim::service::interfaces::Field* field)
+			{
+				FieldWrapper<CONFIG> *field_wrapper = FieldWrapper<CONFIG>::Wrap(nodejs, field);
+				// add "fields.<fieldname>" property
+				prop_fields->DefineOwnProperty(
+					nodejs.GetIsolate()->GetCurrentContext(),
+					v8::String::NewFromUtf8(nodejs.GetIsolate(), field->GetName(), v8::NewStringType::kInternalized).ToLocalChecked(),
+					field_wrapper->MakeObject(),
+					v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+				).ToChecked();
+			}
+		} field_scanner(this->nodejs, prop_fields);
+		
+		this->reg->ScanFields(field_scanner);
+		
+		// add "fields" property
+		register_object->DefineOwnProperty(
+			this->GetIsolate()->GetCurrentContext(),
+			v8::String::NewFromUtf8Literal(this->GetIsolate(), "fields", v8::NewStringType::kInternalized),
+			prop_fields,
+			v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+		).ToChecked();
+	}
+	
+	return handle_scope.Escape(register_object);
+}
+
+template <typename CONFIG>
 unisim::service::interfaces::Register *RegisterWrapper<CONFIG>::GetRegister() const
 {
 	return reg;
@@ -162,9 +209,26 @@ template <typename CONFIG>
 void RegisterWrapper<CONFIG>::Get(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::HandleScope handle_scope(args.GetIsolate());
-	uint64_t value = 0;
+	
+	bool is_signed = false;
+	v8::Local<v8::Value> arg0 = args[0];
+	if(!arg0->IsUndefined())
+	{
+		if(!arg0->IsObject())
+		{
+			this->Throw(this->TypeError(std::string(CLASS_NAME) + ".get([options : Object]) expects an object as 'options'"));
+			return;
+		}
+		v8::Local<v8::Object> get_options = arg0.As<v8::Object>();
+		is_signed = get_options->Get(
+			args.GetIsolate()->GetCurrentContext(),
+			v8::String::NewFromUtf8Literal(args.GetIsolate(), "signed")
+		).ToLocalChecked()->ToBoolean(args.GetIsolate())->Value();
+	}
+	unsigned reg_size = reg->GetSize();
+	uint8_t value[reg_size];
 	reg->GetValue(value);
-	args.GetReturnValue().Set(MakeInteger(this->GetIsolate(), value));
+	args.GetReturnValue().Set(MakeInteger(args.GetIsolate(), value, reg_size, is_signed));
 }
 
 // Register.set(value: Number)
@@ -173,23 +237,15 @@ void RegisterWrapper<CONFIG>::Set(const v8::FunctionCallbackInfo<v8::Value>& arg
 {
 	v8::HandleScope handle_scope(args.GetIsolate());
 	v8::Local<v8::Value> arg0 = args[0]; // value
-	uint64_t value = 0;
-	if((!arg0->IsNumber() && !arg0->IsBigInt()) || !ToInt(args.GetIsolate(), arg0, value))
+	unsigned reg_size = reg->GetSize();
+	uint8_t value[reg_size];
+	if((!arg0->IsNumber() && !arg0->IsBigInt()) || !ToInt(args.GetIsolate(), arg0, value, reg_size))
 	{
 		this->Throw(this->TypeError(std::string(CLASS_NAME) + ".set(value: Number) expects a number for 'value'"));
 		return;
 	}
 	reg->SetValue(value);
 }
-
-template <typename CONFIG>
-void RegisterWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/register.h>
-	;
-}
-
 
 } // end of namespace nodejs
 } // end of namespace debug

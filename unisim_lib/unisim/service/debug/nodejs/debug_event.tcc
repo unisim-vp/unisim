@@ -111,6 +111,12 @@ DebugEventWrapper<CONFIG>::~DebugEventWrapper()
 }
 
 template <typename CONFIG>
+void DebugEventWrapper<CONFIG>::SetListenerArgument(v8::Local<v8::Value> arg)
+{
+	event_bridge.SetListenerArgument(arg);
+}
+
+template <typename CONFIG>
 unisim::util::debug::Event<typename CONFIG::ADDRESS> *DebugEventWrapper<CONFIG>::GetEvent() const
 {
 	return event;
@@ -135,14 +141,6 @@ template <typename CONFIG>
 void DebugEventWrapper<CONFIG>::SetEnable(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
 	event_bridge.Trap(value->ToBoolean(this->GetIsolate())->Value());
-}
-
-template <typename CONFIG>
-void DebugEventWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/debug_event.h>
-	;
 }
 
 } // end of namespace nodejs

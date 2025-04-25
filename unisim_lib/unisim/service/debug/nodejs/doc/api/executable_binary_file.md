@@ -3,6 +3,10 @@
 This class is not construtible.
 It is created when calling `loadDebugInfo`.
 
+## `(read-only) id: Number`
+
+The executable binary file identifier.
+
 ## `(read-only) file: string`
 
 Absolute path of executable binary file.

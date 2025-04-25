@@ -63,6 +63,7 @@ struct ExecutableBinaryFileWrapper : ObjectWrapper<CONFIG>
 	ExecutableBinaryFileWrapper(NodeJS<CONFIG>& nodejs, unisim::service::interfaces::ExecutableBinaryFile *executable_binary_file = 0, std::size_t size = 0);
 	virtual ~ExecutableBinaryFileWrapper();
 	unisim::service::interfaces::ExecutableBinaryFile *GetExecutableBinaryFile() const;
+	void GetId(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
 	void GetFile(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
 	void GetFileFormat(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
 	void GetEnable(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
@@ -70,7 +71,6 @@ struct ExecutableBinaryFileWrapper : ObjectWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Super::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	unisim::service::interfaces::ExecutableBinaryFile *executable_binary_file;
 };

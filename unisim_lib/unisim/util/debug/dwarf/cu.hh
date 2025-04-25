@@ -66,6 +66,7 @@ public:
 	DWARF_Handler<MEMORY_ADDR> *GetHandler() const;
 	DWARF_Format GetFormat() const;
 	uint8_t GetAddressSize() const;
+	uint8_t GetSegmentSize() const;
 	uint16_t GetVersion() const;
 	DWARF_Version GetDWARFVersion() const;
 	uint8_t GetOffsetSize() const;
@@ -94,7 +95,7 @@ public:
 	const DWARF_StatementProgram<MEMORY_ADDR> *GetStmtList() const;
 
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
-	void ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner, MEMORY_ADDR pc, bool local_only) const;
+	void ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookupBase::Scope scope) const;
 	
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindVariableDIE(const char *name) const;
@@ -139,6 +140,9 @@ private:
 	uint8_t address_size;                 // unsigned integer representing the size in bytes of an address on the target
 	                                      // architecture. If the system uses segmented addressing, this value represents the size of the
 	                                      // offset portion of an address.
+	
+	uint8_t segment_size;                 // unsigned integer representing the size in bytes of a segment on the target
+	                                      // architecture. If the system does not use segmented addressing, this value is zero.
 	
 	DWARF_DIE<MEMORY_ADDR> *dw_die;
 };

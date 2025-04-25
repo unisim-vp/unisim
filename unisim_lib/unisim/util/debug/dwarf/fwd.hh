@@ -103,6 +103,8 @@ template <class MEMORY_ADDR> class DWARF_Handler;
 template <class MEMORY_ADDR> class DWARF_DataObject;
 template <class MEMORY_ADDR> class DWARF_SubProgram;
 template <class MEMORY_ADDR> class DWARF_MachineState;
+template <class MEMORY_ADDR> class DWARF_MachineStateMemory;
+template <class MEMORY_ADDR> class DWARF_MachineStateField;
 template <class MEMORY_ADDR> class DWARF_MachineStateRegister;
 template <class MEMORY_ADDR> class DWARF_MachineStateProgramCounter;
 

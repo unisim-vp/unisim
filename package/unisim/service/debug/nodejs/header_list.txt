@@ -4,6 +4,7 @@ unisim/service/debug/nodejs/debug_event.hh
 unisim/service/debug/nodejs/debug_symbol.hh
 unisim/service/debug/nodejs/event_bridge.hh
 unisim/service/debug/nodejs/executable_binary_file.hh
+unisim/service/debug/nodejs/field.hh
 unisim/service/debug/nodejs/fwd.hh
 unisim/service/debug/nodejs/hook.hh
 unisim/service/debug/nodejs/nodejs.hh

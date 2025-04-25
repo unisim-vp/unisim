@@ -70,7 +70,6 @@ struct DebugSymbolWrapper : ObjectWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Super::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::Symbol<ADDRESS> *symbol;
 };

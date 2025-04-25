@@ -124,7 +124,7 @@ template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, 
 void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ComputeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
-
+	this->cycle_time = bus_cycle_time;
 }
 
 
@@ -668,6 +668,8 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	edata_var->setCallBack(this, EDATAHI, &CallBackObject::write, NULL);
 
 	oscillator_cycle_time = sc_time(oscillator_cycle_time_int, SC_PS);
+	
+	ComputeInternalTime();
 
 	Reset();
 

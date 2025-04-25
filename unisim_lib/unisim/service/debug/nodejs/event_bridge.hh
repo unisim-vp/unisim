@@ -59,7 +59,7 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 	EventBridge(NodeJS<CONFIG>& _nodejs, unisim::util::debug::Event<ADDRESS> *_event)
 		: nodejs(_nodejs)
 		, event(_event)
-		, recv()
+		, listener_arg()
 		, listening_event(false)
 		, trap(false)
 		, functions()
@@ -80,6 +80,8 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 			event->Release();
 		}
 		
+		listener_arg.Reset();
+		
 		for(typename Functions::iterator it = functions.begin(); it != functions.end(); ++it)
 		{
 			v8::Global<v8::Function>& function = *it;
@@ -90,6 +92,11 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 			v8::Global<v8::Promise::Resolver>& resolver = *it;
 			resolver.Reset();
 		}
+	}
+	
+	void SetListenerArgument(v8::Local<v8::Value> arg)
+	{
+		listener_arg.Reset(this->GetIsolate(), arg);
 	}
 	
 	void Trap(bool flag)
@@ -109,7 +116,7 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 		return trap;
 	}
 	
-	bool AddListener(v8::Local<v8::Function> function, v8::Local<v8::Object> _recv)
+	bool AddListener(v8::Local<v8::Function> function)
 	{
 		if(!Update(true))
 		{
@@ -117,33 +124,16 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 			return false;
 		}
 		
-		if(functions.empty())
-		{
-			recv.Reset(this->GetIsolate(), _recv); // "this"
-		}
-		else
-		{
-			if(recv.IsEmpty() || (recv != _recv))
-			{
-				struct Bad {};
-				throw Bad();
-			}
-		}
 		functions.resize(functions.size() + 1);
 		functions.back().Reset(this->GetIsolate(), function);
 		
 		return true;
 	}
 	
-	v8::Local<v8::Promise> NewPromise()
+	v8::Local<v8::Promise> NewPromise(bool& status)
 	{
 		v8::EscapableHandleScope handle_scope(this->GetIsolate());
 		v8::Local<v8::Context> context = this->GetContext();
-		if(!Update(true))
-		{
-			Reject(SetRemoveError());
-			return handle_scope.Escape(v8::Undefined(this->GetIsolate()).template As<v8::Promise>());
-		}
 		v8::Local<v8::Promise::Resolver> resolver;
 		if(!v8::Promise::Resolver::New(context).ToLocal(&resolver))
 		{
@@ -153,6 +143,10 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 		}
 		resolvers.resize(resolvers.size() + 1);
 		resolvers.back().Reset(this->GetIsolate(), resolver);
+		if(!(status = Update(true)))
+		{
+			Reject(SetRemoveError());
+		}
 		return handle_scope.Escape(resolver->GetPromise());
 	}
 	
@@ -177,11 +171,6 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 			{
 				++it;
 			}
-		}
-		
-		if(functions.empty())
-		{
-			recv.Reset();
 		}
 	}
 	
@@ -240,7 +229,7 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 		// beware of reentrancy
 		if(trap)
 		{
-			this->nodejs.ResolveContinue(v8::Undefined(this->GetIsolate()));
+			this->nodejs.ResolveContinue(listener_arg.Get(this->GetIsolate()));
 		}
 		
 		typedef std::vector<v8::Local<v8::Function> > LocalFunctions;
@@ -255,9 +244,10 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 		for(LocalFunctions::iterator it = local_functions.begin(); it != local_functions.end() && !this->Killed(); ++it)
 		{
 			v8::Local<v8::Function>& local_function = *it;
-			v8::Local<v8::Value> _recv = recv.Get(this->GetIsolate()); // "this"
+			v8::Local<v8::Value> recv = context->Global(); // "this"
+			v8::Local<v8::Value> _listener_arg = listener_arg.Get(this->GetIsolate());
 			v8::Local<v8::Value> result;
-			if(!local_function->Call(context, _recv, 0, (v8::Local<v8::Value> *) 0).ToLocal(&result))
+			if(!local_function->Call(context, recv, 1, &_listener_arg).ToLocal(&result))
 			{
 				Kill();
 			}
@@ -267,7 +257,7 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 		{
 			if(Update(trap || !functions.empty()))
 			{
-				Resolve(v8::Undefined(this->GetIsolate()));
+				Resolve(listener_arg.Get(this->GetIsolate()));
 			}
 			else
 			{
@@ -302,7 +292,7 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 	
 	NodeJS<CONFIG>& nodejs;
 	unisim::util::debug::Event<ADDRESS> *event;
-	v8::Global<v8::Object> recv;
+	v8::Global<v8::Value> listener_arg;
 	bool listening_event;
 	bool trap;
 	typedef std::list<v8::Global<v8::Function> > Functions;

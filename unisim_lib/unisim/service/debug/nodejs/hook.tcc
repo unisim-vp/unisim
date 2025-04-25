@@ -180,7 +180,7 @@ void HookWrapper<CONFIG>::Trigger()
 	for(LocalFunctions::iterator it = local_functions.begin(); it != local_functions.end() && !this->Killed(); ++it)
 	{
 		v8::Local<v8::Function>& local_function = *it;
-		v8::Local<v8::Value> recv = this->ThisObject(); // "this"
+		v8::Local<v8::Value> recv = context->Global(); // "this"
 		v8::Local<v8::Value> result;
 		if(this->IsDebugging())
 		{
@@ -385,14 +385,6 @@ bool HookWrapper<CONFIG>::Update(bool has_listeners)
 	return true;
 }
 
-template <typename CONFIG>
-void HookWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/hook.h>
-	;
-}
-
 ///////////////////////////// AddressHookWrapper<> /////////////////////////////
 
 template <typename CONFIG>
@@ -489,14 +481,6 @@ template <typename CONFIG>
 void AddressHookWrapper<CONFIG>::GetAddress(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), address_hook->GetAddress()));
-}
-
-template <typename CONFIG>
-void AddressHookWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/address_hook.h>
-	;
 }
 
 /////////////////////////// SourceCodeHookWrapper<> ////////////////////////////
@@ -607,14 +591,6 @@ void SourceCodeHookWrapper<CONFIG>::GetLoc(v8::Local<v8::Name> property, const v
 	info.GetReturnValue().Set(source_code_location_wrapper->MakeObject());
 }
 
-template <typename CONFIG>
-void SourceCodeHookWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/processor.h>
-	;
-}
-
 /////////////////////////// SubProgramHookWrapper<> ////////////////////////////
 
 template <typename CONFIG>
@@ -718,14 +694,6 @@ void SubProgramHookWrapper<CONFIG>::GetSubProgram(v8::Local<v8::Name> property, 
 			info.GetReturnValue().Set(subprogram_wrapper->MakeObject());
 		}
 	}
-}
-
-template <typename CONFIG>
-void SubProgramHookWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/subprogram_hook.h>
-	;
 }
 
 //////////////////////////////// AddressHook<> /////////////////////////////////

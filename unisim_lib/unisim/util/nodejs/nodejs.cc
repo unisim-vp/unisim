@@ -47,9 +47,13 @@
 //  - Possible to make an object instanceof a function, without actually constructing it via that function: https://www.mail-archive.com/v8-users@googlegroups.com/msg04787.html
 
 #include <unisim/util/nodejs/nodejs.hh>
+#include <unisim/util/locate/locate.hh>
+#include <unisim/util/endian/endian.hh>
 #include <cassert>
 #include <fstream>
 #include <uv.h>
+#include <unistd.h>
+#include <termios.h>
 
 namespace unisim {
 namespace util {
@@ -71,18 +75,106 @@ bool ToString(v8::Isolate *isolate, v8::Local<v8::Value> value, std::string& str
 	return true;
 }
 
+bool ToInt(v8::Isolate *isolate, v8::Local<v8::Value> value, uint8_t *out, unsigned size)
+{
+	if(value->IsBigInt())
+	{
+		v8::Local<v8::BigInt> big_int = value.As<v8::BigInt>();
+		int word_count = big_int->WordCount();
+		int sign_bit;
+		uint64_t words[word_count];
+		big_int->ToWordsArray(&sign_bit, &word_count, &words[0]);
+		if(sign_bit)
+		{
+			int carry = 1;
+			for(int i = 0; i < word_count; ++i)
+			{
+				uint64_t inv = ~words[i];
+				uint64_t res = inv + carry;
+				carry = (res < inv);
+				words[i] = res;
+			}
+		}
+		for(unsigned i = 0; i < size; ++i)
+		{
+#if BYTE_ORDER == BIG_ENDIAN
+			int w = word_count - 1 - (i / 8);
+			int sh = 56 - ((i % 8) * 8);
+#else
+			int w = i / 8;
+			int sh = (i % 8) * 8;
+#endif
+			out[i] = (w < word_count) ? (words[w] >> sh) : 0;
+		}
+	}
+	else
+	{
+		v8::Local<v8::Integer> integer;
+		if(value->IsUndefined() || !value->ToInteger(isolate->GetCurrentContext()).ToLocal(&integer))
+		{
+			return false;
+		}
+		uint64_t value = integer->Value();
+		for(unsigned i = 0; i < size; ++i)
+		{
+#if BYTE_ORDER == BIG_ENDIAN
+			int sh = 56 - ((i % 8) * 8);
+#else
+			int sh = (i % 8) * 8;
+#endif
+			out[i] = (i < 8) ? (value >> sh) : 0;
+		}
+	}
+	return true;
+}
+
+v8::Local<v8::Value> MakeInteger(v8::Isolate *isolate, const uint8_t *value, unsigned size, bool is_signed)
+{
+	v8::EscapableHandleScope handle_scope(isolate);
+	
+	int word_count = (size + 7) / 8;
+	uint64_t words[word_count] = {};
+#if BYTE_ORDER == BIG_ENDIAN
+	int sign_bit = is_signed && ((value[0] & 0x80) != 0);
+	for(unsigned i = 0; i < size; ++i)
+	{
+		words[word_count - 1 - (i / 8)] = (words[word_count - 1 - (i / 8)] << 8) | value[i];
+	}
+#else
+	int sign_bit = is_signed && ((value[size - 1] & 0x80) != 0);
+	for(int i = size - 1; i >= 0; --i)
+	{
+		words[i / 8] = (words[i / 8] << 8) | value[i];
+	}
+#endif
+	if(sign_bit)
+	{
+		int carry = 1;
+		for(int i = 0; i < word_count; ++i)
+		{
+			uint64_t inv = ~words[i];
+			uint64_t res = inv + carry;
+			carry = (res < inv);
+			words[i] = res;
+		}
+	}
+	v8::Local<v8::Value> int_value = v8::BigInt::NewFromWords(isolate->GetCurrentContext(), sign_bit, word_count, words).ToLocalChecked();
+	return handle_scope.Escape(int_value);
+}
+
 /////////////////////////////////// NodeJS ////////////////////////////////////
 
+std::string NodeJS::executable_path;
 unsigned int NodeJS::platform_ref_count = 0;
 std::vector<std::string> NodeJS::options;
+std::vector<std::string> NodeJS::arguments;
 std::unique_ptr<node::MultiIsolatePlatform> NodeJS::platform;
 
-NodeJS::NodeJS(const std::string& _executable_path)
+NodeJS::NodeJS()
 	: isolate(0)
 	, env(0)
 	, context()
 	, require()
-	, executable_path(_executable_path)
 	, debug_info_stream(&std::cout)
 	, debug_warning_stream(&std::cerr)
 	, debug_error_stream(&std::cerr)
@@ -91,11 +183,7 @@ NodeJS::NodeJS(const std::string& _executable_path)
 	, killed(false)
 	, exited(false)
 	, running(false)
-	, filename()
-	, arguments()
 	, exit_code(0)
-	, node_args()
-	, node_exec_args()
 	, thread(0)
 	, init_mutex()
 	, init_cond()
@@ -193,13 +281,14 @@ void NodeJS::Cleanup()
 	ctor_function_templates.clear();
 }
 
-bool NodeJS::Initialize()
+bool NodeJS::Start()
 {
 	if(!platform_ref_count)
 	{
 		std::vector<std::string> init_node_args;
 		init_node_args.push_back(executable_path);
 		for(auto option : options) init_node_args.push_back(option);
+		for(auto arg : arguments) init_node_args.push_back(arg);
 #if NODE_MAJOR_VERSION >= 22
 		std::shared_ptr<node::InitializationResult> init_result = node::InitializeOncePerProcess(
 #else
@@ -227,12 +316,6 @@ bool NodeJS::Initialize()
 	}
 	++platform_ref_count;
 	
-	node_args.clear();
-	node_args.push_back(executable_path);
-	node_args.push_back(filename);
-	for(auto argument : arguments) node_args.push_back(argument);
-	node_exec_args.clear();
-	
 	if(!thread)
 	{
 		init_status = true;
@@ -250,9 +333,9 @@ bool NodeJS::Initialize()
 	return init_status;
 }
 
-void NodeJS::SetFilename(const std::string& _filename)
+void NodeJS::SetExecutablePath(const std::string& _executable_path)
 {
-	filename = _filename;
+	executable_path = _executable_path;
 }
 
 void NodeJS::SetArguments(const std::vector<std::string>& _arguments)
@@ -360,8 +443,9 @@ v8::Local<v8::ObjectTemplate> NodeJS::CreateGlobalObjectTemplate()
 	return global_object_template;
 }
 
-void NodeJS::BeforeExecution()
+bool NodeJS::Initialize()
 {
+	return true;
 }
 
 void NodeJS::Thread()
@@ -409,11 +493,15 @@ void NodeJS::Thread()
 					// node::LoadEnvironment() are being called.
 					v8::Context::Scope context_scope(context);
 					
-					// Give another chance to inheritor to install additional things in the global context
-					BeforeExecution();
-					
 					// Create a node::Environment instance that will later be released using
 					// node::FreeEnvironment().
+					
+					std::vector<std::string> node_args; // non-Node.js arguments, i.e. content of process.argv
+					std::vector<std::string> node_exec_args; // Node.js arguments, i.e. Node.js command line options
+					node_args.push_back(executable_path);
+					for(auto arg : arguments) node_args.push_back(arg);
+					for(auto option : options) node_exec_args.push_back(option);
+
 					std::unique_ptr<node::Environment, decltype(&node::FreeEnvironment)> env(
 						node::CreateEnvironment(isolate_data.get(), context, node_args, node_exec_args),
 						node::FreeEnvironment);
@@ -454,8 +542,9 @@ void NodeJS::Thread()
 							// ...and keep it for later use
 							this->require.Reset(isolate, require.As<v8::Function>());
 							
-							// Load and execute Javascript file if specified
-							if(ExecuteInitScript() || exited)
+							// Give another chance to inheritor to install additional things in the global context,
+							// load and execute Javascript files, or abort.
+							if(Initialize() || exited)
 							{
 								// initialization succeeded
 								{
@@ -532,7 +621,6 @@ void NodeJS::Thread()
 							}
 							else
 							{
-								DebugErrorStream() << "Execution of '" << filename << "' failed" << std::endl;
 								init_status = false;
 								exit_code = 1;
 							}
@@ -773,6 +861,18 @@ v8::Local<v8::Value> NodeJS::Execute(const std::string& source_str, const std::s
 		return handle_scope.Escape(result);
 	}
 	
+	std::string resolved_filename;
+	if(unisim::util::locate::ResolvePath(filename, resolved_filename))
+	{
+		std::string resolved_dirname = unisim::util::locate::Dirname(resolved_filename);
+	
+		context->Global()->Set(
+			context,
+			v8::String::NewFromUtf8Literal(isolate, "__dirname"),
+			v8::String::NewFromUtf8(isolate, resolved_dirname.c_str()).ToLocalChecked()
+		).ToChecked();
+	}
+	
 	if(!script->Run(context).ToLocal(&result))
 	{
 		ReportException(try_catch);
@@ -780,17 +880,6 @@ v8::Local<v8::Value> NodeJS::Execute(const std::string& source_str, const std::s
 	}
 	
 	return handle_scope.Escape(result);
-}
-
-bool NodeJS::ExecuteInitScript()
-{
-	if(filename.empty()) return true;
-	
-	v8::Locker locker(GetIsolate());
-	v8::Isolate::Scope isolate_scope(GetIsolate());
-	
-	std::string source_str;
-	return LoadSource(filename, source_str) && !Execute(source_str, filename).IsEmpty();
 }
 
 v8::Local<v8::Value> NodeJS::RangeError(const std::string& err_msg) const
@@ -828,6 +917,7 @@ void NodeJS::YieldToNodeJS()
 	{
 		DebugInfoStream() << "YieldToNodeJS" << std::endl;
 	}
+	
 	nodejs_thrd_mutex.lock();
 	nodejs_thrd_cond_val = true;
 	nodejs_thrd_cond.notify_one();
@@ -839,6 +929,11 @@ void NodeJS::YieldToNodeJS()
 		main_thrd_cond.wait(lock);
 	}
 	while(!main_thrd_cond_val);
+	
+	struct termios tios;
+	tcgetattr(STDIN_FILENO, &tios);
+	tios.c_lflag |= ISIG;
+	tcsetattr(0, TCSANOW, &tios);
 }
 
 void NodeJS::YieldToMain()

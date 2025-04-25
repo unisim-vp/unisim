@@ -4,13 +4,43 @@
 
 The list of processors.
 
+## `(read-only) inInteractiveMode: boolean`
+
+Whether simulator is running in interactive mode (see Run-time parameter `interactive` of Node.js service).
+
+## `(read-only) inBuiltinREPL: boolean`
+
+Whether running in simulator builtin REPL.
+
 ## `quit()`
 
 Quit and stop simulation.
 
-## `continueExecution() => Promise`
+## `continueExecution([options: object]) => Promise`
 
-Continue execution until any debug events occur, or Ctrl-C is pressed in REPL.
+Get a promise that resolves once any debug events occur, or Ctrl-C is pressed in REPL.
+
+The fulfillment value of the promise is the processor for which debug a event occurs, or `undefined` when Ctrl-C is pressed.
+
+This function is *only* useful when Node.js service of simulator is configured for interactive (blocking) mode.
+
+Options:
+
+* `unblock`: if true and simulator is in interactive mode, this function also let simulator
+  runs until any debug events occur, or Ctrl-C is pressed in REPL.
+
+Examples of use:
+
+	continueExecution(/* unblock */ true).then((processor) => {
+		let pc = processor.registers.pc.get();
+		console.log('0x' + pc.toString(16) + ': ' + processor.disasm(pc));
+	});
+
+or
+
+	let processor = await continueExecution(/* unblock */ true);
+	let pc = processor.registers.pc.get();
+	console.log('0x' + pc.toString(16) + ': ' + processor.disasm(pc));
 
 ## `loadDebugInfo(file: string)`
 

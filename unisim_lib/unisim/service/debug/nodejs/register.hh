@@ -69,8 +69,7 @@ struct RegisterWrapper : ObjectWrapper<CONFIG>
 	void Set(const v8::FunctionCallbackInfo<v8::Value>& args);
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
-	v8::Local<v8::Object> MakeObject() { return Super::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
+	v8::Local<v8::Object> MakeObject();
 private:
 	unisim::service::interfaces::Register *reg;
 };

@@ -1,0 +1,3 @@
+unisim/service/debug/nodejs/dbg.js
+unisim/service/debug/nodejs/dbg_repl.js
+unisim/service/debug/nodejs/tabular.js

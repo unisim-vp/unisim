@@ -58,40 +58,24 @@ template <typename VISITOR, typename T> T DataObject<ADDRESS>::ScanProperties(VI
 			
 			T Visit(Member const *member)
 			{
-				return member->HasName() ? visitor.Visit(member->GetName(), data_object[member->GetName()]) : T();
+				if(member->HasName())
+				{
+					return visitor.Visit(member->GetName(), data_object[member->GetName()]);
+				}
+				else // member is unnamed
+				{
+					const Type *member_cv_unqualified_type = TypeResolver::Resolve(member->GetType());
+					if(member_cv_unqualified_type->IsStructure() || member_cv_unqualified_type->IsUnion())
+					{
+						// Anonymous struct or union
+						// TODO: check that language is C in this compilation unit
+						return member_cv_unqualified_type->AsComposite().template Scan<CompositeVisitor, T>(*this);
+					}
+				}
+				return T();
 			}
 		private:
 			const DataObject<ADDRESS>& data_object;
-			VISITOR& visitor;
-		};
-		
-		CompositeVisitor composite_visitor(*this, visitor);
-		
-		return GetCVUnqualifiedType()->AsComposite().template Scan<CompositeVisitor, T>(composite_visitor);
-	}
-	
-	return T();
-}
-
-template <class ADDRESS>
-template <typename VISITOR, typename T> T DataObject<ADDRESS>::ScanProperties(VISITOR& visitor)
-{
-	if(IsComposite())
-	{
-		struct CompositeVisitor
-		{
-			CompositeVisitor(DataObject<ADDRESS>& _data_object, VISITOR& _visitor)
-				: data_object(_data_object)
-				, visitor(_visitor)
-			{
-			}
-			
-			T Visit(Member const *member)
-			{
-				return member->HasName() ? visitor.Visit(member->GetName(), data_object[member->GetName()]) : T();
-			}
-		private:
-			DataObject<ADDRESS>& data_object;
 			VISITOR& visitor;
 		};
 		
@@ -113,8 +97,8 @@ void DataObjectRef<ADDRESS>::Write(const DataObjectRef<ADDRESS>& src_data_object
 	ADDRESS src_bit_size = src_data_object.GetBitSize();
 	ADDRESS bit_size = (dst_bit_size < src_bit_size) ? dst_bit_size : src_bit_size;
 	std::vector<uint8_t> buffer((bit_size + 7) / 8);
-	if(!src_data_object.Read(0, &buffer[0], 0, bit_size)) throw typename DataObject<ADDRESS>::ReadError(std::string("Can't read ") + src_data_object.GetName());
-	if(!Write(0, &buffer[0], 0, bit_size)) throw typename DataObject<ADDRESS>::ReadError(std::string("Can't write ") + GetName());
+	if(!src_data_object.Read(0, &buffer[0], 0, bit_size)) throw typename DataObject<ADDRESS>::ReadError(src_data_object.GetName());
+	if(!Write(0, &buffer[0], 0, bit_size)) throw typename DataObject<ADDRESS>::WriteError(GetName());
 }
 
 

@@ -96,22 +96,23 @@ v8::Local<v8::FunctionTemplate> ProcessorWrapper<CONFIG>::CreateFunctionTemplate
 	// Add methods
 	struct { const char *method_name; v8::FunctionCallback callback; } methods_config[] =
 	{
-		{ "stepInstruction"   , &unisim::util::nodejs::FunctionCallback<This, &This::StepInstruction   > },
-		{ "nextInstruction"   , &unisim::util::nodejs::FunctionCallback<This, &This::NextInstruction   > },
-		{ "step"              , &unisim::util::nodejs::FunctionCallback<This, &This::Step              > },
-		{ "stepInto"          , &unisim::util::nodejs::FunctionCallback<This, &This::Step              > },
-		{ "next"              , &unisim::util::nodejs::FunctionCallback<This, &This::Next              > },
-		{ "stepOver"          , &unisim::util::nodejs::FunctionCallback<This, &This::Next              > },
-		{ "finish"            , &unisim::util::nodejs::FunctionCallback<This, &This::Finish            > },
-		{ "stepOut"           , &unisim::util::nodejs::FunctionCallback<This, &This::Finish            > },
-		{ "returnFromFunction", &unisim::util::nodejs::FunctionCallback<This, &This::Return            > },
-		{ "disasm"            , &unisim::util::nodejs::FunctionCallback<This, &This::Disasm            > },
-		{ "readMemory"        , &unisim::util::nodejs::FunctionCallback<This, &This::ReadMemory        > },
-		{ "writeMemory"       , &unisim::util::nodejs::FunctionCallback<This, &This::WriteMemory       > },
-		{ "getStackFrameInfos", &unisim::util::nodejs::FunctionCallback<This, &This::GetStackFrameInfos> },
-		{ "selectStackFrame"  , &unisim::util::nodejs::FunctionCallback<This, &This::SelectStackFrame  > },
-		{ "getTime"           , &unisim::util::nodejs::FunctionCallback<This, &This::GetTime           > },
-		{ "getDataObjectNames", &unisim::util::nodejs::FunctionCallback<This, &This::GetDataObjectNames> }
+		{ "stepInstruction"            , &unisim::util::nodejs::FunctionCallback<This, &This::StepInstruction            > },
+		{ "nextInstruction"            , &unisim::util::nodejs::FunctionCallback<This, &This::NextInstruction            > },
+		{ "step"                       , &unisim::util::nodejs::FunctionCallback<This, &This::Step                       > },
+		{ "stepInto"                   , &unisim::util::nodejs::FunctionCallback<This, &This::Step                       > },
+		{ "next"                       , &unisim::util::nodejs::FunctionCallback<This, &This::Next                       > },
+		{ "stepOver"                   , &unisim::util::nodejs::FunctionCallback<This, &This::Next                       > },
+		{ "finish"                     , &unisim::util::nodejs::FunctionCallback<This, &This::Finish                     > },
+		{ "stepOut"                    , &unisim::util::nodejs::FunctionCallback<This, &This::Finish                     > },
+		{ "returnFromFunction"         , &unisim::util::nodejs::FunctionCallback<This, &This::Return                     > },
+		{ "disasm"                     , &unisim::util::nodejs::FunctionCallback<This, &This::Disasm                     > },
+		{ "readMemory"                 , &unisim::util::nodejs::FunctionCallback<This, &This::ReadMemory                 > },
+		{ "writeMemory"                , &unisim::util::nodejs::FunctionCallback<This, &This::WriteMemory                > },
+		{ "getStackFrameInfos"         , &unisim::util::nodejs::FunctionCallback<This, &This::GetStackFrameInfos         > },
+		{ "selectStackFrame"           , &unisim::util::nodejs::FunctionCallback<This, &This::SelectStackFrame           > },
+		{ "getSelectedStackFrameNumber", &unisim::util::nodejs::FunctionCallback<This, &This::GetSelectedStackFrameNumber> },
+		{ "getTime"                    , &unisim::util::nodejs::FunctionCallback<This, &This::GetTime                    > },
+		{ "getDataObjectNames"         , &unisim::util::nodejs::FunctionCallback<This, &This::GetDataObjectNames         > }
 	};
 	for(auto method_config : methods_config)
 	{
@@ -216,6 +217,20 @@ v8::Local<v8::Object> ProcessorWrapper<CONFIG>::MakeObject()
 			prop_registers,
 			v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
 		).ToChecked();
+		
+		processor_object->DefineOwnProperty(
+			this->GetIsolate()->GetCurrentContext(),
+			v8::String::NewFromUtf8Literal(this->GetIsolate(), "memoryAtomSize", v8::NewStringType::kInternalized),
+			MakeInteger(this->GetIsolate(), this->nodejs.memory_atom_size),
+			v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+		).ToChecked();
+		
+		processor_object->DefineOwnProperty(
+			this->GetIsolate()->GetCurrentContext(),
+			v8::String::NewFromUtf8Literal(this->GetIsolate(), "programCounterName", v8::NewStringType::kInternalized),
+			v8::String::NewFromUtf8(this->GetIsolate(), this->nodejs.program_counter_name.c_str()).ToLocalChecked(),
+			v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+		).ToChecked();
 	}
 	
 	return handle_scope.Escape(processor_object);
@@ -234,163 +249,308 @@ void ProcessorWrapper<CONFIG>::GetId(v8::Local<v8::Name> property, const v8::Pro
 }
 
 // Processor.stepInstruction(callback : function)
-// Processor.stepInstruction() => Promise
+// Processor.stepInstruction([options: object]) => Promise
 template <typename CONFIG>
 void ProcessorWrapper<CONFIG>::StepInstruction(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::HandleScope handle_scope(args.GetIsolate());
 	
-	if(!fetch_insn_event_bridge) fetch_insn_event_bridge = new EventBridge<CONFIG>(this->nodejs, processor->CreateFetchInsnEvent());
+	if(!fetch_insn_event_bridge)
+	{
+		fetch_insn_event_bridge = new EventBridge<CONFIG>(this->nodejs, processor->CreateFetchInsnEvent());
+		fetch_insn_event_bridge->SetListenerArgument(this->ThisObject());
+	}
 	
-	if(args.Length() > 0)
+	bool unblock = false;
+	v8::Local<v8::Value> arg0 = args[0]; // either callback or options 
+	if(!arg0->IsUndefined())
 	{
-		v8::Local<v8::Value> arg0 = args[0];
-		if(!arg0->IsFunction())
+		if(arg0->IsFunction())
 		{
-			this->Throw(this->Error(std::string(CLASS_NAME) + ".stepInstruction(callback : function) expects a function for 'callback'"));
+			v8::Local<v8::Function> function = arg0.As<v8::Function>();
+			if(!fetch_insn_event_bridge->AddListener(function))
+			{
+				this->Throw(this->Error(std::string("Processor #" + ToString(processor->GetProcessorNumber()) + ": Can't step instruction")));
+			}
 			return;
 		}
-		v8::Local<v8::Function> function = arg0.As<v8::Function>();
-		if(!fetch_insn_event_bridge->AddListener(function, this->ThisObject()))
+		else if(arg0->IsObject())
 		{
-			this->Throw(this->Error(std::string("Processor #" + ToString(processor->GetProcessorNumber()) + ": Can't step instruction")));
+			v8::Local<v8::Object> obj_options = arg0.As<v8::Object>();
+			v8::Local<v8::Value> prop_options_unblock;
+			if(obj_options->Get(
+			   args.GetIsolate()->GetCurrentContext(),
+			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "unblock")
+			  ).ToLocal(&prop_options_unblock) &&
+			  !prop_options_unblock->IsUndefined())
+			{
+				if(!prop_options_unblock->IsBoolean())
+				{
+					this->Throw(this->TypeError(std::string(CLASS_NAME) + ".stepInstruction([options : object]) expects a boolean for property 'options.unblock'"));
+					return;
+				}
+				
+				unblock = prop_options_unblock->ToBoolean(args.GetIsolate())->Value();
+			}
+		}
+		else
+		{
+			this->Throw(this->Error(
+				std::string(CLASS_NAME) + ".stepInstruction(callback : function) expects a function for 'callback'; " +
+				std::string(CLASS_NAME) + ".stepInstruction([options : object]) expects an object for 'options'"
+			));
 			return;
 		}
 	}
-	else
-	{
-		v8::Local<v8::Promise> promise = fetch_insn_event_bridge->NewPromise();
-		args.GetReturnValue().Set(promise);
-	}
-	this->nodejs.Continue();
+
+	bool status = false;
+	v8::Local<v8::Promise> promise = fetch_insn_event_bridge->NewPromise(status);
+	args.GetReturnValue().Set(promise);
+	if(status && unblock) this->nodejs.Continue();
 }
 
 // Processor.nextInstruction(callback : function)
-// Processor.nextInstruction() => Promise
+// Processor.nextInstruction([options: object]) => Promise
 template <typename CONFIG>
 void ProcessorWrapper<CONFIG>::NextInstruction(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::HandleScope handle_scope(args.GetIsolate());
 	
-	if(!next_insn_event_bridge) next_insn_event_bridge = new EventBridge<CONFIG>(this->nodejs, processor->CreateNextInsnEvent());
+	if(!next_insn_event_bridge)
+	{
+		next_insn_event_bridge = new EventBridge<CONFIG>(this->nodejs, processor->CreateNextInsnEvent());
+		next_insn_event_bridge->SetListenerArgument(this->ThisObject());
+	}
 	
-	if(args.Length() > 0)
+	bool unblock = false;
+	v8::Local<v8::Value> arg0 = args[0];
+	if(!arg0->IsUndefined())
 	{
-		v8::Local<v8::Value> arg0 = args[0];
-		if(!arg0->IsFunction())
+		if(arg0->IsFunction())
 		{
-			this->Throw(this->Error(std::string(CLASS_NAME) + ".nextInstruction(callback : function) expects a function for 'callback'"));
+			v8::Local<v8::Function> function = arg0.As<v8::Function>();
+			if(!next_insn_event_bridge->AddListener(function))
+			{
+				this->Throw(this->Error(std::string("Processor #" + ToString(processor->GetProcessorNumber()) + ": Can't step over instruction")));
+			}
 			return;
 		}
-		v8::Local<v8::Function> function = arg0.As<v8::Function>();
-		if(!next_insn_event_bridge->AddListener(function, this->ThisObject()))
+		else if(arg0->IsObject())
 		{
-			this->Throw(this->Error(std::string("Processor #" + ToString(processor->GetProcessorNumber()) + ": Can't step over instruction")));
+			v8::Local<v8::Object> obj_options = arg0.As<v8::Object>();
+			v8::Local<v8::Value> prop_options_unblock;
+			if(obj_options->Get(
+			   args.GetIsolate()->GetCurrentContext(),
+			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "unblock")
+			  ).ToLocal(&prop_options_unblock) &&
+			  !prop_options_unblock->IsUndefined())
+			{
+				if(!prop_options_unblock->IsBoolean())
+				{
+					this->Throw(this->TypeError(std::string(CLASS_NAME) + ".nextInstruction([options : object]) expects a boolean for property 'options.unblock'"));
+					return;
+				}
+				
+				unblock = prop_options_unblock->ToBoolean(args.GetIsolate())->Value();
+			}
+		}
+		else
+		{
+			this->Throw(this->Error(
+				std::string(CLASS_NAME) + ".nextInstruction(callback : function) expects a function for 'callback'; " +
+				std::string(CLASS_NAME) + ".nextInstruction([options : object]) expects an object for 'options'"
+			));
 			return;
 		}
 	}
-	else
-	{
-		v8::Local<v8::Promise> promise = next_insn_event_bridge->NewPromise();
-		args.GetReturnValue().Set(promise);
-	}
-	this->nodejs.Continue();
+	
+	bool status = false;
+	v8::Local<v8::Promise> promise = next_insn_event_bridge->NewPromise(status);
+	args.GetReturnValue().Set(promise);
+	if(status && unblock) this->nodejs.Continue();
 }
 
 // Processor.step(callback : function)
-// Processor.step() => Promise
+// Processor.step([options : object]) => Promise
 template <typename CONFIG>
 void ProcessorWrapper<CONFIG>::Step(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::HandleScope handle_scope(args.GetIsolate());
 	
-	if(!fetch_stmt_event_bridge) fetch_stmt_event_bridge = new EventBridge<CONFIG>(this->nodejs, processor->CreateFetchStmtEvent());
+	if(!fetch_stmt_event_bridge)
+	{
+		fetch_stmt_event_bridge = new EventBridge<CONFIG>(this->nodejs, processor->CreateFetchStmtEvent());
+		fetch_stmt_event_bridge->SetListenerArgument(this->ThisObject());
+	}
 	
-	if(args.Length() > 0)
+	bool unblock = false;
+	v8::Local<v8::Value> arg0 = args[0];
+	if(!arg0->IsUndefined())
 	{
-		v8::Local<v8::Value> arg0 = args[0];
-		if(!arg0->IsFunction())
+		if(arg0->IsFunction())
 		{
-			this->Throw(this->Error(std::string(CLASS_NAME) + ".step(callback : function) expects a function for 'callback'"));
+			v8::Local<v8::Function> function = arg0.As<v8::Function>();
+			if(!fetch_stmt_event_bridge->AddListener(function))
+			{
+				this->Throw(this->Error(std::string("Processor #" + ToString(processor->GetProcessorNumber()) + ": Can't step into")));
+			}
 			return;
 		}
-		v8::Local<v8::Function> function = arg0.As<v8::Function>();
-		if(!fetch_stmt_event_bridge->AddListener(function, this->ThisObject()))
+		else if(arg0->IsObject())
 		{
-			this->Throw(this->Error(std::string("Processor #" + ToString(processor->GetProcessorNumber()) + ": Can't step into")));
+			v8::Local<v8::Object> obj_options = arg0.As<v8::Object>();
+			v8::Local<v8::Value> prop_options_unblock;
+			if(obj_options->Get(
+			   args.GetIsolate()->GetCurrentContext(),
+			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "unblock")
+			  ).ToLocal(&prop_options_unblock) &&
+			  !prop_options_unblock->IsUndefined())
+			{
+				if(!prop_options_unblock->IsBoolean())
+				{
+					this->Throw(this->TypeError(std::string(CLASS_NAME) + ".step([options : object]) expects a boolean for property 'options.unblock'"));
+					return;
+				}
+				
+				unblock = prop_options_unblock->ToBoolean(args.GetIsolate())->Value();
+			}
+		}
+		else
+		{
+			this->Throw(this->Error(
+				std::string(CLASS_NAME) + ".step(callback : function) expects a function for 'callback'; " +
+				std::string(CLASS_NAME) + ".step([options : object]) expects an object for 'options'"
+			));
 			return;
 		}
 	}
-	else
-	{
-		v8::Local<v8::Promise> promise = fetch_stmt_event_bridge->NewPromise();
-		args.GetReturnValue().Set(promise);
-	}
-	this->nodejs.Continue();
+	
+	bool status = false;
+	v8::Local<v8::Promise> promise = fetch_stmt_event_bridge->NewPromise(status);
+	args.GetReturnValue().Set(promise);
+	if(status && unblock) this->nodejs.Continue();
 }
 
 // Processor.next(callback : function)
-// Processor.next() => Promise
+// Processor.next([options : object]) => Promise
 template <typename CONFIG>
 void ProcessorWrapper<CONFIG>::Next(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::HandleScope handle_scope(args.GetIsolate());
 	
-	if(!next_stmt_event_bridge) next_stmt_event_bridge = new EventBridge<CONFIG>(this->nodejs, processor->CreateNextStmtEvent());
+	if(!next_stmt_event_bridge)
+	{
+		next_stmt_event_bridge = new EventBridge<CONFIG>(this->nodejs, processor->CreateNextStmtEvent());
+		next_stmt_event_bridge->SetListenerArgument(this->ThisObject());
+	}
 	
-	if(args.Length() > 0)
+	bool unblock = false;
+	v8::Local<v8::Value> arg0 = args[0];
+	if(!arg0->IsUndefined())
 	{
-		v8::Local<v8::Value> arg0 = args[0];
-		if(!arg0->IsFunction())
+		if(arg0->IsFunction())
 		{
-			this->Throw(this->Error(std::string(CLASS_NAME) + ".next(callback : function) expects a function for 'callback'"));
+			v8::Local<v8::Function> function = arg0.As<v8::Function>();
+			if(!next_stmt_event_bridge->AddListener(function))
+			{
+				this->Throw(this->Error(std::string("Processor #" + ToString(processor->GetProcessorNumber()) + ": Can't step over")));
+			}
 			return;
 		}
-		v8::Local<v8::Function> function = arg0.As<v8::Function>();
-		if(!next_stmt_event_bridge->AddListener(function, this->ThisObject()))
+		else if(arg0->IsObject())
 		{
-			this->Throw(this->Error(std::string("Processor #" + ToString(processor->GetProcessorNumber()) + ": Can't step over")));
+			v8::Local<v8::Object> obj_options = arg0.As<v8::Object>();
+			v8::Local<v8::Value> prop_options_unblock;
+			if(obj_options->Get(
+			   args.GetIsolate()->GetCurrentContext(),
+			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "unblock")
+			  ).ToLocal(&prop_options_unblock) &&
+			  !prop_options_unblock->IsUndefined())
+			{
+				if(!prop_options_unblock->IsBoolean())
+				{
+					this->Throw(this->TypeError(std::string(CLASS_NAME) + ".next([options : object]) expects a boolean for property 'options.unblock'"));
+					return;
+				}
+				
+				unblock = prop_options_unblock->ToBoolean(args.GetIsolate())->Value();
+			}
+		}
+		else
+		{
+			this->Throw(this->Error(
+				std::string(CLASS_NAME) + ".next(callback : function) expects a function for 'callback'; " +
+				std::string(CLASS_NAME) + ".next([options : object]) expects an object for 'options'"
+			));
 			return;
 		}
 	}
-	else
-	{
-		v8::Local<v8::Promise> promise = next_stmt_event_bridge->NewPromise();
-		args.GetReturnValue().Set(promise);
-	}
-	this->nodejs.Continue();
+	
+	bool status = false;
+	v8::Local<v8::Promise> promise = next_stmt_event_bridge->NewPromise(status);
+	args.GetReturnValue().Set(promise);
+	if(status && unblock) this->nodejs.Continue();
 }
 
 // Processor.finish(callback : function)
-// Processor.finish() => Promise
+// Processor.finish([options : object]) => Promise
 template <typename CONFIG>
 void ProcessorWrapper<CONFIG>::Finish(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::HandleScope handle_scope(args.GetIsolate());
 	
-	if(!finish_event_bridge) finish_event_bridge = new EventBridge<CONFIG>(this->nodejs, processor->CreateFinishEvent());
+	if(!finish_event_bridge)
+	{
+		finish_event_bridge = new EventBridge<CONFIG>(this->nodejs, processor->CreateFinishEvent());
+		finish_event_bridge->SetListenerArgument(this->ThisObject());
+	}
 	
-	if(args.Length() > 0)
+	bool unblock = false;
+	v8::Local<v8::Value> arg0 = args[0];
+	if(!arg0->IsUndefined())
 	{
-		v8::Local<v8::Value> arg0 = args[0];
-		if(!arg0->IsFunction())
+		if(arg0->IsFunction())
 		{
-			this->Throw(this->Error(std::string(CLASS_NAME) + ".finish(callback : function) expects a function for 'callback'"));
+			v8::Local<v8::Function> function = arg0.As<v8::Function>();
+			if(!finish_event_bridge->AddListener(function))
+			{
+				this->Throw(this->Error(std::string("Processor #" + ToString(processor->GetProcessorNumber()) + ": Can't finish current current function")));
+			}
 			return;
 		}
-		v8::Local<v8::Function> function = arg0.As<v8::Function>();
-		if(!finish_event_bridge->AddListener(function, this->ThisObject()))
+		else if(arg0->IsObject())
 		{
-			this->Throw(this->Error(std::string("Processor #" + ToString(processor->GetProcessorNumber()) + ": Can't finish current current function")));
+			v8::Local<v8::Object> obj_options = arg0.As<v8::Object>();
+			v8::Local<v8::Value> prop_options_unblock;
+			if(obj_options->Get(
+			   args.GetIsolate()->GetCurrentContext(),
+			   v8::String::NewFromUtf8Literal(args.GetIsolate(), "unblock")
+			  ).ToLocal(&prop_options_unblock) &&
+			  !prop_options_unblock->IsUndefined())
+			{
+				if(!prop_options_unblock->IsBoolean())
+				{
+					this->Throw(this->TypeError(std::string(CLASS_NAME) + ".finish([options : object]) expects a boolean for property 'options.unblock'"));
+					return;
+				}
+				
+				unblock = prop_options_unblock->ToBoolean(args.GetIsolate())->Value();
+			}
+		}
+		else
+		{
+			this->Throw(this->Error(
+				std::string(CLASS_NAME) + ".finish(callback : function) expects a function for 'callback'; " +
+				std::string(CLASS_NAME) + ".finish([options : object]) expects an object for 'options'"
+			));
 			return;
 		}
 	}
-	else
-	{
-		v8::Local<v8::Promise> promise = finish_event_bridge->NewPromise();
-		args.GetReturnValue().Set(promise);
-	}
-	this->nodejs.Continue();
+	
+	bool status = false;
+	v8::Local<v8::Promise> promise = finish_event_bridge->NewPromise(status);
+	args.GetReturnValue().Set(promise);
+	if(status && unblock) this->nodejs.Continue();
 }
 
 // Processor.return([return_value : *])
@@ -401,13 +561,22 @@ void ProcessorWrapper<CONFIG>::Return(const v8::FunctionCallbackInfo<v8::Value>&
 	v8::Local<v8::Value> return_value = args[0];
 	if(!return_value->IsUndefined())
 	{
-		DataObjectWrapper<CONFIG> data_object = DataObjectWrapper<CONFIG>(this->nodejs, this, "$return_value");
-		data_object.Set(return_value);
+		DataObjectWrapper<CONFIG> *data_object = new DataObjectWrapper<CONFIG>(this->nodejs, this, "$return_value");
+		bool set_ret_value_status = data_object->Set(return_value);
+		data_object->Finalize();
+		if(!set_ret_value_status)
+		{
+			this->Throw(this->Error(std::string("Processor #" + ToString(processor->GetProcessorNumber()) + ": Can't set return value")));
+			return;
+		}
 	}
-	processor->UnwindStack();
+	if(!processor->UnwindStack())
+	{
+		this->Throw(this->Error(std::string("Processor #" + ToString(processor->GetProcessorNumber()) + ": Can't return from current function")));
+	}
 }
 
-// Processor.disasm(addr: Number) => string
+// Processor.disasm(addr: Number, [info: Object]) => string
 template <typename CONFIG>
 void ProcessorWrapper<CONFIG>::Disasm(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -416,12 +585,28 @@ void ProcessorWrapper<CONFIG>::Disasm(const v8::FunctionCallbackInfo<v8::Value>&
 	ADDRESS addr = 0;
 	if((!arg0->IsNumber() && !arg0->IsBigInt()) || !ToInt(args.GetIsolate(), arg0, addr))
 	{
-		this->Throw(this->TypeError(std::string(CLASS_NAME) + ".disasm(addr: Number) expects a number for 'addr'"));
+		this->Throw(this->TypeError(std::string(CLASS_NAME) + ".disasm(addr: Number, [info: Object]) expects a number for 'addr'"));
+		return;
+	}
+	v8::Local<v8::Value> arg1 = args[1];
+	if(!arg1->IsUndefined() && !arg1->IsObject())
+	{
+		this->Throw(this->TypeError(std::string(CLASS_NAME) + ".disasm(addr: Number, [info: Object]) expects an object as 'info'"));
 		return;
 	}
 	
 	ADDRESS next_addr;
 	std::string disasm = processor->Disasm(addr, next_addr);
+	if(arg1->IsObject())
+	{
+		v8::Local<v8::Object> disasm_info = arg1.As<v8::Object>();
+		disasm_info->Set(
+			args.GetIsolate()->GetCurrentContext(),
+			v8::String::NewFromUtf8Literal(args.GetIsolate(), "nextAddr"),
+			MakeInteger(args.GetIsolate(), next_addr)
+		).ToChecked();
+	}
+	
 	args.GetReturnValue().Set(v8::String::NewFromUtf8(args.GetIsolate(), disasm.c_str()).ToLocalChecked());
 }
 
@@ -489,7 +674,7 @@ void ProcessorWrapper<CONFIG>::GetStackFrameInfos(const v8::FunctionCallbackInfo
 	v8::HandleScope handle_scope(args.GetIsolate());
 	v8::Local<v8::Value> arg0 = args[0]; // max_stack_frames
 	int64_t max_stack_frames = 0;
-	if(args.Length() > 0)
+	if(!arg0->IsUndefined())
 	{
 		if((!arg0->IsNumber() && !arg0->IsBigInt()) || !ToInt(args.GetIsolate(), arg0, max_stack_frames))
 		{
@@ -542,6 +727,14 @@ void ProcessorWrapper<CONFIG>::SelectStackFrame(const v8::FunctionCallbackInfo<v
 	}
 }
 
+// Processor.getSelectedStackFrameNumber() => Number
+template <typename CONFIG>
+void ProcessorWrapper<CONFIG>::GetSelectedStackFrameNumber(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::HandleScope handle_scope(args.GetIsolate());
+	args.GetReturnValue().Set(MakeInteger(this->GetIsolate(), processor->GetSelectedStackFrameNumber()));
+}
+
 // Processor.getTime() => string
 template <typename CONFIG>
 void ProcessorWrapper<CONFIG>::GetTime(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -562,24 +755,9 @@ void ProcessorWrapper<CONFIG>::GetDataObjectNames(const v8::FunctionCallbackInfo
 	struct Synopsis { std::string str() const { return std::string("getDataObjectNames([scope: string])"); } };
 	v8::HandleScope handle_scope(args.GetIsolate());
 	typename unisim::service::interfaces::DataObjectLookupBase::Scope scope = unisim::service::interfaces::DataObjectLookupBase::SCOPE_BOTH_GLOBAL_AND_LOCAL;
-	if(args.Length() >= 1)
+	v8::Local<v8::Value> arg0 = args[0]; // scope
+	if(!arg0->IsUndefined())
 	{
-		struct ValidScopes
-		{
-			std::string str() const
-			{
-				std::string s;
-				for(typename unisim::service::interfaces::DataObjectLookupBase::Scope scope : unisim::service::interfaces::DataObjectLookupBase::Scopes)
-				{
-					if(!s.empty()) s += ", ";
-					s += "'";
-					s += ToString(scope);
-					s += "'";
-				}
-				return s;
-			}
-		};
-		v8::Local<v8::Value> arg0 = args[0]; // scope
 		std::string scope_name;
 		if(!arg0->IsString() || !ToString(args.GetIsolate(), arg0, scope_name))
 		{
@@ -589,6 +767,21 @@ void ProcessorWrapper<CONFIG>::GetDataObjectNames(const v8::FunctionCallbackInfo
 		std::istringstream scope_sstr(scope_name);
 		if(!(scope_sstr >> scope))
 		{
+			struct ValidScopes
+			{
+				std::string str() const
+				{
+					std::string s;
+					for(typename unisim::service::interfaces::DataObjectLookupBase::Scope scope : unisim::service::interfaces::DataObjectLookupBase::Scopes)
+					{
+						if(!s.empty()) s += ", ";
+						s += "'";
+						s += ToString(scope);
+						s += "'";
+					}
+					return s;
+				}
+			};
 			this->Throw(this->TypeError(Synopsis().str() + " expects a valid string (one of " + ValidScopes().str() + ") for 'scope'"));
 			return;
 		}
@@ -658,14 +851,6 @@ char *ProcessorWrapper<CONFIG>::CommandGenerator(char *text, int state)
 	}
 
 	return (char *) 0;
-}
-
-template <typename CONFIG>
-void ProcessorWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/processor.h>
-	;
 }
 
 } // end of namespace nodejs

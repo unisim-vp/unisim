@@ -197,7 +197,7 @@ void StubWrapper<CONFIG>::Trigger(typename unisim::util::debug::Stub<ADDRESS>::P
 			args[i] = arg;
 		}
 
-		v8::Local<v8::Value> recv = this->ThisObject(); // "this"
+		v8::Local<v8::Value> recv = context->Global(); // "this"
 		v8::Local<v8::Value> result;
 		if(this->IsDebugging())
 		{
@@ -345,14 +345,6 @@ bool StubWrapper<CONFIG>::Update(bool has_listeners)
 	}
 	
 	return true;
-}
-
-template <typename CONFIG>
-void StubWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/stub.h>
-	;
 }
 
 //////////////////////////////////// Stub<> ////////////////////////////////////

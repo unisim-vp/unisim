@@ -62,7 +62,7 @@ CPU::~CPU()
 void CPU::Process() {
 	sc_core::sc_time cycle_time = sc_core::sc_time(1, sc_core::SC_NS);
 	sc_core::sc_time quantum = sc_core::sc_time(100, sc_core::SC_NS);
-	while(1)
+	while(!Killed())
 	{
 		step_instruction();
 		local_time_offset += cycle_time;

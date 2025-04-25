@@ -197,7 +197,7 @@ void DataObjectWrapper<CONFIG>::Update()
 }
 
 template <typename CONFIG>
-void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions& options)
+bool DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions& options)
 {
 	Update();
 
@@ -209,11 +209,27 @@ void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions
 			this->DebugInfoStream() << data_object.GetName() << " <- " << (ToString(this->GetIsolate(), value, str) ? str : "?") << std::endl;
 		}
 		
+		if(data_object.IsUndefined())
+		{
+			throw typename unisim::util::debug::DataObject<ADDRESS>::UndefinedReferenceError(data_object.GetName());
+		}
+		
+		if(!data_object.Exists())
+		{
+			throw typename unisim::util::debug::DataObject<ADDRESS>::DoesNotExistError(data_object.GetName());
+		}
+		
+		if(data_object.IsOptimizedOut())
+		{
+			throw typename unisim::util::debug::DataObject<ADDRESS>::OptimizedOutError(data_object.GetName());
+		}
+		
 		struct Setter
 		{
 			NodeJS<CONFIG>& nodejs;
 			DataObjectWrapper<CONFIG>& data_object_wrapper;
 			unisim::util::debug::DataObjectRef<ADDRESS>& data_object;
+			const SetOptions& options;
 			
 			struct Hash
 			{
@@ -225,10 +241,11 @@ void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions
 			typedef std::unordered_set<v8::Local<v8::Value>, Hash> Visited;
 			Visited visited;
 			
-			Setter(NodeJS<CONFIG>& _nodejs, DataObjectWrapper<CONFIG>& _data_object_wrapper, unisim::util::debug::DataObjectRef<ADDRESS>& _data_object)
+			Setter(NodeJS<CONFIG>& _nodejs, DataObjectWrapper<CONFIG>& _data_object_wrapper, unisim::util::debug::DataObjectRef<ADDRESS>& _data_object, const SetOptions& _options)
 				: nodejs(_nodejs)
 				, data_object_wrapper(_data_object_wrapper)
 				, data_object(_data_object)
+				, options(_options)
 				, visited()
 			{
 			}
@@ -276,13 +293,13 @@ void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions
 					
 					setter.visited.insert(value);
 					
-					if(data_object.IsArray())
+					if(data_object_wrapper)
 					{
-						if(data_object_wrapper)
-						{
-							data_object.Write(data_object_wrapper->GetDataObject());
-						}
-						else if(value->IsArray())
+						data_object.Write(data_object_wrapper->GetDataObject());
+					}
+					else if(data_object.IsArray())
+					{
+						if(value->IsArray())
 						{
 							v8::Local<v8::Array> array = value.As<v8::Array>();
 							uint32_t array_length = array->Length();
@@ -291,7 +308,7 @@ void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions
 							for(uint32_t i = 0; i < array_length; ++i)
 							{
 								int64_t subscript = lower_bound + i;
-								if((subscript >= lower_bound) && (subscript <= upper_bound))
+								if(!setter.options.strict || ((subscript >= lower_bound) && (subscript <= upper_bound)))
 								{
 									unisim::util::debug::DataObjectRef<ADDRESS> item_data_object = data_object[subscript];
 									v8::Local<v8::Value> array_item = array->Get(GetIsolate()->GetCurrentContext(), i).ToLocalChecked();
@@ -303,11 +320,7 @@ void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions
 					}
 					else if(data_object.IsObject())
 					{
-						if(data_object_wrapper)
-						{
-							data_object.Write(data_object_wrapper->GetDataObject());
-						}
-						else if(value->IsObject())
+						if(value->IsObject())
 						{
 							v8::Local<v8::Object> object = value.As<v8::Object>();
 							v8::Local<v8::Array> property_names = object->GetPropertyNames(GetIsolate()->GetCurrentContext()).ToLocalChecked();
@@ -315,7 +328,7 @@ void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions
 							{
 								v8::Local<v8::Value> object_property_name = property_names->Get(GetIsolate()->GetCurrentContext(), i).ToLocalChecked();
 								std::string property_name;
-								if(ToString(GetIsolate(), object_property_name, property_name) && data_object.HasProperty(property_name))
+								if(ToString(GetIsolate(), object_property_name, property_name) && (!setter.options.strict || data_object.HasProperty(property_name)))
 								{
 									unisim::util::debug::DataObjectRef<ADDRESS> property_data_object = data_object[property_name];
 									v8::Local<v8::Value> object_property_value = object->Get(GetIsolate()->GetCurrentContext(), object_property_name).ToLocalChecked();
@@ -324,10 +337,6 @@ void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions
 								}
 							}
 						}
-					}
-					else if(data_object_wrapper)
-					{
-						data_object.Write(data_object_wrapper->GetDataObject());
 					}
 					else if(value->IsNumber())
 					{
@@ -354,7 +363,14 @@ void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions
 						v8::Local<v8::String> string = value.As<v8::String>();
 						std::string str;
 						ToString(GetIsolate(), string, str);
-						data_object = str;
+						if(data_object.IsChar() && (str.length() > 0))
+						{
+							data_object = str[0];
+						}
+						else
+						{
+							data_object = str;
+						}
 					}
 					else if(value->IsNull())
 					{
@@ -386,13 +402,16 @@ void DataObjectWrapper<CONFIG>::Set(v8::Local<v8::Value> value, const SetOptions
 			}
 		};
 		
-		Setter setter = Setter(this->nodejs, *this, data_object);
+		Setter setter = Setter(this->nodejs, *this, data_object, options);
 		setter.Set(value);
+		return true;
 	}
 	catch(typename unisim::util::debug::DataObject<ADDRESS>::Error& data_object_error)
 	{
 		this->Throw(this->Error(data_object_error.what()));
 	}
+	
+	return false;
 }
 
 template <typename CONFIG>
@@ -413,6 +432,21 @@ v8::Local<v8::Value> DataObjectWrapper<CONFIG>::Get(const GetOptions& options)
 			{
 				this->DebugInfoStream() << data_object.GetName() << " = <optimized out>" << std::endl;
 			}
+		}
+		
+		if(data_object.IsUndefined())
+		{
+			throw typename unisim::util::debug::DataObject<ADDRESS>::UndefinedReferenceError(data_object.GetName());
+		}
+		
+		if(!data_object.Exists())
+		{
+			throw typename unisim::util::debug::DataObject<ADDRESS>::DoesNotExistError(data_object.GetName());
+		}
+		
+		if(data_object.IsOptimizedOut())
+		{
+			throw typename unisim::util::debug::DataObject<ADDRESS>::OptimizedOutError(data_object.GetName());
 		}
 		
 		struct Getter
@@ -463,17 +497,8 @@ v8::Local<v8::Value> DataObjectWrapper<CONFIG>::Get(const GetOptions& options)
 					
 					bool Visit(const char *property_name, unisim::util::debug::DataObjectRef<ADDRESS> property_data_object)
 					{
-						v8::Local<v8::Value> object_property_value;
-						if(getter.options.flatten)
-						{
-							Builder property_builder = Builder(getter);
-							object_property_value = property_builder.Build(property_data_object);
-						}
-						else
-						{
-							DataObjectWrapper<CONFIG> *property_data_object_wrapper = new DataObjectWrapper<CONFIG>(getter.nodejs, getter.data_object_wrapper.GetProcessorWrapper(), property_data_object);
-							object_property_value = property_data_object_wrapper->MakeObject();
-						}
+						Builder property_builder = Builder(getter);
+						v8::Local<v8::Value> object_property_value = property_builder.Build(property_data_object);
 						object->CreateDataProperty(
 							GetIsolate()->GetCurrentContext(),
 							v8::String::NewFromUtf8(GetIsolate(), property_name).ToLocalChecked(),
@@ -502,17 +527,8 @@ v8::Local<v8::Value> DataObjectWrapper<CONFIG>::Get(const GetOptions& options)
 					
 					bool Visit(int64_t subscript, unisim::util::debug::DataObjectRef<ADDRESS> item_data_object)
 					{
-						v8::Local<v8::Value> array_item_value;
-						if(getter.options.flatten)
-						{
-							Builder item_builder = Builder(getter);
-							array_item_value = item_builder.Build(item_data_object);
-						}
-						else
-						{
-							DataObjectWrapper<CONFIG> *item_data_object_wrapper = new DataObjectWrapper<CONFIG>(getter.nodejs, getter.data_object_wrapper.GetProcessorWrapper(), item_data_object);
-							array_item_value = item_data_object_wrapper->MakeObject();
-						}
+						Builder item_builder = Builder(getter);
+						v8::Local<v8::Value> array_item_value = item_builder.Build(item_data_object);
 						array->CreateDataProperty(GetIsolate()->GetCurrentContext(), subscript - lower_bound, array_item_value).ToChecked();
 						return false;
 					}
@@ -554,8 +570,35 @@ v8::Local<v8::Value> DataObjectWrapper<CONFIG>::Get(const GetOptions& options)
 						}
 						return handle_scope.Escape(array);
 					}
+					else if(getter.options.raw)
+					{
+						ADDRESS bit_size = data_object.GetBitSize();
+						ADDRESS size = (bit_size + 7) / 8;
+						v8::Local<v8::Object> node_buffer = node::Buffer::New(GetIsolate(), size).ToLocalChecked();
+						if(!data_object.Read(0, node::Buffer::Data(node_buffer), 0, bit_size))
+						{
+							throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(data_object.GetName());
+						}
+						return handle_scope.Escape(node_buffer);
+					}
 					else if(data_object.IsPointer())
 					{
+						if(getter.options.cstring && data_object.IsCharPointer())
+						{
+							std::string string_value;
+							try
+							{
+								std::string string_value = data_object;
+								v8::Local<v8::String> value;
+								if(v8::String::NewFromUtf8(GetIsolate(), string_value.c_str()).ToLocal(&value))
+								{
+									return handle_scope.Escape(value);
+								}
+							}
+							catch(typename unisim::util::debug::DataObject<ADDRESS>::Error& data_object_error)
+							{
+							}
+						}
 						if(getter.options.flatten)
 						{
 							unisim::util::debug::DataObjectRef<ADDRESS> target_data_object = *data_object;
@@ -584,12 +627,18 @@ v8::Local<v8::Value> DataObjectWrapper<CONFIG>::Get(const GetOptions& options)
 							return handle_scope.Escape(value);
 						}
 					}
-					else if(data_object.IsInteger())
+					else if(data_object.IsInteger() || data_object.IsChar())
 					{
 						if(data_object.IsSigned())
 						{
 							int64_t int64_value = data_object;
-							if(data_object.GetBitSize() > 32)
+							if(data_object.IsChar() && (int64_value >= -128) && (int64_value <= 127))
+							{
+								uint8_t char_value = (uint8_t)(int8_t) int64_value;
+								v8::Local<v8::String> value = v8::String::NewFromOneByte(GetIsolate(), &char_value, v8::NewStringType::kNormal, 1).ToLocalChecked();
+								return handle_scope.Escape(value);
+							}
+							else if(data_object.GetBitSize() > 32)
 							{
 								v8::Local<v8::BigInt> value = v8::BigInt::New(GetIsolate(), int64_value);
 								return handle_scope.Escape(value);
@@ -603,7 +652,13 @@ v8::Local<v8::Value> DataObjectWrapper<CONFIG>::Get(const GetOptions& options)
 						else
 						{
 							uint64_t uint64_value = data_object;
-							if(data_object.GetBitSize() > 32)
+							if(data_object.IsChar() && uint64_value <= 255)
+							{
+								uint8_t char_value = (uint8_t) uint64_value;
+								v8::Local<v8::String> value = v8::String::NewFromOneByte(GetIsolate(), &char_value, v8::NewStringType::kNormal, 1).ToLocalChecked();
+								return handle_scope.Escape(value);
+							}
+							else if(data_object.GetBitSize() > 32)
 							{
 								v8::Local<v8::BigInt> value = v8::BigInt::NewFromUnsigned(GetIsolate(), uint64_value);
 								return handle_scope.Escape(value);
@@ -621,19 +676,24 @@ v8::Local<v8::Value> DataObjectWrapper<CONFIG>::Get(const GetOptions& options)
 						v8::Local<v8::Number> value = v8::Number::New(GetIsolate(), float_value);
 						return handle_scope.Escape(value);
 					}
+					else if(data_object.IsEnum())
+					{
+						int64_t int64_value = data_object;
+						if(data_object.GetBitSize() > 32)
+						{
+							v8::Local<v8::BigInt> value = v8::BigInt::New(GetIsolate(), int64_value);
+							return handle_scope.Escape(value);
+						}
+						else
+						{
+							v8::Local<v8::Integer> value = v8::Integer::New(GetIsolate(), int32_t(int64_value));
+							return handle_scope.Escape(value);
+						}
+					}
 					else if(data_object.IsBoolean())
 					{
 						bool boolean_value = data_object;
 						v8::Local<v8::Boolean> value = v8::Boolean::New(GetIsolate(), boolean_value);
-						return handle_scope.Escape(value);
-					}
-					else if(data_object.IsCharPointer())
-					{
-						std::string string_value = data_object;
-						v8::Local<v8::String> value;
-						if(v8::String::NewFromUtf8(GetIsolate(), string_value.c_str()).ToLocal(&value))
-						{
-						}
 						return handle_scope.Escape(value);
 					}
 					
@@ -683,9 +743,9 @@ void DataObjectWrapper<CONFIG>::SetCb(const v8::FunctionCallbackInfo<v8::Value>&
 			return;
 		}
 		v8::Local<v8::Object> get_options = arg1.As<v8::Object>();
-		options.flatten = get_options->Get(
+		options.strict = get_options->Get(
 			args.GetIsolate()->GetCurrentContext(),
-			v8::String::NewFromUtf8Literal(args.GetIsolate(), "flatten")
+			v8::String::NewFromUtf8Literal(args.GetIsolate(), "strict")
 		).ToLocalChecked()->ToBoolean(args.GetIsolate())->Value();
 	}
 	
@@ -711,6 +771,14 @@ void DataObjectWrapper<CONFIG>::GetCb(const v8::FunctionCallbackInfo<v8::Value>&
 		options.flatten = get_options->Get(
 			args.GetIsolate()->GetCurrentContext(),
 			v8::String::NewFromUtf8Literal(args.GetIsolate(), "flatten")
+		).ToLocalChecked()->ToBoolean(args.GetIsolate())->Value();
+		options.raw = get_options->Get(
+			args.GetIsolate()->GetCurrentContext(),
+			v8::String::NewFromUtf8Literal(args.GetIsolate(), "raw")
+		).ToLocalChecked()->ToBoolean(args.GetIsolate())->Value();
+		options.cstring = get_options->Get(
+			args.GetIsolate()->GetCurrentContext(),
+			v8::String::NewFromUtf8Literal(args.GetIsolate(), "cstring")
 		).ToLocalChecked()->ToBoolean(args.GetIsolate())->Value();
 	}
 	
@@ -820,14 +888,6 @@ void DataObjectWrapper<CONFIG>::GetAddress(v8::Local<v8::Name> property, const v
 			info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), addr));
 		}
 	}
-}
-
-template <typename CONFIG>
-void DataObjectWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/data_object.h>
-	;
 }
 
 } // end of namespace nodejs

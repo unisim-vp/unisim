@@ -595,7 +595,7 @@ void CPU<TYPES, CONFIG>::Run()
 	
 	SampleInputs();
 	
-	while(1)
+	while(!this->Killed())
 	{
 		this->StepOneInstruction();
 		// update local time (relative to sc_time_stamp)

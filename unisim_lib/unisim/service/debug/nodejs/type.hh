@@ -80,7 +80,6 @@ struct TypeWrapper : ObjectWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::Type *type;
 };
@@ -115,7 +114,6 @@ struct NamedTypeWrapper : TypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::NamedType *named_type;
 };
@@ -149,7 +147,6 @@ struct BaseTypeWrapper : NamedTypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::BaseType *base_type;
 };
@@ -177,7 +174,6 @@ struct IntegerTypeWrapper : BaseTypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::IntegerType *integer_type;
 };
@@ -205,7 +201,6 @@ struct CharTypeWrapper : BaseTypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::CharType *char_type;
 };
@@ -232,7 +227,6 @@ struct FloatingPointTypeWrapper : BaseTypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::FloatingPointType *floating_point_type;
 };
@@ -259,7 +253,6 @@ struct BooleanTypeWrapper : BaseTypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::BooleanType *boolean_type;
 };
@@ -291,7 +284,6 @@ struct MemberWrapper : ObjectWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::Member *member;
 };
@@ -325,7 +317,6 @@ struct CompositeTypeWrapper : NamedTypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject();
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::CompositeType *composite_type;
 };
@@ -352,7 +343,6 @@ struct StructureTypeWrapper : CompositeTypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::StructureType *structure_type;
 };
@@ -379,7 +369,6 @@ struct UnionTypeWrapper : CompositeTypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::UnionType *union_type;
 };
@@ -406,7 +395,6 @@ struct ClassTypeWrapper : CompositeTypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::ClassType *class_type;
 };
@@ -433,7 +421,6 @@ struct InterfaceTypeWrapper : CompositeTypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::InterfaceType *interface_type;
 };
@@ -465,7 +452,6 @@ struct ArrayTypeWrapper : TypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::ArrayType *array_type;
 };
@@ -493,7 +479,6 @@ struct PointerTypeWrapper : TypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::PointerType *pointer_type;
 };
@@ -521,7 +506,6 @@ struct TypedefWrapper : NamedTypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::Typedef *typedef_type;
 };
@@ -550,7 +534,6 @@ struct FormalParameterWrapper : ObjectWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::FormalParameter *formal_parameter;
 };
@@ -578,7 +561,6 @@ struct FunctionTypeWrapper : TypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject();
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::FunctionType *function_type;
 };
@@ -606,7 +588,6 @@ struct ConstTypeWrapper : TypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::ConstType *const_type;
 };
@@ -635,7 +616,6 @@ struct EnumeratorWrapper : ObjectWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::Enumerator *enumerator;
 };
@@ -662,7 +642,6 @@ struct EnumTypeWrapper : NamedTypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject();
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::EnumType *enum_type;
 };
@@ -689,7 +668,6 @@ struct UnspecifiedTypeWrapper : TypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::UnspecifiedType *unspecified_type;
 };
@@ -717,7 +695,6 @@ struct VolatileTypeWrapper : TypeWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Base::template MakePersistentObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	const unisim::util::debug::VolatileType *volatile_type;
 };

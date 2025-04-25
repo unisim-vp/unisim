@@ -49,6 +49,10 @@
 #include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#if HAVE_NODEJS
+#include <unisim/service/debug/nodejs/nodejs.hh>
+#include <unisim/service/debug/nodejs/nodejs.tcc>
+#endif
 #include <unisim/service/os/linux_os/powerpc_linux32.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -125,9 +129,21 @@ private:
     typedef sc_core::sc_time TIME_TYPE;
 		static const unsigned int NUM_PROCESSORS = 1;
 		/* gdb_server, inline_debugger and/or monitor */
-		static const unsigned int MAX_FRONT_ENDS = 2;
+		static const unsigned int MAX_FRONT_ENDS = 2
+#if HAVE_NODEJS
+		                                           + 1
+#endif
+		;
 	};
-	
+
+#if HAVE_NODEJS
+	struct NODEJS_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		typedef sc_core::sc_time TIME_TYPE;
+	};
+#endif
+
 	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
@@ -143,6 +159,9 @@ private:
 	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
 	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
 	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_ADDRESS_TYPE> INLINE_DEBUGGER;
+#if HAVE_NODEJS
+	typedef unisim::service::debug::nodejs::NodeJS<NODEJS_CONFIG> NODEJS;
+#endif
 	typedef unisim::service::os::linux_os::PowerPCLinux32<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE> LINUS_OS;
 	typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
 	typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
@@ -177,6 +196,10 @@ private:
 	GDB_SERVER *gdb_server;
 	//  - Inline debugger
 	INLINE_DEBUGGER *inline_debugger;
+#if HAVE_NODEJS
+	// - Node.js
+	NODEJS *nodejs;
+#endif
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
@@ -194,8 +217,14 @@ private:
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
+#if HAVE_NODEJS
+	bool enable_nodejs;
+#endif
 	unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
 	unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
+#if HAVE_NODEJS
+	unisim::kernel::variable::Parameter<bool> param_enable_nodejs;
+#endif
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
@@ -216,6 +245,9 @@ Simulator::Simulator(int argc, char **argv)
 	, debugger(0)
 	, gdb_server(0)
 	, inline_debugger(0)
+#if HAVE_NODEJS
+	, nodejs(0)
+#endif
 	, sim_time(0)
 	, host_time(0)
 	, logger_console_printer(0)
@@ -225,8 +257,14 @@ Simulator::Simulator(int argc, char **argv)
 	, logger_netstream_writer(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
+#if HAVE_NODEJS
+	, enable_nodejs(false)
+#endif
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
+#if HAVE_NODEJS
+	, param_enable_nodejs("enable-nodejs", 0, enable_nodejs, "Enable Node.js JavaScript runtime environment debugging front-end")
+#endif
 	, exit_status(0)
 {
 	//=========================================================================
@@ -260,11 +298,19 @@ Simulator::Simulator(int argc, char **argv)
 	//  - Linux loader and Linux ABI translator
 	linux_os = new LINUS_OS("linux-os");
 	//  - Debugger
-	debugger = (enable_inline_debugger or enable_gdb_server) ? new DEBUGGER("debugger") : 0;
+	debugger = (enable_inline_debugger or enable_gdb_server
+#if HAVE_NODEJS
+	            or enable_nodejs
+#endif
+	) ? new DEBUGGER("debugger") : 0;
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDB_SERVER("gdb-server") : 0;
 	//  - Inline debugger
 	inline_debugger = enable_inline_debugger ? new INLINE_DEBUGGER("inline-debugger") : 0;
+#if HAVE_NODEJS
+	// - Node.js
+	nodejs = enable_nodejs ? new NODEJS("nodejs") : 0;
+#endif
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
@@ -288,9 +334,8 @@ Simulator::Simulator(int argc, char **argv)
 
 	cpu->memory_import >> memory->memory_export;
 	
-	if (enable_inline_debugger or enable_gdb_server)
+	if (debugger)
 	{
-		// Debugger <-> CPU Connections
 		// Debugger <-> CPU connections
 		cpu->debug_yielding_import                            >> *debugger->debug_yielding_export[0];
 		cpu->trap_reporting_import                            >> *debugger->trap_reporting_export[0];
@@ -303,34 +348,54 @@ Simulator::Simulator(int argc, char **argv)
 		// Debugger <-> Loader connections
 		debugger->blob_import >> linux_os->blob_export_;
 		
+		unsigned int front_end_num = 0;
+		
 		if (enable_inline_debugger)
 		{
 			// inline-debugger <-> debugger connections
-			*debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
-			*debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
-			inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
-			inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
-			inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
-			inline_debugger->memory_import                 >> *debugger->memory_export[0];
-			inline_debugger->registers_import              >> *debugger->registers_export[0];
-			inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
-			inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
-			inline_debugger->stack_frame_import              >> *debugger->stack_frame_export[0];
-			inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
-			inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
-			inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
+			*debugger->debug_event_listener_import[front_end_num] >> inline_debugger->debug_event_listener_export;
+			*debugger->debug_yielding_import[front_end_num]       >> inline_debugger->debug_yielding_export;
+			inline_debugger->debug_yielding_request_import        >> *debugger->debug_yielding_request_export[front_end_num];
+			inline_debugger->debug_event_trigger_import           >> *debugger->debug_event_trigger_export[front_end_num];
+			inline_debugger->disasm_import                        >> *debugger->disasm_export[front_end_num];
+			inline_debugger->memory_import                        >> *debugger->memory_export[front_end_num];
+			inline_debugger->registers_import                     >> *debugger->registers_export[front_end_num];
+			inline_debugger->stmt_lookup_import                   >> *debugger->stmt_lookup_export[front_end_num];
+			inline_debugger->symbol_table_lookup_import           >> *debugger->symbol_table_lookup_export[front_end_num];
+			inline_debugger->stack_frame_import                   >> *debugger->stack_frame_export[front_end_num];
+			inline_debugger->debug_info_loading_import            >> *debugger->debug_info_loading_export[front_end_num];
+			inline_debugger->data_object_lookup_import            >> *debugger->data_object_lookup_export[front_end_num];
+			inline_debugger->subprogram_lookup_import             >> *debugger->subprogram_lookup_export[front_end_num];
+			++front_end_num;
 		}
 		
 		if (enable_gdb_server)
 		{
 			// gdb-server <-> debugger connections
-			*debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
-			*debugger->debug_yielding_import[1]       >> gdb_server->debug_yielding_export;
-			gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
-			gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
-			gdb_server->memory_import                 >> *debugger->memory_export[1];
-			gdb_server->registers_import              >> *debugger->registers_export[1];
+			*debugger->debug_event_listener_import[front_end_num] >> gdb_server->debug_event_listener_export;
+			*debugger->debug_yielding_import[front_end_num]       >> gdb_server->debug_yielding_export;
+			gdb_server->debug_yielding_request_import             >> *debugger->debug_yielding_request_export[front_end_num];
+			gdb_server->debug_event_trigger_import                >> *debugger->debug_event_trigger_export[front_end_num];
+			gdb_server->memory_import                             >> *debugger->memory_export[front_end_num];
+			gdb_server->registers_import                          >> *debugger->registers_export[front_end_num];
+			++front_end_num;
 		}
+		
+#if HAVE_NODEJS
+		if(nodejs)
+		{
+			// Node.js <-> debugger connections
+			*debugger->debug_yielding_import[front_end_num] >> nodejs->debug_yielding_export;
+			nodejs->debug_yielding_request_import           >> *debugger->debug_yielding_request_export[front_end_num];
+			nodejs->debug_event_trigger_import              >> *debugger->debug_event_trigger_export[front_end_num];
+			nodejs->stmt_lookup_import                      >> *debugger->stmt_lookup_export[front_end_num];
+			nodejs->symbol_table_lookup_import              >> *debugger->symbol_table_lookup_export[front_end_num];
+			nodejs->debug_info_loading_import               >> *debugger->debug_info_loading_export[front_end_num];
+			nodejs->subprogram_lookup_import                >> *debugger->subprogram_lookup_export[front_end_num];
+			nodejs->debug_processors_import                 >> *debugger->debug_processors_export[front_end_num];
+			++front_end_num;
+		}
+#endif
 	}
 
 	cpu->linux_os_import >> linux_os->linux_os_export_;
@@ -350,6 +415,9 @@ Simulator::~Simulator()
 	delete memory;
 	delete gdb_server;
 	delete inline_debugger;
+#if HAVE_NODEJS
+	delete nodejs;
+#endif
 	delete debugger;
 	delete cpu;
 	delete host_time;
@@ -461,7 +529,11 @@ void Simulator::Run()
 
 unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
-	if(enable_inline_debugger)
+	if(enable_inline_debugger
+#if HAVE_NODEJS
+	   || enable_nodejs
+#endif
+	)
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}

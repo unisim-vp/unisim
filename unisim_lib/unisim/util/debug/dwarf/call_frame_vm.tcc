@@ -128,7 +128,9 @@ int64_t DWARF_CFARuleRegisterOffset<MEMORY_ADDR>::GetOffset() const
 template <class MEMORY_ADDR>
 std::ostream& DWARF_CFARuleRegisterOffset<MEMORY_ADDR>::Print(std::ostream& os) const
 {
-	return os << "cfa=r" << dw_reg_num << ((dw_offset > 0) ? "+" : "") << dw_offset;
+	os << "cfa=r" << dw_reg_num;
+	if(dw_offset) os << ((dw_offset >= 0) ? "+" : "") << dw_offset;
+	return os;
 }
 
 template <class MEMORY_ADDR>

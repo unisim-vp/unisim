@@ -35,3 +35,4 @@ unisim/util/debug/dwarf
 unisim/util/likely
 unisim/util/loader/coff_loader
 unisim/util/loader/elf_loader
+unisim/util/locate

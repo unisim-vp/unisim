@@ -142,14 +142,6 @@ void StackFrameInfoWrapper<CONFIG>::GetReturnAddress(v8::Local<v8::Name> propert
 	info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), stack_frame_info.ret_addr));
 }
 
-template <typename CONFIG>
-void StackFrameInfoWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/stack_frame_info.h>
-	;
-}
-
 } // end of namespace nodejs
 } // end of namespace debug
 } // end of namespace service

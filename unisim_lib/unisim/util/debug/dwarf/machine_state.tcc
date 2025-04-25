@@ -53,6 +53,7 @@ DWARF_MachineState<MEMORY_ADDR>::DWARF_MachineState()
 	, max_stack_frames(256)
 	, reg_num_mapping_filename()
 	, architectures()
+	, stamp(0)
 {
 }
 
@@ -73,6 +74,11 @@ DWARF_MachineState<MEMORY_ADDR>::~DWARF_MachineState()
 		if(architecture.dw_reg_num_mapping)
 		{
 			delete architecture.dw_reg_num_mapping;
+		}
+		
+		if(architecture.mem_if)
+		{
+			delete architecture.mem_if;
 		}
 	}
 }
@@ -108,9 +114,9 @@ void DWARF_MachineState<MEMORY_ADDR>::Initialize()
 	
 	for(prc_num = 0; prc_num  < num_processors; prc_num++)
 	{
-		unisim::service::interfaces::Registers *_regs_if = GetRegistersInterface(prc_num);
+		unisim::service::interfaces::Registers *arch_regs_if = GetArchRegistersInterface(prc_num);
 		
-		if(_regs_if)
+		if(arch_regs_if)
 		{
 			const char *architecture = GetArchitecture(prc_num);
 			
@@ -123,23 +129,26 @@ void DWARF_MachineState<MEMORY_ADDR>::Initialize()
 
 				if(strcmp(architecture, "") != 0)
 				{
-					architectures[prc_num].dw_reg_num_mapping = new DWARF_RegisterNumberMapping(GetDebugInfoStream(), GetDebugWarningStream(), GetDebugErrorStream(), _regs_if);
+					architectures[prc_num].dw_reg_num_mapping = new DWARF_RegisterNumberMapping(GetDebugInfoStream(), GetDebugWarningStream(), GetDebugErrorStream(), arch_regs_if);
 					
 					if(architectures[prc_num].dw_reg_num_mapping->Load(reg_num_mapping_filename.c_str(), architecture))
 					{
+						unisim::service::interfaces::Register *arch_pc_reg = architectures[prc_num].dw_reg_num_mapping->GetProgramCounterRegister();
+						DWARF_MachineStateProgramCounter<MEMORY_ADDR> *dw_reg = new DWARF_MachineStateProgramCounter<MEMORY_ADDR>(this, prc_num, arch_pc_reg);
+						architectures[prc_num].registers_registry.AddRegisterInterface(dw_reg);
+						
 						std::set<unsigned int> dw_reg_nums;
 						architectures[prc_num].dw_reg_num_mapping->EnumRegisterNumbers(dw_reg_nums);
 						for(std::set<unsigned int>::const_iterator dw_reg_num_iter = dw_reg_nums.begin(); dw_reg_num_iter != dw_reg_nums.end(); ++dw_reg_num_iter)
 						{
 							unsigned int dw_reg_num = *dw_reg_num_iter;
 							unisim::service::interfaces::Register *arch_reg = architectures[prc_num].dw_reg_num_mapping->GetRegister(dw_reg_num);
-							DWARF_MachineStateRegister<MEMORY_ADDR> *dw_reg = new DWARF_MachineStateRegister<MEMORY_ADDR>(this, prc_num, dw_reg_num, arch_reg);
-							architectures[prc_num].registers_registry.AddRegisterInterface(dw_reg);
+							if(!architectures[prc_num].registers_registry.HasRegister(arch_reg->GetName()))
+							{
+								DWARF_MachineStateRegister<MEMORY_ADDR> *dw_reg = new DWARF_MachineStateRegister<MEMORY_ADDR>(this, prc_num, arch_reg, dw_reg_num);
+								architectures[prc_num].registers_registry.AddRegisterInterface(dw_reg);
+							}
 						}
-						
-						unisim::service::interfaces::Register *arch_pc_reg = architectures[prc_num].dw_reg_num_mapping->GetProgramCounterRegister();
-						DWARF_MachineStateProgramCounter<MEMORY_ADDR> *dw_reg = new DWARF_MachineStateProgramCounter<MEMORY_ADDR>(this, prc_num, arch_pc_reg);
-						architectures[prc_num].registers_registry.AddRegisterInterface(dw_reg);
 					}
 					else
 					{
@@ -166,7 +175,7 @@ void DWARF_MachineState<MEMORY_ADDR>::Initialize()
 				
 				virtual void Append(unisim::service::interfaces::Register *arch_reg)
 				{
-					if(!registers_registry.GetRegister(arch_reg->GetName()))
+					if(!registers_registry.HasRegister(arch_reg->GetName()))
 					{
 						registers_registry.AddRegisterInterface(arch_reg, /* is_owner */ false);
 					}
@@ -176,7 +185,14 @@ void DWARF_MachineState<MEMORY_ADDR>::Initialize()
 			};
 			
 			ArchRegsScanner arch_regs_scanner(architectures[prc_num].registers_registry);
-			_regs_if->ScanRegisters(arch_regs_scanner);
+			arch_regs_if->ScanRegisters(arch_regs_scanner);
+		}
+		
+		unisim::service::interfaces::Memory<MEMORY_ADDR> *arch_mem_if = GetArchMemoryInterface(prc_num);
+		
+		if(arch_mem_if)
+		{
+			architectures[prc_num].mem_if = new DWARF_MachineStateMemory<MEMORY_ADDR>(this, prc_num, arch_mem_if);
 		}
 	}
 }
@@ -206,7 +222,7 @@ void DWARF_MachineState<MEMORY_ADDR>::SetRegistersInterface(unsigned int prc_num
 	{
 		architectures.resize(prc_num + 1);
 	}
-	architectures[prc_num].regs_if = regs_if;
+	architectures[prc_num].arch_regs_if = regs_if;
 }
 
 template <class MEMORY_ADDR>
@@ -216,7 +232,7 @@ void DWARF_MachineState<MEMORY_ADDR>::SetMemoryInterface(unsigned int prc_num, u
 	{
 		architectures.resize(prc_num + 1);
 	}
-	architectures[prc_num].mem_if = mem_if;
+	architectures[prc_num].arch_mem_if = mem_if;
 }
 
 template <class MEMORY_ADDR>
@@ -230,9 +246,21 @@ void DWARF_MachineState<MEMORY_ADDR>::SetArchitecture(unsigned int prc_num, cons
 }
 
 template <class MEMORY_ADDR>
+unisim::service::interfaces::Registers *DWARF_MachineState<MEMORY_ADDR>::GetArchRegistersInterface(unsigned int prc_num) const
+{
+	return (prc_num < architectures.size()) ? architectures[prc_num].arch_regs_if : 0;
+}
+
+template <class MEMORY_ADDR>
+unisim::service::interfaces::Memory<MEMORY_ADDR> *DWARF_MachineState<MEMORY_ADDR>::GetArchMemoryInterface(unsigned int prc_num) const
+{
+	return (prc_num < architectures.size()) ? architectures[prc_num].arch_mem_if : 0;
+}
+
+template <class MEMORY_ADDR>
 unisim::service::interfaces::Registers *DWARF_MachineState<MEMORY_ADDR>::GetRegistersInterface(unsigned int prc_num) const
 {
-	return (prc_num < architectures.size()) ? architectures[prc_num].regs_if : 0;
+	return (prc_num < architectures.size()) ? (unisim::service::interfaces::Registers *) &architectures[prc_num].registers_registry : 0;
 }
 
 template <class MEMORY_ADDR>
@@ -424,13 +452,7 @@ DWARF_Frame<MEMORY_ADDR> *DWARF_MachineState<MEMORY_ADDR>::GetInnerFrame(unsigne
 {
 	if(prc_num >= architectures.size()) return 0;
 	Frames& frames = architectures[prc_num].frames;
-	DWARF_Frame<MEMORY_ADDR> *inner_frame = 0;
-	if(frames.size())
-	{
-		inner_frame = frames[0];
-	}
-	
-	return inner_frame;
+	return frames.size() ? frames[0] : 0;
 }
 
 template <class MEMORY_ADDR>
@@ -459,7 +481,12 @@ template <class MEMORY_ADDR>
 DWARF_Frame<MEMORY_ADDR> *DWARF_MachineState<MEMORY_ADDR>::GetCurrentFrame(unsigned int prc_num) const
 {
 	if(prc_num >= architectures.size()) return 0;
-	unsigned int sel = architectures[prc_num].sel;
+	Architecture& architecture = architectures[prc_num];
+	unsigned int sel = architecture.sel;
+	if(sel != 0)
+	{
+		if(BuildFrames(prc_num, sel + 1) <= sel) return 0;
+	}
 	Frames& frames = architectures[prc_num].frames;
 	return frames[sel];
 }
@@ -548,6 +575,7 @@ bool DWARF_MachineState<MEMORY_ADDR>::SelectStackFrame(unsigned int prc_num, uns
 	Architecture& architecture = architectures[prc_num];
 	architecture.sel = frame_num;
 	return true;
+
 }
 
 template <class MEMORY_ADDR>
@@ -555,6 +583,18 @@ unsigned int DWARF_MachineState<MEMORY_ADDR>::GetSelectedFrame(unsigned int prc_
 {
 	Architecture& architecture = architectures[prc_num];
 	return architecture.sel;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_MachineState<MEMORY_ADDR>::Touch() const
+{
+	++stamp;
+}
+
+template <class MEMORY_ADDR>
+uint64_t DWARF_MachineState<MEMORY_ADDR>::GetStamp() const
+{
+	return stamp;
 }
 
 template <class MEMORY_ADDR>
@@ -569,7 +609,7 @@ bool DWARF_MachineState<MEMORY_ADDR>::ComputeCFA(const DWARF_Frame<MEMORY_ADDR> 
 }
 
 template <class MEMORY_ADDR>
-void DWARF_MachineState<MEMORY_ADDR>::InvalidateFrames(unsigned int prc_num)
+void DWARF_MachineState<MEMORY_ADDR>::InvalidateFrames(unsigned int prc_num) const
 {
 	if(prc_num >= architectures.size()) return;
 	Architecture& architecture = architectures[prc_num];
@@ -585,46 +625,14 @@ void DWARF_MachineState<MEMORY_ADDR>::InvalidateFrames(unsigned int prc_num)
 		while(frames.size() > 1);
 		architecture.sel = 0;
 	}
-	architecture.dirty_frames = false;
-}
-
-template <class MEMORY_ADDR>
-void DWARF_MachineState<MEMORY_ADDR>::InvalidateDirtyFrames()
-{
-	unsigned int num_processors = architectures.size();
-	for(unsigned int prc_num = 0; prc_num < num_processors; ++prc_num)
-	{
-		if(DirtyFrames(prc_num))
-		{
-			InvalidateFrames(prc_num);
-		}
-	}
-}
-
-template <class MEMORY_ADDR>
-bool DWARF_MachineState<MEMORY_ADDR>::DirtyFrames(unsigned int prc_num) const
-{
-	if(prc_num >= architectures.size()) return false;
-	Architecture& architecture = architectures[prc_num];
-	return architecture.dirty_frames;
-}
-
-template <class MEMORY_ADDR>
-bool DWARF_MachineState<MEMORY_ADDR>::DirtyFrames() const
-{
-	unsigned int num_processors = architectures.size();
-	for(unsigned int prc_num = 0; prc_num < num_processors; ++prc_num)
-	{
-		Architecture& architecture = architectures[prc_num];
-		if(architecture.dirty_frames) return true;
-	}
-	return false;
 }
 
 template <class MEMORY_ADDR>
 unsigned int DWARF_MachineState<MEMORY_ADDR>::BuildFrames(unsigned int prc_num, unsigned int depth) const
 {
 	if(prc_num >= architectures.size()) return 0;
+	Architecture& architecture = architectures[prc_num];
+	if(architecture.frames_stamp != stamp) InvalidateFrames(prc_num);
 	Frames& frames = architectures[prc_num].frames;
 	unsigned int level = frames.size();
 	if(!level) return 0;
@@ -673,9 +681,9 @@ unsigned int DWARF_MachineState<MEMORY_ADDR>::BuildFrames(unsigned int prc_num, 
 		DWARF_Frame<MEMORY_ADDR> *outer_frame = new DWARF_Frame<MEMORY_ADDR>(this, prc_num, dw_handler, cfi_row, dw_ret_addr_reg_num);
 		
 		frames.push_back(outer_frame);
-		architectures[prc_num].dirty_frames = true;
 		
-		if(!outer_frame->Unwind())
+		MEMORY_ADDR ret_addr = 0;
+		if(!outer_frame->Unwind() || !outer_frame->ReadProgramCounterRegister(ret_addr) || (ret_addr == 0))
 		{
 			if(debug)
 			{
@@ -688,9 +696,6 @@ unsigned int DWARF_MachineState<MEMORY_ADDR>::BuildFrames(unsigned int prc_num, 
 		
 		frame = outer_frame;
 
-		MEMORY_ADDR ret_addr = 0;
-		if(!frame->ReadProgramCounterRegister(ret_addr)) break;
-		
 		if(debug)
 		{
 			dw_handler->GetDebugInfoStream() << "return address: 0x" << std::hex << ret_addr << std::dec << std::endl;
@@ -701,6 +706,7 @@ unsigned int DWARF_MachineState<MEMORY_ADDR>::BuildFrames(unsigned int prc_num, 
 		++level;
 	}
 	
+	architecture.frames_stamp = stamp;
 	return frames.size();
 }
 
@@ -847,6 +853,24 @@ unisim::service::interfaces::Register *DWARF_MachineState<MEMORY_ADDR>::GetRegis
 }
 
 template <class MEMORY_ADDR>
+void DWARF_MachineState<MEMORY_ADDR>::ResetMemory(unsigned int prc_num)
+{
+	architectures[prc_num].mem_if->ResetMemory();
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_MachineState<MEMORY_ADDR>::ReadMemory(unsigned int prc_num, MEMORY_ADDR addr, void *buffer, uint32_t size)
+{
+	return architectures[prc_num].mem_if->ReadMemory(addr, buffer, size);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_MachineState<MEMORY_ADDR>::WriteMemory(unsigned int prc_num, MEMORY_ADDR addr, const void *buffer, uint32_t size)
+{
+	return architectures[prc_num].mem_if->WriteMemory(addr, buffer, size);
+}
+
+template <class MEMORY_ADDR>
 bool DWARF_MachineState<MEMORY_ADDR>::ReadProgramCounterRegister(unsigned int prc_num, MEMORY_ADDR& pc) const
 {
 	DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = GetCurrentFrame(prc_num);
@@ -921,19 +945,210 @@ unsigned int DWARF_MachineState<MEMORY_ADDR>::GetStackFrameInfos(unsigned int pr
 	return stack_frame_info_scanner.depth;
 }
 
+
 template <class MEMORY_ADDR>
-DWARF_MachineStateRegister<MEMORY_ADDR>::DWARF_MachineStateRegister(DWARF_MachineState<MEMORY_ADDR> *_dw_mach_state, unsigned int _prc_num, unsigned int _dw_reg_num, unisim::service::interfaces::Register *_arch_reg)
+DWARF_MachineStateMemory<MEMORY_ADDR>::DWARF_MachineStateMemory(DWARF_MachineState<MEMORY_ADDR> *_dw_mach_state, unsigned int _prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if)
+	: dw_mach_state(_dw_mach_state)
+	, prc_num(_prc_num)
+	, arch_mem_if(mem_if)
+{
+}
+
+template <class MEMORY_ADDR>
+void DWARF_MachineStateMemory<MEMORY_ADDR>::ResetMemory()
+{
+	dw_mach_state->Touch();
+	arch_mem_if->ResetMemory();
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_MachineStateMemory<MEMORY_ADDR>::ReadMemory(MEMORY_ADDR addr, void *buffer, uint32_t size)
+{
+	return arch_mem_if->ReadMemory(addr, buffer, size);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_MachineStateMemory<MEMORY_ADDR>::WriteMemory(MEMORY_ADDR addr, const void *buffer, uint32_t size)
+{
+	dw_mach_state->Touch();
+	return arch_mem_if->WriteMemory(addr, buffer, size);
+}
+
+template <class MEMORY_ADDR>
+DWARF_MachineStateField<MEMORY_ADDR>::DWARF_MachineStateField(DWARF_MachineStateRegister<MEMORY_ADDR> *_reg, unisim::service::interfaces::Field *_arch_field)
+	: reg(_reg)
+	, arch_field(_arch_field)
+{
+}
+
+template <class MEMORY_ADDR>
+const char *DWARF_MachineStateField<MEMORY_ADDR>::GetName() const
+{
+	return arch_field->GetName();
+}
+
+template <class MEMORY_ADDR>
+const char *DWARF_MachineStateField<MEMORY_ADDR>::GetDescription() const
+{
+	return arch_field->GetDescription();
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_MachineStateField<MEMORY_ADDR>::GetBitOffset() const
+{
+	return arch_field->GetBitOffset(); 
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_MachineStateField<MEMORY_ADDR>::GetBitWidth() const
+{
+	return arch_field->GetBitWidth();
+}
+
+template <class MEMORY_ADDR>
+uint64_t DWARF_MachineStateField<MEMORY_ADDR>::GetValue() const
+{
+	unsigned int curr_frame_num = reg->dw_mach_state->GetSelectedFrame(reg->prc_num);
+	if(curr_frame_num != 0)
+	{
+		unsigned int bit_width = arch_field->GetBitWidth();
+		unsigned int bit_offset = arch_field->GetBitOffset();
+		unsigned int reg_size = reg->GetSize();
+		uint8_t reg_value[reg_size] = {};
+		reg->GetValue(reg_value);
+		
+		uint64_t field_value = 0;
+		unsigned int remaining_bits = bit_width;
+		unsigned int reg_bit_offset = bit_offset;
+		unsigned int field_bit_offset = 0;
+		
+		while(remaining_bits)
+		{
+			unsigned int byte_index = reg_bit_offset / 8;
+			
+			if(byte_index >= reg_size) return 0; // overflow
+			unsigned int l_bit_offset = bit_offset % 8;
+			unsigned int bit_size_to_byte_boundary = 8 - l_bit_offset;
+			unsigned int bit_sz = bit_size_to_byte_boundary;
+			if(bit_sz > remaining_bits) bit_sz = remaining_bits;
+#if BYTE_ORDER == BIG_ENDIAN
+			unsigned reg_shift = 8 - l_bit_offset - bit_sz;
+			unsigned field_shift = bit_width - field_bit_offset - bit_sz;
+#else
+			unsigned reg_shift = l_bit_offset;
+			unsigned field_shift = field_bit_offset;
+#endif
+			uint64_t mask = (uint64_t)((uint64_t(1) << bit_sz) - 1) << field_shift;
+			uint64_t v = (uint64_t)(reg_value[byte_index] >> reg_shift) << field_shift;
+			field_value = field_value | (v & mask);
+
+			field_bit_offset = field_bit_offset + bit_sz;
+			reg_bit_offset = reg_bit_offset + bit_sz;
+			remaining_bits = remaining_bits - bit_sz;
+		}
+		
+		return field_value;
+	}
+	else
+	{
+		return arch_field->GetValue();
+	}
+}
+
+template <class MEMORY_ADDR>
+void DWARF_MachineStateField<MEMORY_ADDR>::SetValue(uint64_t val)
+{
+	unsigned int curr_frame_num = reg->dw_mach_state->GetSelectedFrame(reg->prc_num);
+	if(curr_frame_num != 0)
+	{
+		unsigned int bit_width = arch_field->GetBitWidth();
+		unsigned int bit_offset = arch_field->GetBitOffset();
+		unsigned int reg_size = reg->GetSize();
+		uint8_t reg_value[reg_size] = {};
+		reg->GetValue(reg_value);
+		
+		unsigned int remaining_bits = bit_width;
+		unsigned int reg_bit_offset = bit_offset;
+		unsigned int field_bit_offset = 0;
+		
+		while(remaining_bits)
+		{
+			unsigned int byte_index = reg_bit_offset / 8;
+			
+			if(byte_index >= reg_size) return; // overflow
+			unsigned int l_reg_bit_offset = reg_bit_offset % 8;
+			unsigned int bit_size_to_byte_boundary = 8 - l_reg_bit_offset;
+			unsigned int bit_sz = bit_size_to_byte_boundary;
+			if(bit_sz > remaining_bits) bit_sz = remaining_bits;
+			
+#if BYTE_ORDER == BIG_ENDIAN
+			unsigned int field_shift = bit_width - field_bit_offset - bit_sz;
+			unsigned int reg_shift = 8 - l_reg_bit_offset - bit_sz;
+#else
+			unsigned int field_shift = field_bit_offset;
+			unsigned int reg_shift = l_reg_bit_offset;
+#endif
+			uint8_t mask = ((1 << bit_sz) - 1) << reg_shift;
+			uint8_t v = (val >> field_shift) << reg_shift;
+			reg_value[byte_index] = (reg_value[byte_index] & ~mask) | (v & mask);
+			
+			field_bit_offset = field_bit_offset + bit_sz;
+			reg_bit_offset = reg_bit_offset + bit_sz;
+			remaining_bits = remaining_bits - bit_sz;
+		}
+		
+		reg->SetValue(reg_value);
+	}
+	else
+	{
+		arch_field->SetValue(val);
+	}
+}
+
+template <class MEMORY_ADDR>
+DWARF_MachineStateRegister<MEMORY_ADDR>::DWARF_MachineStateRegister(DWARF_MachineState<MEMORY_ADDR> *_dw_mach_state, unsigned int _prc_num, unisim::service::interfaces::Register *_arch_reg, unsigned int _dw_reg_num)
 	: dw_mach_state(_dw_mach_state)
 	, prc_num(_prc_num)
 	, dw_reg_num(_dw_reg_num)
 	, arch_reg(_arch_reg)
+	, fields()
 {
+	struct FieldScanner : unisim::service::interfaces::FieldScanner
+	{
+		DWARF_MachineStateRegister<MEMORY_ADDR> *reg;
+		
+		FieldScanner(DWARF_MachineStateRegister<MEMORY_ADDR> *_reg) : reg(_reg) {}
+		
+		virtual void Append(unisim::service::interfaces::Field *arch_field)
+		{
+			reg->fields.push_back(new DWARF_MachineStateField<MEMORY_ADDR>(reg, arch_field));
+		}
+	};
+	
+	FieldScanner field_scanner(this);
+	arch_reg->ScanFields(field_scanner);
+}
+
+template <class MEMORY_ADDR>
+DWARF_MachineStateRegister<MEMORY_ADDR>::~DWARF_MachineStateRegister()
+{
+	for(typename Fields::const_iterator it = fields.begin(); it != fields.end(); ++it)
+	{
+		DWARF_MachineStateField<MEMORY_ADDR> *field = *it;
+		delete field;
+	}
 }
 
 template <class MEMORY_ADDR>
 const char *DWARF_MachineStateRegister<MEMORY_ADDR>::GetName() const
 {
 	return arch_reg->GetName();
+}
+
+template <class MEMORY_ADDR>
+const char *DWARF_MachineStateRegister<MEMORY_ADDR>::GetDescription() const
+{
+	return arch_reg->GetDescription();
 }
 
 template <class MEMORY_ADDR>
@@ -964,6 +1179,7 @@ void DWARF_MachineStateRegister<MEMORY_ADDR>::SetValue(const void *buffer)
 	}
 	else
 	{
+		dw_mach_state->Touch();
 		arch_reg->SetValue(buffer);
 	}
 }
@@ -975,55 +1191,51 @@ int DWARF_MachineStateRegister<MEMORY_ADDR>::GetSize() const
 }
 
 template <class MEMORY_ADDR>
-DWARF_MachineStateProgramCounter<MEMORY_ADDR>::DWARF_MachineStateProgramCounter(DWARF_MachineState<MEMORY_ADDR> *_dw_mach_state, unsigned int _prc_num, unisim::service::interfaces::Register *_arch_reg)
-	: dw_mach_state(_dw_mach_state)
-	, prc_num(_prc_num)
-	, arch_reg(_arch_reg)
+void DWARF_MachineStateRegister<MEMORY_ADDR>::ScanFields(unisim::service::interfaces::FieldScanner& scanner)
 {
+	for(typename Fields::const_iterator it = fields.begin(); it != fields.end(); ++it)
+	{
+		DWARF_MachineStateField<MEMORY_ADDR> *field = *it;
+		scanner.Append(field);
+	}
 }
 
 template <class MEMORY_ADDR>
-const char *DWARF_MachineStateProgramCounter<MEMORY_ADDR>::GetName() const
+DWARF_MachineStateProgramCounter<MEMORY_ADDR>::DWARF_MachineStateProgramCounter(DWARF_MachineState<MEMORY_ADDR> *_dw_mach_state, unsigned int _prc_num, unisim::service::interfaces::Register *_arch_reg)
+	: DWARF_MachineStateRegister<MEMORY_ADDR>(_dw_mach_state, _prc_num, _arch_reg)
 {
-	return arch_reg->GetName();
 }
 
 template <class MEMORY_ADDR>
 void DWARF_MachineStateProgramCounter<MEMORY_ADDR>::GetValue(void *buffer) const
 {
-	unsigned int curr_frame_num = dw_mach_state->GetSelectedFrame(prc_num);
+	unsigned int curr_frame_num = this->dw_mach_state->GetSelectedFrame(this->prc_num);
 	if(curr_frame_num != 0)
 	{
-		DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_mach_state->GetCurrentFrame(prc_num);
+		DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = this->dw_mach_state->GetCurrentFrame(this->prc_num);
 		DWARF_Register<MEMORY_ADDR> *dw_reg = dw_curr_frame->GetProgramCounterRegister();
 		dw_reg->GetValue(buffer);
 	}
 	else
 	{
-		arch_reg->GetValue(buffer);
+		this->arch_reg->GetValue(buffer);
 	}
 }
 
 template <class MEMORY_ADDR>
 void DWARF_MachineStateProgramCounter<MEMORY_ADDR>::SetValue(const void *buffer)
 {
-	unsigned int curr_frame_num = dw_mach_state->GetSelectedFrame(prc_num);
+	unsigned int curr_frame_num = this->dw_mach_state->GetSelectedFrame(this->prc_num);
 	if(curr_frame_num != 0)
 	{
-		DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_mach_state->GetCurrentFrame(prc_num);
+		DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = this->dw_mach_state->GetCurrentFrame(this->prc_num);
 		DWARF_Register<MEMORY_ADDR> *dw_reg = dw_curr_frame->GetProgramCounterRegister();
 		dw_reg->SetValue(buffer);
 	}
 	else
 	{
-		arch_reg->SetValue(buffer);
+		this->arch_reg->SetValue(buffer);
 	}
-}
-
-template <class MEMORY_ADDR>
-int DWARF_MachineStateProgramCounter<MEMORY_ADDR>::GetSize() const
-{
-	return arch_reg->GetSize();
 }
 
 } // end of namespace dwarf

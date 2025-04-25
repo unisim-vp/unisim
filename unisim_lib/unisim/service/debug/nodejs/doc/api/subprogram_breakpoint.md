@@ -11,6 +11,10 @@ Example of use:
 
 	let brk1 = new SubProgramBreakpoint(processor, findSubProgram('main', { file: 'test.elf' }));
 
+## `(read-only) id: Number`
+
+The breakpoint identifier.
+
 ## `(read-only) subprogram: SubProgram`
 
 Subprogram that this breakpoint monitors.

@@ -257,14 +257,6 @@ void SubProgramWrapper<CONFIG>::GetCDecl(v8::Local<v8::Name> property, const v8:
 	if(subprogram) info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), subprogram->GetCDecl().c_str()).ToLocalChecked());
 }
 
-template <typename CONFIG>
-void SubProgramWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/subprogram.h>
-	;
-}
-
 } // end of namespace nodejs
 } // end of namespace debug
 } // end of namespace service

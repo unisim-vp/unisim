@@ -76,7 +76,6 @@ struct HookWrapper : ObjectWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	ProcessorWrapper<CONFIG> *processor_wrapper;
 	unisim::util::debug::Hook<ADDRESS> *hook;
@@ -112,7 +111,6 @@ struct AddressHookWrapper : HookWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	AddressHook<CONFIG> *address_hook;
 };
@@ -137,7 +135,6 @@ struct SourceCodeHookWrapper : HookWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	SourceCodeHook<CONFIG> *source_code_hook;
 };
@@ -161,7 +158,6 @@ struct SubProgramHookWrapper : HookWrapper<CONFIG>
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
-	static void Help(std::ostream& stream);
 private:
 	SubProgramHook<CONFIG> *subprogram_hook;
 };

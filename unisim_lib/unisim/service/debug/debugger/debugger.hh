@@ -632,8 +632,18 @@ private:
 		}
 
 		virtual bool Setup(interfaces::DebugEventTrigger<ADDRESS>*) { return dbg.RequireSetup(&ProcessorGate::memory_access_reporting_control_import); }
-		virtual bool Setup(interfaces::Memory<ADDRESS>*) { return dbg.RequireSetup(&ProcessorGate::memory_import); }
-		virtual bool Setup(interfaces::Registers*) { return dbg.RequireSetup(&ProcessorGate::registers_import); }
+		virtual bool Setup(interfaces::Memory<ADDRESS>*)
+		{
+			if(!dbg.RequireSetup(&ProcessorGate::memory_import)) return false;
+			if(!dbg.SetupMachineState(id)) return false;
+			return true;
+		}
+		virtual bool Setup(interfaces::Registers*)
+		{
+			if(!dbg.RequireSetup(&ProcessorGate::registers_import)) return false;
+			if(!dbg.SetupMachineState(id)) return false;
+			return true;
+		}
 		virtual bool Setup(interfaces::Disassembly<ADDRESS>*) { return dbg.RequireSetup(&ProcessorGate::disasm_import); }
 		
 		virtual bool Setup(interfaces::SymbolTableLookup<ADDRESS>*) { return dbg.SetupDebugInfo(); }
@@ -642,16 +652,16 @@ private:
 		{
 			if(!dbg.RequireSetup(&ProcessorGate::registers_import)) return false;
 			if(!dbg.RequireSetup(&ProcessorGate::memory_import)) return false;
-			if(!dbg.SetupDebugInfo()) return false;
-			return true;
+			if(!dbg.SetupMachineState(id)) return false;
+			return dbg.SetupDebugInfo();
 		}
 		virtual bool Setup(interfaces::DebugInfoLoading*) { return dbg.SetupDebugInfo(); }
 		virtual bool Setup(interfaces::DataObjectLookup<ADDRESS>*)
 		{
 			if(!dbg.RequireSetup(&ProcessorGate::registers_import)) return false;
 			if(!dbg.RequireSetup(&ProcessorGate::memory_import)) return false;
-			if(!dbg.SetupDebugInfo()) return false;
-			return true;
+			if(!dbg.SetupMachineState(id)) return false;
+			return dbg.SetupDebugInfo();
 		}
 		virtual bool Setup(interfaces::SubProgramLookup<ADDRESS>*) { return dbg.SetupDebugInfo(); }
 		virtual bool Setup(interfaces::DebugProcessors<ADDRESS, TIME_TYPE>*)
@@ -660,6 +670,7 @@ private:
 			if(!dbg.RequireSetup(&ProcessorGate::memory_import)) return false;
 			if(!dbg.RequireSetup(&ProcessorGate::registers_import)) return false;
 			if(!dbg.RequireSetup(&ProcessorGate::disasm_import)) return false;
+			if(!dbg.SetupMachineState(id)) return false;
 			return dbg.SetupDebugInfo();
 		}
 		
@@ -1202,9 +1213,9 @@ private:
 			
 			const unisim::util::debug::Statement<ADDRESS> *stmt = this->GetDebugger().FindStatement(this->GetFrontEndNumber(), next_addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::SCOPE_EXACT_STMT);
 			
-			if(stmt && stmt->IsBeginningOfSourceStatement())
+			if(stmt)
 			{
-				if(stmt != this->GetStatement())
+				if(!this->GetStatement() || !stmt->SameLine(*this->GetStatement()))
 				{
 					this->SetStatement(stmt);
 					stepped = true;
@@ -1884,6 +1895,7 @@ private:
 
 	unisim::kernel::logger::Logger logger;
 	bool setup_debug_info_done;
+	bool setup_mach_state_done[MAX_FRONT_ENDS];
 	pthread_mutex_t mutex;
 	
 	pthread_mutex_t curr_front_end_num_mutex;
@@ -1940,12 +1952,14 @@ private:
 		Debugger<CONFIG>& dbg;
 		unsigned front_end_num;
 		unsigned loader_num;
+		unsigned id;
 		const unisim::util::blob::Blob<ADDRESS> *blob;
 		
-		ExecutableBinaryFile(Debugger<CONFIG>& _dbg, unsigned int _front_end_num, unsigned int _loader_num, const unisim::util::blob::Blob<ADDRESS> *_blob)
-			: dbg(_dbg), front_end_num(_front_end_num), loader_num(_loader_num), blob(_blob)
+		ExecutableBinaryFile(Debugger<CONFIG>& _dbg, unsigned int _front_end_num, unsigned int _loader_num, unsigned int _id, const unisim::util::blob::Blob<ADDRESS> *_blob)
+			: dbg(_dbg), front_end_num(_front_end_num), loader_num(_loader_num), id(_id), blob(_blob)
 		{
 		}
+		virtual unsigned GetId() const { return id; }
 		virtual const char *GetFilename() const { return (blob->GetCapability() & unisim::util::blob::CAP_FILENAME) ? blob->GetFilename() : ""; }
 		virtual unisim::util::blob::FileFormat GetFileFormat() const { return blob->GetFileFormat(); }
 		virtual bool IsEnabled() const { return Enable(); }
@@ -1972,6 +1986,7 @@ private:
 	
 	bool SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *blob);
 	bool SetupDebugInfo();
+	bool SetupMachineState(unsigned int front_end_num);
 	void RequireSetup(int);
 	
 	void UpdateReportingRequirements(unsigned int prc_num);
@@ -1979,8 +1994,6 @@ private:
 	bool NextScheduledFrontEnd(unsigned int& front_end_num);
 	bool IsScheduleEmpty() const;
 	bool IsScheduled(unsigned int front_end_num) const;
-	
-	void InvalidateDirtyFrames(uint64_t mask);
 	
 	bool Lock(int front_end_num = -1);
 	void Unlock(int front_end_num = -1);

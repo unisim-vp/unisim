@@ -78,6 +78,9 @@
 #include <unisim/service/translator/memory_address/memory/translator.hh>
 #include <unisim/service/netstreamer/netstreamer.hh>
 #include <unisim/service/debug/profiler/profiler.hh>
+#if HAVE_NODEJS
+#include <unisim/service/debug/nodejs/nodejs.hh>
+#endif
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/instrumenter/instrumenter.hh>
 #include <unisim/service/tee/char_io/tee.hh>
@@ -155,6 +158,9 @@ private:
 	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
 	typedef unisim::service::netstreamer::NetStreamer NETSTREAMER;
 	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
+#if HAVE_NODEJS
+	typedef unisim::service::debug::nodejs::NodeJS<NODEJS_CONFIG> NODEJS;
+#endif
 	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
 	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
 	typedef unisim::service::tee::char_io::Tee<2> CHAR_IO_TEE;
@@ -257,6 +263,10 @@ private:
 	NETSTREAMER *netstreamer;
 	// - profiler
 	PROFILER *profiler;
+#if HAVE_NODEJS
+	// - Node.js
+	NODEJS *nodejs;
+#endif
 	// - Instrumenter
 	INSTRUMENTER *instrumenter;
 	// - HTTP server
@@ -283,11 +293,17 @@ private:
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	bool enable_profiler;
+#if HAVE_NODEJS
+	bool enable_nodejs;
+#endif
 	bool enable_linux_os;
 	bool enable_debug_ui;
 	unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
 	unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
 	unisim::kernel::variable::Parameter<bool> param_enable_profiler;
+#if HAVE_NODEJS
+	unisim::kernel::variable::Parameter<bool> param_enable_nodejs;
+#endif
 	unisim::kernel::variable::Parameter<bool> param_enable_linux_os;
 	unisim::kernel::variable::Parameter<bool> param_enable_debug_ui;
 

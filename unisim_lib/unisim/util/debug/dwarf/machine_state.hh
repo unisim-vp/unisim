@@ -71,6 +71,8 @@ public:
 	void SetMemoryInterface(unsigned int prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
 	void SetArchitecture(unsigned int prc_num, const char *architecture);
 	
+	unisim::service::interfaces::Registers *GetArchRegistersInterface(unsigned int prc_num) const;
+	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetArchMemoryInterface(unsigned int prc_num) const;
 	unisim::service::interfaces::Registers *GetRegistersInterface(unsigned int prc_num) const;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface(unsigned int prc_num) const;
 	const char *GetArchitecture(unsigned int prc_num) const;
@@ -94,10 +96,6 @@ public:
 	// High level interface
 	std::vector<MEMORY_ADDR> *GetBackTrace(unsigned int prc_num) const;
 	bool GetReturnAddress(unsigned int prc_num, MEMORY_ADDR& ret_addr) const;
-	void InvalidateFrames(unsigned int prc_num);
-	void InvalidateDirtyFrames();
-	bool DirtyFrames(unsigned int prc_num) const;
-	bool DirtyFrames() const;
 	bool SelectStackFrame(unsigned int prc_num, unsigned int frame_num);
 	unsigned int GetSelectedFrame(unsigned int prc_num) const;
 	bool ComputeCFA(const DWARF_Frame<MEMORY_ADDR> *dw_frame, MEMORY_ADDR& cfa) const;
@@ -109,10 +107,14 @@ public:
 	bool UnwindStack(unsigned int prc_num, unsigned int frame_num);
 	unisim::service::interfaces::Register *GetRegister(unsigned int prc_num, unsigned int dw_reg_num);
 	unisim::service::interfaces::Register *GetRegister(unsigned int prc_num, const char *name);
+	void ResetMemory(unsigned int prc_num);
+	bool ReadMemory(unsigned int prc_num, MEMORY_ADDR addr, void *buffer, uint32_t size);
+	bool WriteMemory(unsigned int prc_num, MEMORY_ADDR addr, const void *buffer, uint32_t size);
 	bool ReadProgramCounterRegister(unsigned int prc_num, MEMORY_ADDR& pc) const;
 	void ScanRegisters(unsigned int prc_num, unisim::service::interfaces::RegisterScanner& scanner);
 	void ScanStackFrameInfos(unsigned int prc_num, unisim::service::interfaces::StackFrameInfoScanner<MEMORY_ADDR>& scanner, unsigned int max_stack_frames) const;
 	unsigned int GetStackFrameInfos(unsigned int prc_num, unisim::service::interfaces::StackFrameInfo<MEMORY_ADDR> *stack_frame_infos, unsigned int max_stack_frames) const;
+	void Touch() const; // notify that either registers or memory are cloberred
 private:
 	friend class DWARF_Handler<MEMORY_ADDR>;
 	friend class DWARF_Frame<MEMORY_ADDR>;
@@ -138,7 +140,7 @@ private:
 	typedef std::vector<Handler> Handlers;
 	Handlers handlers;
 	
-	// Debug stuf
+	// Debug stuff
 	std::ostream *debug_info_stream;
 	std::ostream *debug_warning_stream;
 	std::ostream *debug_error_stream;
@@ -157,28 +159,33 @@ private:
 	{
 		std::string architecture;
 		DWARF_RegisterNumberMapping *dw_reg_num_mapping;
-		unisim::service::interfaces::Registers *regs_if;
-		unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
+		unisim::service::interfaces::Registers *arch_regs_if;
+		unisim::service::interfaces::Memory<MEMORY_ADDR> *arch_mem_if;
 		typedef unisim::util::debug::SimpleRegisterRegistry RegistersRegistry;
 		RegistersRegistry registers_registry;
+		DWARF_MachineStateMemory<MEMORY_ADDR> *mem_if;
 		Frames frames;
-		bool dirty_frames;
 		unsigned int sel;
+		uint64_t frames_stamp;
 		
 		Architecture()
 			: architecture()
 			, dw_reg_num_mapping(0)
-			, regs_if(0)
-			, mem_if(0)
+			, arch_regs_if(0)
+			, arch_mem_if(0)
 			, registers_registry()
+			, mem_if(0)
 			, frames()
-			, dirty_frames(false)
 			, sel(0)
+			, frames_stamp(0)
 		{
 		}
 	};
 	typedef std::vector<Architecture> Architectures;
 	mutable Architectures architectures;
+	
+	// Stamp for detecting changes for fast invalidation of data object locations and stack frames
+	mutable uint64_t stamp;
 	
 	// Debug stuff
 	std::ostream& GetDebugInfoStream() const;
@@ -193,42 +200,76 @@ private:
 	DWARF_Frame<MEMORY_ADDR> *GetFrame(unsigned int prc_num, unsigned int level) const;
 	DWARF_RegisterNumberMapping *GetRegisterNumberMapping(unsigned int prc_num) const;
 	
+	uint64_t GetStamp() const;
+	
 	// Various helper methods
 	const DWARF_CFI<MEMORY_ADDR> *FindCFIByAddr(unsigned int prc_num, MEMORY_ADDR pc) const;
 	
 	// Frames
 	unsigned int BuildFrames(unsigned int prc_num, unsigned int depth) const;
+	void InvalidateFrames(unsigned int prc_num) const;
+};
+
+template <class MEMORY_ADDR>
+class DWARF_MachineStateMemory : public unisim::service::interfaces::Memory<MEMORY_ADDR>
+{
+public:
+	DWARF_MachineStateMemory(DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+	virtual void ResetMemory();
+	virtual bool ReadMemory(MEMORY_ADDR addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(MEMORY_ADDR addr, const void *buffer, uint32_t size);
+private:
+	DWARF_MachineState<MEMORY_ADDR> *dw_mach_state;
+	unsigned int prc_num;
+	unisim::service::interfaces::Memory<MEMORY_ADDR> *arch_mem_if;
+};
+
+template <class MEMORY_ADDR>
+class DWARF_MachineStateField : public unisim::service::interfaces::Field
+{
+public:
+	DWARF_MachineStateField(DWARF_MachineStateRegister<MEMORY_ADDR> *reg, unisim::service::interfaces::Field *arch_field);
+	virtual const char *GetName() const;
+	virtual const char *GetDescription() const;
+	virtual unsigned int GetBitOffset() const;
+	virtual unsigned int GetBitWidth() const;
+	virtual uint64_t GetValue() const;
+	virtual void SetValue(uint64_t val);
+private:
+	DWARF_MachineStateRegister<MEMORY_ADDR> *reg;
+	unisim::service::interfaces::Field *arch_field;
 };
 
 template <class MEMORY_ADDR>
 class DWARF_MachineStateRegister : public unisim::service::interfaces::Register
 {
 public:
-	DWARF_MachineStateRegister(DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, unsigned int dw_reg_num, unisim::service::interfaces::Register *arch_reg);
+	DWARF_MachineStateRegister(DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, unisim::service::interfaces::Register *arch_reg, unsigned int dw_reg_num = 0);
+	virtual ~DWARF_MachineStateRegister();
 	virtual const char *GetName() const;
+	virtual const char *GetDescription() const;
 	virtual void GetValue(void *buffer) const;
 	virtual void SetValue(const void *buffer);
 	virtual int GetSize() const;
-private:
+	virtual void ScanFields(unisim::service::interfaces::FieldScanner& scanner);
+protected:
+	friend class DWARF_MachineStateField<MEMORY_ADDR>;
+	
 	DWARF_MachineState<MEMORY_ADDR> *dw_mach_state;
 	unsigned prc_num;
 	unsigned int dw_reg_num;
 	unisim::service::interfaces::Register *arch_reg;
+	typedef std::vector<DWARF_MachineStateField<MEMORY_ADDR> *> Fields;
+	Fields fields;
 };
 
 template <class MEMORY_ADDR>
-class DWARF_MachineStateProgramCounter : public unisim::service::interfaces::Register
+class DWARF_MachineStateProgramCounter : public DWARF_MachineStateRegister<MEMORY_ADDR>
 {
 public:
 	DWARF_MachineStateProgramCounter(DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, unisim::service::interfaces::Register *arch_reg);
-	virtual const char *GetName() const;
 	virtual void GetValue(void *buffer) const;
 	virtual void SetValue(const void *buffer);
-	virtual int GetSize() const;
-private:
-	DWARF_MachineState<MEMORY_ADDR> *dw_mach_state;
-	unsigned prc_num;
-	unisim::service::interfaces::Register *arch_reg;
 };
 
 } // end of namespace dwarf

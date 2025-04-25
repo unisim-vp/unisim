@@ -60,6 +60,7 @@ public:
 	unsigned int GetColNo() const;
 	unsigned int GetISA() const;
 	unsigned int GetDiscriminator() const;
+	bool SameLine(const Statement<MEMORY_ADDR>& other) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const Statement<MEMORY_ADDR>& stmt);
 private:
 	MEMORY_ADDR addr;

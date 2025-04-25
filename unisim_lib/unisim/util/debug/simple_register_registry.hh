@@ -46,15 +46,16 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-class SimpleRegisterRegistry
+class SimpleRegisterRegistry : public unisim::service::interfaces::Registers
 {
 public:
 	SimpleRegisterRegistry();
 	virtual ~SimpleRegisterRegistry();
 	void Clear();
 	void AddRegisterInterface(unisim::service::interfaces::Register *reg_if, bool is_owner = true);
-	unisim::service::interfaces::Register *GetRegister(const char *name);
-	void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
+	bool HasRegister(const char *name) const;
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 private:
 	typedef std::map<std::string, unisim::service::interfaces::Register *, unisim::util::nat_sort::nat_ltstr> RegistersRegistry;
 	RegistersRegistry registers_registry;

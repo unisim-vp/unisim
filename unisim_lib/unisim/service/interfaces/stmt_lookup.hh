@@ -77,7 +77,7 @@ struct StatementLookup : StatementLookupBase
 	
 	void ScanStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, const std::string& filename) const { ScanStatements(scanner, filename.length() ? filename.c_str() : 0); }
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, const std::string& filename, Scope scope = SCOPE_EXACT_STMT) const { return FindStatement(addr, filename.length() ? filename.c_str() : 0, scope); }
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, MEMORY_ADDR addr, const std::string& filename, Scope scope = SCOPE_EXACT_STMT) const { return FindStatements(scanner, addr, filename.length() ? filename.c_str() : 0); }
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, MEMORY_ADDR addr, const std::string& filename, Scope scope = SCOPE_EXACT_STMT) const { return FindStatements(scanner, addr, filename.length() ? filename.c_str() : 0, scope); }
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatement(source_code_location, filename.length() ? filename.c_str() : 0); }
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatements(scanner, source_code_location, filename.length() ? filename.c_str() : 0); }
 };

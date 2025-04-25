@@ -1481,7 +1481,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataObjectDIE(const ch
 }
 
 template <class MEMORY_ADDR>
-const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataMemberDIE(const char *name) const
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataMemberDIE(const char *name, std::vector<const DWARF_DIE<MEMORY_ADDR> *> *dw_data_member_die_rev_path) const
 {
 	unsigned int num_children = children.size();
 	unsigned int i;
@@ -1496,7 +1496,11 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataMemberDIE(const ch
 					const char *child_name = dw_child->GetName();
 					if(child_name && (*child_name != 0))
 					{
-						if(strcmp(child_name, name) == 0) return dw_child;
+						if(strcmp(child_name, name) == 0)
+						{
+							dw_data_member_die_rev_path->push_back(dw_child);
+							return dw_child;
+						}
 					}
 					else
 					{
@@ -1517,7 +1521,12 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataMemberDIE(const ch
 									if(!child_type_name || (*child_type_name == 0)) // struct/union has no name or name is an empty string (anonymous)
 									{
 										// behave as if members of anonymous struct are members of container
-										return dw_child_die_type->FindDataMemberDIE(name);
+										const DWARF_DIE<MEMORY_ADDR> *dw_die_member = dw_child_die_type->FindDataMemberDIE(name, dw_data_member_die_rev_path);
+										if(dw_die_member)
+										{
+											dw_data_member_die_rev_path->push_back(dw_child);
+											return dw_die_member;
+										}
 									}
 								}
 								break;
@@ -1615,7 +1624,28 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindVariableDIE(const char
 template <class MEMORY_ADDR>
 void DWARF_DIE<MEMORY_ADDR>::ScanDataObjectNames(unisim::service::interfaces::DataObjectNameScanner& scanner) const
 {
-	if(GetTag() == DW_TAG_inlined_subroutine)
+	if(GetTag() == DW_TAG_GNU_call_site)
+	{
+		if(debug)
+		{
+			dw_handler->GetDebugInfoStream() << "DIE #" << id << " is a GNU call site" << std::endl;
+		}
+
+		const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+		
+		if(dw_at_abstract_origin)
+		{
+// 			if(debug)
+// 			{
+// 				dw_handler->GetDebugInfoStream() << "abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
+// 			}
+
+			dw_at_abstract_origin->ScanDataObjectNames(scanner);
+		}
+		
+		return;
+	}
+	else if(GetTag() == DW_TAG_inlined_subroutine)
 	{
 		if(debug)
 		{
@@ -1636,6 +1666,7 @@ void DWARF_DIE<MEMORY_ADDR>::ScanDataObjectNames(unisim::service::interfaces::Da
 		
 		return;
 	}
+
 	
 	unsigned int num_children = children.size();
 	unsigned int i;
@@ -2642,6 +2673,8 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, DWARF_Location<MEMORY_ADDR>& loc) const
 {
+	if(loc.GetType() == DW_LOC_NULL) return false;
+	
 	uint64_t dw_byte_size = 0;
 	if(!GetByteSize(dw_curr_frame, dw_byte_size))
 	{

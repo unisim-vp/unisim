@@ -39,6 +39,9 @@
 #include <unisim/kernel/config/xml/xml_config_file_helper.hh>
 #include <unisim/kernel/config/ini/ini_config_file_helper.hh>
 #include <unisim/kernel/config/json/json_config_file_helper.hh>
+#if HAVE_NODEJS
+#include <unisim/service/debug/nodejs/nodejs.tcc>
+#endif
 
 // Host machine standard headers
 #include <iostream>
@@ -60,6 +63,9 @@ Simulator<CONFIG>::Simulator(int argc, char **argv, const sc_core::sc_module_nam
 	, host_time(0)
 	, instrumenter(0)
 	, profiler(0)
+#if HAVE_NODEJS
+	, nodejs(0)
+#endif
 	, http_server(0)
 	, logger_console_printer(0)
 	, logger_text_file_writer(0)
@@ -69,9 +75,15 @@ Simulator<CONFIG>::Simulator(int argc, char **argv, const sc_core::sc_module_nam
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, enable_profiler(false)
+#if HAVE_NODEJS
+	, enable_nodejs(false)
+#endif
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiler")
+#if HAVE_NODEJS
+	, param_enable_nodejs("enable-nodejs", 0, enable_nodejs, "Enable Node.js JavaScript runtime environment debugging front-end")
+#endif
 {
 	// Optionally get the program to load and its arguments from the command line arguments
 	unisim::kernel::VariableBase *cmd_args = FindVariable("cmd-args");
@@ -151,7 +163,11 @@ Simulator<CONFIG>::Simulator(int argc, char **argv, const sc_core::sc_module_nam
 	//  - AVR32 Target to Host system calls
 	avr32_t2h_syscalls = new AVR32_T2H_SYSCALLS("avr32-t2h-syscalls");
 	//  - debugger
-	debugger = (enable_inline_debugger || enable_gdb_server || enable_profiler) ? new DEBUGGER("debugger") : 0;
+	debugger = (enable_inline_debugger || enable_gdb_server || enable_profiler
+#if HAVE_NODEJS
+	            || enable_nodejs
+#endif
+	) ? new DEBUGGER("debugger") : 0;
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDB_SERVER("gdb-server") : 0;
 	//  - Inline debugger
@@ -162,6 +178,10 @@ Simulator<CONFIG>::Simulator(int argc, char **argv, const sc_core::sc_module_nam
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
 	//  - Profiler
 	profiler = enable_profiler ? new PROFILER("profiler") : 0;
+#if HAVE_NODEJS
+	// - Node.js
+	nodejs = enable_nodejs ? new NODEJS("nodejs") : 0;
+#endif
 	//  - HTTP server
 	http_server = new HTTP_SERVER("http-server");
 	
@@ -208,52 +228,72 @@ Simulator<CONFIG>::Simulator(int argc, char **argv, const sc_core::sc_module_nam
 		
 		// Debugger <-> Loader connections
 		debugger->blob_import >> loader->blob_export;
-
+		
+		unsigned int front_end_num = 0;
+		
 		if (inline_debugger)
 		{
 			// inline-debugger <-> debugger connections
-			*debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
-			*debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
-			inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
-			inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
-			inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
-			inline_debugger->memory_import                 >> *debugger->memory_export[0];
-			inline_debugger->registers_import              >> *debugger->registers_export[0];
-			inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
-			inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
-			inline_debugger->stack_frame_import              >> *debugger->stack_frame_export[0];
-			inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
-			inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
-			inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
+			*debugger->debug_event_listener_import[front_end_num] >> inline_debugger->debug_event_listener_export;
+			*debugger->debug_yielding_import[front_end_num]       >> inline_debugger->debug_yielding_export;
+			inline_debugger->debug_yielding_request_import        >> *debugger->debug_yielding_request_export[front_end_num];
+			inline_debugger->debug_event_trigger_import           >> *debugger->debug_event_trigger_export[front_end_num];
+			inline_debugger->disasm_import                        >> *debugger->disasm_export[front_end_num];
+			inline_debugger->memory_import                        >> *debugger->memory_export[front_end_num];
+			inline_debugger->registers_import                     >> *debugger->registers_export[front_end_num];
+			inline_debugger->stmt_lookup_import                   >> *debugger->stmt_lookup_export[front_end_num];
+			inline_debugger->symbol_table_lookup_import           >> *debugger->symbol_table_lookup_export[front_end_num];
+			inline_debugger->stack_frame_import                   >> *debugger->stack_frame_export[front_end_num];
+			inline_debugger->debug_info_loading_import            >> *debugger->debug_info_loading_export[front_end_num];
+			inline_debugger->data_object_lookup_import            >> *debugger->data_object_lookup_export[front_end_num];
+			inline_debugger->subprogram_lookup_import             >> *debugger->subprogram_lookup_export[front_end_num];
+			++front_end_num;
 		}
 	
 		if (gdb_server)
 		{
 			// gdb-server <-> debugger connections
-			*debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
-			*debugger->debug_yielding_import[1]       >> gdb_server->debug_yielding_export;
-			gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
-			gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
-			gdb_server->memory_import                 >> *debugger->memory_export[1];
-			gdb_server->registers_import              >> *debugger->registers_export[1];
+			*debugger->debug_event_listener_import[front_end_num] >> gdb_server->debug_event_listener_export;
+			*debugger->debug_yielding_import[front_end_num]       >> gdb_server->debug_yielding_export;
+			gdb_server->debug_yielding_request_import             >> *debugger->debug_yielding_request_export[front_end_num];
+			gdb_server->debug_event_trigger_import                >> *debugger->debug_event_trigger_export[front_end_num];
+			gdb_server->memory_import                             >> *debugger->memory_export[front_end_num];
+			gdb_server->registers_import                          >> *debugger->registers_export[front_end_num];
+			++front_end_num;
 		}
 		
 		if (profiler)
 		{
-			*debugger->debug_yielding_import[2]       >> profiler->debug_yielding_export;
-			*debugger->debug_event_listener_import[2] >> profiler->debug_event_listener_export;
-			profiler->debug_yielding_request_import   >> *debugger->debug_yielding_request_export[2];
-			profiler->debug_event_trigger_import      >> *debugger->debug_event_trigger_export[2];
-			profiler->disasm_import                   >> *debugger->disasm_export[2];
-			profiler->memory_import                   >> *debugger->memory_export[2];
-			profiler->registers_import                >> *debugger->registers_export[2];
-			profiler->stmt_lookup_import              >> *debugger->stmt_lookup_export[2];
-			profiler->symbol_table_lookup_import      >> *debugger->symbol_table_lookup_export[2];
-			profiler->stack_frame_import                >> *debugger->stack_frame_export[2];
-			profiler->debug_info_loading_import       >> *debugger->debug_info_loading_export[2];
-			profiler->data_object_lookup_import       >> *debugger->data_object_lookup_export[2];
-			profiler->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[2];
+			*debugger->debug_yielding_import[front_end_num]       >> profiler->debug_yielding_export;
+			*debugger->debug_event_listener_import[front_end_num] >> profiler->debug_event_listener_export;
+			profiler->debug_yielding_request_import               >> *debugger->debug_yielding_request_export[front_end_num];
+			profiler->debug_event_trigger_import                  >> *debugger->debug_event_trigger_export[front_end_num];
+			profiler->disasm_import                               >> *debugger->disasm_export[front_end_num];
+			profiler->memory_import                               >> *debugger->memory_export[front_end_num];
+			profiler->registers_import                            >> *debugger->registers_export[front_end_num];
+			profiler->stmt_lookup_import                          >> *debugger->stmt_lookup_export[front_end_num];
+			profiler->symbol_table_lookup_import                  >> *debugger->symbol_table_lookup_export[front_end_num];
+			profiler->stack_frame_import                          >> *debugger->stack_frame_export[front_end_num];
+			profiler->debug_info_loading_import                   >> *debugger->debug_info_loading_export[front_end_num];
+			profiler->data_object_lookup_import                   >> *debugger->data_object_lookup_export[front_end_num];
+			profiler->subprogram_lookup_import                    >> *debugger->subprogram_lookup_export[front_end_num];
+			++front_end_num;
 		}
+		
+#if HAVE_NODEJS
+		if (nodejs)
+		{
+			*debugger->debug_yielding_import[front_end_num] >> nodejs->debug_yielding_export;
+			nodejs->debug_yielding_request_import           >> *debugger->debug_yielding_request_export[front_end_num];
+			nodejs->debug_event_trigger_import              >> *debugger->debug_event_trigger_export[front_end_num];
+			nodejs->stmt_lookup_import                      >> *debugger->stmt_lookup_export[front_end_num];
+			nodejs->symbol_table_lookup_import              >> *debugger->symbol_table_lookup_export[front_end_num];
+			nodejs->debug_info_loading_import               >> *debugger->debug_info_loading_export[front_end_num];
+			nodejs->subprogram_lookup_import                >> *debugger->subprogram_lookup_export[front_end_num];
+			nodejs->debug_processors_import                 >> *debugger->debug_processors_export[front_end_num];
+			++front_end_num;
+		}
+#endif
 	}
 	
 	{
@@ -280,6 +320,9 @@ Simulator<CONFIG>::~Simulator()
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
 	if(profiler) delete profiler;
+#if HAVE_NODEJS
+	if(nodejs) delete nodejs;
+#endif
 	if(debugger) delete debugger;
 	delete http_server;
 	delete cpu;
@@ -414,7 +457,11 @@ void Simulator<CONFIG>::Run()
 template <class CONFIG>
 unisim::kernel::Simulator::SetupStatus Simulator<CONFIG>::Setup()
 {
-	if(inline_debugger || profiler)
+	if(inline_debugger || profiler
+#if HAVE_NODEJS
+	   || nodejs
+#endif
+	)
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}

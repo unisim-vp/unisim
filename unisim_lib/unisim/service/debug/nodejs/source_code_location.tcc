@@ -194,14 +194,6 @@ void SourceCodeLocationWrapper<CONFIG>::GetColNo(v8::Local<v8::Name> property, c
 	info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), source_code_location.GetColNo()));
 }
 
-template <typename CONFIG>
-void SourceCodeLocationWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/source_code_location.h>
-	;
-}
-
 } // end of namespace nodejs
 } // end of namespace debug
 } // end of namespace service

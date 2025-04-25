@@ -94,8 +94,20 @@ public:
 		typedef sc_core::sc_time TIME_TYPE;
 		static const unsigned int NUM_PROCESSORS = 1;
 		/* gdb_server, inline_debugger, profiler */
-		static const unsigned int MAX_FRONT_ENDS = 3;
+		static const unsigned int MAX_FRONT_ENDS = 3
+#if HAVE_NODEJS
+		                                           + 1
+#endif
+		;
 	};
+	
+#if HAVE_NODEJS
+	struct NODEJS_CONFIG
+	{
+		typedef CPU_CONFIG::address_t ADDRESS;
+		typedef sc_core::sc_time TIME_TYPE;
+	};
+#endif
 };
 
 //=========================================================================

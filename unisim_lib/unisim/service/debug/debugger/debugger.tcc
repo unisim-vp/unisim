@@ -39,6 +39,7 @@
 #include <unisim/util/debug/breakpoint_registry.tcc>
 #include <unisim/util/debug/watchpoint_registry.tcc>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/locate/locate.hh>
 #include <stdexcept>
 #include <fstream>
 #include <cassert>
@@ -100,6 +101,7 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::Object *parent)
 	, param_architecture("architecture", this, architecture, NUM_PROCESSORS, "CPU architecture")
 	, logger(*this)
 	, setup_debug_info_done(false)
+	, setup_mach_state_done()
 	, mutex()
 	, curr_front_end_num_mutex()
 	, curr_front_end_num(-1)
@@ -481,7 +483,7 @@ bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *b
 				unsigned int front_end_num;
 				for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; ++front_end_num)
 				{
-					exec_bin_files[front_end_num].push_back(new ExecutableBinaryFile(*this, front_end_num, loader_num, blob));
+					exec_bin_files[front_end_num].push_back(new ExecutableBinaryFile(*this, front_end_num, loader_num, exec_bin_files[front_end_num].size(), blob));
 					enable_elf32_loaders[front_end_num].push_back(true);
 					if(parse_dwarf)
 					{
@@ -512,7 +514,7 @@ bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *b
 				unsigned int front_end_num;
 				for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; ++front_end_num)
 				{
-					exec_bin_files[front_end_num].push_back(new ExecutableBinaryFile(*this, front_end_num, loader_num, blob));
+					exec_bin_files[front_end_num].push_back(new ExecutableBinaryFile(*this, front_end_num, loader_num, exec_bin_files[front_end_num].size(), blob));
 					enable_elf64_loaders[front_end_num].push_back(true);
 					if(parse_dwarf)
 					{
@@ -531,7 +533,7 @@ bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *b
 				unsigned int front_end_num;
 				for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; ++front_end_num)
 				{
-					exec_bin_files[front_end_num].push_back(new ExecutableBinaryFile(*this, front_end_num, loader_num, blob));
+					exec_bin_files[front_end_num].push_back(new ExecutableBinaryFile(*this, front_end_num, loader_num, exec_bin_files[front_end_num].size(), blob));
 					enable_coff_loaders[front_end_num].push_back(true);
 				}
 			}
@@ -554,37 +556,44 @@ bool Debugger<CONFIG>::SetupDebugInfo()
 {
 	if(setup_debug_info_done)
 		return true;
-		
-	unsigned int front_end_num;
-	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; ++front_end_num)
-	{
-		dw_mach_state[front_end_num].SetDebugInfoStream(logger.DebugInfoStream());
-		dw_mach_state[front_end_num].SetDebugWarningStream(logger.DebugWarningStream());
-		dw_mach_state[front_end_num].SetDebugErrorStream(logger.DebugErrorStream());
-		dw_mach_state[front_end_num].SetOption(unisim::util::debug::dwarf::OPT_VERBOSE, verbose);
-		dw_mach_state[front_end_num].SetOption(unisim::util::debug::dwarf::OPT_DEBUG, debug_dwarf);
-		dw_mach_state[front_end_num].SetOption(unisim::util::debug::dwarf::OPT_REG_NUM_MAPPING_FILENAME, unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
-		dw_mach_state[front_end_num].SetOption(unisim::util::debug::dwarf::OPT_MAX_STACK_FRAMES, (int) max_stack_frames);
 	
-		unsigned int prc_num;
-		for(prc_num = 0; prc_num < NUM_PROCESSORS; ++prc_num)
+	if(blob_import)
+	{
+		if(!blob_import.RequireSetup()) return false;
+		const unisim::util::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
+		if(blob)
 		{
-			dw_mach_state[front_end_num].SetRegistersInterface(prc_num, prc_gate[prc_num]->registers_import);
-			dw_mach_state[front_end_num].SetMemoryInterface(prc_num, prc_gate[prc_num]->memory_import);
-			dw_mach_state[front_end_num].SetArchitecture(prc_num, architecture[prc_num].c_str());
+			if(!SetupDebugInfo(blob)) return false;
 		}
-	
-		dw_mach_state[front_end_num].Initialize();
-	}
-	
-	if(!blob_import) return false;
-	if(!blob_import.RequireSetup()) return false;
-	const unisim::util::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
-	if(blob)
-	{
-		if(!SetupDebugInfo(blob)) return false;
 	}
 	return setup_debug_info_done = true;
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::SetupMachineState(unsigned int front_end_num)
+{
+	if(setup_mach_state_done[front_end_num])
+		return true;
+		
+	dw_mach_state[front_end_num].SetDebugInfoStream(logger.DebugInfoStream());
+	dw_mach_state[front_end_num].SetDebugWarningStream(logger.DebugWarningStream());
+	dw_mach_state[front_end_num].SetDebugErrorStream(logger.DebugErrorStream());
+	dw_mach_state[front_end_num].SetOption(unisim::util::debug::dwarf::OPT_VERBOSE, verbose);
+	dw_mach_state[front_end_num].SetOption(unisim::util::debug::dwarf::OPT_DEBUG, debug_dwarf);
+	dw_mach_state[front_end_num].SetOption(unisim::util::debug::dwarf::OPT_REG_NUM_MAPPING_FILENAME, unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+	dw_mach_state[front_end_num].SetOption(unisim::util::debug::dwarf::OPT_MAX_STACK_FRAMES, (int) max_stack_frames);
+
+	unsigned int prc_num;
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; ++prc_num)
+	{
+		dw_mach_state[front_end_num].SetRegistersInterface(prc_num, prc_gate[prc_num]->registers_import);
+		dw_mach_state[front_end_num].SetMemoryInterface(prc_num, prc_gate[prc_num]->memory_import);
+		dw_mach_state[front_end_num].SetArchitecture(prc_num, architecture[prc_num].c_str());
+	}
+
+	dw_mach_state[front_end_num].Initialize();
+	
+	return setup_mach_state_done[front_end_num] = true;
 }
 
 template <typename CONFIG>
@@ -642,30 +651,11 @@ void Debugger<CONFIG>::DebugYield(unsigned int prc_num)
 	if(likely(IsScheduleEmpty())) return;
 
 	unsigned int front_end_num = 0;
-	uint64_t invalidate_frames_mask = 0;
 	
 	while(NextScheduledFrontEnd(front_end_num))
 	{
 		front_end_gate[front_end_num]->DebugYield();
-		if(dw_mach_state[front_end_num].DirtyFrames())
-		{
-			invalidate_frames_mask |= 1 << front_end_num;
-		}
-	}
-	if(unlikely(invalidate_frames_mask))
-	{
-		InvalidateDirtyFrames(invalidate_frames_mask);
-	}
-}
-
-template <typename CONFIG>
-void Debugger<CONFIG>::InvalidateDirtyFrames(uint64_t mask)
-{
-	unsigned int front_end_num;
-	while(unlikely(unisim::util::arithmetic::BitScanForward(front_end_num, mask)))
-	{
-		dw_mach_state[front_end_num].InvalidateDirtyFrames();
-		mask &= ~(1 << front_end_num);
+		dw_mach_state[front_end_num].Touch();
 	}
 }
 
@@ -685,8 +675,6 @@ bool Debugger<CONFIG>::ReportMemoryAccess(unsigned int prc_num, unisim::util::de
 
 	if(unlikely(watchpoint_registry.HasWatchpoints(mat, mt, addr, size, prc_num)))
 	{
-		uint64_t invalidate_frames_mask = 0;
-		
 		unsigned int front_end_num;
 		
 		for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; ++front_end_num)
@@ -697,16 +685,7 @@ bool Debugger<CONFIG>::ReportMemoryAccess(unsigned int prc_num, unisim::util::de
 			if(watchpoint_registry.template FindWatchpoints<Dispatcher<unisim::util::debug::Watchpoint<ADDRESS> > >(mat, mt, addr, size, prc_num, front_end_num, watchpoint_dispatcher))
 			{
 				ScheduleFrontEnd(front_end_num);
-				if(dw_mach_state[front_end_num].DirtyFrames())
-				{
-					invalidate_frames_mask |= 1 << front_end_num;
-				}
 			}
-		}
-		
-		if(unlikely(invalidate_frames_mask))
-		{
-			InvalidateDirtyFrames(invalidate_frames_mask);
 		}
 	}
 	
@@ -725,8 +704,6 @@ void Debugger<CONFIG>::ReportCommitInstruction(unsigned int prc_num, ADDRESS add
 	
 	if(unlikely(!commit_insn_event_set[prc_num].empty()))
 	{
-		uint64_t invalidate_frames_mask = 0;
-		
 		// beware of reentrancy
 		typename CommitInsnEventSet::size_type i = 0, n = commit_insn_event_set[prc_num].size();
 		CommitInsnEvent *commit_insn_events[n];
@@ -745,15 +722,6 @@ void Debugger<CONFIG>::ReportCommitInstruction(unsigned int prc_num, ADDRESS add
 			commit_insn_event->Trigger();
 			commit_insn_event->Release();
 			ScheduleFrontEnd(front_end_num);
-			if(dw_mach_state[front_end_num].DirtyFrames())
-			{
-				invalidate_frames_mask |= 1 << front_end_num;
-			}
-		}
-		
-		if(unlikely(invalidate_frames_mask))
-		{
-			InvalidateDirtyFrames(invalidate_frames_mask);
 		}
 	}
 }
@@ -767,8 +735,6 @@ void Debugger<CONFIG>::ReportFetchInstruction(unsigned int prc_num, ADDRESS next
 		logger << DebugWarning << "Processor #" << prc_num << " reports instruction fetch even if it has been asked not to" << EndDebugWarning;
 	}
 #endif
-	uint64_t invalidate_frames_mask = 0;
-	
 	if(unlikely(breakpoint_registry.HasBreakpoints(next_addr, prc_num)))
 	{
 		unsigned int front_end_num;
@@ -780,10 +746,6 @@ void Debugger<CONFIG>::ReportFetchInstruction(unsigned int prc_num, ADDRESS next
 			if(breakpoint_registry.template FindBreakpoints<Dispatcher<unisim::util::debug::Breakpoint<ADDRESS> > >(next_addr, prc_num, front_end_num, breakpoint_dispatcher))
 			{
 				ScheduleFrontEnd(front_end_num);
-				if(dw_mach_state[front_end_num].DirtyFrames())
-				{
-					invalidate_frames_mask |= 1 << front_end_num;
-				}
 			}
 		}
 	}
@@ -807,10 +769,6 @@ void Debugger<CONFIG>::ReportFetchInstruction(unsigned int prc_num, ADDRESS next
 			fetch_insn_event->Trigger();
 			fetch_insn_event->Release();
 			ScheduleFrontEnd(front_end_num);
-			if(dw_mach_state[front_end_num].DirtyFrames())
-			{
-				invalidate_frames_mask |= 1 << front_end_num;
-			}
 		}
 	}
 	
@@ -822,18 +780,11 @@ void Debugger<CONFIG>::ReportFetchInstruction(unsigned int prc_num, ADDRESS next
 		for(typename FetchStmtEventSet::iterator it = fetch_stmt_event_set[prc_num].begin(); it != fetch_stmt_event_set[prc_num].end(); ++it)
 		{
 			FetchStmtEvent *fetch_stmt_event = *it;
-			unsigned int front_end_num = fetch_stmt_event->GetFrontEndNumber();
-			
 			if(fetch_stmt_event->Stepped(next_addr))
 			{
 				fetch_stmt_event->Catch();
 				fetch_stmt_events[m] = fetch_stmt_event;
 				++m;
-			}
-			
-			if(dw_mach_state[front_end_num].DirtyFrames())
-			{
-				invalidate_frames_mask |= 1 << front_end_num;
 			}
 		}
 		for(i = 0; i < m; ++i)
@@ -843,16 +794,7 @@ void Debugger<CONFIG>::ReportFetchInstruction(unsigned int prc_num, ADDRESS next
 			fetch_stmt_event->Trigger();
 			fetch_stmt_event->Release();
 			ScheduleFrontEnd(front_end_num);
-			if(dw_mach_state[front_end_num].DirtyFrames())
-			{
-				invalidate_frames_mask |= 1 << front_end_num;
-			}
 		}
-	}
-	
-	if(unlikely(invalidate_frames_mask))
-	{
-		InvalidateDirtyFrames(invalidate_frames_mask);
 	}
 }
 
@@ -863,8 +805,6 @@ void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::Ob
 {
 	if(unlikely(!trap_event_set[prc_num].empty()))
 	{
-		uint64_t invalidate_frames_mask = 0;
-		
 		// beware of reentrancy
 		typename TrapEventSet::size_type i = 0, n = trap_event_set[prc_num].size();
 		TrapEvent *trap_events[n];
@@ -883,15 +823,6 @@ void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::Ob
 			trap_event->Trigger();
 			trap_event->Release();
 			ScheduleFrontEnd(front_end_num);
-			if(dw_mach_state[front_end_num].DirtyFrames())
-			{
-				invalidate_frames_mask |= 1 << front_end_num;
-			}
-		}
-		
-		if(unlikely(invalidate_frames_mask))
-		{
-			InvalidateDirtyFrames(invalidate_frames_mask);
 		}
 	}
 }
@@ -1559,44 +1490,44 @@ std::string Debugger<CONFIG>::Disasm(unsigned int front_end_num, unsigned int pr
 template <typename CONFIG>
 void Debugger<CONFIG>::ResetMemory(unsigned int front_end_num)
 {
-	sel_prc_gate[front_end_num]->ResetMemory();
+	if(front_end_num < MAX_FRONT_ENDS) dw_mach_state[front_end_num].ResetMemory(sel_cpu[front_end_num]);
 }
 
 template <typename CONFIG>
 void Debugger<CONFIG>::ResetMemory(unsigned int front_end_num, unsigned int prc_num)
 {
-	if((front_end_num < MAX_FRONT_ENDS) && (prc_num < NUM_PROCESSORS)) prc_gate[prc_num]->ResetMemory();
+	if((front_end_num < MAX_FRONT_ENDS) && (prc_num < NUM_PROCESSORS)) dw_mach_state[front_end_num].ResetMemory(prc_num);
 }
 
 template <typename CONFIG>
 bool Debugger<CONFIG>::ReadMemory(unsigned int front_end_num, ADDRESS addr, void *buffer, uint32_t size)
 {
-	return sel_prc_gate[front_end_num]->ReadMemory(addr, buffer, size);
+	return (front_end_num < MAX_FRONT_ENDS) && dw_mach_state[front_end_num].ReadMemory(sel_cpu[front_end_num], addr, buffer, size);
 }
 
 template <typename CONFIG>
 bool Debugger<CONFIG>::ReadMemory(unsigned int front_end_num, unsigned int prc_num, ADDRESS addr, void *buffer, uint32_t size)
 {
-	return (front_end_num < MAX_FRONT_ENDS) && (prc_num < NUM_PROCESSORS) && prc_gate[prc_num]->ReadMemory(addr, buffer, size);
+	return (front_end_num < MAX_FRONT_ENDS) && (prc_num < NUM_PROCESSORS) && dw_mach_state[front_end_num].ReadMemory(prc_num, addr, buffer, size);
 }
 
 template <typename CONFIG>
 bool Debugger<CONFIG>::WriteMemory(unsigned int front_end_num, ADDRESS addr, const void *buffer, uint32_t size)
 {
-	return sel_prc_gate[front_end_num]->WriteMemory(addr, buffer, size);
+	return (front_end_num < MAX_FRONT_ENDS) && dw_mach_state[front_end_num].WriteMemory(sel_cpu[front_end_num], addr, buffer, size);
 }
 
 template <typename CONFIG>
 bool Debugger<CONFIG>::WriteMemory(unsigned int front_end_num, unsigned int prc_num, ADDRESS addr, const void *buffer, uint32_t size)
 {
-	return (front_end_num < MAX_FRONT_ENDS) && (prc_num < NUM_PROCESSORS) &&  prc_gate[prc_num]->WriteMemory(addr, buffer, size);
+	return ((front_end_num < MAX_FRONT_ENDS) && (prc_num < NUM_PROCESSORS)) && dw_mach_state[front_end_num].WriteMemory(prc_num, addr, buffer, size);
 }
 
 // unisim::service::interfaces::Registers (tagged)
 template <typename CONFIG>
 unisim::service::interfaces::Register *Debugger<CONFIG>::GetRegister(unsigned int front_end_num, const char *name)
 {
-	return dw_mach_state[front_end_num].GetRegister(sel_cpu[front_end_num], name);
+	return (front_end_num < MAX_FRONT_ENDS) ? dw_mach_state[front_end_num].GetRegister(sel_cpu[front_end_num], name) : 0;
 }
 
 template <typename CONFIG>
@@ -1893,13 +1824,30 @@ unsigned int Debugger<CONFIG>::GetStackFrameInfos(unsigned int front_end_num, un
 template <typename CONFIG>
 bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *filename)
 {
+	std::string resolved_path;
+	if(!unisim::util::locate::ResolvePath(filename, resolved_path))
+	{
+		logger << DebugError << "Input \"" << filename << "\" does not exist" << EndDebugError;
+		return false;
+	}
+	
+	for(typename ExecutableBinaryFiles::const_iterator it = exec_bin_files[front_end_num].begin(); it != exec_bin_files[front_end_num].end(); ++it)
+	{
+		unisim::service::interfaces::ExecutableBinaryFile *exec_bin_file = *it;
+		if(strcmp(exec_bin_file->GetFilename(), resolved_path.c_str()) == 0)
+		{
+			// already loaded
+			return true;
+		}
+	}
+	
 	uint8_t magic[8];
 	
-	std::ifstream f(filename, std::ifstream::in | std::ifstream::binary);
+	std::ifstream f(resolved_path, std::ifstream::in | std::ifstream::binary);
 	
 	if(f.fail())
 	{
-		logger << DebugError << "Can't open input \"" << filename << "\"" << EndDebugError;
+		logger << DebugError << "Can't open input \"" << resolved_path << "\"" << EndDebugError;
 		return false;
 	}
 
@@ -1919,12 +1867,12 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 			// supported COFF file detected
 			unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
 			
-			coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_FILENAME, filename);
+			coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_FILENAME, resolved_path.c_str());
 			coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_VERBOSE, verbose);
 			
 			if(!coff_loader->Load())
 			{
-				logger << DebugError << "Loading input \"" << filename << "\" failed" << EndDebugError;
+				logger << DebugError << "Loading input \"" << resolved_path << "\" failed" << EndDebugError;
 				delete coff_loader;
 				return false;
 			}
@@ -1934,7 +1882,7 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 			unsigned int i;
 			for(i = 0; i < MAX_FRONT_ENDS; ++i)
 			{
-				exec_bin_files[i].push_back(new ExecutableBinaryFile(*this, i, loader_num, blob));
+				exec_bin_files[i].push_back(new ExecutableBinaryFile(*this, i, loader_num, exec_bin_files[front_end_num].size(), blob));
 				enable_coff_loaders[i].push_back((front_end_num == i));
 			}
 			return true;
@@ -1959,7 +1907,7 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 							elf32_loader->SetRegistersInterface(prc_num, prc_gate[prc_num]->registers_import);
 							elf32_loader->SetMemoryInterface(prc_num, prc_gate[prc_num]->memory_import);
 						}
-						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
+						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, resolved_path.c_str());
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
@@ -1967,7 +1915,7 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 						
 						if(!elf32_loader->Load())
 						{
-							logger << DebugError << "Loading input \"" << filename << "\" failed" << EndDebugError;
+							logger << DebugError << "Loading input \"" << resolved_path << "\" failed" << EndDebugError;
 							delete elf32_loader;
 							return false;
 						}
@@ -1977,7 +1925,7 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 						unsigned int i;
 						for(i = 0; i < MAX_FRONT_ENDS; ++i)
 						{
-							exec_bin_files[i].push_back(new ExecutableBinaryFile(*this, i, loader_num, blob));
+							exec_bin_files[i].push_back(new ExecutableBinaryFile(*this, i, loader_num, exec_bin_files[front_end_num].size(), blob));
 							enable_elf32_loaders[i].push_back(front_end_num == i);
 						}
 						if(parse_dwarf)
@@ -1998,7 +1946,7 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 							elf64_loader->SetRegistersInterface(prc_num, prc_gate[prc_num]->registers_import);
 							elf64_loader->SetMemoryInterface(prc_num, prc_gate[prc_num]->memory_import);
 						}
-						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
+						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, resolved_path.c_str());
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
@@ -2006,7 +1954,7 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 
 						if(!elf64_loader->Load())
 						{
-							logger << DebugError << "Loading input \"" << filename << "\" failed" << EndDebugError;
+							logger << DebugError << "Loading input \"" << resolved_path << "\" failed" << EndDebugError;
 							delete elf64_loader;
 							return false;
 						}
@@ -2016,7 +1964,7 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 						unsigned int i;
 						for(i = 0; i < MAX_FRONT_ENDS; ++i)
 						{
-							exec_bin_files[i].push_back(new ExecutableBinaryFile(*this, i, loader_num, blob));
+							exec_bin_files[i].push_back(new ExecutableBinaryFile(*this, i, loader_num, exec_bin_files[front_end_num].size(), blob));
 							enable_elf64_loaders[i].push_back(front_end_num == i);
 						}
 						if(parse_dwarf)
@@ -2029,7 +1977,7 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 			}
 		}
 	}
-	logger << DebugWarning << "Can't handle symbol table of input \"" << filename << "\"" << EndDebugWarning;
+	logger << DebugWarning << "Can't handle symbol table of input \"" << resolved_path << "\"" << EndDebugWarning;
 	return false;
 }
 

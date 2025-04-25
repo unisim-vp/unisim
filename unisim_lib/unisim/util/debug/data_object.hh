@@ -298,7 +298,6 @@ public:
 	DataObjectRef<ADDRESS> operator [] (const std::string& property_name) { return this->operator [] (property_name.c_str()); }
 	const DataObjectRef<ADDRESS> operator [] (const std::string& property_name) const { return this->operator [] (property_name.c_str()); }
 	template <typename VISITOR, typename T = bool> T ScanProperties(VISITOR& visitor) const;
-	template <typename VISITOR, typename T = bool> T ScanProperties(VISITOR& visitor);
 	bool HasProperty(const char *property_name) const { return IsComposite() && GetCVUnqualifiedType()->AsComposite().HasMember(property_name); }
 	bool HasProperty(const std::string& property_name) const { return IsComposite() && GetCVUnqualifiedType()->AsComposite().HasMember(property_name.c_str()); }
 	
@@ -384,10 +383,10 @@ template <class ADDRESS, typename T>
 T operator - (T value, const DataObject<ADDRESS>& data_object) { return Difference<ADDRESS, T>(value, data_object); }
 
 template <class ADDRESS, typename T>
-T operator * (const DataObject<ADDRESS>& data_object, T value) { return Difference<ADDRESS, T>(data_object, value); }
+T operator * (const DataObject<ADDRESS>& data_object, T value) { return Multiply<ADDRESS, T>(data_object, value); }
 
 template <class ADDRESS, typename T>
-T operator * (T value, const DataObject<ADDRESS>& data_object) { return Difference<ADDRESS, T>(value, data_object); }
+T operator * (T value, const DataObject<ADDRESS>& data_object) { return Multiply<ADDRESS, T>(value, data_object); }
 
 template <class ADDRESS, typename T>
 T operator / (const DataObject<ADDRESS>& data_object, T value) { return Divide<ADDRESS, T>(data_object, value); }

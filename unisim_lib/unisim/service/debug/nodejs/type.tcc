@@ -201,14 +201,6 @@ void TypeWrapper<CONFIG>::GetCDecl(v8::Local<v8::Name> property, const v8::Prope
 	if(type) info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), type->GetCDecl().c_str()).ToLocalChecked());
 }
 
-template <typename CONFIG>
-void TypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/type.h>
-	;
-}
-
 //////////////////////////////// NamedTypeWrapper<> /////////////////////////////////
 
 template <typename CONFIG>
@@ -286,14 +278,6 @@ template <typename CONFIG>
 void NamedTypeWrapper<CONFIG>::GetHasName(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	if(named_type) info.GetReturnValue().Set(v8::Boolean::New(this->GetIsolate(), named_type->HasName()));
-}
-
-template <typename CONFIG>
-void NamedTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/named_type.h>
-	;
 }
 
 //////////////////////////////// BaseTypeWrapper<> /////////////////////////////////
@@ -374,14 +358,6 @@ template <typename CONFIG>
 void BaseTypeWrapper<CONFIG>::GetBitSize(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	if(base_type) info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), base_type->GetBitSize()));
-}
-
-template <typename CONFIG>
-void BaseTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/base_type.h>
-	;
 }
 
 //////////////////////////////// IntegerTypeWrapper<> /////////////////////////////////
@@ -471,14 +447,6 @@ void IntegerTypeWrapper<CONFIG>::GetIsSigned(v8::Local<v8::Name> property, const
 	if(integer_type) info.GetReturnValue().Set(v8::Boolean::New(this->GetIsolate(), integer_type->IsSigned()));
 }
 
-template <typename CONFIG>
-void IntegerTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/integer_type.h>
-	;
-}
-
 //////////////////////////////// CharTypeWrapper<> /////////////////////////////////
 
 template <typename CONFIG>
@@ -566,14 +534,6 @@ void CharTypeWrapper<CONFIG>::GetIsSigned(v8::Local<v8::Name> property, const v8
 	if(char_type) info.GetReturnValue().Set(v8::Boolean::New(this->GetIsolate(), char_type->IsSigned()));
 }
 
-template <typename CONFIG>
-void CharTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/char_type.h>
-	;
-}
-
 //////////////////////////////// FloatingPointTypeWrapper<> /////////////////////////////////
 
 template <typename CONFIG>
@@ -638,14 +598,6 @@ const unisim::util::debug::FloatingPointType *FloatingPointTypeWrapper<CONFIG>::
 	return floating_point_type;
 }
 
-template <typename CONFIG>
-void FloatingPointTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/floating_point_type.h>
-	;
-}
-
 //////////////////////////////// BooleanTypeWrapper<> /////////////////////////////////
 
 template <typename CONFIG>
@@ -708,14 +660,6 @@ template <typename CONFIG>
 const unisim::util::debug::BooleanType *BooleanTypeWrapper<CONFIG>::GetBooleanType() const
 {
 	return boolean_type;
-}
-
-template <typename CONFIG>
-void BooleanTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/boolean_type.h>
-	;
 }
 
 //////////////////////////////// MemberWrapper<> /////////////////////////////////
@@ -835,14 +779,6 @@ template <typename CONFIG>
 void MemberWrapper<CONFIG>::GetCDecl(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	if(member) info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), member->BuildCDecl().c_str()).ToLocalChecked());
-}
-
-template <typename CONFIG>
-void MemberWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/member.h>
-	;
 }
 
 //////////////////////////////// CompositeTypeWrapper<> /////////////////////////////////
@@ -974,14 +910,6 @@ void CompositeTypeWrapper<CONFIG>::GetIsIncomplete(v8::Local<v8::Name> property,
 	if(composite_type) info.GetReturnValue().Set(v8::Boolean::New(this->GetIsolate(), composite_type->IsIncomplete()));
 }
 
-template <typename CONFIG>
-void CompositeTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/composite_type.h>
-	;
-}
-
 //////////////////////////////// StructureTypeWrapper<> /////////////////////////////////
 
 template <typename CONFIG>
@@ -1044,14 +972,6 @@ template <typename CONFIG>
 const unisim::util::debug::StructureType *StructureTypeWrapper<CONFIG>::GetStructureType() const
 {
 	return structure_type;
-}
-
-template <typename CONFIG>
-void StructureTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/structure_type.h>
-	;
 }
 
 //////////////////////////////// UnionTypeWrapper<> /////////////////////////////////
@@ -1118,14 +1038,6 @@ const unisim::util::debug::UnionType *UnionTypeWrapper<CONFIG>::GetUnionType() c
 	return union_type;
 }
 
-template <typename CONFIG>
-void UnionTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/union_type.h>
-	;
-}
-
 //////////////////////////////// ClassTypeWrapper<> /////////////////////////////////
 
 template <typename CONFIG>
@@ -1190,14 +1102,6 @@ const unisim::util::debug::ClassType *ClassTypeWrapper<CONFIG>::GetClassType() c
 	return class_type;
 }
 
-template <typename CONFIG>
-void ClassTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/class_type.h>
-	;
-}
-
 //////////////////////////////// InterfaceTypeWrapper<> /////////////////////////////////
 
 template <typename CONFIG>
@@ -1260,14 +1164,6 @@ template <typename CONFIG>
 const unisim::util::debug::InterfaceType *InterfaceTypeWrapper<CONFIG>::GetInterfaceType() const
 {
 	return interface_type;
-}
-
-template <typename CONFIG>
-void InterfaceTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/interface_type.h>
-	;
 }
 
 //////////////////////////////// ArrayTypeWrapper<> /////////////////////////////////
@@ -1392,14 +1288,6 @@ void ArrayTypeWrapper<CONFIG>::GetCount(v8::Local<v8::Name> property, const v8::
 	if(array_type) info.GetReturnValue().Set(MakeInteger(this->GetIsolate(), array_type->GetCount()));
 }
 
-template <typename CONFIG>
-void ArrayTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/array_type.h>
-	;
-}
-
 //////////////////////////////// PointerTypeWrapper<> /////////////////////////////////
 
 template <typename CONFIG>
@@ -1494,14 +1382,6 @@ void PointerTypeWrapper<CONFIG>::GetTypeOfDereferencedObject(v8::Local<v8::Name>
 	}
 }
 
-template <typename CONFIG>
-void PointerTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/pointer_type.h>
-	;
-}
-
 //////////////////////////////// TypedefWrapper<> /////////////////////////////////
 
 template <typename CONFIG>
@@ -1594,14 +1474,6 @@ void TypedefWrapper<CONFIG>::GetType(v8::Local<v8::Name> property, const v8::Pro
 			info.GetReturnValue().Set(TypeWrapper<CONFIG>::MakeObjectFromType(this->nodejs, type));
 		}
 	}
-}
-
-template <typename CONFIG>
-void TypedefWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/typedef.h>
-	;
 }
 
 //////////////////////////////// FormalParameterWrapper<> /////////////////////////////////
@@ -1700,14 +1572,6 @@ void FormalParameterWrapper<CONFIG>::GetType(v8::Local<v8::Name> property, const
 			info.GetReturnValue().Set(TypeWrapper<CONFIG>::MakeObjectFromType(this->nodejs, type));
 		}
 	}
-}
-
-template <typename CONFIG>
-void FormalParameterWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/formal_parameter.h>
-	;
 }
 
 //////////////////////////////// FunctionTypeWrapper<> /////////////////////////////////
@@ -1847,14 +1711,6 @@ void FunctionTypeWrapper<CONFIG>::GetReturnType(v8::Local<v8::Name> property, co
 	}
 }
 
-template <typename CONFIG>
-void FunctionTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/function_type.h>
-	;
-}
-
 //////////////////////////////// ConstTypeWrapper<> /////////////////////////////////
 
 template <typename CONFIG>
@@ -1947,14 +1803,6 @@ void ConstTypeWrapper<CONFIG>::GetType(v8::Local<v8::Name> property, const v8::P
 			info.GetReturnValue().Set(TypeWrapper<CONFIG>::MakeObjectFromType(this->nodejs, type));
 		}
 	}
-}
-
-template <typename CONFIG>
-void ConstTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/const_type.h>
-	;
 }
 
 //////////////////////////////// EnumeratorWrapper<> /////////////////////////////////
@@ -2051,14 +1899,6 @@ void EnumeratorWrapper<CONFIG>::GetValue(v8::Local<v8::Name> property, const v8:
 		                                                    : MakeInteger(this->GetIsolate(), enumerator->GetUnsignedValue());
 		info.GetReturnValue().Set(value);
 	}
-}
-
-template <typename CONFIG>
-void EnumeratorWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/enumerator.h>
-	;
 }
 
 //////////////////////////////// EnumTypeWrapper<> /////////////////////////////////
@@ -2174,14 +2014,6 @@ v8::Local<v8::Object> EnumTypeWrapper<CONFIG>::MakeObject()
 	return handle_scope.Escape(enum_type_object);
 }
 
-template <typename CONFIG>
-void EnumTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/enum_type.h>
-	;
-}
-
 //////////////////////////////// UnspecifiedTypeWrapper<> /////////////////////////////////
 
 template <typename CONFIG>
@@ -2244,14 +2076,6 @@ template <typename CONFIG>
 const unisim::util::debug::UnspecifiedType *UnspecifiedTypeWrapper<CONFIG>::GetUnspecifiedType() const
 {
 	return unspecified_type;
-}
-
-template <typename CONFIG>
-void UnspecifiedTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/unspecified_type.h>
-	;
 }
 
 //////////////////////////////// VolatileTypeWrapper<> /////////////////////////////////
@@ -2346,14 +2170,6 @@ void VolatileTypeWrapper<CONFIG>::GetType(v8::Local<v8::Name> property, const v8
 			info.GetReturnValue().Set(TypeWrapper<CONFIG>::MakeObjectFromType(this->nodejs, type));
 		}
 	}
-}
-
-template <typename CONFIG>
-void VolatileTypeWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/volatile_type.h>
-	;
 }
 
 } // end of namespace nodejs

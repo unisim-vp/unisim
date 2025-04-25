@@ -17,6 +17,10 @@ Example of use:
 	let brk1 = new Watchpoint(processor, 0x1234, 4, { memoryType: 'data', memoryAccessType: 'write'} );
 	let brk2 = new Watchpoint(processor, BigInt('0xffffffffffffffff'), 1, { memoryType: 'data', memoryAccessType: 'read'} );
 
+## `(read-only) id: Number`
+
+The watchpoint identifier.
+
 ## `(read-only) processor: Processor`
 
 The processor to which this watchpoint is attached. 

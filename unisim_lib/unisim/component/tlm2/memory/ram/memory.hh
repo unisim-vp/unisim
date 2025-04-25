@@ -113,10 +113,6 @@ protected:
 	uint64_t read_counter;
 	uint64_t write_counter;
 
-
-private:
-	void UpdateTime(unsigned int data_length, const sc_core::sc_time& latency, sc_core::sc_time& t);
-
 	/** The cycle time */
 	sc_core::sc_time cycle_time;
 	/** Latencies */
@@ -140,6 +136,9 @@ private:
 	Statistic<uint64_t> stat_write_counter;
 
 	unisim::kernel::tlm2::LatencyLookupTable burst_latency_lut;
+
+private:
+	void UpdateTime(unsigned int data_length, const sc_core::sc_time& latency, sc_core::sc_time& t);
 };
 
 } // end of namespace ram

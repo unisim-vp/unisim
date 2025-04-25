@@ -10,6 +10,11 @@ Name of the register.
 
 Description of the register.
 
+## `(read-only) fields: Object`
+
+The register fields.
+Each property, of type Field, is named as the field it exposes.
+
 ## `(read-only) size: Number`
 
 Size in bytes of the register.

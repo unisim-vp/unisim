@@ -121,6 +121,7 @@ private:
 	mutable DWARF_BitVector bv;
 	bool hold;
 	const bool& debug;
+	mutable uint64_t stamp;
 };
 
 template <class ADDRESS>

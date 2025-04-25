@@ -35,6 +35,10 @@
 #ifndef SIMULATOR_HH_
 #define SIMULATOR_HH_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
@@ -51,6 +55,9 @@
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/interfaces/char_io.hh>
 #include <unisim/service/debug/profiler/profiler.hh>
+#if HAVE_NODEJS
+#include <unisim/service/debug/nodejs/nodejs.hh>
+#endif
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/instrumenter/instrumenter.hh>
 #include <unisim/service/tee/char_io/tee.hh>
@@ -64,10 +71,6 @@
 #include <unisim/kernel/logger/netstream/netstream_writer.hh>
 #include <unisim/util/cache/cache.hh>
 #include <unisim/util/likely/likely.hh>
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 struct MSSConfig
 {
@@ -513,13 +516,28 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
     typedef sc_core::sc_time TIME_TYPE;
     static const unsigned int NUM_PROCESSORS = 1;
     /* gdb_server, inline_debugger and/or profiler */
-    static const unsigned int MAX_FRONT_ENDS = 3;
+    static const unsigned int MAX_FRONT_ENDS = 3
+#if HAVE_NODEJS
+                                               + 1
+#endif
+    ;
   };
+
+#if HAVE_NODEJS
+  struct NODEJS_CONFIG
+  {
+    typedef uint32_t ADDRESS;
+    typedef sc_core::sc_time TIME_TYPE;
+  };
+#endif
 
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
   typedef unisim::service::debug::gdb_server::GDBServer<DEBUGGER_CONFIG::ADDRESS> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<DEBUGGER_CONFIG::ADDRESS> INLINE_DEBUGGER;
   typedef unisim::service::debug::profiler::Profiler<DEBUGGER_CONFIG::ADDRESS> PROFILER;
+#if HAVE_NODEJS
+  typedef unisim::service::debug::nodejs::NodeJS<NODEJS_CONFIG> NODEJS;
+#endif
   typedef unisim::service::http_server::HttpServer HTTP_SERVER;
   typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
   typedef unisim::service::time::sc_time::ScTime ScTime;
@@ -565,6 +583,9 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
   GDB_SERVER*                  gdb_server;
   INLINE_DEBUGGER*             inline_debugger;
   PROFILER*                    profiler;
+#if HAVE_NODEJS
+  NODEJS*                      nodejs;
+#endif
   INSTRUMENTER*                instrumenter;
   LOGGER_CONSOLE_PRINTER*      logger_console_printer;
   LOGGER_TEXT_FILE_WRITER*     logger_text_file_writer;
@@ -578,6 +599,10 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
   unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
   bool                                     enable_profiler;
   unisim::kernel::variable::Parameter<bool> param_enable_profiler;
+#if HAVE_NODEJS
+  bool                                     enable_nodejs;
+  unisim::kernel::variable::Parameter<bool> param_enable_nodejs;
+#endif
 };
 
 #endif /* SIMULATOR_HH_ */

@@ -57,7 +57,7 @@ std::string Dirname(const std::string& path)
 		'/'
 #endif
 	);
-	return (pos != std::string::npos) ? path.substr(0, pos) : path;
+	return (pos != std::string::npos) ? path.substr(0, pos) : std::string(".");
 }
 
 std::string Basename(const std::string& path)

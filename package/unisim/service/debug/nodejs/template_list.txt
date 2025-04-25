@@ -3,6 +3,7 @@ unisim/service/debug/nodejs/data_object.tcc
 unisim/service/debug/nodejs/debug_event.tcc
 unisim/service/debug/nodejs/debug_symbol.tcc
 unisim/service/debug/nodejs/executable_binary_file.tcc
+unisim/service/debug/nodejs/field.tcc
 unisim/service/debug/nodejs/hook.tcc
 unisim/service/debug/nodejs/nodejs.tcc
 unisim/service/debug/nodejs/pointer.tcc

@@ -11,6 +11,10 @@ Example of use:
 	let brk1 = new Breakpoint(processor, 0x1234);
 	let brk2 = new Breakpoint(processor, BigInt('0xffffffffffffffff'));
 
+## `(read-only) id: Number`
+
+The breakpoint identifier.
+
 ## `(read-only) address: Number`
 
 Address that this breakpoint monitors.

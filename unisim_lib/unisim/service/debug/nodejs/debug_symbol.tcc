@@ -151,14 +151,6 @@ void DebugSymbolWrapper<CONFIG>::GetType(v8::Local<v8::Name> property, const v8:
 	if(symbol) info.GetReturnValue().Set(v8::String::NewFromUtf8(this->GetIsolate(), ToString(symbol->GetType()).c_str()).ToLocalChecked());
 }
 
-template <typename CONFIG>
-void DebugSymbolWrapper<CONFIG>::Help(std::ostream& stream)
-{
-	stream <<
-#include <unisim/service/debug/nodejs/doc/debug_symbol.h>
-	;
-}
-
 } // end of namespace nodejs
 } // end of namespace debug
 } // end of namespace service

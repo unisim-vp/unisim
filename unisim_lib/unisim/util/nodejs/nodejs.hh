@@ -75,9 +75,11 @@ bool ToString(v8::Isolate *isolate, v8::Local<v8::Value> value, std::string& str
 
 // Convert a V8 value to an integral C++ value
 template <typename T> bool ToInt(v8::Isolate *isolate, v8::Local<v8::Value> value, T& out);
+bool ToInt(v8::Isolate *isolate, v8::Local<v8::Value> value, uint8_t *out, unsigned size);
 
 // Make a V8 value from an integral C++ value
 template <typename T> v8::Local<v8::Value> MakeInteger(v8::Isolate *isolate, T value);
+v8::Local<v8::Value> MakeInteger(v8::Isolate *isolate, const uint8_t *value, unsigned size, bool is_signed);
 
 // Trampoline for global callbacks as member method of top level class (i.e. NodeJS)
 template <class CLASS, void (CLASS::*MEMBER_METHOD)(const v8::FunctionCallbackInfo<v8::Value>& args)>
@@ -119,15 +121,15 @@ void BindObject(v8::Isolate *isolate, v8::Local<v8::Object> object, CLASS *ptr, 
 // Top level class
 struct NodeJS
 {
-	NodeJS(const std::string& executable_path);
+	NodeJS();
 	virtual ~NodeJS();
-	bool Initialize();
+	bool Start();
 
-	void SetFilename(const std::string& filename);
-	void SetArguments(const std::vector<std::string>& arguments);
-	void SetArguments(int argc, const char **arguments);
-	void SetOptions(const std::vector<std::string>& options);
-	void SetOptions(int optc, const char **options);
+	static void SetExecutablePath(const std::string& executable_path);
+	static void SetArguments(const std::vector<std::string>& arguments);
+	static void SetArguments(int argc, const char **arguments);
+	static void SetOptions(const std::vector<std::string>& options);
+	static void SetOptions(int optc, const char **options);
 	void SetVerbose(bool flag = true);
 	void SetDebug(bool flag = true);
 	void SetDebugInfoStream(std::ostream& stream);
@@ -151,13 +153,14 @@ struct NodeJS
 protected:
 	friend struct ObjectWrapper;
 	
+	static std::string executable_path;
 	static std::vector<std::string> options;
+	static std::vector<std::string> arguments;
 	static std::unique_ptr<node::MultiIsolatePlatform> platform;
 	v8::Isolate *isolate;
 	std::unique_ptr<node::Environment, decltype(&node::FreeEnvironment)> *env;
 	v8::Global<v8::Context> context;
 	v8::Global<v8::Function> require;
-	std::string executable_path;
 	std::ostream *debug_info_stream;
 	std::ostream *debug_warning_stream;
 	std::ostream *debug_error_stream;
@@ -166,8 +169,6 @@ protected:
 	bool killed;
 	bool exited;
 	bool running;
-	std::string filename;
-	std::vector<std::string> arguments;
 	int exit_code;
 	
 	void Cleanup();
@@ -192,7 +193,7 @@ protected:
 	v8::Local<v8::Function> GetCtorFunction();
 	
 	virtual v8::Local<v8::ObjectTemplate> CreateGlobalObjectTemplate();
-	virtual void BeforeExecution();
+	virtual bool Initialize();
 	
 	template <class CLASS, void (CLASS::*MEMBER_METHOD)(const v8::FunctionCallbackInfo<v8::Value>& args)>
 	v8::Local<v8::FunctionTemplate> CreateFunctionTemplate();
@@ -209,8 +210,6 @@ protected:
 	void Throw(v8::Local<v8::Value> error);
 private:
 	static unsigned int platform_ref_count;
-	std::vector<std::string> node_args;
-	std::vector<std::string> node_exec_args;
 	std::thread *thread;
 	std::mutex init_mutex;
 	std::condition_variable init_cond;
@@ -244,7 +243,6 @@ private:
 	void AbortNodeJS();
 	void UnblockNodeJS();
 	void ReportException(v8::TryCatch& try_catch);
-	bool ExecuteInitScript();
 };
 
 //////////////////////////////// ObjectWrapper /////////////////////////////////
@@ -261,6 +259,8 @@ struct ObjectWrapper
 	static uint32_t AllocateClassId() { static uint32_t class_id = 0; return (++class_id) | MAGIC; }
 	void Catch() const { ref_count++; }
 	void Release() const { if(ref_count && (--ref_count == 0)) delete this; }
+	
+	v8::Local<v8::Object> ThisObject() { return this_object.Get(GetIsolate()); }
 protected:
 	v8::Isolate *GetIsolate() const { return nodejs.GetIsolate(); }
 	v8::Local<v8::Context> GetContext() { return nodejs.GetContext(); }
@@ -277,7 +277,6 @@ protected:
 	template <typename T> static bool IsInstanceOf(v8::Local<v8::Value> value) { return NodeJS::IsInstanceOf<T>(value); }
 	template <typename T> static T *GetInstanceOf(v8::Local<v8::Value> value) { return NodeJS::GetInstanceOf<T>(value); }
 	template <typename T> void BindObject(v8::Local<v8::Object> object);
-	v8::Local<v8::Object> ThisObject() { return this_object.Get(GetIsolate()); }
 	void CatchObject(v8::Local<v8::Object> object) { this_object.Reset(GetIsolate(), object); }
 	void ReleaseObject() { this_object.Reset(); }
 	template <typename T> v8::Local<v8::Object> MakeObject();
@@ -578,6 +577,7 @@ v8::Local<v8::Object> ObjectWrapper::MakeObject()
 template <typename T>
 v8::Local<v8::Object> ObjectWrapper::MakePersistentObject()
 {
+	if(!this_object.IsEmpty()) return this->ThisObject();
 	v8::EscapableHandleScope handle_scope(GetIsolate());
 	v8::Local<v8::Object> object = this->template MakeObject<T>();
 	this->CatchObject(object); // this is a persistent object: catch "this"

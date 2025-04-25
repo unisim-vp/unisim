@@ -62,9 +62,10 @@ template <class MEMORY_ADDR>
 class DWARF_Register
 {
 public:
-	DWARF_Register(unisim::service::interfaces::Register *reg);
+	DWARF_Register(const DWARF_Frame<MEMORY_ADDR> *dw_frame, unisim::service::interfaces::Register *reg);
 	virtual ~DWARF_Register();
 	virtual const char *GetName() const;
+	virtual const char *GetDescription() const;
 	virtual int GetSize() const;
 	virtual bool GetValue(void *buffer) const;
 	virtual bool SetValue(const void *buffer);
@@ -85,6 +86,7 @@ private:
 	template <typename T> bool GetTypedValue(T& val) const;
 	template <typename T> bool SetTypedValue(T& val) const;
 protected:
+	const DWARF_Frame<MEMORY_ADDR> *dw_frame;
 	unisim::service::interfaces::Register *reg;
 	std::vector<uint8_t> snapshot;
 };
@@ -96,7 +98,7 @@ template <class MEMORY_ADDR>
 class DWARF_RenameRegister : public DWARF_Register<MEMORY_ADDR>
 {
 public:
-	DWARF_RenameRegister(unisim::service::interfaces::Register *reg, const DWARF_RegisterRef<MEMORY_ADDR>& dw_reg_ref);
+	DWARF_RenameRegister(const DWARF_Frame<MEMORY_ADDR> *dw_frame, unisim::service::interfaces::Register *reg, const DWARF_RegisterRef<MEMORY_ADDR>& dw_reg_ref);
 	virtual int GetSize() const;
 	virtual bool GetValue(void *buffer) const;
 	virtual bool SetValue(const void *buffer);
@@ -108,7 +110,7 @@ template <class MEMORY_ADDR>
 class DWARF_ValueRegister : public DWARF_Register<MEMORY_ADDR>
 {
 public:
-	DWARF_ValueRegister(unisim::service::interfaces::Register *reg, int size, const uint64_t& value);
+	DWARF_ValueRegister(const DWARF_Frame<MEMORY_ADDR> *dw_frame, unisim::service::interfaces::Register *reg, int size, const uint64_t& value);
 	virtual int GetSize() const;
 	virtual bool GetValue(void *buffer) const;
 	virtual bool SetValue(const void *buffer);
@@ -121,7 +123,7 @@ template <class MEMORY_ADDR>
 class DWARF_SpilledRegister : public DWARF_Register<MEMORY_ADDR>
 {
 public:
-	DWARF_SpilledRegister(unisim::service::interfaces::Register *reg, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, MEMORY_ADDR addr, unsigned int read_size, unisim::util::endian::endian_type endianness);
+	DWARF_SpilledRegister(const DWARF_Frame<MEMORY_ADDR> *dw_frame, unisim::service::interfaces::Register *reg, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, MEMORY_ADDR addr, unsigned int read_size, unisim::util::endian::endian_type endianness);
 	virtual bool GetValue(void *buffer) const;
 	virtual bool SetValue(const void *buffer);
 private:
@@ -135,7 +137,7 @@ template <class MEMORY_ADDR>
 class DWARF_RegSet
 {
 public:
-	DWARF_RegSet(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num);
+	DWARF_RegSet(const DWARF_Frame<MEMORY_ADDR> *dw_frame);
 	~DWARF_RegSet();
 	bool LoadArchRegs();
 	void DefRegister(unsigned int dw_reg_num, DWARF_Register<MEMORY_ADDR> *dw_reg);
@@ -149,7 +151,7 @@ public:
 	void Print(std::ostream& os) const;
 	bool Commit();
 private:
-	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
+	const DWARF_Frame<MEMORY_ADDR> *dw_frame;
 	typedef std::map<unsigned int, DWARF_Register<MEMORY_ADDR> *> RegSet;
 	RegSet reg_set;
 	DWARF_Register<MEMORY_ADDR> *program_counter;
@@ -177,10 +179,12 @@ public:
 	bool ReadProgramCounterRegister(MEMORY_ADDR& pc) const;
 	const DWARF_RegSet<MEMORY_ADDR>& GetRegSet() const;
 	const DWARF_MachineState<MEMORY_ADDR> *GetMachineState() const;
+	DWARF_RegisterNumberMapping *GetRegisterNumberMapping() const;
 	unsigned int GetProcessorNumber() const;
 	DWARF_Frame<MEMORY_ADDR> *GetInnerFrame() const;
 	template <class VALUE_TYPE> bool Load(MEMORY_ADDR addr, VALUE_TYPE& value, unsigned int read_size, unisim::util::endian::endian_type endianness, unsigned int addr_space) const;
 	bool Commit();
+	void Touch() const;
 private:
 	const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state;
 	unsigned int prc_num;
