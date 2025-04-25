@@ -1375,6 +1375,10 @@ namespace binsec {
                   {
                     CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *expr.node );
                     auto src = cnb.GetSrcType(), dst = cnb.GetType();
+                    if (dst.cmp(src) == 0) {
+                      expr = cnb.src;
+                      continue;
+                    }
                     if (src.encoding != src.UNSIGNED and src.encoding != src.SIGNED and src.encoding != src.BOOL)
                       {
                         // Complex source
@@ -1402,6 +1406,16 @@ namespace binsec {
                         bool sextend = dst_bit_size > src_bit_size and src.encoding == src.SIGNED;
                         expr = BitFilter::mksimple( cnb.src, src_bit_size, 0, select, dst_bit_size, sextend );
                       }
+
+                    if (auto const* node = Process(mask, expr))
+                      {
+                        if (src.encoding != dst.encoding)
+                          {
+                            expr = make_operation(Op::ReinterpretAs, new Zero(dst.encoding, dst.bitsize), expr);
+                            return expr.ConstSimplify();
+                          }
+                        return node;
+                      }
                     continue;
                   }
                 break;
@@ -1415,12 +1429,6 @@ namespace binsec {
           }
         else if (auto const* node = expr->AsConstNode())
           {
-            auto tp = node->GetType();
-            if (tp.encoding == ValueType::SIGNED)
-              {
-                expr = make_operation(Op::ReinterpretAs, make_zero(tp), expr);
-                return expr.ConstSimplify();
-              }
             return node;
           }
 
