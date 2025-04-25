@@ -841,7 +841,7 @@ Processor<MODE>::eregread( unsigned reg, unsigned size, unsigned pos ) const
     {
       // requested read is a concatenation of multiple source values
       Expr concat = regvalues[reg][pos];
-      for (unsigned idx = 1; ++idx < size;)
+      for (unsigned idx = 1; idx < size; idx += 1)
         {
           if (not regvalues[reg][pos+idx].node)
             continue;
