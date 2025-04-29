@@ -68,6 +68,8 @@
 #include <unisim/service/debug/nodejs/statement.tcc>
 #include <unisim/service/debug/nodejs/subprogram.tcc>
 #include <unisim/service/debug/nodejs/type.tcc>
+#include <unisim/service/debug/nodejs/unisim_object.tcc>
+#include <unisim/service/debug/nodejs/unisim_variable.tcc>
 #include <unisim/util/locate/locate.hh>
 
 namespace unisim {
@@ -733,6 +735,12 @@ v8::Local<v8::ObjectTemplate> NodeJS<CONFIG>::CreateGlobalObjectTemplate()
 	v8::Local<v8::FunctionTemplate> volatile_type_function_template = VolatileTypeWrapper<CONFIG>::CreateFunctionTemplate(*this);
 	this->template RegisterCtorFunctionTemplate<VolatileTypeWrapper<CONFIG> >(volatile_type_function_template);
 	
+	v8::Local<v8::FunctionTemplate> unisim_object_function_template = UnisimObjectWrapper<CONFIG>::CreateFunctionTemplate(*this);
+	this->template RegisterCtorFunctionTemplate<UnisimObjectWrapper<CONFIG> >(unisim_object_function_template);
+	
+	v8::Local<v8::FunctionTemplate> unisim_variable_function_template = UnisimVariableWrapper<CONFIG>::CreateFunctionTemplate(*this);
+	this->template RegisterCtorFunctionTemplate<UnisimVariableWrapper<CONFIG> >(unisim_variable_function_template);
+	
 	// Add constructor functions for builtin objects
 	global_object_template->Set(isolate, SourceCodeLocationWrapper<CONFIG>  ::CLASS_NAME, source_code_location_function_template  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 	global_object_template->Set(isolate, DebugEventWrapper<CONFIG>          ::CLASS_NAME, debug_event_function_template           , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
@@ -778,6 +786,8 @@ v8::Local<v8::ObjectTemplate> NodeJS<CONFIG>::CreateGlobalObjectTemplate()
 	global_object_template->Set(isolate, EnumTypeWrapper<CONFIG>            ::CLASS_NAME, enum_type_function_template             , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 	global_object_template->Set(isolate, UnspecifiedTypeWrapper<CONFIG>     ::CLASS_NAME, unspecified_type_function_template      , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 	global_object_template->Set(isolate, VolatileTypeWrapper<CONFIG>        ::CLASS_NAME, volatile_type_function_template         , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, UnisimObjectWrapper<CONFIG>        ::CLASS_NAME, unisim_object_function_template         , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, UnisimVariableWrapper<CONFIG>      ::CLASS_NAME, unisim_variable_function_template       , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 
 	// Add some builtin functions
 	global_object_template->Set(isolate, "continueExecution"       , CreateFunctionTemplate<NodeJS<CONFIG>, &NodeJS<CONFIG>::ContinueExecution       >(), v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
@@ -810,20 +820,31 @@ bool NodeJS<CONFIG>::Initialize()
 	).ToChecked();
 	
 	// Create processor array (read-only, don't delete)
-	std::vector<v8::Local<v8::Value> > processor_objects;
-	for(unsigned int prc_num = 0, prc_count = debug_processors_import->DebugGetProcessorCount(); prc_num < prc_count; ++prc_num)
+	unsigned int prc_count = debug_processors_import->DebugGetProcessorCount();
+	v8::Local<v8::Array> processor_array = v8::Array::New(GetIsolate(), prc_count);
+	for(unsigned int prc_num = 0; prc_num < prc_count; ++prc_num)
 	{
 		ProcessorWrapper<CONFIG> *processor_wrapper = ProcessorWrapper<CONFIG>::Wrap(*this, debug_processors_import->DebugGetProcessor(prc_num));
-		processor_objects.push_back(processor_wrapper->MakeObject().template As<v8::Value>());
+		processor_array->Set(GetContext(), prc_num, processor_wrapper->MakeObject().template As<v8::Value>()).ToChecked();
 	}
 	
 	global_object->DefineOwnProperty(
 		GetContext(),
 		v8::String::NewFromUtf8Literal(GetIsolate(), "processors"),
-		v8::Array::New(GetIsolate(), &processor_objects[0], processor_objects.size()),
+		processor_array,
 		v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
 	).ToChecked();
 
+	// Create unisim root object (read-only, don't delete)
+	UnisimObjectWrapper<CONFIG> *unisim_root_object_wrapper = UnisimObjectWrapper<CONFIG>::Wrap(*this, 0);
+	
+	global_object->DefineOwnProperty(
+		GetContext(),
+		v8::String::NewFromUtf8Literal(GetIsolate(), "simulator"),
+		unisim_root_object_wrapper->MakeObject(),
+		v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+	).ToChecked();
+	
 	global_object->DefineOwnProperty(
 		GetContext(),
 		v8::String::NewFromUtf8Literal(GetIsolate(), "inBuiltinREPL"),
@@ -883,6 +904,8 @@ bool NodeJS<CONFIG>::Initialize()
 	CreateIsInstanceOf<EnumTypeWrapper<CONFIG> >();
 	CreateIsInstanceOf<UnspecifiedTypeWrapper<CONFIG> >();
 	CreateIsInstanceOf<VolatileTypeWrapper<CONFIG> >();
+	CreateIsInstanceOf<UnisimObjectWrapper<CONFIG> >();
+	CreateIsInstanceOf<UnisimVariableWrapper<CONFIG> >();
 	
 	if(builtin_repl)
 	{

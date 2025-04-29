@@ -62,8 +62,15 @@ namespace variable {
 //=============================================================================
 
 template <class TYPE>
-Variable<TYPE>::Variable(const char *_name, Object *_owner, TYPE& _storage, Type type, const char *_description) :
-	VariableBase(_name, _owner, type, _description), storage(&_storage)
+Variable<TYPE>::Variable(const char *_name, Object *_owner, TYPE& _storage, Type _type, const char *_description) :
+	VariableBase(_name, _owner, _type, _description), storage(&_storage)
+{
+	Initialize();
+}
+
+template <class TYPE>
+Variable<TYPE>::Variable(unsigned _index, VariableBase& _container, TYPE& _storage, VariableBase::Type _type, const char *_description) :
+	VariableBase(_index, _container, _type, _description), storage(&_storage)
 {
 	Initialize();
 }
@@ -1169,9 +1176,21 @@ const char *Formula<signed char>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Formula<signed char>::GetDataType() const
+{
+	return DT_SCHAR;
+}
+
+template <>
 const char *Formula<unsigned char>::GetDataTypeName() const
 {
 	return GetSignedDataTypeName<unsigned char>();
+}
+
+template <>
+VariableBase::DataType Formula<unsigned char>::GetDataType() const
+{
+	return DT_UCHAR;
 }
 
 template <>
@@ -1181,9 +1200,21 @@ const char *Formula<short>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Formula<short>::GetDataType() const
+{
+	return DT_SHORT;
+}
+
+template <>
 const char *Formula<unsigned short>::GetDataTypeName() const
 {
 	return GetSignedDataTypeName<unsigned short>();
+}
+
+template <>
+VariableBase::DataType Formula<unsigned short>::GetDataType() const
+{
+	return DT_USHORT;
 }
 
 template <>
@@ -1193,9 +1224,21 @@ const char *Formula<int>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Formula<int>::GetDataType() const
+{
+	return DT_INT;
+}
+
+template <>
 const char *Formula<unsigned int>::GetDataTypeName() const
 {
 	return GetSignedDataTypeName<unsigned int>();
+}
+
+template <>
+VariableBase::DataType Formula<unsigned int>::GetDataType() const
+{
+	return DT_UINT;
 }
 
 template <>
@@ -1205,9 +1248,21 @@ const char *Formula<long>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Formula<long>::GetDataType() const
+{
+	return DT_LONG;
+}
+
+template <>
 const char *Formula<unsigned long>::GetDataTypeName() const
 {
 	return GetSignedDataTypeName<unsigned long>();
+}
+
+template <>
+VariableBase::DataType Formula<unsigned long>::GetDataType() const
+{
+	return DT_ULONG;
 }
 
 template <>
@@ -1217,9 +1272,21 @@ const char *Formula<long long>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Formula<long long>::GetDataType() const
+{
+	return DT_LONG_LONG;
+}
+
+template <>
 const char *Formula<unsigned long long>::GetDataTypeName() const
 {
 	return GetSignedDataTypeName<unsigned long long>();
+}
+
+template <>
+VariableBase::DataType Formula<unsigned long long>::GetDataType() const
+{
+	return DT_ULONG_LONG;
 }
 
 template <>
@@ -1229,9 +1296,21 @@ const char *Formula<float>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Formula<float>::GetDataType() const
+{
+	return DT_FLOAT;
+}
+
+template <>
 const char *Formula<double>::GetDataTypeName() const
 {
 	return "double precision floating-point";
+}
+
+template <>
+VariableBase::DataType Formula<double>::GetDataType() const
+{
+	return DT_DOUBLE;
 }
 
 //=============================================================================

@@ -123,7 +123,7 @@ public:
 
 	VariableBase();
 	VariableBase(const char *name, Object *owner, Type type, const char *description = 0);
-	VariableBase(const char *name, VariableBase *container, Type type, const char *description = 0);
+	VariableBase(unsigned int index, VariableBase& container, Type type, const char *description = 0);
 	virtual ~VariableBase();
 	
 	void Initialize();
@@ -141,6 +141,7 @@ public:
 	bool HasEnumeratedValues() const;
 	bool HasEnumeratedValue(const char *value) const;
 	void GetEnumeratedValues(std::vector<std::string> &values) const;
+	template <typename VISITOR, typename T = bool> T ScanEnumeratedValues(VISITOR& visitor) const;
 	bool AddEnumeratedValue(const char *value);
 	bool RemoveEnumeratedValue(const char *value);
 	void SetDescription(const char *description);
@@ -221,6 +222,17 @@ private:
 	ListenerSet listener_set;
 };
 
+template <typename VISITOR, typename T>
+T VariableBase::ScanEnumeratedValues(VISITOR& visitor) const
+{
+	for(EnumeratedValues::const_iterator it = enumerated_values.begin(); it != enumerated_values.end(); ++it)
+	{
+		T ret = visitor.Visit(*it);
+		if(ret) return ret;
+	}
+	return T();
+}
+
 //=============================================================================
 //=                           ConfigFileHelper                                =
 //=============================================================================
@@ -282,6 +294,7 @@ public:
 	void GetRegisters(std::list<VariableBase *>& lst);
 	void GetSignals(std::list<VariableBase *>& lst);
 	void GetStatistics(std::list<VariableBase *>& lst);
+	template <typename VISITOR, typename T = bool> T ScanVariables(VISITOR& visitor, VariableBase::Type type = VariableBase::VAR_VOID) const;
 
 	void Dump(std::ostream& os);
 	void DumpVariables(std::ostream& os, VariableBase::Type filter_type = VariableBase::VAR_VOID);
@@ -379,6 +392,7 @@ public:
 
 	void GetObjects(std::list<Object *>& lst) const;
 	void GetRootObjects(std::list<Object *>& lst) const;
+	template <typename VISITOR, typename T = bool> T ScanObjects(VISITOR& visitor) const;
 
 private:
 	class CommandLineOption
@@ -461,6 +475,32 @@ private:
 	void Unlock();
 };
 
+template <typename VISITOR, typename T>
+T Simulator::ScanVariables(VISITOR& visitor, VariableBase::Type type) const
+{
+	for(Variables::const_iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		VariableBase *variable = (*variable_iter).second;
+		if(variable->IsVisible() && (type == VariableBase::VAR_VOID || variable->GetType() == type))
+		{
+			T ret = visitor.Visit(variable);
+			if(ret) return ret;
+		}
+	}
+	return T();
+}
+
+template <typename VISITOR, typename T>
+T Simulator::ScanObjects(VISITOR& visitor) const
+{
+	for(Objects::const_iterator object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+	{
+		T ret = visitor.Visit((*object_iter).second);
+		if(ret) return ret;
+	}
+	return T();
+}
+
 //=============================================================================
 //=                                 Object                                    =
 //=============================================================================
@@ -489,7 +529,9 @@ public:
 	std::string URI() const;
 
 	const std::list<Object *>& GetLeafs() const;
+	template <typename VISITOR, typename T = bool> T ScanLeafObjects(VISITOR& visitor) const;
 	void GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID) const;
+	template <typename VISITOR, typename T = bool> T ScanVariables(VISITOR& visitor, VariableBase::Type type = VariableBase::VAR_VOID) const;
 	Object *GetParent() const;
 	VariableBase& operator [] (const char *name);
 	VariableBase& operator [] (const std::string& name);
@@ -525,6 +567,32 @@ private:
 	ServiceAgents srv_agents;
 	bool killed;
 };
+
+template <typename VISITOR, typename T>
+T Object::ScanLeafObjects(VISITOR& visitor) const
+{
+	for(LeafObjects::const_iterator object_iter = leaf_objects.begin(); object_iter != leaf_objects.end(); object_iter++)
+	{
+		T ret = visitor.Visit(*object_iter);
+		if(ret) return ret;
+	}
+	return T();
+}
+
+template <typename VISITOR, typename T>
+T Object::ScanVariables(VISITOR& visitor, VariableBase::Type type) const
+{
+	for(Variables::const_iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		VariableBase *variable = *variable_iter;
+		if(((type == VariableBase::VAR_VOID) || (variable->GetType() == type)) && variable->IsVisible())
+		{
+			T ret = visitor.Visit(variable);
+			if(ret) return ret;
+		}
+	}
+	return T();
+}
 
 //=============================================================================
 //=                              ServiceInterface                             =

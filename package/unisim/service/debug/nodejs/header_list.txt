@@ -17,4 +17,6 @@ unisim/service/debug/nodejs/statement.hh
 unisim/service/debug/nodejs/stub.hh
 unisim/service/debug/nodejs/subprogram.hh
 unisim/service/debug/nodejs/type.hh
+unisim/service/debug/nodejs/unisim_object.hh
+unisim/service/debug/nodejs/unisim_variable.hh
 unisim/service/debug/nodejs/watchpoint.hh

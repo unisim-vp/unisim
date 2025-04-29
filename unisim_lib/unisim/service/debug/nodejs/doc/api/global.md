@@ -4,6 +4,10 @@
 
 The list of processors.
 
+## `(read-only) simulator: UnisimObject`
+
+The UNISIM-VP simulator object hierarchy width their variables (parameters and statistics).
+
 ## `(read-only) inInteractiveMode: boolean`
 
 Whether simulator is running in interactive mode (see Run-time parameter `interactive` of Node.js service).

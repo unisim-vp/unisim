@@ -1904,6 +1904,8 @@ unisim/service/debug/nodejs/doc/api/subprogram_hook.md
 unisim/service/debug/nodejs/doc/api/type.md
 unisim/service/debug/nodejs/doc/api/typedef.md
 unisim/service/debug/nodejs/doc/api/union_type.md
+unisim/service/debug/nodejs/doc/api/unisim_object.md
+unisim/service/debug/nodejs/doc/api/unisim_variable.md
 unisim/service/debug/nodejs/doc/api/unspecified_type.md
 unisim/service/debug/nodejs/doc/api/volatile_type.md
 unisim/service/debug/nodejs/doc/api/watchpoint.md
@@ -1971,6 +1973,10 @@ unisim/service/debug/nodejs/subprogram.tcc
 unisim/service/debug/nodejs/tabular.js
 unisim/service/debug/nodejs/type.hh
 unisim/service/debug/nodejs/type.tcc
+unisim/service/debug/nodejs/unisim_object.hh
+unisim/service/debug/nodejs/unisim_object.tcc
+unisim/service/debug/nodejs/unisim_variable.hh
+unisim/service/debug/nodejs/unisim_variable.tcc
 unisim/service/debug/nodejs/watchpoint.hh
 unisim/service/debug/nodejs/watchpoint.tcc
 unisim/service/debug/profiler/by_address.css

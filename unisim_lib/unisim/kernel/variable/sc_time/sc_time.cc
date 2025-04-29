@@ -43,8 +43,15 @@ namespace kernel {
 namespace variable {
 
 template <> 
-Variable<sc_core::sc_time>::Variable(const char *_name, Object *_object, sc_core::sc_time& _storage, Type type, const char *_description)
-	: VariableBase(_name, _object, type, _description), storage(&_storage)
+Variable<sc_core::sc_time>::Variable(const char *_name, Object *_object, sc_core::sc_time& _storage, Type _type, const char *_description)
+	: VariableBase(_name, _object, _type, _description), storage(&_storage)
+{
+	Initialize();
+}
+
+template <> 
+Variable<sc_core::sc_time>::Variable(unsigned int _index, VariableBase& _container, sc_core::sc_time& _storage, Type _type, const char *_description)
+	: VariableBase(_index, _container, _type, _description), storage(&_storage)
 {
 	Initialize();
 }

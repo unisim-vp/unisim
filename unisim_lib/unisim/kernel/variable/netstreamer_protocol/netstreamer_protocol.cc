@@ -44,8 +44,16 @@ using unisim::util::netstreamer::NetStreamerProtocol;
 using unisim::util::netstreamer::NETSTREAMER_PROTOCOL_RAW;
 using unisim::util::netstreamer::NETSTREAMER_PROTOCOL_TELNET;
 
-template <> Variable<NetStreamerProtocol>::Variable(const char *_name, Object *_object, NetStreamerProtocol& _storage, Type type, const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
+template <> Variable<NetStreamerProtocol>::Variable(const char *_name, Object *_object, NetStreamerProtocol& _storage, Type _type, const char *_description) :
+	VariableBase(_name, _object, _type, _description), storage(&_storage)
+{
+	Initialize();
+	AddEnumeratedValue("raw");
+	AddEnumeratedValue("telnet");
+}
+
+template <> Variable<NetStreamerProtocol>::Variable(unsigned int _index, VariableBase& _container, NetStreamerProtocol& _storage, Type _type, const char *_description) :
+	VariableBase(_index, _container, _type, _description), storage(&_storage)
 {
 	Initialize();
 	AddEnumeratedValue("raw");

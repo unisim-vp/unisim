@@ -50,8 +50,16 @@ using unisim::util::endian::E_UNKNOWN_ENDIAN;
 //   {
 //   }
 
-template <> Variable<endian_type>::Variable(const char *_name, Object *_object, endian_type& _storage, Type type, const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
+template <> Variable<endian_type>::Variable(const char *_name, Object *_object, endian_type& _storage, Type _type, const char *_description) :
+	VariableBase(_name, _object, _type, _description), storage(&_storage)
+{
+	Initialize();
+	AddEnumeratedValue("little-endian");
+	AddEnumeratedValue("big-endian");
+}
+
+template <> Variable<endian_type>::Variable(unsigned int _index, VariableBase& _container, endian_type& _storage, Type _type, const char *_description) :
+	VariableBase(_index, _container, _type, _description), storage(&_storage)
 {
 	Initialize();
 	AddEnumeratedValue("little-endian");

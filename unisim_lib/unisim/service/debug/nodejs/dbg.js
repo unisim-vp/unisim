@@ -225,6 +225,9 @@ class Dbg
 			}
 		};
 		
+		// Add simulator parameters and statistics as debugger settings in section "sim"
+		this.add_simulator_variables_as_settings();
+		
 		// Check run-time dependencies with third party Node.js/npm packages
 		try
 		{
@@ -371,7 +374,9 @@ class Dbg
 				UnionType           : this.markdown_file('api/union_type.md'),
 				UnspecifiedType     : this.markdown_file('api/unspecified_type.md'),
 				VolatileType        : this.markdown_file('api/volatile_type.md'),
-				Watchpoint          : this.markdown_file('api/watchpoint.md')
+				Watchpoint          : this.markdown_file('api/watchpoint.md'),
+				UnisimObject        : this.markdown_file('api/unisim_object.md'),
+				UnisimVariable      : this.markdown_file('api/unisim_variable.md')
 			}
 		};
 		
@@ -404,10 +409,12 @@ class Dbg
 			[ 'inferior' ],
 			[ 'x' ],
 			[ 'show' ],
+			[ 'show', 'directories' ],
 			[ 'set' ],
 			[ 'set', this.complete_data_objects.bind(this), '=' ],
 			[ 'set', this.complete_registers.bind(this), '=' ],
 			[ 'set', 'variable', this.complete_data_objects.bind(this), '=' ],
+			[ 'set', 'directories' ],
 			[ 'print', this.complete_data_objects.bind(this) ],
 			[ 'print', this.complete_registers.bind(this) ],
 			[ 'whatis', this.complete_data_objects.bind(this) ],
@@ -416,7 +423,9 @@ class Dbg
 			[ 'directory' ],
 			[ 'list' ],
 			[ 'frame' ],
-			[ 'help' ]
+			[ 'help' ],
+			[ 'help', 'show', 'directories' ],
+			[ 'help', 'set', 'directories' ]
 		];
 		
 		// add completion rules for help
@@ -428,6 +437,35 @@ class Dbg
 		this.add_help_settings_completion_rules(true, [ 'show' ]);
 		this.add_help_settings_completion_rules(false, [ 'help', 'set' ]);
 		this.add_help_settings_completion_rules(false, [ 'help', 'show' ]);
+	}
+	
+	/** Add simulator variables as debugger settings
+	 *
+	 * @param {Object} settings - debugger settings
+	 * @param {UnisimObject|Array.<UnisimVariable>|UnisimVariable} sim_elem - simulator object, or variable array, or variable
+	 * @param {string|number} key - key in debugger settings to assign
+	 */
+	add_simulator_variables_as_settings(settings, sim_elem, key)
+	{
+		if(settings === undefined) settings = this.settings;
+		if(sim_elem === undefined)
+		{
+			if(global.simulator === undefined) return;
+			sim_elem = simulator;
+		}
+		if(key === undefined) key = 'sim';
+		if((sim_elem instanceof UnisimObject) || (sim_elem instanceof Array))
+		{
+			settings[key] = {}
+			for(let k in sim_elem)
+			{
+				if(sim_elem[k] !== undefined) this.add_simulator_variables_as_settings(settings[key], sim_elem[k], k);
+			}
+		}
+		else if(sim_elem instanceof UnisimVariable)
+		{
+			settings[key] = sim_elem;
+		}
 	}
 	
 	/** Generate settings as a markdown document
@@ -454,14 +492,23 @@ class Dbg
 				const setting_name = setting_names[i];
 				let setting_full_name = parent_setting_full_name + (parent_setting_full_name ? ' ' : '') + setting_name;
 				const setting = settings[setting_name];
-				output += '#'.repeat(level) + setting_full_name + '\n\n';
+				output += '#'.repeat(level) + ' ' + setting_full_name + '\n\n';
 				if(setting.hasOwnProperty('value'))
 				{
-					output += setting.description + '\n\n';
+					output += setting.description + (setting.description.endsWith('.') ? '' : '.') + '\n\n';
 					output += 'Default value: ' + ((typeof setting.value === 'boolean') ? (setting.value ? 'on' : 'off') : setting.value) + '\n\n';
-					if(setting.hasOwnProperty('enum'))
+					let enum_values;
+					if(typeof setting.value === 'boolean')
 					{
-						output += 'Allowed values: ' + setting.enum.slice(0, -1).map((e) => '"' + e + '"').join(', ') + ' or ' + setting.enum.slice(-1).map((e) => '"' + e + '"') + '\n\n';
+						enum_values = [ 'on', '1', 'off', '0' ];
+					}
+					else if((typeof setting.value === 'string') && setting.hasOwnProperty('enum'))
+					{
+						enum_values = setting.enum;
+					}
+					if(enum_values !== undefined)
+					{
+						output += 'Allowed values: ' + enum_values.slice(0, -1).map((e) => '"' + e + '"').join(', ') + ' or ' + enum_values.slice(-1).map((e) => '"' + e + '"') + '.\n\n';
 					}
 				}
 				else
@@ -801,19 +848,32 @@ class Dbg
 						for(let i = 1; (i < keys.length) && (obj !== undefined); obj = obj[keys[i]], ++i);
 						if((typeof obj === 'object') && obj.hasOwnProperty('description'))
 						{
-							output += '# \'' + keys.join(' ') + '\' command\n';
-							output += key.charAt(0).toUpperCase() + key.slice(1) + ' ' + obj.description.charAt(0).toLowerCase() + obj.description.slice(1) + '\n';
-							if(obj.hasOwnProperty('enum'))
+							const setting_name = keys.slice(1).join(' ');
+							output += '# "' + keys.join(' ') + '" command\n\n';
+							output += key.charAt(0).toUpperCase() + key.slice(1) + ' setting "' + setting_name + '".\n\n';
+							output += 'Description: ' + obj.description.charAt(0).toLowerCase() + obj.description.slice(1) + (obj.description.endsWith('.') ? '' : '.') +'\n';
+							let enum_values;
+							if(typeof obj.value === 'boolean')
 							{
-								output += '\nAllowed values: ' + obj.enum.slice(0, -1).map((e) => '"' + e + '"').join(', ') + ' or ' + obj.enum.slice(-1).map((e) => '"' + e + '"') + '\n';
+								enum_values = [ 'on', '1', 'off', '0' ];
+							}
+							else if((typeof obj.value === 'string') && obj.hasOwnProperty('enum'))
+							{
+								enum_values = obj.enum;
+							}
+							if(enum_values !== undefined)
+							{
+								output += '\nAllowed values: ' + enum_values.slice(0, -1).map((e) => '"' + e + '"').join(', ') + ' or ' + enum_values.slice(-1).map((e) => '"' + e + '"') + '.\n';
 							}
 							this.log(this.markdown(output));
 							return;
 						}
-						if((path === 'directories') || (path === 'dir'))
+						if((keys[1] === 'directories') || (keys[1] === 'dir'))
 						{
-							output += '# \'' + keys.join(' ') + '\' command\n';
-							output += key.charAt(0).toUpperCase() + key.slice(1) + ' source directories searched.\n';
+							const setting_name = keys.slice(1).join(' ');
+							output += '# "' + keys.join(' ') + '" command\n';
+							output += key.charAt(0).toUpperCase() + key.slice(1) + ' setting "' + setting_name + '".\n\n';
+							output += 'Description: ' + key.charAt(0).toUpperCase() + key.slice(1) + ' source directories searched.\n';
 							this.log(this.markdown(output));
 							return;
 						}
@@ -967,7 +1027,7 @@ class Dbg
 					console.error('"on" or "off" expected.');
 					break;
 				case 'string':
-					if(obj.hasOwnProperty('enum'))
+					if(obj.hasOwnProperty('enum') && (obj.enum instanceof Array) && (obj.enum.length > 0))
 					{
 						for(let e of obj.enum)
 						{

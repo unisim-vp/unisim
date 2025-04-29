@@ -15,4 +15,6 @@ unisim/service/debug/nodejs/statement.tcc
 unisim/service/debug/nodejs/stub.tcc
 unisim/service/debug/nodejs/subprogram.tcc
 unisim/service/debug/nodejs/type.tcc
+unisim/service/debug/nodejs/unisim_object.tcc
+unisim/service/debug/nodejs/unisim_variable.tcc
 unisim/service/debug/nodejs/watchpoint.tcc

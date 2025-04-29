@@ -58,6 +58,7 @@ class Variable : public VariableBase
 public:
 	typedef VariableBase::Type Type;
 	Variable(const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
+	Variable(unsigned int index, VariableBase& container, TYPE& storage, VariableBase::Type type, const char *description = NULL);
 
 	virtual const char *GetDataTypeName() const;
 	virtual DataType GetDataType() const;
@@ -93,6 +94,7 @@ class Parameter : public Variable<TYPE>
 {
 public:
 	Parameter(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_PARAMETER, description) {}
+	Parameter(unsigned int index, VariableBase& container, TYPE& storage, const char *description = NULL) : Variable<TYPE>(index, container, storage, VariableBase::VAR_PARAMETER, description) {}
 };
 
 template <class TYPE>
@@ -100,6 +102,7 @@ class Statistic : public Variable<TYPE>
 {
 public:
 	Statistic(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_STATISTIC, description) { VariableBase::SetFormat(unisim::kernel::VariableBase::FMT_DEC); }
+	Statistic(unsigned int index, VariableBase& container, TYPE& storage, const char *description = NULL) : Variable<TYPE>(index, container, storage, VariableBase::VAR_STATISTIC, description) { VariableBase::SetFormat(unisim::kernel::VariableBase::FMT_DEC); }
 };
 
 //=============================================================================
@@ -255,6 +258,7 @@ public:
 	Formula(const char *name, Object *owner, VariableBase::Type type, FormulaOperator op, VariableBase *child, const char *description = 0);
 	
 	virtual const char *GetDataTypeName() const;
+	virtual DataType GetDataType() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
 	virtual operator unsigned long long () const;
@@ -301,7 +305,6 @@ public:
 	void SetFormat(Format fmt);
 	virtual unsigned int GetLength() const;
 	virtual VariableBase& operator = (const VariableBase& variable);
-	virtual const char *GetDataTypeName() const;
 	virtual void SetMutable(bool is_mutable);
 	virtual void SetVisible(bool is_visible);
 	virtual void SetSerializable(bool is_serializable);
@@ -319,10 +322,7 @@ VariableArray<TYPE>::VariableArray(const char *_name, Object *_owner, TYPE *_var
 	unsigned int i;
 	for(i = 0; i < dim; i++)
 	{
-		std::stringstream sstr;
-		
-		sstr << _name << "[" << i << "]";
-		variables.push_back(new Variable<TYPE>(sstr.str().c_str(), _owner, *(_variables + i), type, _description));
+		variables.push_back(new Variable<TYPE>(i, *this, *(_variables + i), type, _description));
 	}
 }
 
@@ -387,12 +387,6 @@ void VariableArray<TYPE>::SetFormat(Format fmt)
 	{
 		(*variable_iter)->SetFormat(fmt);
 	}
-}
-
-template <class TYPE>
-const char *VariableArray<TYPE>::GetDataTypeName() const
-{
-	return ("array");
 }
 
 template <class TYPE>

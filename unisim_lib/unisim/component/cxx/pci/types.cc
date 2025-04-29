@@ -53,6 +53,15 @@ template <> Variable<PCISpace>::Variable(const char *_name, Object *_object, PCI
 	AddEnumeratedValue("cfg");
 }
 
+template <> Variable<PCISpace>::Variable(unsigned int _index, VariableBase& _container, PCISpace& _storage, Type type, const char *_description) :
+	VariableBase(_index, _container, type, _description), storage(&_storage)
+{
+	Initialize();
+	AddEnumeratedValue("mem");
+	AddEnumeratedValue("i/o");
+	AddEnumeratedValue("cfg");
+}
+
 template <>
 const char *Variable<PCISpace>::GetDataTypeName() const
 {

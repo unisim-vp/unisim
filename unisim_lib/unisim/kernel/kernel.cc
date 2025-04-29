@@ -50,6 +50,7 @@
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/hypapp/hypapp.hh"
 #include "unisim/util/locate/locate.hh"
+#include "unisim/util/ostream/ostream.hh"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -453,11 +454,11 @@ VariableBase(const char *_name, Object *_owner, Type _type, const char *_descrip
 }
 
 VariableBase::
-VariableBase(const char *_name, VariableBase *_container, Type _type, const char *_description)
-	: name(_container ? std::string(_container->GetName()) + std::string(".") + std::string(_name) : std::string(_name))
-	, var_name(_container ? std::string(_container->GetVarName()) + std::string(".") + std::string(_name) : std::string(_name))
+VariableBase(unsigned int index, VariableBase& _container, Type _type, const char *_description)
+	: name(std::string(_container.GetName()) + "[" + unisim::util::ostream::ToString(index) + "]")
+	, var_name()
 	, owner(0)
-	, container(_container)
+	, container(&_container)
 	, description(_description ? std::string(_description) : std::string(""))
 	, enumerated_values()
 	, type(_type)
@@ -474,6 +475,7 @@ VariableBase(const char *_name, VariableBase *_container, Type _type, const char
 VariableBase::
 VariableBase()
 	: name()
+	, var_name()
 	, owner(0)
 	, container(0)
 	, description()

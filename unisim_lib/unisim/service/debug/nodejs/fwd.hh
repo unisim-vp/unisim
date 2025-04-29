@@ -95,6 +95,8 @@ template <typename CONFIG> struct EnumeratorWrapper;
 template <typename CONFIG> struct EnumTypeWrapper;
 template <typename CONFIG> struct UnspecifiedTypeWrapper;
 template <typename CONFIG> struct VolatileTypeWrapper;
+template <typename CONFIG> struct UnisimObjectWrapper;
+template <typename CONFIG> struct UnisimVariableWrapper;
 
 } // end of namespace nodejs
 } // end of namespace debug

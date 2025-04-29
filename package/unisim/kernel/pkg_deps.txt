@@ -27,3 +27,4 @@ unisim/util/inlining
 unisim/util/likely
 unisim/util/locate
 unisim/util/nat_sort
+unisim/util/ostream

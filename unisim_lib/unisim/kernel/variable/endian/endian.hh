@@ -41,7 +41,7 @@ namespace variable {
 
   /* Do not delete!!! This empty header allow to trigger compilation
    * and link of the Endian Variable/Parameter (see
-   * package/gendeps.sh).
+   * unisim_tools/unisimatic).
    */
   
 } // end of namespace variable

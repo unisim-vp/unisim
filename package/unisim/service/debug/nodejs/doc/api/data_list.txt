@@ -42,6 +42,8 @@ unisim/service/debug/nodejs/doc/api/subprogram.md
 unisim/service/debug/nodejs/doc/api/typedef.md
 unisim/service/debug/nodejs/doc/api/type.md
 unisim/service/debug/nodejs/doc/api/union_type.md
+unisim/service/debug/nodejs/doc/api/unisim_object.md
+unisim/service/debug/nodejs/doc/api/unisim_variable.md
 unisim/service/debug/nodejs/doc/api/unspecified_type.md
 unisim/service/debug/nodejs/doc/api/volatile_type.md
 unisim/service/debug/nodejs/doc/api/watchpoint.md

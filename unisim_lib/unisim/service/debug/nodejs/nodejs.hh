@@ -70,6 +70,8 @@
 #include <unisim/service/debug/nodejs/debug_symbol.hh>
 #include <unisim/service/debug/nodejs/statement.hh>
 #include <unisim/service/debug/nodejs/subprogram.hh>
+#include <unisim/service/debug/nodejs/unisim_object.hh>
+#include <unisim/service/debug/nodejs/unisim_variable.hh>
 #include <unisim/util/debug/type.hh>
 
 #include <string>
@@ -200,6 +202,8 @@ private:
 	friend struct EnumTypeWrapper<CONFIG>;
 	friend struct UnspecifiedTypeWrapper<CONFIG>;
 	friend struct VolatileTypeWrapper<CONFIG>;
+	friend struct UnisimObjectWrapper<CONFIG>;
+	friend struct UnisimVariableWrapper<CONFIG>;
 	
 	unisim::kernel::logger::Logger logger;
 	bool interactive;
