@@ -1,1 +1,2 @@
+unisim/kernel/scml2/clock.hh
 unisim/kernel/scml2/simulator.hh

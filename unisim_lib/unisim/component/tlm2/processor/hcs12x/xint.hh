@@ -52,6 +52,7 @@
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
+#include <unisim/component/cxx/processor/hcs12x/register.hh>
 
 #include <unisim/kernel/kernel.hh>
 
@@ -82,7 +83,7 @@ using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
-using unisim::kernel::variable::CallBackObject;
+using unisim::component::cxx::processor::hcs12x::CallBackObject;
 using unisim::kernel::Client;
 using unisim::kernel::Service;
 using unisim::kernel::ServiceExport;

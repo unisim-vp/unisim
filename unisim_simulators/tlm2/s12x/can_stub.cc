@@ -530,7 +530,7 @@ int CAN_STUB::LoadXmlData(const char *filename, std::vector<CAN_DATATYPE* > &vec
 //		return (0);
 //	}
 //
-//	xmlXPathInit ();
+//	xmlInitParser ();
 //	context = xmlXPathNewContext (doc);
 //
 //	xmlobject = xmlXPathEval ((xmlChar *) path, context);

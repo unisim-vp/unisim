@@ -1,2 +1,5 @@
 m4/scml2
+m4/systemc
 unisim/kernel/tlm2
+unisim/kernel/variable
+unisim/kernel/variable/sc_time

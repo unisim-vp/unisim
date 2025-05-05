@@ -39,14 +39,6 @@ namespace unisim {
 namespace kernel {
 namespace variable {
 
-template <>
-Variable<unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping>::Variable(const char *_name, Object *_object, unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping &_storage, Type type, const char *_description)
-	: VariableBase(_name, _object, type, _description)
-	, storage(&_storage)
-{
-	Initialize();
-}
-
 template <> unsigned int Variable<unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping>::GetBitSize() const { return 0; }
 
 template <> Variable<unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping>::operator bool () const { return false; }
@@ -57,7 +49,7 @@ template <> Variable<unisim::component::tlm2::interconnect::freescale::mpc57xx::
 template <> Variable<unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping>::operator std::string () const
 { 
 	std::stringstream buf;
-	buf << (*storage);
+	buf << Get();
 	return buf.str();
 }
 
@@ -68,37 +60,33 @@ template <> VariableBase& Variable<unisim::component::tlm2::interconnect::freesc
 
 template <> VariableBase& Variable<unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping>::operator = (const char *value)
 { 
-	if(IsMutable())
+	unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping tmp;
+	
+	std::string str(value);
+	std::size_t first_digit_pos = str.find_first_of("0123456789");
+	
+	if(first_digit_pos != std::string::npos)
 	{
-		unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping tmp;
+		std::string prefix(str.substr(0, first_digit_pos));
 		
-		std::string str(value);
-		std::size_t first_digit_pos = str.find_first_of("0123456789");
-		
-		if(first_digit_pos != std::string::npos)
+		if((prefix == "pacr") || (prefix == "opacr"))
 		{
-			std::string prefix(str.substr(0, first_digit_pos));
-			
-			if((prefix == "pacr") || (prefix == "opacr"))
+			if(prefix == "opacr") tmp.off_platform = true;
+			else if(prefix == "pacr") tmp.off_platform = false;
+		
+			if(first_digit_pos != std::string::npos)
 			{
-				if(prefix == "opacr") tmp.off_platform = true;
-				else if(prefix == "pacr") tmp.off_platform = false;
-			
-				if(first_digit_pos != std::string::npos)
+				std::stringstream value_sstr(str.substr(first_digit_pos));
+				if(value_sstr >> tmp.reg_num)
 				{
-					std::stringstream value_sstr(str.substr(first_digit_pos));
-					if(value_sstr >> tmp.reg_num)
-					{
-						unsigned int num_acr_regs = tmp.off_platform ? 256 : 64;
-						tmp.valid = (tmp.reg_num < num_acr_regs);
-					}
+					unsigned int num_acr_regs = tmp.off_platform ? 256 : 64;
+					tmp.valid = (tmp.reg_num < num_acr_regs);
 				}
 			}
 		}
-		
-		SetModified(*storage != tmp);
-		*storage = tmp;
 	}
+	
+	Set(tmp);
 	return *this;
 }
 

@@ -114,7 +114,7 @@ private:
 	typedef std::vector<unisim::service::interfaces::StatusBarItem *> StatusBarItems;
 	StatusBarItems statusbar_items;
 	
-	unisim::kernel::Object *FindChildObject(unisim::kernel::Object *object, const std::string& child_hierarchical_name, std::size_t& pos);
+	unisim::kernel::Object *FindObject(unisim::kernel::Object *object, const std::string& child_hierarchical_name, std::size_t& pos);
 	unisim::kernel::Object *FindObject(const std::string& hierarchical_name, std::size_t& pos);
 	bool ServeFile(unisim::util::hypapp::HttpRequest const& req, const std::string& path, unisim::util::hypapp::ClientConnection const& conn);
 	bool ServeRootDocument(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);

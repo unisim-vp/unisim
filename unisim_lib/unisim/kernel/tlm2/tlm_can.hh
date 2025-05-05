@@ -3871,8 +3871,17 @@ using unisim::kernel::tlm2::TLM_CAN_CYCLE_ACCURATE;
 using unisim::kernel::tlm2::TLM_CAN_TRANSACTION_ACCURATE;
 using unisim::kernel::tlm2::TLM_CAN_TRANSMISSION_START_INACCURATE;
 
-template <> inline Variable<tlm_can_model_accuracy>::Variable(const char *_name, Object *_object, tlm_can_model_accuracy& _storage, Type type, const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
+template <> inline Variable<tlm_can_model_accuracy>::Variable(const char *_name, Object *_object, tlm_can_model_accuracy& _storage, Type _type, const char *_description) :
+	VariableBase(_name, _object, _type, _description), storage(new DirectVariableStorage<tlm_can_model_accuracy>(_storage))
+{
+	Initialize();
+	AddEnumeratedValue("cycle-accurate");
+	AddEnumeratedValue("transaction-accurate");
+	AddEnumeratedValue("transmission-start-inaccurate");
+}
+
+template <> inline Variable<tlm_can_model_accuracy>::Variable(const char *_name, VariableBase& _container, VariableStorage<tlm_can_model_accuracy> * _storage, Type _type, const char *_description) :
+	VariableBase(_name, _container, _type, _description), storage(_storage)
 {
 	Initialize();
 	AddEnumeratedValue("cycle-accurate");
@@ -3898,13 +3907,13 @@ inline unsigned int Variable<tlm_can_model_accuracy>::GetBitSize() const
 	return 2;
 }
 
-template <> inline Variable<tlm_can_model_accuracy>::operator bool () const { return *storage != TLM_CAN_CYCLE_ACCURATE; }
-template <> inline Variable<tlm_can_model_accuracy>::operator long long () const { return *storage; }
-template <> inline Variable<tlm_can_model_accuracy>::operator unsigned long long () const { return *storage; }
-template <> inline Variable<tlm_can_model_accuracy>::operator double () const { return (double)(*storage); }
+template <> inline Variable<tlm_can_model_accuracy>::operator bool () const { return Get() != TLM_CAN_CYCLE_ACCURATE; }
+template <> inline Variable<tlm_can_model_accuracy>::operator long long () const { return Get(); }
+template <> inline Variable<tlm_can_model_accuracy>::operator unsigned long long () const { return Get(); }
+template <> inline Variable<tlm_can_model_accuracy>::operator double () const { return (double)Get(); }
 template <> inline Variable<tlm_can_model_accuracy>::operator std::string () const
 {
-	switch(*storage)
+	switch(Get())
 	{
 		case TLM_CAN_CYCLE_ACCURATE               : return std::string("cycle-accurate");
 		case TLM_CAN_TRANSACTION_ACCURATE         : return std::string("transaction-accurate");
@@ -3915,91 +3924,61 @@ template <> inline Variable<tlm_can_model_accuracy>::operator std::string () con
 
 template <> inline VariableBase& Variable<tlm_can_model_accuracy>::operator = (bool value)
 {
-	if(IsMutable())
+	switch((unsigned int) value)
 	{
-		tlm_can_model_accuracy tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case TLM_CAN_CYCLE_ACCURATE               :
-			case TLM_CAN_TRANSACTION_ACCURATE         :
-			case TLM_CAN_TRANSMISSION_START_INACCURATE:
-				tmp = (tlm_can_model_accuracy)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case TLM_CAN_CYCLE_ACCURATE               :
+		case TLM_CAN_TRANSACTION_ACCURATE         :
+		case TLM_CAN_TRANSMISSION_START_INACCURATE:
+			Set((tlm_can_model_accuracy)(unsigned int) value);
+			break;
 	}
 	return *this;
 }
 
 template <> inline VariableBase& Variable<tlm_can_model_accuracy>::operator = (long long value)
 {
-	if(IsMutable())
+	switch(value)
 	{
-		tlm_can_model_accuracy tmp = *storage;
-		switch(value)
-		{
-			case TLM_CAN_CYCLE_ACCURATE               :
-			case TLM_CAN_TRANSACTION_ACCURATE         :
-			case TLM_CAN_TRANSMISSION_START_INACCURATE:
-				tmp = (tlm_can_model_accuracy) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case TLM_CAN_CYCLE_ACCURATE               :
+		case TLM_CAN_TRANSACTION_ACCURATE         :
+		case TLM_CAN_TRANSMISSION_START_INACCURATE:
+			Set((tlm_can_model_accuracy) value);
+			break;
 	}
 	return *this;
 }
 
 template <> inline VariableBase& Variable<tlm_can_model_accuracy>::operator = (unsigned long long value)
 {
-	if(IsMutable())
+	switch(value)
 	{
-		tlm_can_model_accuracy tmp = *storage;
-		switch(value)
-		{
-			case TLM_CAN_CYCLE_ACCURATE               :
-			case TLM_CAN_TRANSACTION_ACCURATE         :
-			case TLM_CAN_TRANSMISSION_START_INACCURATE:
-				tmp = (tlm_can_model_accuracy) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case TLM_CAN_CYCLE_ACCURATE               :
+		case TLM_CAN_TRANSACTION_ACCURATE         :
+		case TLM_CAN_TRANSMISSION_START_INACCURATE:
+			Set((tlm_can_model_accuracy) value);
+			break;
 	}
 	return *this;
 }
 
 template <> inline VariableBase& Variable<tlm_can_model_accuracy>::operator = (double value)
 {
-	if(IsMutable())
+	switch((unsigned int) value)
 	{
-		tlm_can_model_accuracy tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case TLM_CAN_CYCLE_ACCURATE               :
-			case TLM_CAN_TRANSACTION_ACCURATE         :
-			case TLM_CAN_TRANSMISSION_START_INACCURATE:
-				tmp = (tlm_can_model_accuracy)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case TLM_CAN_CYCLE_ACCURATE               :
+		case TLM_CAN_TRANSACTION_ACCURATE         :
+		case TLM_CAN_TRANSMISSION_START_INACCURATE:
+			Set((tlm_can_model_accuracy)(unsigned int) value);
+			break;
 	}
 	return *this;
 }
 
 template <> inline VariableBase& Variable<tlm_can_model_accuracy>::operator = (const char *value)
 {
-	if(IsMutable())
-	{
-		tlm_can_model_accuracy tmp = *storage;
-		if(std::string(value) == std::string("cycle-accurate")) tmp = TLM_CAN_CYCLE_ACCURATE;
-		else if(std::string(value) == std::string("transaction-accurate")) tmp = TLM_CAN_TRANSACTION_ACCURATE;
-		else if(std::string(value) == std::string("transmission-start-inaccurate")) tmp = TLM_CAN_TRANSMISSION_START_INACCURATE;
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
+	if(std::string(value) == std::string("cycle-accurate")) Set(TLM_CAN_CYCLE_ACCURATE);
+	else if(std::string(value) == std::string("transaction-accurate")) Set(TLM_CAN_TRANSACTION_ACCURATE);
+	else if(std::string(value) == std::string("transmission-start-inaccurate")) Set(TLM_CAN_TRANSMISSION_START_INACCURATE);
 	return *this;
 }
 

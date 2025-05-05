@@ -321,31 +321,31 @@ bool S12MPU::BeginSetup()
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".MPUFLG", &mpuflg_register));
 
-	unisim::kernel::variable::Register<uint8_t> *mpuflg_var = new unisim::kernel::variable::Register<uint8_t>("MPUFLG", this, mpuflg_register, "MPU Flag register (MPUFLG)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *mpuflg_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("MPUFLG", this, mpuflg_register, "MPU Flag register (MPUFLG)");
 	extended_registers_registry.push_back(mpuflg_var);
 	mpuflg_var->setCallBack(this, MPUFLG, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".MPUASTAT0", &mpuastat0_register));
 
-	unisim::kernel::variable::Register<uint8_t> *mpuastat0_var = new unisim::kernel::variable::Register<uint8_t>("MPUASTAT0", this, mpuastat0_register, "MPU Address Status register 0 (MPUASTAT0)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *mpuastat0_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("MPUASTAT0", this, mpuastat0_register, "MPU Address Status register 0 (MPUASTAT0)");
 	extended_registers_registry.push_back(mpuastat0_var);
 	mpuastat0_var->setCallBack(this, MPUASTAT0, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".MPUASTAT1", &mpuastat1_register));
 
-	unisim::kernel::variable::Register<uint8_t> *mpuastat1_var = new unisim::kernel::variable::Register<uint8_t>("MPUASTAT1", this, mpuastat1_register, "MPU Address Status register 1 (MPUASTAT1)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *mpuastat1_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("MPUASTAT1", this, mpuastat1_register, "MPU Address Status register 1 (MPUASTAT1)");
 	extended_registers_registry.push_back(mpuastat1_var);
 	mpuastat1_var->setCallBack(this, MPUASTAT1, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".MPUASTAT2", &mpuastat2_register));
 
-	unisim::kernel::variable::Register<uint8_t> *mpuastat2_var = new unisim::kernel::variable::Register<uint8_t>("MPUASTAT2", this, mpuastat2_register, "MPU Address Status register 2 (MPUASTAT2)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *mpuastat2_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("MPUASTAT2", this, mpuastat2_register, "MPU Address Status register 2 (MPUASTAT2)");
 	extended_registers_registry.push_back(mpuastat2_var);
 	mpuastat2_var->setCallBack(this, MPUASTAT2, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".MPUSEL", &mpusel_register));
 
-	unisim::kernel::variable::Register<uint8_t> *mpusel_var = new unisim::kernel::variable::Register<uint8_t>("MPUSEL", this, mpusel_register, "MPU Descriptor select register (MPUSEL)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *mpusel_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("MPUSEL", this, mpusel_register, "MPU Descriptor select register (MPUSEL)");
 	extended_registers_registry.push_back(mpusel_var);
 	mpusel_var->setCallBack(this, MPUSEL, &CallBackObject::write, NULL);
 
@@ -361,7 +361,7 @@ bool S12MPU::BeginSetup()
 			
 			registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + '.' + shortName, &(mpudesc[i][j])));
 
-			unisim::kernel::variable::Register<uint8_t> *mpudesc_var = new unisim::kernel::variable::Register<uint8_t>(shortName.c_str(), this, mpudesc[i][j], "MPU Descriptor register");
+			unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *mpudesc_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>(shortName.c_str(), this, mpudesc[i][j], "MPU Descriptor register");
 			extended_registers_registry.push_back(mpudesc_var);
 			mpusel_var->setCallBack(this, MPU_DESC_BANKS_OFFSET + (i * MPU_DESC_WINDOW_SIZE) + j, &CallBackObject::write, NULL);
 		}

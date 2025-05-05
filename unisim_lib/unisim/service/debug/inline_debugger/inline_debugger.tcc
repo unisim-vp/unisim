@@ -2126,14 +2126,27 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpVariables(const char *cmd, const char *name, typename unisim::kernel::VariableBase::Type type)
 {
 	bool found = false;
-	std::list<unisim::kernel::VariableBase *> lst;
-	std::list<unisim::kernel::VariableBase *>::iterator iter;
-
-	GetSimulator()->GetVariables(lst, type);
+	typedef std::vector<unisim::kernel::VariableBase *> Variables;
+	Variables variables;
 	
-	if(!lst.size()) return;
+	struct VariableVisitor
+	{
+		Variables& variables;
+		
+		VariableVisitor(Variables& _variables) : variables(_variables) {}
+		
+		bool Visit(unisim::kernel::VariableBase *variable)
+		{
+			variables.push_back(variable);
+			return false;
+		}
+	} variable_visitor(variables);
 	
-	for(iter = lst.begin(); iter != lst.end(); iter++)
+	GetSimulator()->ScanVariables(variable_visitor, type);
+	
+	if(!variables.size()) return;
+	
+	for(Variables::const_iterator iter = variables.begin(); iter != variables.end(); iter++)
 	{
 		unisim::kernel::VariableBase *var = *iter;
 		std::string var_name(var->GetName());

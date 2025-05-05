@@ -270,6 +270,7 @@ unisim/component/cxx/processor/hcs12x/isa/s12xgate/s12xgate.isa
 unisim/component/cxx/processor/hcs12x/isa/xb/xb.isa
 unisim/component/cxx/processor/hcs12x/mmc.cc
 unisim/component/cxx/processor/hcs12x/mmc.hh
+unisim/component/cxx/processor/hcs12x/register.hh
 unisim/component/cxx/processor/hcs12x/s12mpu_if.hh
 unisim/component/cxx/processor/hcs12x/types.hh
 unisim/component/cxx/processor/hcs12x/xgate.cc
@@ -1791,6 +1792,8 @@ unisim/kernel/logger/xml_file/xml_file_writer.cc
 unisim/kernel/logger/xml_file/xml_file_writer.hh
 unisim/kernel/pim/simulator.cc
 unisim/kernel/pim/simulator.hh
+unisim/kernel/scml2/clock.cc
+unisim/kernel/scml2/clock.hh
 unisim/kernel/scml2/simulator.cc
 unisim/kernel/scml2/simulator.hh
 unisim/kernel/tlm/tlm.hh

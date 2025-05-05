@@ -69,58 +69,56 @@ bool INIConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::Va
 
 bool INIConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::VariableBase::Type type)
 {
-	std::list<unisim::kernel::VariableBase *> variables;
-	std::list<unisim::kernel::VariableBase *>::iterator variable_iter;
-	simulator->GetVariables(variables, type);
-	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		unisim::kernel::VariableBase *variable = *variable_iter;
-		
-		if(!variable->GetOwner() && variable->IsSerializable() && ((type == unisim::kernel::VariableBase::VAR_VOID) || (type == variable->GetType())))
-		{
-			os << variable->GetVarName() << "=" << (std::string)(*variable) << std::endl;
-		}
-	}
-	
-	if(!variables.empty())
-	{
-		os << std::endl;
-	}
-	
-	std::list<unisim::kernel::Object *> objects;
-	std::list<unisim::kernel::Object *>::iterator object_iter;
-	simulator->GetObjects(objects);
-	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
-	{
-		unisim::kernel::Object *object = *object_iter;
-		
-		SaveVariables(os, object, type);
-	}
-	
+	SaveVariables(os, /* object */ 0, type);
 	return true;
 }
 
 void INIConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::Object *object, unisim::kernel::VariableBase::Type type)
 {
-	std::list<unisim::kernel::VariableBase *> variables;
-	object->GetVariables(variables, type);
-	
-	if(!variables.empty())
+	struct Visitor
 	{
-		os << "[" << object->GetName() << "]" << std::endl;
-
-		std::list<unisim::kernel::VariableBase *>::iterator variable_iter;
-		for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+		INIConfigFileHelper& ini_config_file_helper;
+		std::ostream& os;
+		unisim::kernel::Object *object;
+		unisim::kernel::VariableBase::Type type;
+		bool first;
+		
+		Visitor(INIConfigFileHelper& _ini_config_file_helper, std::ostream& _os, unisim::kernel::Object *_object, unisim::kernel::VariableBase::Type _type)
+			: ini_config_file_helper(_ini_config_file_helper), os(_os), object(_object), type(_type), first(true)
 		{
-			unisim::kernel::VariableBase *variable = *variable_iter;
-			
-			if(variable->IsSerializable() && ((type == unisim::kernel::VariableBase::VAR_VOID) || (type == variable->GetType())))
-			{
-				os << variable->GetVarName() << "=" << (std::string)(*variable) << std::endl;
-			}
 		}
 		
-		os << std::endl;
+		bool Visit(unisim::kernel::Object *child)
+		{
+			ini_config_file_helper.SaveVariables(os, child, type);
+			return false;
+		}
+		
+		bool Visit(unisim::kernel::VariableBase *variable)
+		{
+			if(object || !variable->GetOwner())
+			{
+				if(first)
+				{
+					if(object) os << "[" << object->GetName() << "]" << std::endl;
+					first = false;
+				}
+				os << variable->GetVarName() << "=" << (std::string)(*variable) << std::endl;
+			}
+			return false;
+		}
+	} visitor(*this, os, object, type);
+	
+	if(object)
+	{
+		object->ScanVariables(visitor, type);
+		if(!visitor.first) os << std::endl;
+	}
+	else
+	{
+		simulator->ScanVariables(visitor, type);
+		if(!visitor.first) os << std::endl;
+		simulator->ScanObjects(visitor);
 	}
 }
 

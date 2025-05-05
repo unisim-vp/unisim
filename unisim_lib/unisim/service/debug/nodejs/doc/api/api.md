@@ -236,6 +236,8 @@
   * [(read-only) cdecl: string](type.md)
 * [Class UnionType](union_type.md)
 * [Class UnisimObject](unisim_object.md)
+  * [(read-only) name: string](unisim_object.md)
+  * [(read-only) description: string](unisim_object.md)
 * [Class UnisimVariable](unisim_variable.md)
   * [(read-only) name: string](unisim_variable.md)
   * [(read-only) description: string](unisim_variable.md)

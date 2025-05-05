@@ -177,48 +177,13 @@ bool XMLConfigFileHelper::SaveVariables(xmlTextWriterPtr writer, unisim::kernel:
 	 * Afterwards the simulator level variables (those that are directly 
 	 * attached to the simulator).
 	 */
-	std::list<unisim::kernel::Object *> obj_list;
-	std::list<unisim::kernel::Object *>::iterator obj_iter;
-	simulator->GetRootObjects(obj_list);
-	for ( obj_iter = obj_list.begin();
-			obj_iter != obj_list.end();
-			obj_iter++ )
+	rc = XmlfyVariables(writer, /* obj */ 0, type);
+	if ( rc < 0 )
 	{
-		if ( HasVariable(*obj_iter, type) )
-		{
-			rc = XmlfyVariables(writer, *obj_iter, type);
-			if ( rc < 0 )
-			{
-				std::cerr << "Error(ServiceManage::SaveVariables): "
-					<< "error writing root object"
-					<< std::endl;
-				return false;
-			}
-		}
-	}
-
-	std::list<unisim::kernel::VariableBase *> variables;
-	simulator->GetVariables(variables, type);
-	std::list<unisim::kernel::VariableBase *>::iterator var_iter;
-	for ( var_iter = variables.begin();
-			var_iter != variables.end();
-			var_iter++ )
-	{
-		// check that the variable is a root variable by checking that it
-		//   has not object owner
-		unisim::kernel::VariableBase *var = *var_iter;
-		bool root_var = (var->GetOwner() == 0);
-		if ( root_var )
-		{
-			rc = XmlfyVariable(writer, var);
-			if ( rc < 0 )
-			{
-				std::cerr << "Error(XMLConfigFileHelper::SaveVariables): "
-						<< "error writing variable"
-						<< std::endl;
-				return false;
-			}
-		}
+		std::cerr << "Error(ServiceManage::SaveVariables): "
+			<< "error writing root object"
+			<< std::endl;
+		return false;
 	}
 
 	rc = xmlTextWriterEndElement(writer);
@@ -239,91 +204,110 @@ bool XMLConfigFileHelper::SaveVariables(xmlTextWriterPtr writer, unisim::kernel:
 
 bool XMLConfigFileHelper::HasVariable(const unisim::kernel::Object *obj, unisim::kernel::VariableBase::Type type)
 {
-	std::list<unisim::kernel::VariableBase *> var_list;
-	std::list<unisim::kernel::VariableBase *>::iterator var_iter;
-	obj->GetVariables(var_list);
-	for(var_iter = var_list.begin();
-			var_iter != var_list.end();
-			var_iter++) {
-		if ((*var_iter)->IsSerializable() && (type == unisim::kernel::VariableBase::VAR_VOID ||
-				type == (*var_iter)->GetType()))
-			return true;
-	}
-	
-	std::list<unisim::kernel::Object *> obj_list;
-	std::list<unisim::kernel::Object *>::iterator obj_iter;
-	obj_list = obj->GetLeafs();
-	for (obj_iter = obj_list.begin();
-			obj_iter != obj_list.end();
-			obj_iter++)
+	struct Visitor
 	{
-		if (HasVariable(*obj_iter, type))
+		unisim::kernel::VariableBase::Type type;
+
+		Visitor(unisim::kernel::VariableBase::Type _type) : type(_type) {}
+
+		bool Visit(unisim::kernel::Object *child)
+		{
+			return child->ScanVariables(*this, type);
+		}
+
+		bool Visit(unisim::kernel::VariableBase *var)
+		{
 			return true;
-	}
-	
-	return false;
+		}
+	} visitor(type);
+
+	return obj->ScanVariables(visitor, type) || obj->ScanChildren(visitor);
 }
 
 int XMLConfigFileHelper::XmlfyVariables(xmlTextWriterPtr writer, const unisim::kernel::Object *obj, unisim::kernel::VariableBase::Type type)
 {
 	int rc;
 
-	// initiate object
-	rc = xmlTextWriterStartElement(writer, BAD_CAST "object");
-	if (rc < 0) return rc;
-
-	// write object name
+	struct Visitor
 	{
-		xmlChar* obj_name = xmlCharStrdup(obj->GetObjectName());
+		XMLConfigFileHelper& xml_config_file_helper;
+		xmlTextWriterPtr writer;
+		int& rc;
+		const unisim::kernel::Object *obj;
+		unisim::kernel::VariableBase::Type type;
 
-		rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", obj_name);
-		xmlFree(obj_name); obj_name = 0;
-	}
-	if (rc < 0) return rc;
-
-	// dump inner objects
-	std::list<unisim::kernel::Object *> obj_list;
-	std::list<unisim::kernel::Object *>::iterator obj_iter;
-	obj_list = obj->GetLeafs();
-	for (obj_iter = obj_list.begin();
-			obj_iter != obj_list.end();
-			obj_iter++)
-	{
-		if (HasVariable(*obj_iter, type))
+		Visitor(XMLConfigFileHelper& _xml_config_file_helper, xmlTextWriterPtr _writer, int& _rc, const unisim::kernel::Object *_obj, unisim::kernel::VariableBase::Type _type)
+			: xml_config_file_helper(_xml_config_file_helper), writer(_writer), rc(_rc), obj(_obj), type(_type)
 		{
-			rc = XmlfyVariables(writer, *obj_iter, type);
-			if (rc < 0)
+		}
+
+		bool Visit(unisim::kernel::Object *child)
+		{
+			if ((obj || !child->GetParent()) && xml_config_file_helper.HasVariable(child, type))
 			{
-				std::cerr << "Error(ServiceManage::XmlfyVariables): "
-					<< "error writing object"
-					<< std::endl;
-				return rc;
+				rc = xml_config_file_helper.XmlfyVariables(writer, child, type);
+				if (rc < 0)
+				{
+					std::cerr << "Error(ServiceManage::XmlfyVariables): "
+						<< "error writing object"
+						<< std::endl;
+					return true;
+				}
 			}
+			return false;
 		}
-	}
 
-	// dump object variables
-	std::list<unisim::kernel::VariableBase *> var_list;
-	std::list<unisim::kernel::VariableBase *>::iterator var_iter;
-	obj->GetVariables(var_list);
-	for(var_iter = var_list.begin();
-			var_iter != var_list.end();
-			var_iter++) {
-		if (type == unisim::kernel::VariableBase::VAR_VOID ||
-				type == (*var_iter)->GetType())
+		bool Visit(unisim::kernel::VariableBase *var)
 		{
-			rc = XmlfyVariable(writer, *var_iter);
-			if(rc < 0) {
-				std::cerr << "Error(XMLConfigFileHelper::XmlfyVariables): "
-					<< "error writing variable"
-					<< std::endl;
-				return rc;
+			// check that the variable is a root variable by checking that it
+			//   has not object owner
+			if (obj || !var->GetOwner())
+			{
+				rc = xml_config_file_helper.XmlfyVariable(writer, var);
+				if (rc < 0) {
+					std::cerr << "Error(XMLConfigFileHelper::XmlfyVariables): "
+						<< "error writing variable"
+						<< std::endl;
+					return true;
+				}
 			}
+			return false;
 		}
+	} visitor(*this, writer, rc, obj, type);
+
+	if (obj)
+	{
+		// initiate object
+		rc = xmlTextWriterStartElement(writer, BAD_CAST "object");
+		if (rc < 0) return rc;
+
+		// write object name
+		{
+			xmlChar* obj_name = xmlCharStrdup(obj->GetObjectName());
+
+			rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", obj_name);
+			xmlFree(obj_name); obj_name = 0;
+		}
+		if (rc < 0) return rc;
+
+		// dump inner objects
+		obj->ScanChildren(visitor);
+		if (rc < 0) return rc;
+
+		// dump object variables
+		obj->ScanVariables(visitor, type);
+		if (rc < 0) return rc;
+
+		rc = xmlTextWriterEndElement(writer);
+		if (rc < 0) return rc;
 	}
-	
-	rc = xmlTextWriterEndElement(writer);
-	if (rc < 0) return rc;
+	else
+	{
+		simulator->ScanObjects(visitor);
+		if (rc < 0) return rc;
+		simulator->ScanVariables(visitor, type);
+		if (rc < 0) return rc;
+	}
 
 	return 0;
 }
@@ -424,11 +408,22 @@ int XMLConfigFileHelper::XmlfyVariable(xmlTextWriterPtr writer, const unisim::ke
 	if(var->HasEnumeratedValues()) {
 		rc = xmlTextWriterStartElement(writer, BAD_CAST "enumeration");
 		if(rc < 0) return rc;
-		std::vector<std::string> values;
-		var->GetEnumeratedValues(values);
+		typedef std::vector<std::string> Values;
+		Values values;
+		struct EnumValueVisitor
+		{
+			Values& values;
+			EnumValueVisitor(Values& _values) : values(_values) {}
+			
+			bool Visit(const std::string& value)
+			{
+				values.push_back(value);
+				return false;
+			}
+		} enum_value_visitor(values);
+		var->ScanEnumeratedValues(enum_value_visitor);
 		if(values.empty()) return -1;
-		std::vector<std::string>::iterator it;
-		for(it = values.begin(); it != values.end(); it++) {
+		for(Values::const_iterator it = values.begin(); it != values.end(); it++) {
 			rc = xmlTextWriterStartElement(writer, BAD_CAST "item");
 			if(rc < 0) return rc;
 			rc = xmlTextWriterWriteFormatString(writer, "%s", (*it).c_str());

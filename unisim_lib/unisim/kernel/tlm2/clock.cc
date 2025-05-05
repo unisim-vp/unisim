@@ -129,6 +129,12 @@ void Clock::before_end_of_elaboration()
 	}
 	
 	clock_properties_changed_event.notify(clock_start_time);
+	
+	param_lazy_clock.AddListener(this);
+	param_clock_period.AddListener(this);
+	param_clock_duty_cycle.AddListener(this);
+	param_clock_start_time.AddListener(this);
+	param_clock_posedge_first.AddListener(this);
 }
 
 void Clock::initialize()

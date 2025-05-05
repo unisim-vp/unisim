@@ -45,34 +45,12 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	int ret = 0;
 
-  scml2::logging::registry& registry = scml2::logging::registry::get_instance();
-  scml2::logging::logger_base *default_cerr_logger = registry.find_logger_by_name("default_cerr_logger");
-  if(default_cerr_logger)
-    {
-      bool debug = true;
-      if(debug)
-        default_cerr_logger->enable(scml2::logging::match::severity_threshold_match(scml2::logging::severity::debug().get_level()));
-      else
-        default_cerr_logger->disable(scml2::logging::match::severity_threshold_match(scml2::logging::severity::debug().get_level()));
-    }
-
-  const char *settings_filename = "settings.txt";
-  scml_simple_property_server simple_property_server;
-  if(!simple_property_server.load(settings_filename))
-    {
-      std::cerr << "Error while loading \"" << settings_filename << "\"" << std::endl;
-      return 0;
-    }
-  scml_property_registry& property_registry = scml_property_registry::inst();
-  property_registry.setCustomPropertyServer(&simple_property_server);
-
-
 	Simulator *simulator = new Simulator(argc, argv);
 
 	switch ( simulator->Setup() )
 	{
 	case unisim::kernel::Simulator::ST_ERROR:
-	 std::cerr << "ERROR: Can't start simulation because of previous erros" << std::endl;
+	 std::cerr << "ERROR: Can't start simulation because of previous errors" << std::endl;
 		ret = -1;
 		break;
 	case unisim::kernel::Simulator::ST_OK_DONT_START:
@@ -85,7 +63,8 @@ int main(int argc, char *argv[]) {
 			<< "the simulation." << std::endl;
 	case unisim::kernel::Simulator::ST_OK_TO_START:
 	 std::cerr << "Starting simulation." << std::endl;
-		ret = simulator->Run();
+		simulator->Run();
+		ret = simulator->GetExitStatus();
 		break;
 	}
 

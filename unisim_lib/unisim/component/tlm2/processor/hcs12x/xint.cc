@@ -460,19 +460,19 @@ bool XINT::BeginSetup()
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".IVBR", &ivbr));
 
-	unisim::kernel::variable::Register<uint8_t> *ivbr_var = new unisim::kernel::variable::Register<uint8_t>("IVBR", this, ivbr, "Interrupt Vector base register (IVBR)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *ivbr_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("IVBR", this, ivbr, "Interrupt Vector base register (IVBR)");
 	extended_registers_registry.push_back(ivbr_var);
 	ivbr_var->setCallBack(this, IVBR, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".INT_XGPRIO", &int_xgprio));
 
-	unisim::kernel::variable::Register<uint8_t> *int_xgprio_var = new unisim::kernel::variable::Register<uint8_t>("INT_XGPRIO", this, int_xgprio, "XGate Interrupt Priority Configuration Register (INT_XGPRIO)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *int_xgprio_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("INT_XGPRIO", this, int_xgprio, "XGate Interrupt Priority Configuration Register (INT_XGPRIO)");
 	extended_registers_registry.push_back(int_xgprio_var);
 	int_xgprio_var->setCallBack(this, INT_XGPRIO, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".INT_CFADDR", &int_cfaddr));
 
-	unisim::kernel::variable::Register<uint8_t> *int_cfaddr_var = new unisim::kernel::variable::Register<uint8_t>("INT_CFADDR", this, int_cfaddr, "Interrupt Request Configuration Address Register (INT_CFADDR)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *int_cfaddr_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("INT_CFADDR", this, int_cfaddr, "Interrupt Request Configuration Address Register (INT_CFADDR)");
 	extended_registers_registry.push_back(int_cfaddr_var);
 	int_cfaddr_var->setCallBack(this, INT_CFADDR, &CallBackObject::write, NULL);
 
@@ -484,7 +484,7 @@ bool XINT::BeginSetup()
 		
 		registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + '.' + shortName, &int_cfwdata[i]));
 
-		unisim::kernel::variable::Register<uint8_t> *int_cfwdata_var = new unisim::kernel::variable::Register<uint8_t>(shortName.c_str(), this, int_cfwdata[i], "Interrupt Request Configuration Data Registers (INT_CFDATA)");
+		unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *int_cfwdata_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>(shortName.c_str(), this, int_cfwdata[i], "Interrupt Request Configuration Data Registers (INT_CFDATA)");
 		extended_registers_registry.push_back(int_cfwdata_var);
 		int_cfwdata_var->setCallBack(this, INT_CFDATA0+i, &CallBackObject::write, NULL);
 	}

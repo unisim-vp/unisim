@@ -55,6 +55,7 @@
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
 #include <unisim/component/cxx/processor/hcs12x/s12mpu_if.hh>
+#include <unisim/component/cxx/processor/hcs12x/register.hh>
 
 namespace unisim {
 namespace component {
@@ -68,7 +69,6 @@ using unisim::kernel::Service;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::variable::Parameter;
-using unisim::kernel::variable::CallBackObject;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
@@ -322,6 +322,7 @@ private:
 	uint8_t mode;
     uint8_t gpage;
     uint8_t direct;
+	uint8_t mmcctl1_int;
 	uint8_t mmcctl1;
     uint8_t rpage;
     uint8_t epage;
@@ -335,7 +336,6 @@ private:
 	bool directSet;
 
 	uint8_t mode_int;
-	uint8_t mmcctl1_int;
 	Parameter<uint8_t> param_mode;
 	Parameter<uint8_t> param_mmcctl1;
 

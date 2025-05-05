@@ -134,9 +134,7 @@ ScmlPropertyServer::~ScmlPropertyServer()
 		{
 			unisim::kernel::Object *auto_object = *auto_object_it;
 				
-			const std::list<unisim::kernel::Object *>& leaf_objects = auto_object->GetLeafs();
-				
-			if(leaf_objects.empty())
+			if(!auto_object->HasChildren())
 			{
 				delete auto_object;
 				auto_objects.erase(auto_object_it);
@@ -156,23 +154,21 @@ unisim::kernel::Object *ScmlPropertyServer::GetObject(unisim::kernel::Object *ob
 	
 	std::string child_name = leaf_hierarchical_name.substr(0, hierarchical_delimiter_pos);
 	
-	const std::list<unisim::kernel::Object *>& leaf_objects = object->GetLeafs();
-	
-	std::list<unisim::kernel::Object *>::const_iterator it;
-	
-	unisim::kernel::Object *found_child = 0;
-	
-	for(it = leaf_objects.begin(); it != leaf_objects.end(); it++)
+	struct Visitor
 	{
-		unisim::kernel::Object *child = *it;
+		unisim::kernel::Object *object;
+		const std::string& child_name;
 		
-		if(child_name.compare(child->GetObjectName()) == 0)
+		Visitor(unisim::kernel::Object *_object, const std::string& _child_name) : object(_object), child_name(_child_name) {}
+		
+		unisim::kernel::Object *Visit(unisim::kernel::Object *child)
 		{
-			// found child
-			found_child = child;
-			break;
+			// found child?
+			return ((object || !child->GetParent()) && (child_name.compare(child->GetObjectName()) == 0)) ? child : 0;
 		}
-	}
+	} visitor(object, child_name);
+	
+	unisim::kernel::Object *found_child = object ? object->ScanChildren<Visitor, unisim::kernel::Object *>(visitor) : sim->ScanObjects<Visitor, unisim::kernel::Object *>(visitor);
 	
 	if(!found_child)
 	{
@@ -187,38 +183,7 @@ unisim::kernel::Object *ScmlPropertyServer::GetObject(unisim::kernel::Object *ob
 
 unisim::kernel::Object *ScmlPropertyServer::GetObject(const std::string& leaf_hierarchical_name)
 {
-	std::size_t hierarchical_delimiter_pos = leaf_hierarchical_name.find_first_of('.');
-	std::string root_object_name = leaf_hierarchical_name.substr(0, hierarchical_delimiter_pos);
-	
-	std::list<unisim::kernel::Object *> root_objects;
-	
-	sim->GetRootObjects(root_objects);
-	
-	std::list<unisim::kernel::Object *>::const_iterator it;
-	
-	unisim::kernel::Object *found_root_object = 0;
-	
-	for(it = root_objects.begin(); it != root_objects.end(); it++)
-	{
-		unisim::kernel::Object *root_object = *it;
-		
-		if(root_object_name.compare(root_object->GetObjectName()) == 0)
-		{
-			// found root object
-			found_root_object = root_object;
-			break;
-		}
-	}
-	
-	if(!found_root_object)
-	{
-		// not found
-		found_root_object = new unisim::kernel::Object(root_object_name.c_str());
-		
-		auto_objects.push_back(found_root_object);
-	}
-	
-	return (hierarchical_delimiter_pos == std::string::npos) ? found_root_object : GetObject(found_root_object, leaf_hierarchical_name.substr(hierarchical_delimiter_pos + 1));
+	return GetObject(/* object */ 0, leaf_hierarchical_name);
 }
 
 unisim::kernel::Object *ScmlPropertyServer::GetOwner(const std::string & name)

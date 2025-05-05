@@ -45,15 +45,15 @@ using unisim::util::netstreamer::NETSTREAMER_PROTOCOL_RAW;
 using unisim::util::netstreamer::NETSTREAMER_PROTOCOL_TELNET;
 
 template <> Variable<NetStreamerProtocol>::Variable(const char *_name, Object *_object, NetStreamerProtocol& _storage, Type _type, const char *_description) :
-	VariableBase(_name, _object, _type, _description), storage(&_storage)
+	VariableBase(_name, _object, _type, _description), storage(new DirectVariableStorage<NetStreamerProtocol>(_storage))
 {
 	Initialize();
 	AddEnumeratedValue("raw");
 	AddEnumeratedValue("telnet");
 }
 
-template <> Variable<NetStreamerProtocol>::Variable(unsigned int _index, VariableBase& _container, NetStreamerProtocol& _storage, Type _type, const char *_description) :
-	VariableBase(_index, _container, _type, _description), storage(&_storage)
+template <> Variable<NetStreamerProtocol>::Variable(const char *_name, VariableBase& _container, VariableStorage<NetStreamerProtocol> * _storage, Type _type, const char *_description) :
+	VariableBase(_name, _container, _type, _description), storage(_storage)
 {
 	Initialize();
 	AddEnumeratedValue("raw");
@@ -78,13 +78,13 @@ unsigned int Variable<NetStreamerProtocol>::GetBitSize() const
 	return 1;
 }
 
-template <> Variable<NetStreamerProtocol>::operator bool () const { return *storage != NETSTREAMER_PROTOCOL_TELNET; }
-template <> Variable<NetStreamerProtocol>::operator long long () const { return *storage; }
-template <> Variable<NetStreamerProtocol>::operator unsigned long long () const { return *storage; }
-template <> Variable<NetStreamerProtocol>::operator double () const { return (double)(*storage); }
+template <> Variable<NetStreamerProtocol>::operator bool () const { return Get() != NETSTREAMER_PROTOCOL_TELNET; }
+template <> Variable<NetStreamerProtocol>::operator long long () const { return Get(); }
+template <> Variable<NetStreamerProtocol>::operator unsigned long long () const { return Get(); }
+template <> Variable<NetStreamerProtocol>::operator double () const { return (double) Get(); }
 template <> Variable<NetStreamerProtocol>::operator std::string () const
 {
-	switch(*storage)
+	switch(Get())
 	{
 		case NETSTREAMER_PROTOCOL_TELNET: return std::string("telnet");
 		case NETSTREAMER_PROTOCOL_RAW: return std::string("raw");
@@ -94,86 +94,56 @@ template <> Variable<NetStreamerProtocol>::operator std::string () const
 
 template <> VariableBase& Variable<NetStreamerProtocol>::operator = (bool value)
 {
-	if(IsMutable())
+	switch((unsigned int) value)
 	{
-		NetStreamerProtocol tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case NETSTREAMER_PROTOCOL_TELNET:
-			case NETSTREAMER_PROTOCOL_RAW:
-				tmp = (NetStreamerProtocol)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case NETSTREAMER_PROTOCOL_TELNET:
+		case NETSTREAMER_PROTOCOL_RAW:
+			Set((NetStreamerProtocol)(unsigned int) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<NetStreamerProtocol>::operator = (long long value)
 {
-	if(IsMutable())
+	switch(value)
 	{
-		NetStreamerProtocol tmp = *storage;
-		switch(value)
-		{
-			case NETSTREAMER_PROTOCOL_TELNET:
-			case NETSTREAMER_PROTOCOL_RAW:
-				tmp = (NetStreamerProtocol) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case NETSTREAMER_PROTOCOL_TELNET:
+		case NETSTREAMER_PROTOCOL_RAW:
+			Set((NetStreamerProtocol) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<NetStreamerProtocol>::operator = (unsigned long long value)
 {
-	if(IsMutable())
+	switch(value)
 	{
-		NetStreamerProtocol tmp = *storage;
-		switch(value)
-		{
-			case NETSTREAMER_PROTOCOL_TELNET:
-			case NETSTREAMER_PROTOCOL_RAW:
-				tmp = (NetStreamerProtocol) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case NETSTREAMER_PROTOCOL_TELNET:
+		case NETSTREAMER_PROTOCOL_RAW:
+			Set((NetStreamerProtocol) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<NetStreamerProtocol>::operator = (double value)
 {
-	if(IsMutable())
+	switch((unsigned int) value)
 	{
-		NetStreamerProtocol tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case NETSTREAMER_PROTOCOL_TELNET:
-			case NETSTREAMER_PROTOCOL_RAW:
-				tmp = (NetStreamerProtocol)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case NETSTREAMER_PROTOCOL_TELNET:
+		case NETSTREAMER_PROTOCOL_RAW:
+			Set((NetStreamerProtocol)(unsigned int) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<NetStreamerProtocol>::operator = (const char *value)
 {
-	if(IsMutable())
-	{
-		NetStreamerProtocol tmp = *storage;
-		if(std::string(value) == std::string("telnet")) tmp = NETSTREAMER_PROTOCOL_TELNET;
-		else if(std::string(value) == std::string("raw")) tmp = NETSTREAMER_PROTOCOL_RAW;
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
+	if(std::string(value) == std::string("telnet")) Set(NETSTREAMER_PROTOCOL_TELNET);
+	else if(std::string(value) == std::string("raw")) Set(NETSTREAMER_PROTOCOL_RAW);
 	return *this;
 }
 

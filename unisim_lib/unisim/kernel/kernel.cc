@@ -454,10 +454,10 @@ VariableBase(const char *_name, Object *_owner, Type _type, const char *_descrip
 }
 
 VariableBase::
-VariableBase(unsigned int index, VariableBase& _container, Type _type, const char *_description)
-	: name(std::string(_container.GetName()) + "[" + unisim::util::ostream::ToString(index) + "]")
-	, var_name()
-	, owner(0)
+VariableBase(const char *_name, VariableBase& _container, Type _type, const char *_description)
+	: name(std::string(_container.GetName()) + "[" + _name + "]")
+	, var_name(std::string(_container.GetVarName()) + "[" + _name + "]")
+	, owner(_container.GetOwner())
 	, container(&_container)
 	, description(_description ? std::string(_description) : std::string(""))
 	, enumerated_values()
@@ -467,8 +467,13 @@ VariableBase(unsigned int index, VariableBase& _container, Type _type, const cha
 	, is_visible(true)
 	, is_serializable(true)
 	, is_modified(false)
+	, is_initialized(false)
 	, listener_set()
 {
+	if(owner)
+	{
+		owner->Add(*this);
+	}
 	Simulator::Instance()->Register(this);
 }
 
@@ -485,6 +490,7 @@ VariableBase()
 	, is_visible(false)
 	, is_serializable(false)
 	, is_modified(false)
+	, is_initialized(false)
 	, listener_set()
 {
 }
@@ -497,7 +503,7 @@ VariableBase::~VariableBase()
 
 void VariableBase::Initialize()
 {
-	Simulator::Instance()->Initialize(this);
+	if(!is_initialized) is_initialized = Simulator::Instance()->Initialize(this);
 }
 
 Object *VariableBase::GetOwner() const
@@ -572,13 +578,6 @@ bool VariableBase::HasEnumeratedValue(const char * value) const {
 	return false;
 }
 
-void VariableBase::GetEnumeratedValues(std::vector<std::string> &values) const {
-	if(!HasEnumeratedValues()) return;
-	for(unsigned int i = 0; i < enumerated_values.size(); i++) {
-		values.push_back(enumerated_values[i]);
-	}
-}
-
 bool VariableBase::AddEnumeratedValue(const char *value) {
 	if(HasEnumeratedValue(value)) return false;
 	enumerated_values.push_back(std::string(value));
@@ -628,6 +627,11 @@ bool VariableBase::IsSerializable() const
 bool VariableBase::IsModified() const
 {
 	return is_modified;
+}
+
+bool VariableBase::IsInitialized() const
+{
+	return is_initialized;
 }
 
 void VariableBase::SetMutable(bool _is_mutable)
@@ -701,7 +705,7 @@ VariableBase& VariableBase::operator = (float value) { *this = (double) value; r
 VariableBase& VariableBase::operator = (double value) { NotifyListeners(); return *this; }
 VariableBase& VariableBase::operator = (const char *value) { NotifyListeners(); return *this; }
 
-VariableBase& VariableBase::operator [] (unsigned int index)
+VariableBase& VariableBase::operator [] (uint64_t index)
 {
 	if(index >= 0)
 	{
@@ -711,7 +715,7 @@ VariableBase& VariableBase::operator [] (unsigned int index)
 	return *this;
 }
 
-const VariableBase& VariableBase::operator [] (unsigned int index) const
+const VariableBase& VariableBase::operator [] (uint64_t index) const
 {
 	if(index >= 0)
 	{
@@ -721,7 +725,7 @@ const VariableBase& VariableBase::operator [] (unsigned int index) const
 	return *this;
 }
 
-unsigned int VariableBase::GetLength() const
+uint64_t VariableBase::GetLength() const
 {
 	return 0;
 }
@@ -839,7 +843,7 @@ Object::Object(const char *_name, Object *_parent, const char *_description)
 	, object_base_name(std::string(_name))
 	, description(_description ? std::string(_description) : std::string(""))
 	, parent(_parent)
-	, leaf_objects()
+	, children()
 	, killed(false)
 {
 	if(_parent) _parent->Add(*this);
@@ -874,24 +878,24 @@ Object *Object::GetParent() const
 
 void Object::Add(Object& object)
 {
-	for(LeafObjects::iterator object_iter = leaf_objects.begin(); object_iter != leaf_objects.end(); object_iter++)
+	for(Children::iterator object_iter = children.begin(); object_iter != children.end(); object_iter++)
 	{
 		if(unisim::util::nat_sort::nat_ltstr::Less(object.GetName(), (*object_iter)->GetName()))
 		{
-			leaf_objects.insert(object_iter, &object);
+			children.insert(object_iter, &object);
 			return;
 		}
 	}
-	leaf_objects.push_back(&object);
+	children.push_back(&object);
 }
 
 void Object::Remove(Object& object)
 {
-	for(LeafObjects::iterator object_iter = leaf_objects.begin(); object_iter != leaf_objects.end(); object_iter++)
+	for(Children::iterator object_iter = children.begin(); object_iter != children.end(); object_iter++)
 	{
 		if(*object_iter == &object)
 		{
-			leaf_objects.erase(object_iter);
+			children.erase(object_iter);
 			return;
 		}
 	}
@@ -922,23 +926,9 @@ void Object::Remove(VariableBase& var)
 	}
 }
 
-void Object::GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type) const
+bool Object::HasChildren() const
 {
-	lst.clear();
-	
-	for(Variables::const_iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		VariableBase *variable = *variable_iter;
-		if(((type == VariableBase::VAR_VOID) || (variable->GetType() == type)) && variable->IsVisible())
-		{
-			lst.push_back(*variable_iter);
-		}
-	}
-}
-
-const std::list<Object *>& Object::GetLeafs() const
-{
-	return leaf_objects;
+	return !children.empty();
 }
 
 bool Object::BeginSetup()
@@ -1875,7 +1865,7 @@ void Simulator::Register(VariableBase *variable)
 	variables[variable->GetName()] = variable;
 }
 
-void Simulator::Initialize(VariableBase *variable)
+bool Simulator::Initialize(VariableBase *variable)
 {
 	// initialize variable from command line
 	SetVars::iterator set_var_iter = set_vars.find(variable->GetName());
@@ -1889,7 +1879,9 @@ void Simulator::Initialize(VariableBase *variable)
 		*variable = value;
 		variable->SetModified(false); // cancel modification flag
 		set_vars.erase(set_var_iter);
+		return true;
 	}
+	return false;
 }
 
 void Simulator::Register(ServicePortBase *srv_port)
@@ -2388,16 +2380,6 @@ VariableBase *Simulator::FindVariable(const char *name, VariableBase::Type type)
 	return void_variable;
 }
 
-const VariableBase *Simulator::FindArray(const char *name) const
-{
-	return FindVariable(name, VariableBase::VAR_ARRAY);
-}
-
-VariableBase *Simulator::FindArray(const char *name)
-{
-	return FindVariable(name, VariableBase::VAR_ARRAY);
-}
-
 const VariableBase *Simulator::FindParameter(const char *name) const
 {
 	return FindVariable(name, VariableBase::VAR_PARAMETER);
@@ -2426,84 +2408,6 @@ const VariableBase *Simulator::FindStatistic(const char *name) const
 VariableBase *Simulator::FindStatistic(const char *name)
 {
 	return FindVariable(name, VariableBase::VAR_STATISTIC);
-}
-
-void Simulator::GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type)
-{
-	lst.clear();
-	
-	for(Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		if((*variable_iter).second->IsVisible() && (type == VariableBase::VAR_VOID || (*variable_iter).second->GetType() == type))
-		{
-			lst.push_back((*variable_iter).second);
-		}
-	}
-}
-
-void Simulator::GetRootVariables(std::list<VariableBase *>& lst, VariableBase::Type type)
-{
-	lst.clear();
-	
-	for(Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		VariableBase *var = (*variable_iter).second;
-		if(!var->GetOwner() && var->IsVisible() && (type == VariableBase::VAR_VOID || var->GetType() == type))
-		{
-			lst.push_back((*variable_iter).second);
-		}
-	}
-}
-
-void Simulator::GetArrays(std::list<VariableBase *>& lst)
-{
-	GetVariables(lst, VariableBase::VAR_ARRAY);
-}
-
-void Simulator::GetParameters(std::list<VariableBase *>& lst)
-{
-	GetVariables(lst, VariableBase::VAR_PARAMETER);
-}
-
-void Simulator::GetRegisters(std::list<VariableBase *>& lst)
-{
-	GetVariables(lst, VariableBase::VAR_REGISTER);
-}
-
-void Simulator::GetSignals(std::list<VariableBase *>& lst)
-{
-	GetVariables(lst, VariableBase::VAR_SIGNAL);
-}
-
-void Simulator::GetStatistics(std::list<VariableBase *>& lst)
-{
-	GetVariables(lst, VariableBase::VAR_STATISTIC);
-}
-
-void Simulator::GetObjects(std::list<Object *>& lst) const
-{
-	for(Objects::const_iterator object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
-	{
-		if((*object_iter).second)
-		{
-			lst.push_back((*object_iter).second);
-		}
-	}
-}
-
-void Simulator::GetRootObjects(std::list<Object *>& lst) const
-{
-	for(Objects::const_iterator object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
-	{
-		if((*object_iter).second)
-		{
-			if(!(*object_iter).second->GetParent())
-			{
-				// std::cerr << "root: " << (*object_iter).second->GetName() << std::endl;
-				lst.push_back((*object_iter).second);
-			}
-		}
-	}
 }
 
 Object *Simulator::FindObject(const char *name) const

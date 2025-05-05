@@ -96,12 +96,6 @@ namespace unisim {
 namespace kernel {
 namespace variable {
 
-template <> Variable<unisim::service::power::CacheLeakagePower>::Variable(const char *_name, Object *_object, unisim::service::power::CacheLeakagePower& _storage, Type type, const char *_description) :
-VariableBase(_name, _object, type, _description), storage(&_storage)
-{
-	Initialize();
-}
-
 template <>
 const char *Variable<unisim::service::power::CacheLeakagePower>::GetDataTypeName() const
 {
@@ -117,32 +111,32 @@ unsigned int Variable<unisim::service::power::CacheLeakagePower>::GetBitSize() c
 template <>
 Variable<unisim::service::power::CacheLeakagePower>::operator bool () const
 {
-	if ( storage->GetLeakagePower() == 0.0) return false;
+	if ( Get().GetLeakagePower() == 0.0) return false;
 	return true;
 }
 template <>
 Variable<unisim::service::power::CacheLeakagePower>::operator long long () const
 {
-	return (long long)storage->GetLeakagePower();
+	return (long long)Get().GetLeakagePower();
 }
 
 template <>
 Variable<unisim::service::power::CacheLeakagePower>::operator unsigned long long () const
 {
-	return (unsigned long long)storage->GetLeakagePower();
+	return (unsigned long long)Get().GetLeakagePower();
 }
 
 template <>
 Variable<unisim::service::power::CacheLeakagePower>::operator double () const
 {
-	return storage->GetLeakagePower();
+	return Get().GetLeakagePower();
 }
 
 template <>
 Variable<unisim::service::power::CacheLeakagePower>::operator std::string () const
 {
 	std::stringstream data;
-	data << storage->GetLeakagePower();
+	data << Get().GetLeakagePower();
 	return data.str();
 }
 

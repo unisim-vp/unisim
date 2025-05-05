@@ -88,11 +88,18 @@ void PIMThread::run(){
 	// Explore Simulator Variables to Generate PIM XML File
 	vector<VariableBase*> simulator_variables;
 
-	std::list<VariableBase *> lst;
+	typedef std::vector<VariableBase *> List;
+	List lst;
+	struct VariableVisitor
+	{
+		List& lst;
+		VariableVisitor(List& _lst) : lst(_lst) {}
+		bool Visit(VariableBase *var) { lst.push_back(var); return true; }
+	} variable_visitor(lst);
 
-	Simulator::Instance()->GetSignals(lst);
+	GetSimulator()->ScanSignals(variable_visitor);
 
-	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+	for (List::iterator it = lst.begin(); it != lst.end(); it++) {
 
 		if (!((VariableBase *) *it)->IsVisible()) continue;
 

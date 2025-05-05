@@ -42,20 +42,6 @@ namespace unisim {
 namespace kernel {
 namespace variable {
 
-template <> 
-Variable<sc_core::sc_time>::Variable(const char *_name, Object *_object, sc_core::sc_time& _storage, Type _type, const char *_description)
-	: VariableBase(_name, _object, _type, _description), storage(&_storage)
-{
-	Initialize();
-}
-
-template <> 
-Variable<sc_core::sc_time>::Variable(unsigned int _index, VariableBase& _container, sc_core::sc_time& _storage, Type _type, const char *_description)
-	: VariableBase(_index, _container, _type, _description), storage(&_storage)
-{
-	Initialize();
-}
-
 template <>
 const char *Variable<sc_core::sc_time>::GetDataTypeName() const
 {
@@ -104,58 +90,55 @@ Variable<sc_core::sc_time>::operator std::string () const
 template <> 
 VariableBase& Variable<sc_core::sc_time>::operator = (bool value)
 { 
-	if (IsMutable()) Set( sc_core::sc_time(value ? 1.0 : 0.0, sc_core::SC_SEC) );
+	Set( sc_core::sc_time(value ? 1.0 : 0.0, sc_core::SC_SEC) );
 	return *this;
 }
 
 template <> 
 VariableBase& Variable<sc_core::sc_time>::operator = (long long value)
 {
-	if (IsMutable()) Set( sc_core::sc_time((double) value, sc_core::SC_SEC) );
+	Set( sc_core::sc_time((double) value, sc_core::SC_SEC) );
 	return *this;
 }
 
 template <> 
 VariableBase& Variable<sc_core::sc_time>::operator = (unsigned long long value)
 {
-	if (IsMutable()) Set( sc_core::sc_time((double) value, sc_core::SC_SEC) );
+	Set( sc_core::sc_time((double) value, sc_core::SC_SEC) );
 	return *this;
 }
 
 template <> 
 VariableBase& Variable<sc_core::sc_time>::operator = (double value)
 {
-	if (IsMutable()) Set( sc_core::sc_time(value, sc_core::SC_SEC) );
+	Set( sc_core::sc_time(value, sc_core::SC_SEC) );
 	return *this;
 }
 
 template <> 
 VariableBase& Variable<sc_core::sc_time>::operator = (const char *value)
 {
-	if(IsMutable())
+	double v = 0.0;
+	sc_core::sc_time_unit unit = sc_core::SC_SEC;
+	
+	char *end;
+	
+	v = strtod(value, &end);
+	
+	if(end != value)
 	{
-		double v = 0.0;
-		sc_core::sc_time_unit unit = sc_core::SC_SEC;
+		// skip spaces
+		while(*end == ' ') end++;
 		
-		char *end;
-		
-		v = strtod(value, &end);
-		
-		if(end != value)
-		{
-			// skip spaces
-			while(*end == ' ') end++;
-			
-			if(strncmp(end, "fs", 2) == 0) unit = sc_core::SC_FS; else
-			if(strncmp(end, "ps", 2) == 0) unit = sc_core::SC_PS; else
-			if(strncmp(end, "ns", 2) == 0) unit = sc_core::SC_NS; else
-			if(strncmp(end, "us", 2) == 0) unit = sc_core::SC_US; else
-			if(strncmp(end, "ms", 2) == 0) unit = sc_core::SC_MS; else
-			if(strncmp(end, "s", 1) == 0) unit = sc_core::SC_SEC;
-		}
-		
-		Set( sc_core::sc_time(v, unit) );
+		if(strncmp(end, "fs", 2) == 0) unit = sc_core::SC_FS; else
+		if(strncmp(end, "ps", 2) == 0) unit = sc_core::SC_PS; else
+		if(strncmp(end, "ns", 2) == 0) unit = sc_core::SC_NS; else
+		if(strncmp(end, "us", 2) == 0) unit = sc_core::SC_US; else
+		if(strncmp(end, "ms", 2) == 0) unit = sc_core::SC_MS; else
+		if(strncmp(end, "s", 1) == 0) unit = sc_core::SC_SEC;
 	}
+	
+	Set( sc_core::sc_time(v, unit) );
 	return *this; 
 }
 

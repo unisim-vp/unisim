@@ -777,31 +777,31 @@ bool S12SPI<SPI_VERSION>::BeginSetup() {
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SPICR1", &spicr1_register));
 
-	unisim::kernel::variable::Register<uint8_t> *spicr1_var = new unisim::kernel::variable::Register<uint8_t>("SPICR1", this, spicr1_register, "SPI Control Register 1 (SPICR1)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *spicr1_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("SPICR1", this, spicr1_register, "SPI Control Register 1 (SPICR1)");
 	extended_registers_registry.push_back(spicr1_var);
 	spicr1_var->setCallBack(this, SPICR1, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SPICR2", &spicr2_register));
 
-	unisim::kernel::variable::Register<uint8_t> *spicr2_var = new unisim::kernel::variable::Register<uint8_t>("SPICR2", this, spicr2_register, "SPI Control Register 2 (SPICR2)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *spicr2_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("SPICR2", this, spicr2_register, "SPI Control Register 2 (SPICR2)");
 	extended_registers_registry.push_back(spicr2_var);
 	spicr2_var->setCallBack(this, SPICR2, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SPIBR", &spibr_register));
 
-	unisim::kernel::variable::Register<uint8_t> *spibr_var = new unisim::kernel::variable::Register<uint8_t>("SPIBR", this, spibr_register, "SPI Baud Rate Register (SPIBR)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *spibr_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("SPIBR", this, spibr_register, "SPI Baud Rate Register (SPIBR)");
 	extended_registers_registry.push_back(spibr_var);
 	spibr_var->setCallBack(this, SPIBR, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SPISR", &spisr_register));
 
-	unisim::kernel::variable::Register<uint8_t> *spisr_var = new unisim::kernel::variable::Register<uint8_t>("SPISR", this, spisr_register, "SPI Status register (SPISR)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *spisr_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("SPISR", this, spisr_register, "SPI Status register (SPISR)");
 	extended_registers_registry.push_back(spisr_var);
 	spisr_var->setCallBack(this, SPISR, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE>(std::string(sc_object::name()) + ".SPIDR", &spidr_register));
 
-	unisim::kernel::variable::Register<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE> *spidr_var = new unisim::kernel::variable::Register<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE>("SPIDR", this, spidr_register, "SPI Data register (SPIDR)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE> *spidr_var = new unisim::component::cxx::processor::hcs12x::RegisterView<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE>("SPIDR", this, spidr_register, "SPI Data register (SPIDR)");
 	extended_registers_registry.push_back(spidr_var);
 	spidr_var->setCallBack(this, SPIDR, &CallBackObject::write, NULL);
 

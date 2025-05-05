@@ -71,135 +71,92 @@ bool JSONConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::V
 bool JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::VariableBase::Type type)
 {
 	Indent indent;
-	
-	std::list<unisim::kernel::VariableBase *> variables;
-	simulator->GetVariables(variables, type);
-	std::list<unisim::kernel::Object *> root_objects;
-	simulator->GetRootObjects(root_objects);
-	
-	if(!variables.empty() || !root_objects.empty())
+	SaveVariables(os, /* object */ 0, type, indent);
+	return true;
+}
+
+void JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::Object *object, unisim::kernel::VariableBase::Type type, Indent& indent)
+{
+	struct Visitor
 	{
-		os << indent << "{";
-		++indent;
-	
-		bool first = true;
-		if(!variables.empty())
+		JSONConfigFileHelper& json_config_file_helper;
+		std::ostream& os;
+		unisim::kernel::Object *object;
+		unisim::kernel::VariableBase::Type type;
+		Indent& indent;
+		bool first;
+		
+		Visitor(JSONConfigFileHelper& _json_config_file_helper, std::ostream& _os, unisim::kernel::Object *_object, unisim::kernel::VariableBase::Type _type, Indent& _indent)
+			: json_config_file_helper(_json_config_file_helper), os(_os), object(_object), type(_type), indent(_indent), first(true)
 		{
-			std::list<unisim::kernel::VariableBase *>::iterator variable_iter;
-			for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-			{
-				unisim::kernel::VariableBase *variable = *variable_iter;
-				
-				if(!variable->GetOwner() && variable->IsSerializable() && ((type == unisim::kernel::VariableBase::VAR_VOID) || (type == variable->GetType())))
-				{
-					if(first)
-					{
-						first = false;
-					}
-					else
-					{
-						os << ", ";
-					}
-					os << std::endl << indent;
-					SaveVariable(os, *variable);
-					//os << "\"" << unisim::util::json::Escape(variable->GetVarName()) << "\" : \"" << unisim::util::json::Escape((std::string)(*variable)) << "\"";
-				}
-			}
 		}
-	
-		std::list<unisim::kernel::Object *>::iterator root_object_iter;
-		for(root_object_iter = root_objects.begin(); root_object_iter != root_objects.end(); root_object_iter++)
+		
+		~Visitor()
 		{
-			unisim::kernel::Object *root_object = *root_object_iter;
-			
+			End();
+		}
+		
+		void Next()
+		{
 			if(first)
 			{
+				if(object) os << std::endl;
+				os << indent << '{';
+				++indent;
 				first = false;
 			}
 			else
 			{
 				os << ", ";
 			}
-			
-			os << std::endl << indent;
-			os << "\"" << unisim::util::json::Escape(root_object->GetObjectName()) << "\" :";
-			SaveVariables(os, root_object, type, indent);
 		}
 		
-		os << std::endl << --indent << '}';
-	}
-	else
-	{
-		os << "{}";
-	}
-	
-	return true;
-}
-
-void JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::Object *object, unisim::kernel::VariableBase::Type type, Indent& indent)
-{
-	std::list<unisim::kernel::VariableBase *> variables;
-	object->GetVariables(variables, type);
-	const std::list<unisim::kernel::Object *>& leaf_objects = object->GetLeafs();	
-	
-	if(!variables.empty() || !leaf_objects.empty())
-	{
-		os << std::endl << indent << '{';
-		++indent;
-	
-		bool first = true;
-		
-		if(!variables.empty())
+		void End()
 		{
-			std::list<unisim::kernel::VariableBase *>::iterator variable_iter;
-			for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+			if(first)
 			{
-				unisim::kernel::VariableBase *variable = *variable_iter;
-				
-				if(variable->IsSerializable() && ((type == unisim::kernel::VariableBase::VAR_VOID) || (type == variable->GetType())))
-				{
-					if(first)
-					{
-						first = false;
-					}
-					else
-					{
-						os << ", ";
-					}
-					os << std::endl << indent;
-					SaveVariable(os, *variable);
-					//os << "\"" << unisim::util::json::Escape(variable->GetVarName()) << "\" : \"" << unisim::util::json::Escape((std::string)(*variable)) << "\"";
-				}
+				if(object) os << " ";
+				os << "{}";
+			}
+			else
+			{
+				os << std::endl << --indent << '}';
 			}
 		}
 		
-		if(!leaf_objects.empty())
+		bool Visit(unisim::kernel::Object *child)
 		{
-			std::list<unisim::kernel::Object *>::const_iterator it;
-			for(it = leaf_objects.begin(); it != leaf_objects.end(); ++it)
+			if(object || !child->GetParent())
 			{
-				if(first)
-				{
-					first = false;
-				}
-				else
-				{
-					os << ", ";
-				}
-				
-				unisim::kernel::Object *child = *it;
-				
+				Next();
 				os << std::endl << indent;
 				os << "\"" << unisim::util::json::Escape(child->GetObjectName()) << "\" :";
-				SaveVariables(os, child, type, indent);
+				json_config_file_helper.SaveVariables(os, child, type, indent);
 			}
+			return false;
 		}
 		
-		os << std::endl << --indent << '}';
+		bool Visit(unisim::kernel::VariableBase *variable)
+		{
+			if(object || !variable->GetOwner())
+			{
+				Next();
+				os << std::endl << indent;
+				json_config_file_helper.SaveVariable(os, *variable);
+			}
+			return false;
+		}
+	} visitor(*this, os, object, type, indent);
+	
+	if(object)
+	{
+		object->ScanVariables(visitor, type);
+		object->ScanChildren(visitor);
 	}
 	else
 	{
-		os << " {}";
+		simulator->ScanVariables(visitor, type);
+		simulator->ScanObjects(visitor);
 	}
 }
 

@@ -1852,8 +1852,17 @@ using unisim::service::web_terminal::DECREASED_INTENSITY;
 using unisim::service::web_terminal::NORMAL_INTENSITY;
 using unisim::service::web_terminal::INCREASED_INTENSITY;
 
-template <> Variable<Intensity>::Variable(const char *_name, Object *_object, Intensity& _storage, Type type, const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
+template <> Variable<Intensity>::Variable(const char *_name, Object *_object, Intensity& _storage, Type _type, const char *_description) :
+	VariableBase(_name, _object, _type, _description), storage(new DirectVariableStorage<Intensity>(_storage))
+{
+	Initialize();
+	AddEnumeratedValue("decreased");
+	AddEnumeratedValue("normal");
+	AddEnumeratedValue("increased");
+}
+
+template <> Variable<Intensity>::Variable(const char *_name, VariableBase& _container, VariableStorage<Intensity> * _storage, Type _type, const char *_description) :
+	VariableBase(_name, _container, _type, _description), storage(_storage)
 {
 	Initialize();
 	AddEnumeratedValue("decreased");
@@ -1879,13 +1888,13 @@ unsigned int Variable<Intensity>::GetBitSize() const
 	return 2;
 }
 
-template <> Variable<Intensity>::operator bool () const { return *storage != NORMAL_INTENSITY; }
-template <> Variable<Intensity>::operator long long () const { return *storage; }
-template <> Variable<Intensity>::operator unsigned long long () const { return *storage; }
-template <> Variable<Intensity>::operator double () const { return (double)(*storage); }
+template <> Variable<Intensity>::operator bool () const { return Get() != NORMAL_INTENSITY; }
+template <> Variable<Intensity>::operator long long () const { return Get(); }
+template <> Variable<Intensity>::operator unsigned long long () const { return Get(); }
+template <> Variable<Intensity>::operator double () const { return (double)Get(); }
 template <> Variable<Intensity>::operator std::string () const
 {
-	switch(*storage)
+	switch(Get())
 	{
 		case DECREASED_INTENSITY: return std::string("decreased");
 		case NORMAL_INTENSITY: return std::string("normal");
@@ -1896,91 +1905,61 @@ template <> Variable<Intensity>::operator std::string () const
 
 template <> VariableBase& Variable<Intensity>::operator = (bool value)
 {
-	if(IsMutable())
+	switch((int) value)
 	{
-		Intensity tmp = *storage;
-		switch((int) value)
-		{
-			case DECREASED_INTENSITY:
-			case NORMAL_INTENSITY:
-			case INCREASED_INTENSITY:
-				tmp = (Intensity)(int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case DECREASED_INTENSITY:
+		case NORMAL_INTENSITY:
+		case INCREASED_INTENSITY:
+			Set((Intensity)(int) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<Intensity>::operator = (long long value)
 {
-	if(IsMutable())
+	switch(value)
 	{
-		Intensity tmp = *storage;
-		switch(value)
-		{
-			case DECREASED_INTENSITY:
-			case NORMAL_INTENSITY:
-			case INCREASED_INTENSITY:
-				tmp = (Intensity) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case DECREASED_INTENSITY:
+		case NORMAL_INTENSITY:
+		case INCREASED_INTENSITY:
+			Set((Intensity) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<Intensity>::operator = (unsigned long long value)
 {
-	if(IsMutable())
+	switch((long long) value)
 	{
-		Intensity tmp = *storage;
-		switch((long long) value)
-		{
-			case DECREASED_INTENSITY:
-			case NORMAL_INTENSITY:
-			case INCREASED_INTENSITY:
-				tmp = (Intensity)(long long) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case DECREASED_INTENSITY:
+		case NORMAL_INTENSITY:
+		case INCREASED_INTENSITY:
+			Set((Intensity)(long long) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<Intensity>::operator = (double value)
 {
-	if(IsMutable())
+	switch((int) value)
 	{
-		Intensity tmp = *storage;
-		switch((int) value)
-		{
-			case DECREASED_INTENSITY:
-			case NORMAL_INTENSITY:
-			case INCREASED_INTENSITY:
-				tmp = (Intensity)(int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case DECREASED_INTENSITY:
+		case NORMAL_INTENSITY:
+		case INCREASED_INTENSITY:
+			Set((Intensity)(int) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<Intensity>::operator = (const char *value)
 {
-	if(IsMutable())
-	{
-		Intensity tmp = *storage;
-		if(std::string(value) == std::string("decreased")) tmp = DECREASED_INTENSITY;
-		else if(std::string(value) == std::string("normal")) tmp = NORMAL_INTENSITY;
-		else if(std::string(value) == std::string("increased")) tmp = INCREASED_INTENSITY;
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
+	if(std::string(value) == std::string("decreased")) Set(DECREASED_INTENSITY);
+	else if(std::string(value) == std::string("normal")) Set(NORMAL_INTENSITY);
+	else if(std::string(value) == std::string("increased")) Set(INCREASED_INTENSITY);
 	return *this;
 }
 
@@ -1991,8 +1970,17 @@ using unisim::service::web_terminal::NO_BLINK;
 using unisim::service::web_terminal::SLOW_BLINK;
 using unisim::service::web_terminal::RAPID_BLINK;
 
-template <> Variable<Blink>::Variable(const char *_name, Object *_object, Blink& _storage, Type type, const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
+template <> Variable<Blink>::Variable(const char *_name, Object *_object, Blink& _storage, Type _type, const char *_description) :
+	VariableBase(_name, _object, _type, _description), storage(new DirectVariableStorage<Blink>(_storage))
+{
+	Initialize();
+	AddEnumeratedValue("none");
+	AddEnumeratedValue("slow");
+	AddEnumeratedValue("rapid");
+}
+
+template <> Variable<Blink>::Variable(const char *_name, VariableBase& _container, VariableStorage<Blink> * _storage, Type _type, const char *_description) :
+	VariableBase(_name, _container, _type, _description), storage(_storage)
 {
 	Initialize();
 	AddEnumeratedValue("none");
@@ -2018,13 +2006,13 @@ unsigned int Variable<Blink>::GetBitSize() const
 	return 2;
 }
 
-template <> Variable<Blink>::operator bool () const { return *storage != NO_BLINK; }
-template <> Variable<Blink>::operator long long () const { return *storage; }
-template <> Variable<Blink>::operator unsigned long long () const { return *storage; }
-template <> Variable<Blink>::operator double () const { return (double)(*storage); }
+template <> Variable<Blink>::operator bool () const { return Get() != NO_BLINK; }
+template <> Variable<Blink>::operator long long () const { return Get(); }
+template <> Variable<Blink>::operator unsigned long long () const { return Get(); }
+template <> Variable<Blink>::operator double () const { return (double)Get(); }
 template <> Variable<Blink>::operator std::string () const
 {
-	switch(*storage)
+	switch(Get())
 	{
 		case NO_BLINK: return std::string("none");
 		case SLOW_BLINK: return std::string("slow");
@@ -2035,91 +2023,61 @@ template <> Variable<Blink>::operator std::string () const
 
 template <> VariableBase& Variable<Blink>::operator = (bool value)
 {
-	if(IsMutable())
+	switch((unsigned int) value)
 	{
-		Blink tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case NO_BLINK:
-			case SLOW_BLINK:
-			case RAPID_BLINK:
-				tmp = (Blink)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case NO_BLINK:
+		case SLOW_BLINK:
+		case RAPID_BLINK:
+			Set((Blink)(unsigned int) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<Blink>::operator = (long long value)
 {
-	if(IsMutable())
+	switch(value)
 	{
-		Blink tmp = *storage;
-		switch(value)
-		{
-			case NO_BLINK:
-			case SLOW_BLINK:
-			case RAPID_BLINK:
-				tmp = (Blink) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case NO_BLINK:
+		case SLOW_BLINK:
+		case RAPID_BLINK:
+			Set((Blink) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<Blink>::operator = (unsigned long long value)
 {
-	if(IsMutable())
+	switch(value)
 	{
-		Blink tmp = *storage;
-		switch(value)
-		{
-			case NO_BLINK:
-			case SLOW_BLINK:
-			case RAPID_BLINK:
-				tmp = (Blink) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case NO_BLINK:
+		case SLOW_BLINK:
+		case RAPID_BLINK:
+			Set((Blink) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<Blink>::operator = (double value)
 {
-	if(IsMutable())
+	switch((unsigned int) value)
 	{
-		Blink tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case NO_BLINK:
-			case SLOW_BLINK:
-			case RAPID_BLINK:
-				tmp = (Blink)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case NO_BLINK:
+		case SLOW_BLINK:
+		case RAPID_BLINK:
+			Set((Blink)(unsigned int) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<Blink>::operator = (const char *value)
 {
-	if(IsMutable())
-	{
-		Blink tmp = *storage;
-		if(std::string(value) == std::string("none")) tmp = NO_BLINK;
-		else if(std::string(value) == std::string("slow")) tmp = SLOW_BLINK;
-		else if(std::string(value) == std::string("rapid")) tmp = RAPID_BLINK;
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
+	if(std::string(value) == std::string("none")) Set(NO_BLINK);
+	else if(std::string(value) == std::string("slow")) Set(SLOW_BLINK);
+	else if(std::string(value) == std::string("rapid")) Set(RAPID_BLINK);
 	return *this;
 }
 

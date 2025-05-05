@@ -86,13 +86,6 @@ namespace kernel {
 namespace variable {
 
 template <>
-Variable<unisim::service::power::CacheDynamicEnergy>::Variable(const char *_name, Object *_object, unisim::service::power::CacheDynamicEnergy& _storage, Type type, const char *_description) :
-VariableBase(_name, _object, type, _description), storage(&_storage)
-{
-	Initialize();
-}
-
-template <>
 const char *Variable<unisim::service::power::CacheDynamicEnergy>::GetDataTypeName() const
 {
 	return "cache dynamic energy estimator";
@@ -107,32 +100,32 @@ unsigned int Variable<unisim::service::power::CacheDynamicEnergy>::GetBitSize() 
 template <>
 Variable<unisim::service::power::CacheDynamicEnergy>::operator bool () const
 {
-	if ( storage->GetDynamicEnergy() == 0.0) return false;
+	if ( Get().GetDynamicEnergy() == 0.0) return false;
 	return true;
 }
 template <>
 Variable<unisim::service::power::CacheDynamicEnergy>::operator long long () const
 {
-	return (long long)storage->GetDynamicEnergy();
+	return (long long)Get().GetDynamicEnergy();
 }
 
 template <>
 Variable<unisim::service::power::CacheDynamicEnergy>::operator unsigned long long () const
 {
-	return (unsigned long long)storage->GetDynamicEnergy();
+	return (unsigned long long)Get().GetDynamicEnergy();
 }
 
 template <>
 Variable<unisim::service::power::CacheDynamicEnergy>::operator double () const
 {
-	return storage->GetDynamicEnergy();
+	return Get().GetDynamicEnergy();
 }
 
 template <>
 Variable<unisim::service::power::CacheDynamicEnergy>::operator std::string () const
 {
 	std::stringstream data;
-	data << storage->GetDynamicEnergy();
+	data << Get().GetDynamicEnergy();
 	return data.str();
 }
 

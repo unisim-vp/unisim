@@ -144,20 +144,20 @@ v8::Local<v8::Object> UnisimObjectWrapper<CONFIG>::MakeObject()
 	{
 		unisim_object_object = Super::template MakePersistentObject<This>();
 	
-		struct LeafObjectVisitor
+		struct ChildVisitor
 		{
 			NodeJS<CONFIG>& nodejs;
 			v8::Local<v8::Object>& unisim_object_object;
 			
-			LeafObjectVisitor(NodeJS<CONFIG>& _nodejs, v8::Local<v8::Object>& _unisim_object_object) : nodejs(_nodejs), unisim_object_object(_unisim_object_object) {}
+			ChildVisitor(NodeJS<CONFIG>& _nodejs, v8::Local<v8::Object>& _unisim_object_object) : nodejs(_nodejs), unisim_object_object(_unisim_object_object) {}
 			
-			bool Visit(unisim::kernel::Object *unisim_leaf_object)
+			bool Visit(unisim::kernel::Object *unisim_child)
 			{
-				UnisimObjectWrapper<CONFIG> *unisim_leaf_object_wrapper = UnisimObjectWrapper<CONFIG>::Wrap(nodejs, unisim_leaf_object);
+				UnisimObjectWrapper<CONFIG> *unisim_child_wrapper = UnisimObjectWrapper<CONFIG>::Wrap(nodejs, unisim_child);
 				unisim_object_object->DefineOwnProperty(
 					nodejs.GetIsolate()->GetCurrentContext(),
-					v8::String::NewFromUtf8(nodejs.GetIsolate(), unisim_leaf_object->GetObjectName(), v8::NewStringType::kInternalized).ToLocalChecked(),
-					unisim_leaf_object_wrapper->MakeObject(),
+					v8::String::NewFromUtf8(nodejs.GetIsolate(), unisim_child->GetObjectName(), v8::NewStringType::kInternalized).ToLocalChecked(),
+					unisim_child_wrapper->MakeObject(),
 					v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
 				).ToChecked();
 				return false;
@@ -168,30 +168,30 @@ v8::Local<v8::Object> UnisimObjectWrapper<CONFIG>::MakeObject()
 		{
 			NodeJS<CONFIG>& nodejs;
 			v8::Local<v8::Object>& unisim_object_object;
-			LeafObjectVisitor& leaf_object_visitor;
+			ChildVisitor& child_visitor;
 			
-			RootObjectVisitor(NodeJS<CONFIG>& _nodejs, v8::Local<v8::Object>& _unisim_object_object, LeafObjectVisitor& _leaf_object_visitor)
-				: nodejs(_nodejs), unisim_object_object(_unisim_object_object), leaf_object_visitor(_leaf_object_visitor) {}
+			RootObjectVisitor(NodeJS<CONFIG>& _nodejs, v8::Local<v8::Object>& _unisim_object_object, ChildVisitor& _child_visitor)
+				: nodejs(_nodejs), unisim_object_object(_unisim_object_object), child_visitor(_child_visitor) {}
 			
 			bool Visit(unisim::kernel::Object *unisim_object)
 			{
 				if(!unisim_object->GetParent())
 				{
-					leaf_object_visitor.Visit(unisim_object);
+					child_visitor.Visit(unisim_object);
 				}
 				return false;
 			}
 		};
 		
-		LeafObjectVisitor leaf_object_visitor(this->nodejs, unisim_object_object);
+		ChildVisitor child_visitor(this->nodejs, unisim_object_object);
 		
 		if(this->unisim_object)
 		{
-			this->unisim_object->ScanLeafObjects(leaf_object_visitor);
+			this->unisim_object->ScanChildren(child_visitor);
 		}
 		else
 		{
-			RootObjectVisitor root_object_visitor(this->nodejs, unisim_object_object, leaf_object_visitor);
+			RootObjectVisitor root_object_visitor(this->nodejs, unisim_object_object, child_visitor);
 			unisim::kernel::Simulator::Instance()->ScanObjects(root_object_visitor);
 		}
 		
@@ -223,9 +223,9 @@ v8::Local<v8::Object> UnisimObjectWrapper<CONFIG>::MakeObject()
 					}
 					case unisim::kernel::VariableBase::VAR_ARRAY:
 					{
-						unsigned int length = unisim_variable->GetLength();
+						uint64_t length = unisim_variable->GetLength();
 						v8::Local<v8::Array> unisim_variable_array = v8::Array::New(nodejs.GetIsolate(), length);
-						for(unsigned int idx = 0; idx < length; ++idx)
+						for(uint64_t idx = 0; idx < length; ++idx)
 						{
 							UnisimVariableWrapper<CONFIG> *unisim_variable_wrapper = UnisimVariableWrapper<CONFIG>::Wrap(nodejs, &(*unisim_variable)[idx]);
 							unisim_variable_array->Set(nodejs.GetContext(), idx, unisim_variable_wrapper->MakeObject().template As<v8::Value>()).ToChecked();

@@ -263,7 +263,7 @@ bool PIMServer<ADDRESS>::EndSetup() {
 	bool has_program_counter = false;
 	string program_counter_name;
 
-	VariableBase* architecture_name = Simulator::Instance()->FindParameter("program-name");
+	VariableBase* architecture_name = this->GetSimulator()->FindParameter("program-name");
 	has_architecture_name = (architecture_name != NULL);
 	if(!has_architecture_name)
 	{
@@ -271,7 +271,7 @@ bool PIMServer<ADDRESS>::EndSetup() {
 		return (false);
 	}
 
-	VariableBase* architecture_endian = Simulator::Instance()->FindParameter("endian");
+	VariableBase* architecture_endian = this->GetSimulator()->FindParameter("endian");
 	if (architecture_endian != NULL) {
 		string endianstr = *architecture_endian;
 		if(endianstr == "little")
@@ -291,10 +291,10 @@ bool PIMServer<ADDRESS>::EndSetup() {
 		logger << DebugWarning << "assuming target architecture endian is 'big endian'" << std::endl << EndDebugWarning;
 	}
 
-	VariableBase* param_program_counter_name = Simulator::Instance()->FindParameter("program-counter-name");
+	VariableBase* param_program_counter_name = this->GetSimulator()->FindParameter("program-counter-name");
 
 	if (param_program_counter_name != NULL) {
-		pc_reg = (VariableBase *) Simulator::Instance()->FindRegister(((string) *param_program_counter_name).c_str());
+		pc_reg = (VariableBase *) this->GetSimulator()->FindRegister(((string) *param_program_counter_name).c_str());
 		if (pc_reg != NULL) {
 			has_program_counter = true;
 		} else {
@@ -304,12 +304,19 @@ bool PIMServer<ADDRESS>::EndSetup() {
 		logger << DebugWarning << "Simulator has no <program-counter-name> parameter" << std::endl << EndDebugWarning;
 	}
 
-	std::list<VariableBase *> lst;
+	typedef std::vector<VariableBase *> List;
+	List lst;
+	struct VariableVisitor
+	{
+		List& lst;
+		VariableVisitor(List& _lst) : lst(_lst) {}
+		bool Visit(VariableBase *var) { lst.push_back(var); return true; }
+	} variable_visitor(lst);
 
-	Simulator::Instance()->GetRegisters(lst);
+	this->GetSimulator()->ScanRegisters(variable_visitor);
 
 	uint32_t index = 0;
-	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+	for (List::iterator it = lst.begin(); it != lst.end(); it++) {
 
 		if (!((VariableBase *) *it)->IsVisible()) continue;
 
@@ -1260,11 +1267,18 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 	// Explore Simulator Variables to Generate PIM XML File
 	vector<VariableBase*> simulator_variables;
 
-	std::list<VariableBase *> lst;
+	typedef std::vector<VariableBase *> List;
+	List lst;
+	struct VariableVisitor
+	{
+		List& lst;
+		VariableVisitor(List& _lst) : lst(_lst) {}
+		bool Visit(VariableBase *var) { lst.push_back(var); return true; }
+	} variable_visitor(lst);
 
-	Simulator::Instance()->GetSignals(lst);
+	this->GetSimulator()->ScanSignals(variable_visitor);
 
-	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+	for (List::iterator it = lst.begin(); it != lst.end(); it++) {
 
 		if (!((VariableBase *) *it)->IsVisible()) continue;
 
@@ -1385,14 +1399,20 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 			DBGData *response = new DBGData(DBGData::QUERY_PARAMETERS);
 
-			Simulator *simulator = Object::GetSimulator();
+			typedef std::vector<VariableBase *> List;
+			List lst;
+			struct VariableVisitor
+			{
+				List& lst;
+				VariableVisitor(List& _lst) : lst(_lst) {}
+				bool Visit(VariableBase *var) { lst.push_back(var); return true; }
+			} variable_visitor(lst);
 
-			std::list<VariableBase *> lst;
-			simulator->GetParameters(lst);
+			this->GetSimulator()->ScanParameters(variable_visitor);
 
 			std::stringstream strstm;
 
-			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+			for (List::iterator it = lst.begin(); it != lst.end(); it++) {
 
 				if (!((VariableBase *) *it)->IsVisible()) continue;
 
@@ -1428,7 +1448,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 			string name = request->getAttribute(DBGData::NAME_ATTR);
 			string value = request->getAttribute(DBGData::VALUE_ATTR);
 
-			VariableBase* parameter = Simulator::Instance()->FindParameter(name.c_str());
+			VariableBase* parameter = this->GetSimulator()->FindParameter(name.c_str());
 			if (parameter) {
 				if (value.empty()) // read parameter request
 				{
@@ -1662,11 +1682,18 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 			std::stringstream sstr;
 
-			std::list<VariableBase *> lst;
+			typedef std::vector<VariableBase *> List;
+			List lst;
+			struct VariableVisitor
+			{
+				List& lst;
+				VariableVisitor(List& _lst) : lst(_lst) {}
+				bool Visit(VariableBase *var) { lst.push_back(var); return true; }
+			} variable_visitor(lst);
 
-			Simulator::Instance()->GetRegisters(lst);
+			this->GetSimulator()->ScanRegisters(variable_visitor);
 
-			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+			for (List::iterator it = lst.begin(); it != lst.end(); it++) {
 
 				if (!((VariableBase *) *it)->IsVisible()) continue;
 
@@ -1826,14 +1853,20 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 			DBGData* response = new DBGData(DBGData::QUERY_STATISTICS);
 
-			list<VariableBase *> lst;
-			list<VariableBase *>::iterator iter;
+			typedef std::vector<VariableBase *> List;
+			List lst;
+			struct VariableVisitor
+			{
+				List& lst;
+				VariableVisitor(List& _lst) : lst(_lst) {}
+				bool Visit(VariableBase *var) { lst.push_back(var); return true; }
+			} variable_visitor(lst);
 
-			Object::GetSimulator()->GetStatistics(lst);
+			this->GetSimulator()->ScanParameters(variable_visitor);
 			std::stringstream sstr;
 			sstr << GetSimTime()*1000 << " ms";
 			response->addAttribute("simulated time", sstr.str());
-			for (iter = lst.begin(); iter != lst.end(); iter++) {
+			for (List::iterator iter = lst.begin(); iter != lst.end(); iter++) {
 
 				response->addAttribute((*iter)->GetName(), (string) *(*iter));
 			}

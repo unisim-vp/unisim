@@ -261,7 +261,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgmctl_register_name << GetName() << ".XGMCTL";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgmctl_register_name.str().c_str(), &xgmctl_register));
 
-	unisim::kernel::variable::Register<uint16_t> *xgmctl_var = new unisim::kernel::variable::Register<uint16_t>("XGMCTL", this, xgmctl_register, "XGATE Control Register (XGMCTL)");
+	RegisterView<uint16_t> *xgmctl_var = new RegisterView<uint16_t>("XGMCTL", this, xgmctl_register, "XGATE Control Register (XGMCTL)");
 	extended_registers_registry.push_back(xgmctl_var);
 	xgmctl_var->setCallBack(this, XGMCTL, &CallBackObject::write, NULL);
 
@@ -269,7 +269,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgchid_register_name << GetName() << ".XGCHID";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(sstr_xgchid_register_name.str().c_str(), currentRegisterBank->getXGCHIDPtr()));
 
-	unisim::kernel::variable::Register<uint8_t> *xgchid_var = new unisim::kernel::variable::Register<uint8_t>("XGCHID", this, *(currentRegisterBank->getXGCHIDPtr()), "XGATE Channel ID Register (XGCHID)");
+	RegisterView<uint8_t> *xgchid_var = new RegisterView<uint8_t>("XGCHID", this, *(currentRegisterBank->getXGCHIDPtr()), "XGATE Channel ID Register (XGCHID)");
 	extended_registers_registry.push_back(xgchid_var);
 	xgchid_var->setCallBack(this, XGCHID, &CallBackObject::write, &CallBackObject::read);
 
@@ -278,7 +278,7 @@ bool XGATE::BeginSetup() {
 		sstr_xgchpl_register_name << GetName() << ".XGCHPL";
 		registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(sstr_xgchpl_register_name.str().c_str(), currentRegisterBank->getXGCHPLPtr()));
 
-		unisim::kernel::variable::Register<uint8_t> *xgchpl_var = new unisim::kernel::variable::Register<uint8_t>("XGCHPL", this, *(currentRegisterBank->getXGCHPLPtr()), "XGATE Channel Priority Level Register (XGCHPL)");
+		RegisterView<uint8_t> *xgchpl_var = new RegisterView<uint8_t>("XGCHPL", this, *(currentRegisterBank->getXGCHPLPtr()), "XGATE Channel Priority Level Register (XGCHPL)");
 		extended_registers_registry.push_back(xgchpl_var);
 		xgchpl_var->setCallBack(this, XGCHPL, &CallBackObject::write, &CallBackObject::read);
 
@@ -286,7 +286,7 @@ bool XGATE::BeginSetup() {
 		sstr_xgispsel_register_name << GetName() << ".XGISPSEL";
 		registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(sstr_xgispsel_register_name.str().c_str(), &xgispsel_register));
 
-		unisim::kernel::variable::Register<uint8_t> *xgispsel_var = new unisim::kernel::variable::Register<uint8_t>("XGISPSEL", this, xgispsel_register, "XGATE Initial Stack Pointer Select Register (XGISPSEL)");
+		RegisterView<uint8_t> *xgispsel_var = new RegisterView<uint8_t>("XGISPSEL", this, xgispsel_register, "XGATE Initial Stack Pointer Select Register (XGISPSEL)");
 		extended_registers_registry.push_back(xgispsel_var);
 		xgispsel_var->setCallBack(this, XGISPSEL, &CallBackObject::write, NULL);
 
@@ -294,7 +294,7 @@ bool XGATE::BeginSetup() {
 		sstr_xgisp74_register_name << GetName() << ".XGISP74";
 		registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgisp74_register_name.str().c_str(), &xgvbrPtr_register[1]));
 
-		unisim::kernel::variable::Register<uint16_t> *xgisp74_var = new unisim::kernel::variable::Register<uint16_t>("XGISP74", this, xgvbrPtr_register[1], "XGATE Initial Stack Pointer for Interrupt Priorities 7 to 4 (XGISP74)");
+		RegisterView<uint16_t> *xgisp74_var = new RegisterView<uint16_t>("XGISP74", this, xgvbrPtr_register[1], "XGATE Initial Stack Pointer for Interrupt Priorities 7 to 4 (XGISP74)");
 		extended_registers_registry.push_back(xgisp74_var);
 		xgisp74_var->setCallBack(this, XGVBR, &CallBackObject::write, NULL);
 
@@ -302,7 +302,7 @@ bool XGATE::BeginSetup() {
 		sstr_xgisp31_register_name << GetName() << ".XGISP31";
 		registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgisp31_register_name.str().c_str(), &xgvbrPtr_register[2]));
 
-		unisim::kernel::variable::Register<uint16_t> *xgisp31_var = new unisim::kernel::variable::Register<uint16_t>("XGISP31", this, xgvbrPtr_register[2], "XGATE Initial Stack Pointer for Interrupt Priorities 3 to 1 (XGISP31)");
+		RegisterView<uint16_t> *xgisp31_var = new RegisterView<uint16_t>("XGISP31", this, xgvbrPtr_register[2], "XGATE Initial Stack Pointer for Interrupt Priorities 3 to 1 (XGISP31)");
 		extended_registers_registry.push_back(xgisp31_var);
 		xgisp31_var->setCallBack(this, XGVBR, &CallBackObject::write, NULL);
 
@@ -312,7 +312,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgvbr_register_name << GetName() << ".XGVBR";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgvbr_register_name.str().c_str(), &xgvbrPtr_register[0]));
 
-	unisim::kernel::variable::Register<uint16_t> *xgvbr_var = new unisim::kernel::variable::Register<uint16_t>("XGVBR", this, xgvbrPtr_register[0], "XGATE Vector Base Address Register (XGVBR)");
+	RegisterView<uint16_t> *xgvbr_var = new RegisterView<uint16_t>("XGVBR", this, xgvbrPtr_register[0], "XGATE Vector Base Address Register (XGVBR)");
 	extended_registers_registry.push_back(xgvbr_var);
 	xgvbr_var->setCallBack(this, XGVBR, &CallBackObject::write, NULL);
 
@@ -320,7 +320,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgif_7f_70_register_name << GetName() << ".XGIF_7F_70";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_7f_70_register_name.str().c_str(), &xgif_register[0]));
 
-	unisim::kernel::variable::Register<uint16_t> *xgif_7f_70_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_7F_70", this, xgif_register[0], "XGATE Channel (7F-70) Interrupt Flag Register (XGIF_7F_70)");
+	RegisterView<uint16_t> *xgif_7f_70_var = new RegisterView<uint16_t>("XGIF_7F_70", this, xgif_register[0], "XGATE Channel (7F-70) Interrupt Flag Register (XGIF_7F_70)");
 	extended_registers_registry.push_back(xgif_7f_70_var);
 	xgif_7f_70_var->setCallBack(this, XGIF_7F_70, &CallBackObject::write, NULL);
 
@@ -328,7 +328,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgif_6f_60_register_name << GetName() << ".XGIF_6F_60";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_6f_60_register_name.str().c_str(), &xgif_register[1]));
 
-	unisim::kernel::variable::Register<uint16_t> *xgif_6f_60_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_6F_60", this, xgif_register[1], "XGATE Channel (6F-60) Interrupt Flag Register (XGIF_6F_60)");
+	RegisterView<uint16_t> *xgif_6f_60_var = new RegisterView<uint16_t>("XGIF_6F_60", this, xgif_register[1], "XGATE Channel (6F-60) Interrupt Flag Register (XGIF_6F_60)");
 	extended_registers_registry.push_back(xgif_6f_60_var);
 	xgif_6f_60_var->setCallBack(this, XGIF_6F_60, &CallBackObject::write, NULL);
 
@@ -336,7 +336,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgif_5f_50_register_name << GetName() << ".XGIF_5F_50";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_5f_50_register_name.str().c_str(), &xgif_register[2]));
 
-	unisim::kernel::variable::Register<uint16_t> *xgif_5f_50_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_5F_50", this, xgif_register[2], "XGATE Channel (5F-60) Interrupt Flag Register (XGIF_5F_50)");
+	RegisterView<uint16_t> *xgif_5f_50_var = new RegisterView<uint16_t>("XGIF_5F_50", this, xgif_register[2], "XGATE Channel (5F-60) Interrupt Flag Register (XGIF_5F_50)");
 	extended_registers_registry.push_back(xgif_5f_50_var);
 	xgif_5f_50_var->setCallBack(this, XGIF_5F_50, &CallBackObject::write, NULL);
 
@@ -344,7 +344,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgif_4f_40_register_name << GetName() << ".XGIF_4F_40";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_4f_40_register_name.str().c_str(), &xgif_register[3]));
 
-	unisim::kernel::variable::Register<uint16_t> *xgif_4F_40_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_4F_40", this, xgif_register[3], "XGATE Channel (4F_40) Register (XGIF_4F_40)");
+	RegisterView<uint16_t> *xgif_4F_40_var = new RegisterView<uint16_t>("XGIF_4F_40", this, xgif_register[3], "XGATE Channel (4F_40) Register (XGIF_4F_40)");
 	extended_registers_registry.push_back(xgif_4F_40_var);
 	xgif_4F_40_var->setCallBack(this, XGIF_4F_40, &CallBackObject::write, NULL);
 
@@ -352,7 +352,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgif_3f_30_register_name << GetName() << ".XGIF_3F_30";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_3f_30_register_name.str().c_str(), &xgif_register[4]));
 
-	unisim::kernel::variable::Register<uint16_t> *xgif_3f_30_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_3F_30", this, xgif_register[4], "XGATE channel (3F-30) Register (XGIF_3F_30)");
+	RegisterView<uint16_t> *xgif_3f_30_var = new RegisterView<uint16_t>("XGIF_3F_30", this, xgif_register[4], "XGATE channel (3F-30) Register (XGIF_3F_30)");
 	extended_registers_registry.push_back(xgif_3f_30_var);
 	xgif_3f_30_var->setCallBack(this, XGIF_3F_30, &CallBackObject::write, NULL);
 
@@ -360,7 +360,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgif_2f_20_register_name << GetName() << ".XGIF_2F_20";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_2f_20_register_name.str().c_str(), &xgif_register[5]));
 
-	unisim::kernel::variable::Register<uint16_t> *xgif_2f_20_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_2F_20", this, xgif_register[5], "XGATE Channel (2F-20) Register (XGIF_2F_20)");
+	RegisterView<uint16_t> *xgif_2f_20_var = new RegisterView<uint16_t>("XGIF_2F_20", this, xgif_register[5], "XGATE Channel (2F-20) Register (XGIF_2F_20)");
 	extended_registers_registry.push_back(xgif_2f_20_var);
 	xgif_2f_20_var->setCallBack(this, XGIF_2F_20, &CallBackObject::write, NULL);
 
@@ -368,7 +368,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgif_1f_10_register_name << GetName() << ".XGIF_1F_10";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_1f_10_register_name.str().c_str(), &xgif_register[6]));
 
-	unisim::kernel::variable::Register<uint16_t> *xgif_1f_10_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_1F_10", this, xgif_register[6], "XGATE Channel (1F-10) Register (XGIF_1F_10)");
+	RegisterView<uint16_t> *xgif_1f_10_var = new RegisterView<uint16_t>("XGIF_1F_10", this, xgif_register[6], "XGATE Channel (1F-10) Register (XGIF_1F_10)");
 	extended_registers_registry.push_back(xgif_1f_10_var);
 	xgif_1f_10_var->setCallBack(this, XGIF_1F_10, &CallBackObject::write, NULL);
 
@@ -376,7 +376,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgif_0f_00_register_name << GetName() << ".XGIF_0F_00";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_0f_00_register_name.str().c_str(), &xgif_register[7]));
 
-	unisim::kernel::variable::Register<uint16_t> *xgif_0f_00_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_0F_00", this, xgif_register[7], "XGATE Channel (0F-00) Register (XGIF_0F_00)");
+	RegisterView<uint16_t> *xgif_0f_00_var = new RegisterView<uint16_t>("XGIF_0F_00", this, xgif_register[7], "XGATE Channel (0F-00) Register (XGIF_0F_00)");
 	extended_registers_registry.push_back(xgif_0f_00_var);
 	xgif_0f_00_var->setCallBack(this, XGIF_0F_00, &CallBackObject::write, NULL);
 
@@ -384,7 +384,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgswt_register_name << GetName() << ".XGSWT";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgswt_register_name.str().c_str(), &xgswt_register));
 
-	unisim::kernel::variable::Register<uint16_t> *xgswt_var = new unisim::kernel::variable::Register<uint16_t>("XGSWT", this, xgswt_register, "XGATE Software Trigger Register (XGSWT)");
+	RegisterView<uint16_t> *xgswt_var = new RegisterView<uint16_t>("XGSWT", this, xgswt_register, "XGATE Software Trigger Register (XGSWT)");
 	extended_registers_registry.push_back(xgswt_var);
 	xgswt_var->setCallBack(this, XGSWT, &CallBackObject::write, NULL);
 
@@ -392,7 +392,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgsemm_register_name << GetName() << ".XGSEMM";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgsemm_register_name.str().c_str(), &xgsem_register));
 
-	unisim::kernel::variable::Register<uint16_t> *xgsemm_var = new unisim::kernel::variable::Register<uint16_t>("XGSEMM", this, xgsem_register, "XGATE Semaphore Register (XGSEMM)");
+	RegisterView<uint16_t> *xgsemm_var = new RegisterView<uint16_t>("XGSEMM", this, xgsem_register, "XGATE Semaphore Register (XGSEMM)");
 	extended_registers_registry.push_back(xgsemm_var);
 	xgsemm_var->setCallBack(this, XGSEM, &CallBackObject::write, NULL);
 
@@ -400,7 +400,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgccr_register_name << GetName() << ".XGCCR";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(sstr_xgccr_register_name.str().c_str(), currentRegisterBank->getXGCCRPtr()));
 
-	unisim::kernel::variable::Register<uint8_t> *xgccr_var = new unisim::kernel::variable::Register<uint8_t>("XGCCR", this, *(currentRegisterBank->getXGCCRPtr()), "XGATE Condition Code Register (XGCCR)");
+	RegisterView<uint8_t> *xgccr_var = new RegisterView<uint8_t>("XGCCR", this, *(currentRegisterBank->getXGCCRPtr()), "XGATE Condition Code Register (XGCCR)");
 	extended_registers_registry.push_back(xgccr_var);
 	xgccr_var->setCallBack(this, XGCCR, &CallBackObject::write, &CallBackObject::read);
 
@@ -408,7 +408,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgpc_register_name << GetName() << ".XGPC";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgpc_register_name.str().c_str(), currentRegisterBank->getXGPCPtr()));
 
-	unisim::kernel::variable::Register<uint16_t> *xgpc_var = new unisim::kernel::variable::Register<uint16_t>("XGPC", this, *(currentRegisterBank->getXGPCPtr()), "XGATE Program Counter Register (XGPC)");
+	RegisterView<uint16_t> *xgpc_var = new RegisterView<uint16_t>("XGPC", this, *(currentRegisterBank->getXGPCPtr()), "XGATE Program Counter Register (XGPC)");
 	extended_registers_registry.push_back(xgpc_var);
 	xgpc_var->setCallBack(this, XGPC, &CallBackObject::write, &CallBackObject::read);
 
@@ -416,7 +416,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgr1_register_name << GetName() << ".XGR1";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr1_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(1)));
 
-	unisim::kernel::variable::Register<uint16_t> *xgr1_var = new unisim::kernel::variable::Register<uint16_t>("XGR1", this, *(currentRegisterBank->getXGRxPtr(1)), "XGATE Register 1 (XGR1)");
+	RegisterView<uint16_t> *xgr1_var = new RegisterView<uint16_t>("XGR1", this, *(currentRegisterBank->getXGRxPtr(1)), "XGATE Register 1 (XGR1)");
 	extended_registers_registry.push_back(xgr1_var);
 	xgr1_var->setCallBack(this, XGR1, &CallBackObject::write, &CallBackObject::read);
 
@@ -424,7 +424,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgr2_register_name << GetName() << ".XGR2";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr2_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(2)));
 
-	unisim::kernel::variable::Register<uint16_t> *xgr2_var = new unisim::kernel::variable::Register<uint16_t>("XGR2", this, *(currentRegisterBank->getXGRxPtr(2)), "XGATE Register 2 (XGR2)");
+	RegisterView<uint16_t> *xgr2_var = new RegisterView<uint16_t>("XGR2", this, *(currentRegisterBank->getXGRxPtr(2)), "XGATE Register 2 (XGR2)");
 	extended_registers_registry.push_back(xgr2_var);
 	xgr2_var->setCallBack(this, XGR2, &CallBackObject::write, &CallBackObject::read);
 
@@ -432,7 +432,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgr3_register_name << GetName() << ".XGR3";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr3_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(3)));
 
-	unisim::kernel::variable::Register<uint16_t> *xgr3_var = new unisim::kernel::variable::Register<uint16_t>("XGR3", this, *(currentRegisterBank->getXGRxPtr(3)), "XGATE Register 3 (XGR3)");
+	RegisterView<uint16_t> *xgr3_var = new RegisterView<uint16_t>("XGR3", this, *(currentRegisterBank->getXGRxPtr(3)), "XGATE Register 3 (XGR3)");
 	extended_registers_registry.push_back(xgr3_var);
 	xgr3_var->setCallBack(this, XGR3, &CallBackObject::write, &CallBackObject::read);
 
@@ -440,7 +440,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgr4_register_name << GetName() << ".XGR4";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr4_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(4)));
 
-	unisim::kernel::variable::Register<uint16_t> *xgr4_var = new unisim::kernel::variable::Register<uint16_t>("XGR4", this, *(currentRegisterBank->getXGRxPtr(4)), "XGATE Register 4 (XGR4)");
+	RegisterView<uint16_t> *xgr4_var = new RegisterView<uint16_t>("XGR4", this, *(currentRegisterBank->getXGRxPtr(4)), "XGATE Register 4 (XGR4)");
 	extended_registers_registry.push_back(xgr4_var);
 	xgr4_var->setCallBack(this, XGR4, &CallBackObject::write, &CallBackObject::read);
 
@@ -448,7 +448,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgr5_register_name << GetName() << ".XGR5";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr5_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(5)));
 
-	unisim::kernel::variable::Register<uint16_t> *xgr5_var = new unisim::kernel::variable::Register<uint16_t>("XGR5", this, *(currentRegisterBank->getXGRxPtr(5)), "XGATE Register 5 (XGR5)");
+	RegisterView<uint16_t> *xgr5_var = new RegisterView<uint16_t>("XGR5", this, *(currentRegisterBank->getXGRxPtr(5)), "XGATE Register 5 (XGR5)");
 	extended_registers_registry.push_back(xgr5_var);
 	xgr5_var->setCallBack(this, XGR5, &CallBackObject::write, &CallBackObject::read);
 
@@ -456,7 +456,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgr6_register_name << GetName() << ".XGR6";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr6_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(6)));
 
-	unisim::kernel::variable::Register<uint16_t> *xgr6_var = new unisim::kernel::variable::Register<uint16_t>("XGR6", this, *(currentRegisterBank->getXGRxPtr(6)), "XGATE Register 6 (XGR6)");
+	RegisterView<uint16_t> *xgr6_var = new RegisterView<uint16_t>("XGR6", this, *(currentRegisterBank->getXGRxPtr(6)), "XGATE Register 6 (XGR6)");
 	extended_registers_registry.push_back(xgr6_var);
 	xgr6_var->setCallBack(this, XGR6, &CallBackObject::write, &CallBackObject::read);
 
@@ -464,7 +464,7 @@ bool XGATE::BeginSetup() {
 	sstr_xgr7_register_name << GetName() << ".XGR7";
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr7_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(7)));
 
-	unisim::kernel::variable::Register<uint16_t> *xgr7_var = new unisim::kernel::variable::Register<uint16_t>("XGR7", this, *(currentRegisterBank->getXGRxPtr(7)), "XGATE Register 7 (XGR7)");
+	RegisterView<uint16_t> *xgr7_var = new RegisterView<uint16_t>("XGR7", this, *(currentRegisterBank->getXGRxPtr(7)), "XGATE Register 7 (XGR7)");
 	extended_registers_registry.push_back(xgr7_var);
 	xgr7_var->setCallBack(this, XGR7, &CallBackObject::write, &CallBackObject::read);
 

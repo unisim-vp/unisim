@@ -60,8 +60,17 @@ namespace unisim {
 namespace kernel {
 namespace variable {
 
-template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::Variable(const char *_name, Object *_object, unisim::service::power::CachePowerEstimator::AccessMode& _storage, Type type, const char *_description) :
-VariableBase(_name, _object, type, _description), storage(&_storage)
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::Variable(const char *_name, Object *_object, unisim::service::power::CachePowerEstimator::AccessMode& _storage, Type _type, const char *_description) :
+VariableBase(_name, _object, _type, _description), storage(new DirectVariableStorage<unisim::service::power::CachePowerEstimator::AccessMode>(_storage))
+{
+	AddEnumeratedValue("normal");
+	AddEnumeratedValue("sequential");
+	AddEnumeratedValue("fast");
+	Initialize();
+}
+
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::Variable(const char *_name, VariableBase& _container, VariableStorage<unisim::service::power::CachePowerEstimator::AccessMode> * _storage, Type _type, const char *_description) :
+	VariableBase(_name, _container, _type, _description), storage(_storage)
 {
 	AddEnumeratedValue("normal");
 	AddEnumeratedValue("sequential");
@@ -82,12 +91,12 @@ unsigned int Variable<unisim::service::power::CachePowerEstimator::AccessMode>::
 }
 
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator bool () const { return false; }
-template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator long long () const { return (long long)(*storage); }
-template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator unsigned long long () const { return (unsigned long long)(*storage); }
-template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator double () const { return (double)(unsigned int)(*storage); }
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator long long () const { return (long long)Get(); }
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator unsigned long long () const { return (unsigned long long)Get(); }
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator double () const { return (double)(unsigned int)Get(); }
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator std::string () const
 {
-	switch(*storage)
+	switch(Get())
 	{
 		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL: return std::string("normal");
 		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL: return std::string("sequential");
@@ -98,24 +107,13 @@ template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::o
 
 template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (unsigned long long value)
 {
-	if(IsMutable())
+	switch(value)
 	{
-		switch(value)
-		{
-			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL:
-				SetModified((unsigned long long) *storage != value);
-				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL;
-				break;
-			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST:
-				SetModified((unsigned long long) *storage != value);
-				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
-				break;
-			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL:
-			default:
-				SetModified((unsigned long long) *storage != value);
-				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL;
-				break;
-		}
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL:
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST:
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL:
+			Set((unisim::service::power::CachePowerEstimator::AccessMode)(unsigned int) value);
+			break;
 	}
 	return *this;
 }
@@ -137,26 +135,17 @@ template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::
 
 template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (const char *value)
 {
-	if(IsMutable())
+	if(strcmp(value, "normal") == 0)
 	{
-		if(strcmp(value, "normal") == 0)
-		{
-			unisim::service::power::CachePowerEstimator::AccessMode tmp = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-		}
-		else if(strcmp(value, "sequential") == 0)
-		{
-			unisim::service::power::CachePowerEstimator::AccessMode tmp = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-		}
-		else if(strcmp(value, "fast") == 0)
-		{
-			unisim::service::power::CachePowerEstimator::AccessMode tmp = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-		}
+		Set(unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL);
+	}
+	else if(strcmp(value, "sequential") == 0)
+	{
+		Set(unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL);
+	}
+	else if(strcmp(value, "fast") == 0)
+	{
+		Set(unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST);
 	}
 	return *this;
 }

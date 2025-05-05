@@ -70,12 +70,12 @@ CPU::CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent)
   , unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU>(name, parent)
 {}
 
-Simulator::Simulator(int argc, char **argv)
-  : unisim::kernel::Simulator(argc, argv, Simulator::DefaultConfiguration)
-  , clock("CLK", sc_core::sc_time(10.0, SC_NS))
-  , cpu( "cpu" )
-  , router( "router" )
-  , memory( "memory" )
+Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
+  : unisim::kernel::scml2::Simulator(name, argc, argv, Simulator::DefaultConfiguration)
+  , clock("CLK", this)
+  , cpu( "cpu", this )
+  , router( "router", this )
+  , memory( "memory", this )
   , timer( "timer" )
   , timer_reset("RESET")
   , timer_enable("ENABLE")
@@ -85,15 +85,14 @@ Simulator::Simulator(int argc, char **argv)
   , time("time")
   , host_time("host-time")
   , loader("loader")
-  , simulation_spent_time(0.0)
   , debugger(0)
   , gdb_server(0)
   , inline_debugger(0)
+  , logger_console_printer()
   , enable_gdb_server(false)
   , param_enable_gdb_server( "enable-gdb-server", 0, enable_gdb_server, "Enable GDB server." )
   , enable_inline_debugger(false)
   , param_enable_inline_debugger( "enable-inline-debugger", 0, enable_inline_debugger, "Enable inline debugger." )
-  , exit_status(0)
 {
   // - debugger
   if (enable_inline_debugger or enable_gdb_server)
@@ -117,13 +116,14 @@ Simulator::Simulator(int argc, char **argv)
   // (*router.init_socket[0])( memory.slave_sock );
   (*router.init_socket[0])( memory.slave_sock );
   (*router.init_socket[1])( timer.CTRL );
+  router.input_if_clock(clock);
+  router.output_if_clock(clock);
   timer.IRQ( nirq_signal );
   timer.RST( timer_reset );
   timer.ENABLE( timer_enable );
   timer.CLK(clock);
-  /* We disable clock (useless in this model and extremely cpu consuming) */
-  clock.disable();
   
+  cpu.memory_import >> router.memory_export;
   cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
   *loader.memory_import[0] >> memory.memory_export;
 
@@ -179,30 +179,16 @@ Simulator::~Simulator()
   delete inline_debugger;
 }
 
-int
-Simulator::Run()
+void Simulator::Run()
 {
-  if ( unlikely(SimulationFinished()) ) return 0;
+  if ( unlikely(SimulationFinished()) ) return;
 
   double time_start = host_time.GetTime();
 
-  sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
-  
-  try
-    {
-      sc_start();
-    }
-  catch(std::runtime_error& e)
-    {
-      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-      std::cerr << e.what() << std::endl;
-    }
-
-  std::cerr << "Simulation finished" << std::endl;
+  unisim::kernel::tlm2::Simulator::Run();
 
   double time_stop = host_time.GetTime();
   double spent_time = time_stop - time_start;
-  simulation_spent_time += spent_time;
 
   std::cerr << "Simulation run-time parameters:" << std::endl;
   DumpParameters(cerr);
@@ -211,60 +197,10 @@ Simulator::Run()
   DumpStatistics(cerr);
   std::cerr << std::endl;
 
-  std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
+  std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
   std::cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
   std::cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
   std::cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
-
-  return exit_status;
-}
-
-int
-Simulator::Run(double time, sc_time_unit unit)
-{
-  if ( unlikely(SimulationFinished()) ) return 0;
-
-  double time_start = host_time.GetTime();
-
-  sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
-
-  try
-    {
-      sc_start(time, unit);
-    }
-  catch(std::runtime_error& e)
-    {
-      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-      std::cerr << e.what() << std::endl;
-    }
-
-  double time_stop = host_time.GetTime();
-  double spent_time = time_stop - time_start;
-  simulation_spent_time += spent_time;
-
-  std::cerr << "Simulation statistics:" << std::endl;
-  DumpStatistics(cerr);
-  std::cerr << std::endl;
-
-  return exit_status;
-}
-
-bool
-Simulator::IsRunning() const
-{
-  return sc_is_running();
-}
-
-bool
-Simulator::SimulationStarted() const
-{
-  return sc_start_of_simulation_invoked();
-}
-
-bool
-Simulator::SimulationFinished() const
-{
-  return sc_end_of_simulation_invoked();
 }
 
 unisim::kernel::Simulator::SetupStatus Simulator::Setup()
@@ -288,33 +224,6 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
   return setup_status;
 }
 
-void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asynchronous)
-{
-  exit_status = _exit_status;
-  if(object)
-    {
-      std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
-    }
-#ifdef DEBUG_ARMEMU
-  std::cerr << "Call stack:" << std::endl;
-  std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
-#endif
-  std::cerr << "Program exited with status " << exit_status << std::endl;
-  sc_stop();
-  if(!asynchronous)
-    {
-      switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
-        {
-        case SC_THREAD_PROC_: 
-        case SC_CTHREAD_PROC_:
-          wait();
-          break;
-        default:
-          break;
-        }
-    }
-}
-
 void
 Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
 {
@@ -327,26 +236,29 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable( "schematic", SIM_SCHEMATIC );
 
 
-  sim->SetVariable( "kernel_logger.std_err", true );
-  sim->SetVariable( "kernel_logger.std_err_color", true );
+  sim->SetVariable( "logger.console.enable-std-err-color", true );
+  sim->SetVariable( "logger.console.enable-std-out-color", true );
   
-  sim->SetVariable( "router.cycle_time",        "10 ns" );
+  sim->SetVariable( "HARDWARE.CLK.clock-period",        "10 ns" );
   
-  sim->SetVariable( "cpu.default-endianness",   "little-endian" );
-  sim->SetVariable( "cpu.cpu-cycle-time",       "10 ns" ); // 32Mhz
-  sim->SetVariable( "cpu.bus-cycle-time",       "10 ns" ); // 32Mhz
-  sim->SetVariable( "cpu.icache.size",          0x020000 ); // 128 KB
-  sim->SetVariable( "cpu.dcache.size",          0x020000 ); // 128 KB
-  sim->SetVariable( "cpu.nice-time",            "1 us" ); // 1us
-  sim->SetVariable( "cpu.ipc",                  1.0  );
-  sim->SetVariable( "cpu.voltage",              1.8 * 1e3 ); // 1800 mV
-  sim->SetVariable( "cpu.enable-dmi",           true ); // Enable SystemC TLM 2.0 DMI
-  sim->SetVariable( "cpu.verbose",              true );
-  sim->SetVariable( "cpu.verbose-tlm",          false );
-  sim->SetVariable( "memory.bytesize",          0xffffffffUL ); 
-  sim->SetVariable( "memory.cycle-time",        "10 ns" );
-  sim->SetVariable( "memory.read-latency",      "10 ns" );
-  sim->SetVariable( "memory.write-latency",     "0 ps" );
+  /* We disable clock (useless in this model and extremely cpu consuming) */
+  sim->SetVariable( "HARDWARE.CLK.lazy-clock",           true );
+
+  sim->SetVariable( "HARDWARE.cpu.default-endianness",   "little-endian" );
+  sim->SetVariable( "HARDWARE.cpu.cpu-cycle-time",       "10 ns" ); // 32Mhz
+  sim->SetVariable( "HARDWARE.cpu.bus-cycle-time",       "10 ns" ); // 32Mhz
+  sim->SetVariable( "HARDWARE.cpu.icache.size",          0x020000 ); // 128 KB
+  sim->SetVariable( "HARDWARE.cpu.dcache.size",          0x020000 ); // 128 KB
+  sim->SetVariable( "HARDWARE.cpu.nice-time",            "1 us" ); // 1us
+  sim->SetVariable( "HARDWARE.cpu.ipc",                  1.0  );
+  sim->SetVariable( "HARDWARE.cpu.voltage",              1.8 * 1e3 ); // 1800 mV
+  sim->SetVariable( "HARDWARE.cpu.enable-dmi",           true ); // Enable SystemC TLM 2.0 DMI
+  sim->SetVariable( "HARDWARE.cpu.verbose",              true );
+  sim->SetVariable( "HARDWARE.cpu.verbose-tlm",          false );
+  sim->SetVariable( "HARDWARE.memory.bytesize",          0xffffffffUL ); 
+  sim->SetVariable( "HARDWARE.memory.cycle-time",        "10 ns" );
+  sim->SetVariable( "HARDWARE.memory.read-latency",      "10 ns" );
+  sim->SetVariable( "HARDWARE.memory.write-latency",     "0 ps" );
   // sim->SetVariable( "linux-os.system",          "arm-eabi" );
   // sim->SetVariable( "linux-os.endianness",      "little-endian" );
   // sim->SetVariable( "linux-os.memory-page-size",0x01000UL );
@@ -362,7 +274,7 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   // sim->SetVariable( "linux-os.hwcap", "swp half fastmult" );
 	sim->SetVariable("loader.filename" ,         "boot.elf");
 	sim->SetVariable("loader.verbose" ,          true);
-	sim->SetVariable("loader.memory-mapper.mapping", "memory=memory:0x0-0x00000fff");
+	sim->SetVariable("loader.memory-mapper.mapping", "memory=HARDWARE.memory:0x0-0x00000fff");
 	// sim->SetVariable("loader.file0.base-addr",    0x0);
 	// sim->SetVariable("loader.file1.force-base-addr", true);
 	// sim->SetVariable("loader.file1.base-addr",    0x10000);

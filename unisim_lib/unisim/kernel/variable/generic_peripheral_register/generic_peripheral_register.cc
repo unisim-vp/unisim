@@ -52,18 +52,6 @@ using unisim::util::generic_peripheral_register::GenericPeripheralDoubleWordRegi
 
 // Variable specialization for GenericPeripheralByteRegister
 
-template <> 
-Variable<GenericPeripheralByteRegister> ::
-Variable(const char *_name, 
-		Object *_object, 
-		GenericPeripheralByteRegister& _storage, 
-		Type type, 
-		const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
-{
-	Initialize();
-}
-
 template <>
 const char *
 Variable<GenericPeripheralByteRegister> ::
@@ -82,28 +70,28 @@ template <>
 Variable<GenericPeripheralByteRegister> ::
 operator bool () const 
 { 
-	return storage->GetValue() != 0; 
+	return Get()->GetValue() != 0; 
 }
 
 template <> 
 Variable<GenericPeripheralByteRegister> :: 
 operator long long () const
 {
-	return storage->GetValue();
+	return Get()->GetValue();
 }
 
 template <> 
 Variable<GenericPeripheralByteRegister> ::
 operator unsigned long long () const
 {
-	return storage->GetValue();
+	return Get()->GetValue();
 }
 
 template <> 
 Variable<GenericPeripheralByteRegister> :: 
 operator double () const
 {
-	return (double)(storage->GetValue());
+	return (double)(Get()->GetValue());
 }
 
 template <>
@@ -117,11 +105,11 @@ operator std::string () const
 		case FMT_DEFAULT:
 		case FMT_HEX:
 			sstr << "0x" << std::hex
-				<< (unsigned short int)storage->GetValue()
+				<< (unsigned short int)Get()->GetValue()
 				<< std::dec;
 			break;
 		case FMT_DEC:
-			sstr << (unsigned int)storage->GetValue();
+			sstr << (unsigned int)Get()->GetValue();
 			break;
 	}
 	return sstr.str();
@@ -134,9 +122,9 @@ operator = (bool value)
 	if ( IsMutable() )
 	{
 		if ( value )
-			storage->SetValue(1);
+			storage->Get().SetValue(1);
 		else
-			storage->SetValue(0);
+			storage->Get().SetValue(0);
 	}
 	
 	return *this;
@@ -147,7 +135,7 @@ VariableBase& Variable<GenericPeripheralByteRegister> ::
 operator = (long long value)
 {
 	if ( IsMutable() )
-		storage->SetValue((uint8_t)value);
+		storage->Get().SetValue((uint8_t)value);
 	return *this;
 }
 
@@ -156,7 +144,7 @@ VariableBase& Variable<GenericPeripheralByteRegister> ::
 operator = (unsigned long long value) 
 {
 	if ( IsMutable() ) 
-		storage->SetValue((uint8_t)value);
+		storage->Get().SetValue((uint8_t)value);
 	return *this;
 }
 
@@ -165,7 +153,7 @@ VariableBase& Variable<GenericPeripheralByteRegister> ::
 operator = (double value)
 {
 	if ( IsMutable() )
-		storage->SetValue((uint8_t)value);
+		storage->Get().SetValue((uint8_t)value);
 	return *this;
 }
 
@@ -174,7 +162,7 @@ VariableBase& Variable<GenericPeripheralByteRegister> ::
 operator = (const char *value)
 {
 	if ( IsMutable() )
-		storage->SetValue((uint8_t)strtoull(value, 0, 0));
+		storage->Get().SetValue((uint8_t)strtoull(value, 0, 0));
 	return *this;
 }
 
@@ -187,18 +175,6 @@ unsigned int Variable<GenericPeripheralByteRegister>::GetBitSize() const
 template class Variable<GenericPeripheralByteRegister>;
 
 // Variable specialization for GenericPeripheralHalfWordRegister
-
-template <> 
-Variable<GenericPeripheralHalfWordRegister> ::
-Variable(const char *_name, 
-		Object *_object, 
-		GenericPeripheralHalfWordRegister& _storage, 
-		Type type, 
-		const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
-{
-	Initialize();
-}
 
 template <>
 const char *
@@ -218,28 +194,28 @@ template <>
 Variable<GenericPeripheralHalfWordRegister> ::
 operator bool () const 
 { 
-	return storage->GetValue() != 0; 
+	return Get()->GetValue() != 0; 
 }
 
 template <> 
 Variable<GenericPeripheralHalfWordRegister> :: 
 operator long long () const
 {
-	return storage->GetValue();
+	return Get()->GetValue();
 }
 
 template <> 
 Variable<GenericPeripheralHalfWordRegister> ::
 operator unsigned long long () const
 {
-	return storage->GetValue();
+	return Get()->GetValue();
 }
 
 template <> 
 Variable<GenericPeripheralHalfWordRegister> :: 
 operator double () const
 {
-	return (double)(storage->GetValue());
+	return (double)(Get()->GetValue());
 }
 
 template <>
@@ -253,11 +229,11 @@ operator std::string () const
 		case FMT_DEFAULT:
 		case FMT_HEX:
 			sstr << "0x" << std::hex
-				<< (unsigned int)storage->GetValue()
+				<< (unsigned int)Get()->GetValue()
 				<< std::dec;
 			break;
 		case FMT_DEC:
-			sstr << (unsigned int)storage->GetValue();
+			sstr << (unsigned int)Get()->GetValue();
 			break;
 	}
 	return sstr.str();
@@ -270,9 +246,9 @@ operator = (bool value)
 	if ( IsMutable() )
 	{
 		if ( value )
-			storage->SetValue(1);
+			storage->Get().SetValue(1);
 		else
-			storage->SetValue(0);
+			storage->Get().SetValue(0);
 	}
 	
 	return *this;
@@ -283,7 +259,7 @@ VariableBase& Variable<GenericPeripheralHalfWordRegister> ::
 operator = (long long value)
 {
 	if ( IsMutable() )
-		storage->SetValue((uint16_t)value);
+		storage->Get().SetValue((uint16_t)value);
 	return *this;
 }
 
@@ -292,7 +268,7 @@ VariableBase& Variable<GenericPeripheralHalfWordRegister> ::
 operator = (unsigned long long value) 
 {
 	if ( IsMutable() ) 
-		storage->SetValue((uint16_t)value);
+		storage->Get().SetValue((uint16_t)value);
 	return *this;
 }
 
@@ -301,7 +277,7 @@ VariableBase& Variable<GenericPeripheralHalfWordRegister> ::
 operator = (double value)
 {
 	if ( IsMutable() )
-		storage->SetValue((uint16_t)value);
+		storage->Get().SetValue((uint16_t)value);
 	return *this;
 }
 
@@ -310,7 +286,7 @@ VariableBase& Variable<GenericPeripheralHalfWordRegister> ::
 operator = (const char *value)
 {
 	if ( IsMutable() )
-		storage->SetValue((uint16_t)strtoull(value, 0, 0));
+		storage->Get().SetValue((uint16_t)strtoull(value, 0, 0));
 	return *this;
 }
 
@@ -323,18 +299,6 @@ unsigned int Variable<GenericPeripheralHalfWordRegister>::GetBitSize() const
 template class Variable<GenericPeripheralHalfWordRegister>;
 
 // Variable specialization for GenericPeripheralWordRegister
-
-template <> 
-Variable<GenericPeripheralWordRegister> ::
-Variable(const char *_name, 
-		Object *_object, 
-		GenericPeripheralWordRegister& _storage, 
-		Type type, 
-		const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
-{
-	Initialize();
-}
 
 template <>
 const char *
@@ -354,28 +318,28 @@ template <>
 Variable<GenericPeripheralWordRegister> ::
 operator bool () const 
 { 
-	return storage->GetValue() != 0; 
+	return Get()->GetValue() != 0; 
 }
 
 template <> 
 Variable<GenericPeripheralWordRegister> :: 
 operator long long () const
 {
-	return storage->GetValue();
+	return Get()->GetValue();
 }
 
 template <> 
 Variable<GenericPeripheralWordRegister> ::
 operator unsigned long long () const
 {
-	return storage->GetValue();
+	return Get()->GetValue();
 }
 
 template <> 
 Variable<GenericPeripheralWordRegister> :: 
 operator double () const
 {
-	return (double)(storage->GetValue());
+	return (double)(Get()->GetValue());
 }
 
 template <>
@@ -389,11 +353,11 @@ operator std::string () const
 		case FMT_DEFAULT:
 		case FMT_HEX:
 			sstr << "0x" << std::hex
-				<< (unsigned long int)storage->GetValue()
+				<< (unsigned long int)Get()->GetValue()
 				<< std::dec;
 			break;
 		case FMT_DEC:
-			sstr << (unsigned long int)storage->GetValue();
+			sstr << (unsigned long int)Get()->GetValue();
 			break;
 	}
 	return sstr.str();
@@ -406,9 +370,9 @@ operator = (bool value)
 	if ( IsMutable() )
 	{
 		if ( value )
-			storage->SetValue(1);
+			storage->Get().SetValue(1);
 		else
-			storage->SetValue(0);
+			storage->Get().SetValue(0);
 	}
 	
 	return *this;
@@ -419,7 +383,7 @@ VariableBase& Variable<GenericPeripheralWordRegister> ::
 operator = (long long value)
 {
 	if ( IsMutable() )
-		storage->SetValue((uint32_t)value);
+		storage->Get().SetValue((uint32_t)value);
 	return *this;
 }
 
@@ -428,7 +392,7 @@ VariableBase& Variable<GenericPeripheralWordRegister> ::
 operator = (unsigned long long value) 
 {
 	if ( IsMutable() ) 
-		storage->SetValue((uint32_t)value);
+		storage->Get().SetValue((uint32_t)value);
 	return *this;
 }
 
@@ -437,7 +401,7 @@ VariableBase& Variable<GenericPeripheralWordRegister> ::
 operator = (double value)
 {
 	if ( IsMutable() )
-		storage->SetValue((uint32_t)value);
+		storage->Get().SetValue((uint32_t)value);
 	return *this;
 }
 
@@ -446,7 +410,7 @@ VariableBase& Variable<GenericPeripheralWordRegister> ::
 operator = (const char *value)
 {
 	if ( IsMutable() )
-		storage->SetValue((uint32_t)strtoull(value, 0, 0));
+		storage->Get().SetValue((uint32_t)strtoull(value, 0, 0));
 	return *this;
 }
 
@@ -459,18 +423,6 @@ unsigned int Variable<GenericPeripheralWordRegister>::GetBitSize() const
 template class Variable<GenericPeripheralWordRegister>;
 
 // Variable specialization for GenericPeripheralDoubleWordRegister
-
-template <> 
-Variable<GenericPeripheralDoubleWordRegister> ::
-Variable(const char *_name, 
-		Object *_object, 
-		GenericPeripheralDoubleWordRegister& _storage, 
-		Type type, 
-		const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
-{
-	Initialize();
-}
 
 template <>
 const char *
@@ -490,28 +442,28 @@ template <>
 Variable<GenericPeripheralDoubleWordRegister> ::
 operator bool () const 
 { 
-	return storage->GetValue() != 0; 
+	return Get()->GetValue() != 0; 
 }
 
 template <> 
 Variable<GenericPeripheralDoubleWordRegister> :: 
 operator long long () const
 {
-	return storage->GetValue();
+	return Get()->GetValue();
 }
 
 template <> 
 Variable<GenericPeripheralDoubleWordRegister> ::
 operator unsigned long long () const
 {
-	return storage->GetValue();
+	return Get()->GetValue();
 }
 
 template <> 
 Variable<GenericPeripheralDoubleWordRegister> :: 
 operator double () const
 {
-	return (double)(storage->GetValue());
+	return (double)(Get()->GetValue());
 }
 
 template <>
@@ -525,11 +477,11 @@ operator std::string () const
 		case FMT_DEFAULT:
 		case FMT_HEX:
 			sstr << "0x" << std::hex
-				<< (unsigned long long int)storage->GetValue()
+				<< (unsigned long long int)Get()->GetValue()
 				<< std::dec;
 			break;
 		case FMT_DEC:
-			sstr << (unsigned long long int)storage->GetValue();
+			sstr << (unsigned long long int)Get()->GetValue();
 			break;
 	}
 	return sstr.str();
@@ -542,9 +494,9 @@ operator = (bool value)
 	if ( IsMutable() )
 	{
 		if ( value )
-			storage->SetValue(1);
+			storage->Get().SetValue(1);
 		else
-			storage->SetValue(0);
+			storage->Get().SetValue(0);
 	}
 	
 	return *this;
@@ -555,7 +507,7 @@ VariableBase& Variable<GenericPeripheralDoubleWordRegister> ::
 operator = (long long value)
 {
 	if ( IsMutable() )
-		storage->SetValue((uint64_t)value);
+		storage->Get().SetValue((uint64_t)value);
 	return *this;
 }
 
@@ -564,7 +516,7 @@ VariableBase& Variable<GenericPeripheralDoubleWordRegister> ::
 operator = (unsigned long long value) 
 {
 	if ( IsMutable() ) 
-		storage->SetValue((uint64_t)value);
+		storage->Get().SetValue((uint64_t)value);
 	return *this;
 }
 
@@ -573,7 +525,7 @@ VariableBase& Variable<GenericPeripheralDoubleWordRegister> ::
 operator = (double value)
 {
 	if ( IsMutable() )
-		storage->SetValue((uint64_t)value);
+		storage->Get().SetValue((uint64_t)value);
 	return *this;
 }
 
@@ -582,7 +534,7 @@ VariableBase& Variable<GenericPeripheralDoubleWordRegister> ::
 operator = (const char *value)
 {
 	if ( IsMutable() )
-		storage->SetValue((uint64_t)strtoull(value, 0, 0));
+		storage->Get().SetValue((uint64_t)strtoull(value, 0, 0));
 	return *this;
 }
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,60 +32,64 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include "unisim/kernel/kernel.hh"
+#ifndef __UNISIM_KERNEL_SCML2_CLOCK_HH__
+#define __UNISIM_KERNEL_SCML2_CLOCK_HH__
+
+#include <scml2.h>
+#include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/kernel/variable/variable.hh>
-#include "unisim/component/cxx/memory/flash/am29/types.hh"
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
+#include <systemc>
 
 namespace unisim {
 namespace kernel {
-namespace variable {
+namespace scml2 {
 
-using unisim::component::cxx::memory::flash::am29::MODE;
-using unisim::component::cxx::memory::flash::am29::MODE_X8;
-using unisim::component::cxx::memory::flash::am29::MODE_X16;
-
-template <>
-const char *Variable<MODE>::GetDataTypeName() const
+class Clock
+	: public scml_clock
+	, public unisim::kernel::tlm2::ClockPropertiesInterface
+	, virtual public unisim::kernel::Object
+	, public unisim::kernel::VariableBaseListener
 {
-	return "am29lv flash memory transfer mode";
-}
+public:
+	typedef scml_clock Super;
+	
+	Clock(const char *name, unisim::kernel::Object *parent = 0);
 
-template <> Variable<MODE>::operator bool () const { return Get() == MODE_X8; }
-template <> Variable<MODE>::operator long long () const { return (Get() == MODE_X8) ? 1: 0; }
-template <> Variable<MODE>::operator unsigned long long () const { return (Get() == MODE_X8) ? 1 : 0; }
-template <> Variable<MODE>::operator double () const { return (double)(Get() == MODE_X8) ? 1 : 0; }
-template <> Variable<MODE>::operator std::string () const { return (Get() == MODE_X8)?(std::string("x8")):(std::string("x16"));}
+	virtual ~Clock();
+	virtual const char *kind() const;
+	
+	virtual const sc_core::sc_time& GetClockPeriod() const;
+	virtual double GetClockDutyCycle() const;
+	virtual const sc_core::sc_time& GetClockStartTime() const;
+	virtual bool GetClockPosEdgeFirst() const;
+	virtual bool IsClockFrozen() const;
+	virtual bool IsClockLazy() const;
+	virtual const sc_core::sc_event& GetClockPropertiesChangedEvent() const;
 
-template <> VariableBase& Variable<MODE>::operator = (bool value)
-{
-	Set(value ? MODE_X8 : MODE_X16);
-	return *this;
-}
-template <> VariableBase& Variable<MODE>::operator = (long long value)
-{
-	Set(value ? MODE_X8 : MODE_X16);
-	return *this;
-}
+	virtual void VariableBaseNotify(const unisim::kernel::VariableBase *var);
+protected:
+	virtual void before_end_of_elaboration();
+private:
+	mutable sc_core::sc_time clock_period;
+	mutable double clock_duty_cycle;
+	mutable sc_core::sc_time clock_start_time;
+	mutable bool clock_posedge_first;
+	mutable bool lazy_clock;
+	sc_core::sc_event clock_properties_changed_event;
+	
+	unisim::kernel::variable::Parameter<bool> param_lazy_clock;
+	mutable unisim::kernel::variable::Parameter<sc_core::sc_time> param_clock_period;
+	unisim::kernel::variable::Parameter<double> param_clock_duty_cycle;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_clock_start_time;
+	unisim::kernel::variable::Parameter<bool> param_clock_posedge_first;
+	
+	void Update();
+};
 
-template <> VariableBase& Variable<MODE>::operator = (unsigned long long value)
-{
-	Set(value ? MODE_X8 : MODE_X16);
-	return *this;
-}
-
-template <> VariableBase& Variable<MODE>::operator = (double value)
-{
-	Set(value ? MODE_X8 : MODE_X16);
-	return *this;
-}
-template <> VariableBase& Variable<MODE>::operator = (const char *value)
-{
-	Set((std::string(value) == std::string("x8")) ? MODE_X8 : MODE_X16);
-	return *this;
-}
-
-template class Variable<MODE>;
-
-} // end of namespace variable
+} // end of namespace scml2
 } // end of namespace kernel
 } // end of namespace unisim
+
+#endif // __UNISIM_KERNEL_SCML2_CLOCK_HH__
+ 

@@ -710,73 +710,73 @@ bool PWM<PWM_SIZE>::BeginSetup()
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWME", &pwme_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwme_var = new unisim::kernel::variable::Register<uint8_t>("PWME", this, pwme_register, "PWM Enable Register (PWME)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwme_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWME", this, pwme_register, "PWM Enable Register (PWME)");
 	extended_registers_registry.push_back(pwme_var);
 	pwme_var->setCallBack(this, PWME, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMPOL", &pwmpol_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwmpol_var = new unisim::kernel::variable::Register<uint8_t>("PWMPOL", this, pwmpol_register, "PWM Polarity Register (PWMPOL)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmpol_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWMPOL", this, pwmpol_register, "PWM Polarity Register (PWMPOL)");
 	extended_registers_registry.push_back(pwmpol_var);
 	pwmpol_var->setCallBack(this, PWMPOL, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMCLK", &pwmclk_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwmclk_var = new unisim::kernel::variable::Register<uint8_t>("PWMCLK", this, pwmclk_register, "PWM Clock Select Register (PWMCLK)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmclk_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWMCLK", this, pwmclk_register, "PWM Clock Select Register (PWMCLK)");
 	extended_registers_registry.push_back(pwmclk_var);
 	pwmclk_var->setCallBack(this, PWMCLK, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMPRCLK", &pwmprclk_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwmprclk_var = new unisim::kernel::variable::Register<uint8_t>("PWMPRCLK", this, pwmprclk_register, "PWM Prescale Clock Select Register (PWMPRCLK)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmprclk_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWMPRCLK", this, pwmprclk_register, "PWM Prescale Clock Select Register (PWMPRCLK)");
 	extended_registers_registry.push_back(pwmprclk_var);
 	pwmprclk_var->setCallBack(this, PWMPRCLK, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMCAE", &pwmcae_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwmcae_var = new unisim::kernel::variable::Register<uint8_t>("PWMCAE", this, pwmcae_register, "PWM Center Align Enable Register (PWMCAE)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmcae_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWMCAE", this, pwmcae_register, "PWM Center Align Enable Register (PWMCAE)");
 	extended_registers_registry.push_back(pwmcae_var);
 	pwmcae_var->setCallBack(this, PWMCAE, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMCTL", &pwmctl_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwmctl_var = new unisim::kernel::variable::Register<uint8_t>("PWMCTL", this, pwmctl_register, "PWM Control Register (PWMCTL)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmctl_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWMCTL", this, pwmctl_register, "PWM Control Register (PWMCTL)");
 	extended_registers_registry.push_back(pwmctl_var);
 	pwmctl_var->setCallBack(this, PWMCTL, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMTST", &pwmtst_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwmtst_var = new unisim::kernel::variable::Register<uint8_t>("PWMTST", this, pwmtst_register, "Reserved Register (PWMTST)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmtst_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWMTST", this, pwmtst_register, "Reserved Register (PWMTST)");
 	extended_registers_registry.push_back(pwmtst_var);
 	pwmtst_var->setCallBack(this, PWMTST, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMPRSC", &pwmprsc_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwmprsc_var = new unisim::kernel::variable::Register<uint8_t>("PWMPRSC", this, pwmprsc_register, "Reserved Register (PWMPRSC)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmprsc_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWMPRSC", this, pwmprsc_register, "Reserved Register (PWMPRSC)");
 	extended_registers_registry.push_back(pwmprsc_var);
 	pwmprsc_var->setCallBack(this, PWMCTL, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMSCLA", &pwmscla_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwmscla_var = new unisim::kernel::variable::Register<uint8_t>("PWMSCLA", this, pwmscla_register, "PWM Scale A Register (PWMSCLA)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmscla_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWMSCLA", this, pwmscla_register, "PWM Scale A Register (PWMSCLA)");
 	extended_registers_registry.push_back(pwmscla_var);
 	pwmscla_var->setCallBack(this, PWMSCLA, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMSCLB", &pwmsclb_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwmsclb_var = new unisim::kernel::variable::Register<uint8_t>("PWMSCLB", this, pwmsclb_register, "PWM Scale B Register (PWMSCLB)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmsclb_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWMSCLB", this, pwmsclb_register, "PWM Scale B Register (PWMSCLB)");
 	extended_registers_registry.push_back(pwmsclb_var);
 	pwmsclb_var->setCallBack(this, PWMSCLB, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMSCNTA", &pwmscnta_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwmscnta_var = new unisim::kernel::variable::Register<uint8_t>("PWMSCNTA", this, pwmscnta_register, "Reserved Registers (PWMSCNTA)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmscnta_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWMSCNTA", this, pwmscnta_register, "Reserved Registers (PWMSCNTA)");
 	extended_registers_registry.push_back(pwmscnta_var);
 	pwmscnta_var->setCallBack(this, PWMSCNTA, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMSCNTB", &pwmscntb_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwmscntb_var = new unisim::kernel::variable::Register<uint8_t>("PWMSCNTB", this, pwmscntb_register, "Reserved Registers (PWMSCNTB)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmscntb_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWMSCNTB", this, pwmscntb_register, "Reserved Registers (PWMSCNTB)");
 	extended_registers_registry.push_back(pwmscntb_var);
 	pwmscntb_var->setCallBack(this, PWMSCNTB, &CallBackObject::write, NULL);
 
@@ -788,7 +788,7 @@ bool PWM<PWM_SIZE>::BeginSetup()
 
 		registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + '.' + shortName, &pwmcnt16_register[i]));
 		
-		unisim::kernel::variable::Register<uint8_t> *pwmcnt0_var = new unisim::kernel::variable::Register<uint8_t>(shortName.c_str(), this, pwmcnt16_register[i], "PWM Channel Counter Register");
+		unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmcnt0_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>(shortName.c_str(), this, pwmcnt16_register[i], "PWM Channel Counter Register");
 		extended_registers_registry.push_back(pwmcnt0_var);
 		pwmcnt0_var->setCallBack(this, PWMCNT0+i, &CallBackObject::write, NULL);
 	}
@@ -801,7 +801,7 @@ bool PWM<PWM_SIZE>::BeginSetup()
 	
 		registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + '.' + shortName, &pwmper16_register[i]));
 
-		unisim::kernel::variable::Register<uint8_t> *pwmper0_var = new unisim::kernel::variable::Register<uint8_t>(shortName.c_str(), this, pwmper16_register[i], "PWM Channel Period Register");
+		unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmper0_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>(shortName.c_str(), this, pwmper16_register[i], "PWM Channel Period Register");
 		extended_registers_registry.push_back(pwmper0_var);
 		pwmper0_var->setCallBack(this, PWMPER0+i, &CallBackObject::write, NULL);
 	}
@@ -814,7 +814,7 @@ bool PWM<PWM_SIZE>::BeginSetup()
 		
 		registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + '.' + shortName, &pwmdty16_register_value[i]));
 
-		unisim::kernel::variable::Register<uint8_t> *pwmdty0_var = new unisim::kernel::variable::Register<uint8_t>(shortName.c_str(), this, pwmdty16_register_value[i], "PWM Channel Duty Register");
+		unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmdty0_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>(shortName.c_str(), this, pwmdty16_register_value[i], "PWM Channel Duty Register");
 		extended_registers_registry.push_back(pwmdty0_var);
 		pwmdty0_var->setCallBack(this, PWMDTY0+i, &CallBackObject::write, NULL);
 
@@ -822,7 +822,7 @@ bool PWM<PWM_SIZE>::BeginSetup()
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMSDN", &pwmsdn_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pwmsdn_var = new unisim::kernel::variable::Register<uint8_t>("PWMSDN", this, pwmsdn_register, "PWM Shutdown Register (PWMSDN)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pwmsdn_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PWMSDN", this, pwmsdn_register, "PWM Shutdown Register (PWMSDN)");
 	extended_registers_registry.push_back(pwmsdn_var);
 	pwmsdn_var->setCallBack(this, PWMSDN, &CallBackObject::write, NULL);
 

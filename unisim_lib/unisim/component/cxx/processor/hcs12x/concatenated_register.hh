@@ -37,6 +37,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CONCATENATED_REGISTER_HH__
 
 #include <unisim/service/interfaces/register.hh>
+#include <unisim/component/cxx/processor/hcs12x/register.hh>
 #include <string>
 #include <sstream>
 #include <memory>
@@ -52,9 +53,6 @@ namespace hcs12x {
 
 using std::string;
 using unisim::service::interfaces::Register;
-
-using unisim::kernel::variable::TCallBack;
-using unisim::kernel::variable::CallBackObject;
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 class ConcatenatedRegister : public Register

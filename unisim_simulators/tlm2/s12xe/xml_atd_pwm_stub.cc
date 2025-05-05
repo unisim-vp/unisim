@@ -191,7 +191,7 @@ template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std:
 		return (0);
 	}
 
-	xmlXPathInit ();
+	xmlInitParser ();
 	context = xmlXPathNewContext (doc);
 
 	xmlobject = xmlXPathEval ((xmlChar *) path, context);

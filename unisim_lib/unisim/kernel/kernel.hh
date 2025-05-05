@@ -62,6 +62,7 @@ namespace variable
 {
 template <class TYPE> class Parameter;
 template <class TYPE> class ParameterArray;
+template <class TYPE> class VariableArray;
 }
 
 class Object;
@@ -90,14 +91,14 @@ ServiceImport<SERVICE_IF>& operator >> (ServiceImport<SERVICE_IF>& lhs, ServiceI
 template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>& operator >> (ServiceExport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs);
 
-// template <class SERVICE_IF>
-// ServiceImport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceImport<SERVICE_IF>& rhs);
+template <class SERVICE_IF>
+ServiceImport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceImport<SERVICE_IF>& rhs);
 
-// template <class SERVICE_IF>
-// ServiceImport<SERVICE_IF>& operator << (ServiceImport<SERVICE_IF>& lhs, ServiceImport<SERVICE_IF>& rhs);
+template <class SERVICE_IF>
+ServiceImport<SERVICE_IF>& operator << (ServiceImport<SERVICE_IF>& lhs, ServiceImport<SERVICE_IF>& rhs);
 
-// template <class SERVICE_IF>
-// ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs);
+template <class SERVICE_IF>
+ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs);
 
 //=============================================================================
 //=                          VariableBaseListener                             =
@@ -123,7 +124,7 @@ public:
 
 	VariableBase();
 	VariableBase(const char *name, Object *owner, Type type, const char *description = 0);
-	VariableBase(unsigned int index, VariableBase& container, Type type, const char *description = 0);
+	VariableBase(const char *name, VariableBase& container, Type type, const char *description = 0);
 	virtual ~VariableBase();
 	
 	void Initialize();
@@ -140,7 +141,7 @@ public:
 	virtual DataType GetDataType() const;
 	bool HasEnumeratedValues() const;
 	bool HasEnumeratedValue(const char *value) const;
-	void GetEnumeratedValues(std::vector<std::string> &values) const;
+	// struct VISITOR { T Visit(const std::string&); };
 	template <typename VISITOR, typename T = bool> T ScanEnumeratedValues(VISITOR& visitor) const;
 	bool AddEnumeratedValue(const char *value);
 	bool RemoveEnumeratedValue(const char *value);
@@ -177,9 +178,9 @@ public:
 	virtual VariableBase& operator = (double value);
 	virtual VariableBase& operator = (const char * value);
 
-	virtual VariableBase& operator [] (unsigned int index);
-	virtual const VariableBase& operator [] (unsigned int index) const;
-	virtual unsigned int GetLength() const;
+	virtual VariableBase& operator [] (uint64_t index);
+	virtual const VariableBase& operator [] (uint64_t index) const;
+	virtual uint64_t GetLength() const;
 	virtual unsigned int GetBitSize() const;
 	
 	virtual VariableBase& operator = (const VariableBase& variable);
@@ -189,6 +190,7 @@ public:
 	bool IsVisible() const;
 	bool IsSerializable() const;
 	bool IsModified() const;
+	bool IsInitialized() const;
 	virtual void SetMutable(bool is_mutable);
 	virtual void SetVisible(bool is_visible);
 	virtual void SetSerializable(bool is_serializable);
@@ -218,6 +220,7 @@ private:
 	bool is_visible;
 	bool is_serializable;
 	bool is_modified;
+	bool is_initialized;
 	typedef std::set<VariableBaseListener*> ListenerSet;
 	ListenerSet listener_set;
 };
@@ -274,11 +277,11 @@ public:
 	virtual SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
 	void EndOfSimulation();
+	virtual bool SigInt();
+	virtual void Kill();
 
 	const VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID) const;
 	VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
-	const VariableBase *FindArray(const char *name) const;
-	VariableBase *FindArray(const char *name);
 	const VariableBase *FindParameter(const char *name) const;
 	VariableBase *FindParameter(const char *name);
 	const VariableBase *FindRegister(const char *name) const;
@@ -287,14 +290,37 @@ public:
 	VariableBase *FindStatistic(const char *name);
 	Object *FindObject(const char *name) const;
 
-	void GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
-	void GetRootVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
-	void GetArrays(std::list<VariableBase *>& lst);
-	void GetParameters(std::list<VariableBase *>& lst);
-	void GetRegisters(std::list<VariableBase *>& lst);
-	void GetSignals(std::list<VariableBase *>& lst);
-	void GetStatistics(std::list<VariableBase *>& lst);
+	template <typename T> T GetVariable(const char *variable_name, const T *t = 0) const;
+	
+	void SetVariable(const char *variable_name, const char *variable_value);
+	void SetVariable(const char *variable_name, bool variable_value);
+	void SetVariable(const char *variable_name, char variable_value);
+	void SetVariable(const char *variable_name, unsigned char variable_value);
+	void SetVariable(const char *variable_name, short variable_value);
+	void SetVariable(const char *variable_name, unsigned short variable_value);
+	void SetVariable(const char *variable_name, int variable_value);
+	void SetVariable(const char *variable_name, unsigned int variable_value);
+	void SetVariable(const char *variable_name, long variable_value);
+	void SetVariable(const char *variable_name, unsigned long variable_value);
+	void SetVariable(const char *variable_name, unsigned long long variable_value);
+	void SetVariable(const char *variable_name, long long variable_value);
+	void SetVariable(const char *variable_name, float variable_value);
+	void SetVariable(const char *variable_name, double variable_value);
+	
+	// struct VISITOR { T Visit(VariableBase *); };
 	template <typename VISITOR, typename T = bool> T ScanVariables(VISITOR& visitor, VariableBase::Type type = VariableBase::VAR_VOID) const;
+	template <typename VISITOR, typename T = bool> T ScanParameters(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T ScanStatistics(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T ScanRegisters(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T ScanSignals(VISITOR& visitor) const;
+
+	bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
+	bool LoadVariables(std::istream& is, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
+	bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
+	bool SaveVariables(std::ostream& os, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
+
+	// struct VISITOR { T Visit(Object *); };
+	template <typename VISITOR, typename T = bool> T ScanObjects(VISITOR& visitor) const;
 
 	void Dump(std::ostream& os);
 	void DumpVariables(std::ostream& os, VariableBase::Type filter_type = VariableBase::VAR_VOID);
@@ -318,7 +344,7 @@ private:
 	friend class Object;
 	friend class VariableBase;
 	template <class TYPE> friend class Variable;
-	template <class TYPE> friend class VariableArray;
+	template <class TYPE> friend class variable::VariableArray;
 	friend class ServicePortBase;
 	friend class SignalHandler;
 
@@ -380,21 +406,11 @@ private:
 	void Unregister(ServicePortBase *srv_import);
 	void Unregister(VariableBase *variable);
 
-	void Initialize(VariableBase *variable);
+	bool Initialize(VariableBase *variable);
 
 	ConfigFileHelper *GuessConfigFileHelper(const char *filename);
 	ConfigFileHelper *FindConfigFileHelper(const std::string& config_file_format);
-public:
-	bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
-	bool LoadVariables(std::istream& is, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
-	bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
-	bool SaveVariables(std::ostream& os, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
 
-	void GetObjects(std::list<Object *>& lst) const;
-	void GetRootObjects(std::list<Object *>& lst) const;
-	template <typename VISITOR, typename T = bool> T ScanObjects(VISITOR& visitor) const;
-
-private:
 	class CommandLineOption
 	{
 	public:
@@ -429,27 +445,6 @@ private:
 	CmdArgs cmd_args;
 	variable::ParameterArray<std::string> *param_cmd_args;
 	
-public:
-	template <typename T> T GetVariable(const char *variable_name, const T *t = 0) const;
-	
-	void SetVariable(const char *variable_name, const char *variable_value);
-	void SetVariable(const char *variable_name, bool variable_value);
-	void SetVariable(const char *variable_name, char variable_value);
-	void SetVariable(const char *variable_name, unsigned char variable_value);
-	void SetVariable(const char *variable_name, short variable_value);
-	void SetVariable(const char *variable_name, unsigned short variable_value);
-	void SetVariable(const char *variable_name, int variable_value);
-	void SetVariable(const char *variable_name, unsigned int variable_value);
-	void SetVariable(const char *variable_name, long variable_value);
-	void SetVariable(const char *variable_name, unsigned long variable_value);
-	void SetVariable(const char *variable_name, unsigned long long variable_value);
-	void SetVariable(const char *variable_name, long long variable_value);
-	void SetVariable(const char *variable_name, float variable_value);
-	void SetVariable(const char *variable_name, double variable_value);
-	
-	virtual bool SigInt();
-	virtual void Kill();
-private:
 	pthread_mutex_t mutex;
 	
 	pthread_t sig_int_thrd;
@@ -491,6 +486,30 @@ T Simulator::ScanVariables(VISITOR& visitor, VariableBase::Type type) const
 }
 
 template <typename VISITOR, typename T>
+T Simulator::ScanParameters(VISITOR& visitor) const
+{
+	return ScanVariables<VISITOR, T>(visitor, VariableBase::VAR_PARAMETER);
+}
+
+template <typename VISITOR, typename T>
+T Simulator::ScanStatistics(VISITOR& visitor) const
+{
+	return ScanVariables<VISITOR, T>(visitor, VariableBase::VAR_STATISTIC);
+}
+
+template <typename VISITOR, typename T>
+T Simulator::ScanRegisters(VISITOR& visitor) const
+{
+	return ScanVariables<VISITOR, T>(visitor, VariableBase::VAR_REGISTER);
+}
+
+template <typename VISITOR, typename T>
+T Simulator::ScanSignals(VISITOR& visitor) const
+{
+	return ScanVariables<VISITOR, T>(visitor, VariableBase::VAR_SIGNAL);
+}
+
+template <typename VISITOR, typename T>
 T Simulator::ScanObjects(VISITOR& visitor) const
 {
 	for(Objects::const_iterator object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
@@ -528,10 +547,18 @@ public:
 	const char *GetObjectName() const;
 	std::string URI() const;
 
-	const std::list<Object *>& GetLeafs() const;
-	template <typename VISITOR, typename T = bool> T ScanLeafObjects(VISITOR& visitor) const;
-	void GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID) const;
+	bool HasChildren() const;
+	
+	// struct VISITOR { T Visit(Object *); };
+	template <typename VISITOR, typename T = bool> T ScanChildren(VISITOR& visitor) const;
+
+	// struct VISITOR { T Visit(VariableBase *); };
 	template <typename VISITOR, typename T = bool> T ScanVariables(VISITOR& visitor, VariableBase::Type type = VariableBase::VAR_VOID) const;
+	template <typename VISITOR, typename T = bool> T ScanParameters(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T ScanStatistics(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T ScanRegisters(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T ScanSignals(VISITOR& visitor) const;
+
 	Object *GetParent() const;
 	VariableBase& operator [] (const char *name);
 	VariableBase& operator [] (const std::string& name);
@@ -561,17 +588,17 @@ private:
 	Object *parent;
 	typedef std::list<VariableBase *> Variables;
 	Variables variables;
-	typedef std::list<Object *> LeafObjects;
-	LeafObjects leaf_objects;
+	typedef std::list<Object *> Children;
+	Children children;
 	typedef std::set<ServiceAgent const*> ServiceAgents;
 	ServiceAgents srv_agents;
 	bool killed;
 };
 
 template <typename VISITOR, typename T>
-T Object::ScanLeafObjects(VISITOR& visitor) const
+T Object::ScanChildren(VISITOR& visitor) const
 {
-	for(LeafObjects::const_iterator object_iter = leaf_objects.begin(); object_iter != leaf_objects.end(); object_iter++)
+	for(Children::const_iterator object_iter = children.begin(); object_iter != children.end(); object_iter++)
 	{
 		T ret = visitor.Visit(*object_iter);
 		if(ret) return ret;
@@ -592,6 +619,30 @@ T Object::ScanVariables(VISITOR& visitor, VariableBase::Type type) const
 		}
 	}
 	return T();
+}
+
+template <typename VISITOR, typename T>
+T Object::ScanParameters(VISITOR& visitor) const
+{
+	return ScanVariables<VISITOR, T>(visitor, VariableBase::VAR_PARAMETER);
+}
+
+template <typename VISITOR, typename T>
+T Object::ScanStatistics(VISITOR& visitor) const
+{
+	return ScanVariables<VISITOR, T>(visitor, VariableBase::VAR_STATISTIC);
+}
+
+template <typename VISITOR, typename T>
+T Object::ScanRegisters(VISITOR& visitor) const
+{
+	return ScanVariables<VISITOR, T>(visitor, VariableBase::VAR_REGISTER);
+}
+
+template <typename VISITOR, typename T>
+T Object::ScanSignals(VISITOR& visitor) const
+{
+	return ScanVariables<VISITOR, T>(visitor, VariableBase::VAR_SIGNAL);
 }
 
 //=============================================================================
@@ -920,6 +971,13 @@ ServiceExport<SERVICE_IF>& operator >> (ServiceImport<SERVICE_IF>& lhs, ServiceE
 	return rhs;
 }
 
+template <class SERVICE_IF>
+ServiceImport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceImport<SERVICE_IF>& rhs)
+{
+	rhs.Bind(lhs);
+	return lhs;
+}
+
 // (import1 -> import2) ==> import2
 template <class SERVICE_IF>
 ServiceImport<SERVICE_IF>& operator >> (ServiceImport<SERVICE_IF>& lhs, ServiceImport<SERVICE_IF>& rhs)
@@ -928,12 +986,26 @@ ServiceImport<SERVICE_IF>& operator >> (ServiceImport<SERVICE_IF>& lhs, ServiceI
 	return rhs;
 }
 
+template <class SERVICE_IF>
+ServiceImport<SERVICE_IF>& operator << (ServiceImport<SERVICE_IF>& lhs, ServiceImport<SERVICE_IF>& rhs)
+{
+	rhs.Bind(lhs);
+	return lhs;
+}
+
 // (export1 -> export2) ==> export2
 template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>& operator >> (ServiceExport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs)
 {
 	lhs.Bind(rhs);
 	return rhs;
+}
+
+template <class SERVICE_IF>
+ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs)
+{
+	rhs.Bind(lhs);
+	return lhs;
 }
 
 #if __cplusplus >= 201103L

@@ -425,49 +425,49 @@ bool S12PIT24B<PIT_SIZE>::BeginSetup() {
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PITCFLMT", &pitcflmt_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pitcflmt_var = new unisim::kernel::variable::Register<uint8_t>("PITCFLMT", this, pitcflmt_register, "PIT Control and Force Load Micro Timer Register (PITCFLMT)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pitcflmt_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PITCFLMT", this, pitcflmt_register, "PIT Control and Force Load Micro Timer Register (PITCFLMT)");
 	extended_registers_registry.push_back(pitcflmt_var);
 	pitcflmt_var->setCallBack(this, PITCFLMT, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PITFLT", &pitflt_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pitflt_var = new unisim::kernel::variable::Register<uint8_t>("PITFLT", this, pitflt_register, "PIT Force Load Timer (PITFLT)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pitflt_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PITFLT", this, pitflt_register, "PIT Force Load Timer (PITFLT)");
 	extended_registers_registry.push_back(pitflt_var);
 	pitflt_var->setCallBack(this, PITFLT, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PITCE", &pitce_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pitce_var = new unisim::kernel::variable::Register<uint8_t>("PITCE", this, pitce_register, "PIT Channel Enable register (PITCE)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pitce_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PITCE", this, pitce_register, "PIT Channel Enable register (PITCE)");
 	extended_registers_registry.push_back(pitce_var);
 	pitce_var->setCallBack(this, PITCE, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PITMUX", &pitmux_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pitmux_var = new unisim::kernel::variable::Register<uint8_t>("PITMUX", this, pitmux_register, "PIT Multiplex register (PITMUX)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pitmux_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PITMUX", this, pitmux_register, "PIT Multiplex register (PITMUX)");
 	extended_registers_registry.push_back(pitmux_var);
 	pitmux_var->setCallBack(this, PITMUX, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PITINTE", &pitinte_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pitinte_var = new unisim::kernel::variable::Register<uint8_t>("PITINTE", this, pitinte_register, "PIT Interrupt Enable register (PITINTE)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pitinte_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PITINTE", this, pitinte_register, "PIT Interrupt Enable register (PITINTE)");
 	extended_registers_registry.push_back(pitinte_var);
 	pitinte_var->setCallBack(this, PITINTE, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PITTF", &pittf_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pittf_var = new unisim::kernel::variable::Register<uint8_t>("PITTF", this, pittf_register, "PIT Time-out Flag Register (PITTF)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pittf_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PITTF", this, pittf_register, "PIT Time-out Flag Register (PITTF)");
 	extended_registers_registry.push_back(pittf_var);
 	pittf_var->setCallBack(this, PITTF, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PITMTLD0", &pitmtld0_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pitmtld0_var = new unisim::kernel::variable::Register<uint8_t>("PITMTLD0", this, pitmtld0_register, "PIT Micro Timer Load Register 0 (PITMTLD0)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pitmtld0_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PITMTLD0", this, pitmtld0_register, "PIT Micro Timer Load Register 0 (PITMTLD0)");
 	extended_registers_registry.push_back(pitmtld0_var);
 	pitmtld0_var->setCallBack(this, PITMTLD0, &CallBackObject::write, NULL);
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PITMTLD1", &pitmtld1_register));
 
-	unisim::kernel::variable::Register<uint8_t> *pitmtld1_var = new unisim::kernel::variable::Register<uint8_t>("PITMTLD1", this, pitmtld1_register, "PIT Micro Timer Load register 1 (PITMTLD1)");
+	unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t> *pitmtld1_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint8_t>("PITMTLD1", this, pitmtld1_register, "PIT Micro Timer Load register 1 (PITMTLD1)");
 	extended_registers_registry.push_back(pitmtld1_var);
 	pitmtld1_var->setCallBack(this, PITMTLD1, &CallBackObject::write, NULL);
 
@@ -478,7 +478,7 @@ bool S12PIT24B<PIT_SIZE>::BeginSetup() {
 		
 		registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + '.' + shortName, &pitld_register[i]));
 
-		unisim::kernel::variable::Register<uint16_t> *pitld0_var = new unisim::kernel::variable::Register<uint16_t>(shortName.c_str(), this, pitld_register[i], "PIT Load Register (PITLD)");
+		unisim::component::cxx::processor::hcs12x::RegisterView<uint16_t> *pitld0_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint16_t>(shortName.c_str(), this, pitld_register[i], "PIT Load Register (PITLD)");
 		extended_registers_registry.push_back(pitld0_var);
 		pitld0_var->setCallBack(this, (PITLD0 + i*4), &CallBackObject::write, NULL);
 		
@@ -491,7 +491,7 @@ bool S12PIT24B<PIT_SIZE>::BeginSetup() {
 		
 		registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + '.' + shortName, &pitcnt_register[i]));
 
-		unisim::kernel::variable::Register<uint16_t> *pitcnt0_var = new unisim::kernel::variable::Register<uint16_t>(shortName.c_str(), this, pitcnt_register[i], "PIT Count Register (PITCNT)");
+		unisim::component::cxx::processor::hcs12x::RegisterView<uint16_t> *pitcnt0_var = new unisim::component::cxx::processor::hcs12x::RegisterView<uint16_t>(shortName.c_str(), this, pitcnt_register[i], "PIT Count Register (PITCNT)");
 		extended_registers_registry.push_back(pitcnt0_var);
 		pitcnt0_var->setCallBack(this, PITCNT0 + i*4, &CallBackObject::write, NULL);
 	}

@@ -49,6 +49,9 @@
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/profiling/addr_profiler/profiler.hh>
 #include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/scml2/simulator.hh>
+#include <unisim/kernel/scml2/clock.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <sstream>
@@ -81,19 +84,13 @@ struct CPU : public  unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU
   CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent = 0);
 };
 
-struct Simulator : public unisim::kernel::Simulator
+struct Simulator : public unisim::kernel::scml2::Simulator
 {
-  Simulator( int argc, char **argv );
+  Simulator( int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE" );
   virtual ~Simulator();
 
-  int Run();
-  int Run(double time, sc_time_unit unit);
-  bool IsRunning() const;
-  bool SimulationStarted() const;
-  bool SimulationFinished() const;
+  void Run();
   virtual unisim::kernel::Simulator::SetupStatus Setup();
-  virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
-  int GetExitStatus() const;
 
  private:
   static void DefaultConfiguration(unisim::kernel::Simulator *sim);
@@ -117,8 +114,9 @@ struct Simulator : public unisim::kernel::Simulator
   typedef unisim::service::profiling::addr_profiler::Profiler<uint32_t> PROFILER;
   typedef unisim::service::time::sc_time::ScTime ScTime;
   typedef unisim::service::time::host_time::HostTime HostTime;
+  typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
 
-  scml_clock                   clock;
+  unisim::kernel::scml2::Clock clock;
   CPU                          cpu;
   Router                       router;
   MEMORY                       memory;
@@ -134,18 +132,16 @@ struct Simulator : public unisim::kernel::Simulator
   //LINUX_OS*                    linux_os;
   LOADER                       loader;
 
-  double                       simulation_spent_time;
-
   DEBUGGER*                    debugger;
   GDB_SERVER*                  gdb_server;
   INLINE_DEBUGGER*             inline_debugger;
 
+  LOGGER_CONSOLE_PRINTER       logger_console_printer;
+  
   bool                                     enable_gdb_server;
   unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
   bool                                     enable_inline_debugger;
   unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
-
-  int exit_status;
 };
 
 #endif /* SIMULATOR_HH_ */

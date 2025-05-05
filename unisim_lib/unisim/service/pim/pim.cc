@@ -70,11 +70,18 @@ component_t* PIM::findComponent(const string name) {
 
 void PIM::generatePimFile() {
 
-	std::list<VariableBase *> lst;
+	typedef std::vector<VariableBase *> List;
+	List lst;
+	struct VariableVisitor
+	{
+		List& lst;
+		VariableVisitor(List& _lst) : lst(_lst) {}
+		bool Visit(VariableBase *var) { lst.push_back(var); return true; }
+	} variable_visitor(lst);
 
-	Simulator::Instance()->GetSignals(lst);
+	GetSimulator()->ScanSignals(variable_visitor);
 
-	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+	for (List::iterator it = lst.begin(); it != lst.end(); it++) {
 
 		if (!((VariableBase *) *it)->IsVisible()) continue;
 
@@ -341,7 +348,7 @@ int PIM::loadPimFile() {
 		return (0);
 	}
 
-	xmlXPathInit ();
+	xmlInitParser ();
 	context = xmlXPathNewContext (doc);
 
 	xmlobject = xmlXPathEval ((xmlChar *) path, context);
@@ -377,9 +384,16 @@ void parseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *compo
 		return;
 	}
 
-	std::list<VariableBase *> lst;
+	typedef std::vector<VariableBase *> List;
+	List lst;
+	struct VariableVisitor
+	{
+		List& lst;
+		VariableVisitor(List& _lst) : lst(_lst) {}
+		bool Visit(VariableBase *var) { lst.push_back(var); return true; }
+	} variable_visitor(lst);
 
-	Simulator::Instance()->GetRegisters(lst);
+	Simulator::Instance()->ScanRegisters(variable_visitor);
 
 	component->name = string((char*) xmlGetProp(componentNode, (const xmlChar *)"name"));
 
@@ -391,7 +405,7 @@ void parseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *compo
 
 			onePinName = component->name + "." + onePinName;
 
-			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+			for (List::iterator it = lst.begin(); it != lst.end(); it++) {
 				if (strcmp(((VariableBase *) *it)->GetName(), onePinName.c_str()) == 0) {
 					component->pins.push_back((VariableBase *) *it);
 

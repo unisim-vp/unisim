@@ -62,6 +62,7 @@
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
+#include <unisim/component/cxx/processor/hcs12x/register.hh>
 
 #include <unisim/util/debug/simple_register_registry.hh>
 
@@ -83,7 +84,6 @@ using unisim::kernel::variable::ParameterArray;
 using unisim::kernel::variable::Statistic;
 using unisim::kernel::Client;
 using unisim::kernel::Service;
-using unisim::kernel::variable::CallBackObject;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::logger::Logger;
@@ -129,6 +129,10 @@ using unisim::component::cxx::processor::hcs12x::Exception;
 using unisim::component::cxx::processor::hcs12x::AsynchronousException;
 using unisim::component::cxx::processor::hcs12x::TSemaphore;
 using unisim::component::cxx::processor::hcs12x::TOWNER;
+
+using unisim::component::cxx::processor::hcs12x::CallBackObject;
+using unisim::component::cxx::processor::hcs12x::TCallBack;
+using unisim::component::cxx::processor::hcs12x::RegisterView;
 
 class XGCCR_t
 {

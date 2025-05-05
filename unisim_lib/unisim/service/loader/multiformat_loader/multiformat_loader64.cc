@@ -53,12 +53,6 @@ namespace kernel {
 namespace variable {
 
 typedef unisim::service::loader::multiformat_loader::AddressRange<uint64_t> AddressRange64;
-	
-template <> Variable<AddressRange64 >::Variable(const char *_name, Object *_object, AddressRange64 & _storage, Type type, const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
-{
-	Initialize();
-}
 
 template <>
 const char *Variable<AddressRange64 >::GetDataTypeName() const
@@ -80,142 +74,122 @@ unsigned int Variable<AddressRange64 >::GetBitSize() const
 
 template <> Variable<AddressRange64 >::operator bool () const
 {
-	return !storage->IsEmpty();
+	return !Get().IsEmpty();
 }
 
 template <> Variable<AddressRange64 >::operator long long () const
 {
-	return storage->GetAmplitude();
+	return Get().GetAmplitude();
 }
 
 template <> Variable<AddressRange64 >::operator unsigned long long () const
 {
-	return storage->GetAmplitude();
+	return Get().GetAmplitude();
 }
 
 template <> Variable<AddressRange64 >::operator double () const
 {
-	return (double) storage->GetAmplitude();
+	return (double) Get().GetAmplitude();
 }
 
 template <> Variable<AddressRange64 >::operator std::string () const
 {
-	return storage->ToString();
+	return Get().ToString();
 }
 
 template <> VariableBase& Variable<AddressRange64 >::operator = (bool value)
 {
-	if(IsMutable())
+	AddressRange64 tmp;
+	
+	if(value)
 	{
-		AddressRange64 tmp;
-		
-		if(value)
-		{
-			tmp.low = std::numeric_limits<uint64_t>::min();
-			tmp.high = std::numeric_limits<uint64_t>::max();
-		}
-		else
-		{
-			tmp.low = std::numeric_limits<uint64_t>::max();
-			tmp.high = std::numeric_limits<uint64_t>::min();
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		tmp.low = std::numeric_limits<uint64_t>::min();
+		tmp.high = std::numeric_limits<uint64_t>::max();
 	}
+	else
+	{
+		tmp.low = std::numeric_limits<uint64_t>::max();
+		tmp.high = std::numeric_limits<uint64_t>::min();
+	}
+	Set(tmp);
 	return *this;
 }
 
 template <> VariableBase& Variable<AddressRange64 >::operator = (long long value)
 {
-	if(IsMutable())
+	AddressRange64 tmp;
+	if(value > 0)
 	{
-		AddressRange64 tmp;
-		if(value > 0)
-		{
-			tmp.low = 0;
-			tmp.high = value - 1;
-		}
-		else
-		{
-			tmp.low = std::numeric_limits<uint64_t>::max();
-			tmp.high = std::numeric_limits<uint64_t>::min();
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		tmp.low = 0;
+		tmp.high = value - 1;
 	}
+	else
+	{
+		tmp.low = std::numeric_limits<uint64_t>::max();
+		tmp.high = std::numeric_limits<uint64_t>::min();
+	}
+	Set(tmp);
 	return *this;
 }
 
 template <> VariableBase& Variable<AddressRange64 >::operator = (unsigned long long value)
 {
-	if(IsMutable())
+	AddressRange64 tmp;
+	if(value > 0)
 	{
-		AddressRange64 tmp;
-		if(value > 0)
-		{
-			tmp.low = 0;
-			tmp.high = value - 1;
-		}
-		else
-		{
-			tmp.low = std::numeric_limits<uint64_t>::max();
-			tmp.high = std::numeric_limits<uint64_t>::min();
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		tmp.low = 0;
+		tmp.high = value - 1;
 	}
+	else
+	{
+		tmp.low = std::numeric_limits<uint64_t>::max();
+		tmp.high = std::numeric_limits<uint64_t>::min();
+	}
+	Set(tmp);
 	return *this;
 }
 
 template <> VariableBase& Variable<AddressRange64 >::operator = (double value)
 {
-	if(IsMutable())
+	AddressRange64 tmp;
+	if(value > 0.0)
 	{
-		AddressRange64 tmp;
-		if(value > 0.0)
-		{
-			tmp.low = 0;
-			tmp.high = value - 1;
-		}
-		else
-		{
-			tmp.low = std::numeric_limits<uint64_t>::max();
-			tmp.high = std::numeric_limits<uint64_t>::min();
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		tmp.low = 0;
+		tmp.high = value - 1;
 	}
+	else
+	{
+		tmp.low = std::numeric_limits<uint64_t>::max();
+		tmp.high = std::numeric_limits<uint64_t>::min();
+	}
+	Set(tmp);
 	return *this;
 }
 
 template <> VariableBase& Variable<AddressRange64 >::operator = (const char *value)
 {
-	if(IsMutable())
+	AddressRange64 tmp;
+	tmp.low = std::numeric_limits<uint64_t>::max();
+	tmp.high = std::numeric_limits<uint64_t>::min();
+
+	if(strlen(value) > 0)
 	{
-		AddressRange64 tmp;
-		tmp.low = std::numeric_limits<uint64_t>::max();
-		tmp.high = std::numeric_limits<uint64_t>::min();
+		std::string str(value);
 
-		if(strlen(value) > 0)
-		{
-			std::string str(value);
-
-			size_t pos;
-			pos = str.find('-');
-			std::string str_rest = str.substr(pos + 1);
-			str = str.substr(0, pos);
-			
-			std::stringstream range_low_str;
-			range_low_str << str;
-			range_low_str >> std::hex >> tmp.low >> std::dec;
-			
-			std::stringstream range_high_str;
-			range_high_str << str_rest;
-			range_high_str >> std::hex >> tmp.high >> std::dec;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		size_t pos;
+		pos = str.find('-');
+		std::string str_rest = str.substr(pos + 1);
+		str = str.substr(0, pos);
+		
+		std::stringstream range_low_str;
+		range_low_str << str;
+		range_low_str >> std::hex >> tmp.low >> std::dec;
+		
+		std::stringstream range_high_str;
+		range_high_str << str_rest;
+		range_high_str >> std::hex >> tmp.high >> std::dec;
 	}
+	Set(tmp);
 	return *this;
 }
 

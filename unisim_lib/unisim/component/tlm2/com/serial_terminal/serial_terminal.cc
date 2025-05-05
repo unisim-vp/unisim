@@ -514,8 +514,17 @@ using unisim::component::tlm2::com::serial_terminal::PARITY_TYPE_NONE;
 using unisim::component::tlm2::com::serial_terminal::PARITY_TYPE_EVEN;
 using unisim::component::tlm2::com::serial_terminal::PARITY_TYPE_ODD;
 
-  template <> Variable<ParityType>::Variable(const char *_name, Object *_object, ParityType& _storage, Type type, const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
+template <> Variable<ParityType>::Variable(const char *_name, Object *_object, ParityType& _storage, Type _type, const char *_description) :
+	VariableBase(_name, _object, _type, _description), storage(new DirectVariableStorage<ParityType>(_storage))
+{
+	Initialize();
+	AddEnumeratedValue("none");
+	AddEnumeratedValue("even");
+	AddEnumeratedValue("odd");
+}
+
+template <> Variable<ParityType>::Variable(const char *_name, VariableBase& _container, VariableStorage<ParityType> * _storage, Type _type, const char *_description) :
+	VariableBase(_name, _container, _type, _description), storage(_storage)
 {
 	Initialize();
 	AddEnumeratedValue("none");
@@ -541,13 +550,13 @@ unsigned int Variable<ParityType>::GetBitSize() const
 	return 2;
 }
 
-template <> Variable<ParityType>::operator bool () const { return *storage != PARITY_TYPE_NONE; }
-template <> Variable<ParityType>::operator long long () const { return *storage; }
-template <> Variable<ParityType>::operator unsigned long long () const { return *storage; }
-template <> Variable<ParityType>::operator double () const { return (double)(*storage); }
+template <> Variable<ParityType>::operator bool () const { return Get() != PARITY_TYPE_NONE; }
+template <> Variable<ParityType>::operator long long () const { return Get(); }
+template <> Variable<ParityType>::operator unsigned long long () const { return Get(); }
+template <> Variable<ParityType>::operator double () const { return (double)Get(); }
 template <> Variable<ParityType>::operator std::string () const
 {
-	switch(*storage)
+	switch(Get())
 	{
 		case PARITY_TYPE_NONE: return std::string("none");
 		case PARITY_TYPE_EVEN: return std::string("even");
@@ -558,91 +567,61 @@ template <> Variable<ParityType>::operator std::string () const
 
 template <> VariableBase& Variable<ParityType>::operator = (bool value)
 {
-	if(IsMutable())
+	switch((unsigned int) value)
 	{
-		ParityType tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case PARITY_TYPE_NONE:
-			case PARITY_TYPE_EVEN:
-			case PARITY_TYPE_ODD :
-				tmp = (ParityType)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case PARITY_TYPE_NONE:
+		case PARITY_TYPE_EVEN:
+		case PARITY_TYPE_ODD :
+			Set((ParityType)(unsigned int) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<ParityType>::operator = (long long value)
 {
-	if(IsMutable())
+	switch(value)
 	{
-		ParityType tmp = *storage;
-		switch(value)
-		{
-			case PARITY_TYPE_NONE:
-			case PARITY_TYPE_EVEN:
-			case PARITY_TYPE_ODD :
-				tmp = (ParityType) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case PARITY_TYPE_NONE:
+		case PARITY_TYPE_EVEN:
+		case PARITY_TYPE_ODD :
+			Set((ParityType) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<ParityType>::operator = (unsigned long long value)
 {
-	if(IsMutable())
+	switch(value)
 	{
-		ParityType tmp = *storage;
-		switch(value)
-		{
-			case PARITY_TYPE_NONE:
-			case PARITY_TYPE_EVEN:
-			case PARITY_TYPE_ODD :
-				tmp = (ParityType) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case PARITY_TYPE_NONE:
+		case PARITY_TYPE_EVEN:
+		case PARITY_TYPE_ODD :
+			Set((ParityType) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<ParityType>::operator = (double value)
 {
-	if(IsMutable())
+	switch((unsigned int) value)
 	{
-		ParityType tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case PARITY_TYPE_NONE:
-			case PARITY_TYPE_EVEN:
-			case PARITY_TYPE_ODD :
-				tmp = (ParityType)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case PARITY_TYPE_NONE:
+		case PARITY_TYPE_EVEN:
+		case PARITY_TYPE_ODD :
+			Set((ParityType)(unsigned int) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<ParityType>::operator = (const char *value)
 {
-	if(IsMutable())
-	{
-		ParityType tmp = *storage;
-		if(std::string(value) == std::string("none")) tmp = PARITY_TYPE_NONE;
-		else if(std::string(value) == std::string("even")) tmp = PARITY_TYPE_EVEN;
-		else if(std::string(value) == std::string("odd")) tmp = PARITY_TYPE_ODD;
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
+	if(std::string(value) == std::string("none")) Set(PARITY_TYPE_NONE);
+	else if(std::string(value) == std::string("even")) Set(PARITY_TYPE_EVEN);
+	else if(std::string(value) == std::string("odd")) Set(PARITY_TYPE_ODD);
 	return *this;
 }
 
@@ -652,8 +631,16 @@ using unisim::component::tlm2::com::serial_terminal::BitOrder;
 using unisim::component::tlm2::com::serial_terminal::LSB;
 using unisim::component::tlm2::com::serial_terminal::MSB;
 
-template <> Variable<BitOrder>::Variable(const char *_name, Object *_object, BitOrder& _storage, Type type, const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
+template <> Variable<BitOrder>::Variable(const char *_name, Object *_object, BitOrder& _storage, Type _type, const char *_description) :
+	VariableBase(_name, _object, _type, _description), storage(new DirectVariableStorage<BitOrder>(_storage))
+{
+	Initialize();
+	AddEnumeratedValue("lsb");
+	AddEnumeratedValue("msb");
+}
+
+template <> Variable<BitOrder>::Variable(const char *_name, VariableBase& _container, VariableStorage<BitOrder> * _storage, Type _type, const char *_description) :
+	VariableBase(_name, _container, _type, _description), storage(_storage)
 {
 	Initialize();
 	AddEnumeratedValue("lsb");
@@ -678,13 +665,13 @@ unsigned int Variable<BitOrder>::GetBitSize() const
 	return 1;
 }
 
-template <> Variable<BitOrder>::operator bool () const { return *storage != LSB; }
-template <> Variable<BitOrder>::operator long long () const { return *storage; }
-template <> Variable<BitOrder>::operator unsigned long long () const { return *storage; }
-template <> Variable<BitOrder>::operator double () const { return (double)(*storage); }
+template <> Variable<BitOrder>::operator bool () const { return Get() != LSB; }
+template <> Variable<BitOrder>::operator long long () const { return Get(); }
+template <> Variable<BitOrder>::operator unsigned long long () const { return Get(); }
+template <> Variable<BitOrder>::operator double () const { return (double)Get(); }
 template <> Variable<BitOrder>::operator std::string () const
 {
-	switch(*storage)
+	switch(Get())
 	{
 		case LSB: return std::string("lsb");
 		case MSB: return std::string("msb");
@@ -694,86 +681,56 @@ template <> Variable<BitOrder>::operator std::string () const
 
 template <> VariableBase& Variable<BitOrder>::operator = (bool value)
 {
-	if(IsMutable())
+	switch((unsigned int) value)
 	{
-		BitOrder tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case LSB:
-			case MSB:
-				tmp = (BitOrder)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case LSB:
+		case MSB:
+			Set((BitOrder)(unsigned int) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<BitOrder>::operator = (long long value)
 {
-	if(IsMutable())
+	switch(value)
 	{
-		BitOrder tmp = *storage;
-		switch(value)
-		{
-			case LSB:
-			case MSB:
-				tmp = (BitOrder) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case LSB:
+		case MSB:
+			Set((BitOrder) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<BitOrder>::operator = (unsigned long long value)
 {
-	if(IsMutable())
+	switch(value)
 	{
-		BitOrder tmp = *storage;
-		switch(value)
-		{
-			case LSB:
-			case MSB:
-				tmp = (BitOrder) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case LSB:
+		case MSB:
+			Set((BitOrder) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<BitOrder>::operator = (double value)
 {
-	if(IsMutable())
+	switch((unsigned int) value)
 	{
-		BitOrder tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case LSB:
-			case MSB:
-				tmp = (BitOrder)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
+		case LSB:
+		case MSB:
+			Set((BitOrder)(unsigned int) value);
+			break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<BitOrder>::operator = (const char *value)
 {
-	if(IsMutable())
-	{
-		BitOrder tmp = *storage;
-		if(std::string(value) == std::string("lsb")) tmp = LSB;
-		else if(std::string(value) == std::string("msb")) tmp = MSB;
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
+	if(std::string(value) == std::string("lsb")) Set(LSB);
+	else if(std::string(value) == std::string("msb")) Set(MSB);
 	return *this;
 }
 

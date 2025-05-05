@@ -45,7 +45,7 @@ using namespace unisim::component::cxx::pci;
 
 
 template <> Variable<PCISpace>::Variable(const char *_name, Object *_object, PCISpace& _storage, Type type, const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
+	VariableBase(_name, _object, type, _description), storage(new DirectVariableStorage<PCISpace>(_storage))
 {
 	Initialize();
 	AddEnumeratedValue("mem");
@@ -53,8 +53,8 @@ template <> Variable<PCISpace>::Variable(const char *_name, Object *_object, PCI
 	AddEnumeratedValue("cfg");
 }
 
-template <> Variable<PCISpace>::Variable(unsigned int _index, VariableBase& _container, PCISpace& _storage, Type type, const char *_description) :
-	VariableBase(_index, _container, type, _description), storage(&_storage)
+template <> Variable<PCISpace>::Variable(const char *_name, VariableBase& _container, VariableStorage<PCISpace> * _storage, Type type, const char *_description) :
+	VariableBase(_name, _container, type, _description), storage(_storage)
 {
 	Initialize();
 	AddEnumeratedValue("mem");
@@ -86,7 +86,7 @@ template <> Variable<PCISpace>::operator bool () const {
 }
 
 template <> Variable<PCISpace>::operator long long () const {
-	switch(*storage) {
+	switch(Get()) {
 	case SP_MEM:
 		return 1;
 	case SP_IO:
@@ -98,7 +98,7 @@ template <> Variable<PCISpace>::operator long long () const {
 }
     
 template <> Variable<PCISpace>::operator unsigned long long () const {   	
-  	switch(*storage) {
+	switch(Get()) {
 	case SP_MEM:
 		return 1;
 	case SP_IO:
@@ -110,8 +110,8 @@ template <> Variable<PCISpace>::operator unsigned long long () const {
 }
 
 template <> Variable<PCISpace>::operator double () const { 	
-  	switch(*storage) {
-  	case SP_MEM:
+	switch(Get()) {
+	case SP_MEM:
 		return (double)1;
 	case SP_IO:
 		return (double)2;
@@ -123,7 +123,7 @@ template <> Variable<PCISpace>::operator double () const {
 }
 
 template <> Variable<PCISpace>::operator std::string () const {
-	switch(*storage) {
+	switch(Get()) {
 	case SP_MEM:
 		return "mem";
 	case SP_IO:
@@ -138,105 +138,65 @@ template <> Variable<PCISpace>::operator std::string () const {
 template <> VariableBase& Variable<PCISpace>::operator = (bool value) { return *this;}
 
 template <> VariableBase& Variable<PCISpace>::operator = (long long value) { 
-	if(IsMutable())
-	{
-		PCISpace tmp;
-		switch(value) {
-		case 1:
-			tmp = SP_MEM;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-			break;
-		case 2:
-			tmp = SP_IO;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-			break;
-		case 3:
-			tmp = SP_CONFIG;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-			break;
-		} 
+	switch(value) {
+	case 1:
+		Set(SP_MEM);
+		break;
+	case 2:
+		Set(SP_IO);
+		break;
+	case 3:
+		Set(SP_CONFIG);
+		break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<PCISpace>::operator = (unsigned long long value) {   	
-	if(IsMutable())
-	{
-		PCISpace tmp;
-		switch(value) {
-		case 1:
-			tmp = SP_MEM;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-			break;
-		case 2:
-			tmp = SP_IO;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-			break;
-		case 3:
-			tmp = SP_CONFIG;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-			break;
-		} 
+	switch(value) {
+	case 1:
+		Set(SP_MEM);
+		break;
+	case 2:
+		Set(SP_IO);
+		break;
+	case 3:
+		Set(SP_CONFIG);
+		break;
 	}
 	return *this;
 }
 
 template <> VariableBase& Variable<PCISpace>::operator = (double value) {   	
-	if(IsMutable())
+	if(value == 1)
 	{
-		PCISpace tmp;
-		if(value == 1)
-		{
-			tmp = SP_MEM;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-		}
-		else if(value == 2)
-		{
-			tmp = SP_IO;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-		}
-		else if(value == 3) 
-		{
-			tmp = SP_CONFIG;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-		}
+		Set(SP_MEM);
 	}
- 	return *this;
+	else if(value == 2)
+	{
+		Set(SP_IO);
+	}
+	else if(value == 3) 
+	{
+		Set(SP_CONFIG);
+	}
+	return *this;
 }
 
 template <> VariableBase& Variable<PCISpace>::operator = (const char *value) { 
-	if(IsMutable())
+	if (std::string(value) == std::string("mem"))
 	{
-		PCISpace tmp;
-		if (std::string(value) == std::string("mem"))
-		{
-			tmp = SP_MEM;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-		}
-		else if (std::string(value) == std::string("i/o"))
-		{
-			tmp = SP_IO;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-		}
-		else if (std::string(value) == std::string("cfg"))
-		{
-			tmp = SP_CONFIG;
-			SetModified(*storage != tmp);
-			*storage = tmp;
-		}
+		Set(SP_MEM);
 	}
- 	return *this;
+	else if (std::string(value) == std::string("i/o"))
+	{
+		Set(SP_IO);
+	}
+	else if (std::string(value) == std::string("cfg"))
+	{
+		Set(SP_CONFIG);
+	}
+	return *this;
 }
 
 template class Parameter<PCISpace>;

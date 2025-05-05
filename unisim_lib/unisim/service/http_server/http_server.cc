@@ -324,14 +324,16 @@ bool HttpServer::EndSetup()
 		}
 	}
 
-	std::list<unisim::kernel::VariableBase *> kernel_param_lst;
-	std::list<unisim::kernel::VariableBase *> kernel_stat_lst;
+	struct VariableVisitor
+	{
+		bool Visit(unisim::kernel::VariableBase *variable)
+		{
+			return !variable->GetOwner();
+		}
+	} variable_visitor;
 	
-	GetSimulator()->GetRootVariables(kernel_param_lst, unisim::kernel::VariableBase::VAR_PARAMETER);
-	kernel_has_parameters = !kernel_param_lst.empty();
-	
-	GetSimulator()->GetRootVariables(kernel_stat_lst, unisim::kernel::VariableBase::VAR_STATISTIC);
-	kernel_has_statistics = !kernel_stat_lst.empty();
+	kernel_has_parameters = GetSimulator()->ScanParameters(variable_visitor);
+	kernel_has_statistics = GetSimulator()->ScanStatistics(variable_visitor);
 	
 	unsigned int i;
 
@@ -370,62 +372,68 @@ bool HttpServer::EndSetup()
 		}
 	}
 
-	std::list<unisim::kernel::Object *> objects;
-	GetSimulator()->GetObjects(objects);
-	
-	std::list<unisim::kernel::Object *>::const_iterator object_it;
-	for(object_it = objects.begin(); object_it != objects.end(); object_it++)
+	struct ObjectVisitor
 	{
-		unisim::kernel::Object *object = *object_it;
+		HttpServer& http_server;
 		
-		std::list<unisim::kernel::VariableBase *> param_lst;
-		std::list<unisim::kernel::VariableBase *> stat_lst;
-		object->GetVariables(param_lst, unisim::kernel::VariableBase::VAR_PARAMETER);
-		object->GetVariables(stat_lst, unisim::kernel::VariableBase::VAR_STATISTIC);
-
-		if(!param_lst.empty())
-		{
-			AddJSAction(
-				unisim::service::interfaces::BrowserOpenTabAction(
-				/* name        */ std::string("config-") + object->GetName(),
-				/* object name */ object->GetName(),
-				/* label       */ "Configure",
-				/* tile        */ unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
-				/* uri         */ std::string("/config?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(object->GetName())
-			));
-		}
+		ObjectVisitor(HttpServer& _http_server) : http_server(_http_server) {}
 		
-		if(!stat_lst.empty())
+		bool Visit(unisim::kernel::Object *object)
 		{
-			AddJSAction(
-				unisim::service::interfaces::BrowserOpenTabAction(
-				/* name        */ std::string("stats-") + object->GetName(),
-				/* object name */ object->GetName(),
-				/* label       */ "Show statistics",
-				/* tile        */ unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
-				/* uri         */ std::string("/stats?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(object->GetName())
-			));
-		}
-
-		std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *>::iterator it = registers_import_map.find(object);
-				
-		if(it != registers_import_map.end())
-		{
-			unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *import = (*it).second;
-			
-			if(import)
+			struct VariableVisitor
 			{
-				AddJSAction(
+				bool Visit(unisim::kernel::VariableBase *variable)
+				{
+					return true;
+				}
+			} variable_visitor;
+			
+			if(object->ScanParameters(variable_visitor))
+			{
+				http_server.AddJSAction(
 					unisim::service::interfaces::BrowserOpenTabAction(
-					/* name        */ std::string("registers-") + object->GetName(),
+					/* name        */ std::string("config-") + object->GetName(),
 					/* object name */ object->GetName(),
-					/* label       */ "Show registers",
-					/* tile        */ unisim::service::interfaces::OpenTabAction::TOP_RIGHT_TILE,
-					/* uri         */ std::string("/registers?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(object->GetName())
+					/* label       */ "Configure",
+					/* tile        */ unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
+					/* uri         */ std::string("/config?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(object->GetName())
 				));
 			}
+			if(object->ScanStatistics(variable_visitor))
+			{
+				http_server.AddJSAction(
+					unisim::service::interfaces::BrowserOpenTabAction(
+					/* name        */ std::string("stats-") + object->GetName(),
+					/* object name */ object->GetName(),
+					/* label       */ "Show statistics",
+					/* tile        */ unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
+					/* uri         */ std::string("/stats?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(object->GetName())
+				));
+			}
+			
+			std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *>::iterator it = http_server.registers_import_map.find(object);
+					
+			if(it != http_server.registers_import_map.end())
+			{
+				unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *import = (*it).second;
+				
+				if(import)
+				{
+					http_server.AddJSAction(
+						unisim::service::interfaces::BrowserOpenTabAction(
+						/* name        */ std::string("registers-") + object->GetName(),
+						/* object name */ object->GetName(),
+						/* label       */ "Show registers",
+						/* tile        */ unisim::service::interfaces::OpenTabAction::TOP_RIGHT_TILE,
+						/* uri         */ std::string("/registers?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(object->GetName())
+					));
+				}
+			}
+			return false;
 		}
-	}
+	} object_visitor(*this);
+	
+	GetSimulator()->ScanObjects(object_visitor);
 	
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
@@ -547,15 +555,24 @@ void HttpServer::AddStatusBarItem(const unisim::service::interfaces::StatusBarIt
 	statusbar_items.push_back(new unisim::service::interfaces::StatusBarItem(i));
 }
 
-unisim::kernel::Object *HttpServer::FindChildObject(unisim::kernel::Object *object, const std::string& hierarchical_name, std::size_t& pos)
+unisim::kernel::Object *HttpServer::FindObject(unisim::kernel::Object *object, const std::string& hierarchical_name, std::size_t& pos)
 {
 	std::size_t curr_pos = pos;
 	if(curr_pos >= hierarchical_name.length()) return 0;
 
-	if(hierarchical_name[curr_pos] == '/')
+	if(object)
 	{
-		pos = curr_pos + 1;
-		return (pos < hierarchical_name.length()) ? FindChildObject(object, hierarchical_name, pos) : 0; // eat "/"
+		if(hierarchical_name[curr_pos] == '/')
+		{
+			pos = curr_pos + 1;
+			return (pos < hierarchical_name.length()) ? FindObject(object, hierarchical_name, pos) : 0; // eat "/"
+		}
+	}
+	else
+	{
+		if(hierarchical_name[curr_pos] != '/') return 0;
+		
+		curr_pos++;
 	}
 	
 	std::size_t hierarchical_delimiter_pos = hierarchical_name.find_first_of('/', curr_pos);
@@ -565,33 +582,46 @@ unisim::kernel::Object *HttpServer::FindChildObject(unisim::kernel::Object *obje
 	if((len == 1) && (hierarchical_name[curr_pos] == '.'))
 	{
 		pos = hierarchical_delimiter_pos;
-		return (pos < hierarchical_name.length()) ? FindChildObject(object, hierarchical_name, pos) : 0; // eat "/."
+		return (pos < hierarchical_name.length()) ? FindObject(object, hierarchical_name, pos) : 0; // eat "/."
 	}
 	
-	if((len == 2) && (hierarchical_name[pos] == '.') && (hierarchical_name[pos + 1] == '.'))
+	if(object)
 	{
-		pos = hierarchical_delimiter_pos;
-		unisim::kernel::Object *parent = object->GetParent();
-		return (pos < hierarchical_name.length()) ? (parent ? FindChildObject(parent, hierarchical_name, pos) : 0) : parent; // eat "../"
-	}
-
-	const std::list<unisim::kernel::Object *>& leaf_objects = object->GetLeafs();
-	
-	std::list<unisim::kernel::Object *>::const_iterator it;
-	
-	unisim::kernel::Object *found_child = 0;
-	
-	for(it = leaf_objects.begin(); it != leaf_objects.end(); it++)
-	{
-		unisim::kernel::Object *child = *it;
-		
-		if(hierarchical_name.compare(curr_pos, len, child->GetObjectName()) == 0)
+		if((len == 2) && (hierarchical_name[pos] == '.') && (hierarchical_name[pos + 1] == '.'))
 		{
-			// found child
-			found_child = child;
-			break;
+			pos = hierarchical_delimiter_pos;
+			unisim::kernel::Object *parent = object->GetParent();
+			return (pos < hierarchical_name.length()) ? (parent ? FindObject(parent, hierarchical_name, pos) : 0) : parent; // eat "../"
 		}
 	}
+	else
+	{
+		if((len == 2) && (hierarchical_name[curr_pos] == '.') && (hierarchical_name[curr_pos + 1] == '.'))
+		{
+			return 0; // "../" is forbidden for root
+		}
+	}
+
+	struct ObjectVisitor
+	{
+		unisim::kernel::Object *object;
+		const std::string& hierarchical_name;
+		std::size_t curr_pos;
+		std::size_t len;
+		
+		ObjectVisitor(unisim::kernel::Object *_object, const std::string& _hierarchical_name, std::size_t _curr_pos, std::size_t _len)
+			: object(_object), hierarchical_name(_hierarchical_name), curr_pos(_curr_pos), len(_len)
+		{
+		}
+		
+		unisim::kernel::Object *Visit(unisim::kernel::Object *child)
+		{
+			return ((object || !child->GetParent()) && (hierarchical_name.compare(curr_pos, len, child->GetObjectName()) == 0)) ? child : 0;
+		}
+	} object_visitor(object, hierarchical_name, curr_pos, len);
+	
+	unisim::kernel::Object *found_child = object ? object->ScanChildren<ObjectVisitor, unisim::kernel::Object *>(object_visitor)
+	                                             : GetSimulator()->ScanObjects<ObjectVisitor, unisim::kernel::Object *>(object_visitor);
 	
 	if(!found_child)
 	{
@@ -607,72 +637,14 @@ unisim::kernel::Object *HttpServer::FindChildObject(unisim::kernel::Object *obje
 	
 	pos = hierarchical_delimiter_pos;
 	
-	unisim::kernel::Object *found_object = (pos < hierarchical_name.length()) ? FindChildObject(found_child, hierarchical_name, pos) : 0;
+	unisim::kernel::Object *found_object = (pos < hierarchical_name.length()) ? FindObject(found_child, hierarchical_name, pos) : 0;
 	
 	return found_object ? found_object : found_child;
 }
 
 unisim::kernel::Object *HttpServer::FindObject(const std::string& hierarchical_name, std::size_t& pos)
 {
-	std::size_t curr_pos = pos;
-	if(curr_pos >= hierarchical_name.length()) return 0;
-
-	if(hierarchical_name[curr_pos] != '/') return 0;
-	
-	curr_pos++;
-	
-	std::size_t hierarchical_delimiter_pos = hierarchical_name.find_first_of('/', curr_pos);
-	
-	std::size_t len = ((hierarchical_delimiter_pos == std::string::npos) ? hierarchical_name.length() : hierarchical_delimiter_pos) - curr_pos;
-	
-	if((len == 1) && (hierarchical_name[curr_pos] == '.'))
-	{
-		pos = hierarchical_delimiter_pos;
-		return (pos < hierarchical_name.length()) ? FindObject(hierarchical_name, pos) : 0; // eat "/."
-	}
-	
-	if((len == 2) && (hierarchical_name[curr_pos] == '.') && (hierarchical_name[curr_pos + 1] == '.'))
-	{
-		return 0; // "../" is forbidden for root
-	}
-
-	std::list<unisim::kernel::Object *> root_objects;
-	
-	GetSimulator()->GetRootObjects(root_objects);
-	
-	std::list<unisim::kernel::Object *>::const_iterator it;
-	
-	unisim::kernel::Object *found_root_object = 0;
-	
-	for(it = root_objects.begin(); it != root_objects.end(); it++)
-	{
-		unisim::kernel::Object *root_object = *it;
-		
-		if(hierarchical_name.compare(curr_pos, len, root_object->GetObjectName()) == 0)
-		{
-			// found root object
-			found_root_object = root_object;
-			break;
-		}
-	}
-
-	if(!found_root_object)
-	{
-		// not found
-		return 0;
-	}
-	
-	if(hierarchical_delimiter_pos == std::string::npos)
-	{
-		pos = hierarchical_name.length();
-		return found_root_object;
-	}
-	
-	pos = hierarchical_delimiter_pos;
-	
-	unisim::kernel::Object *found_object = (pos < hierarchical_name.length()) ? FindChildObject(found_root_object, hierarchical_name, pos) : 0;
-	
-	return found_object ? found_object : found_root_object;
+	return FindObject(/* object */ 0, hierarchical_name, pos);
 }
 
 bool HttpServer::ServeFile(unisim::util::hypapp::HttpRequest const& req, const std::string& path, unisim::util::hypapp::ClientConnection const& conn)
@@ -788,7 +760,22 @@ bool HttpServer::ServeFile(unisim::util::hypapp::HttpRequest const& req, const s
 
 void HttpServer::Crawl(std::ostream& os, unisim::kernel::Object *object, unsigned int indent_level, bool last)
 {
-	const std::list<unisim::kernel::Object *>& leaf_objects = object->GetLeafs();
+	typedef std::vector<unisim::kernel::Object *> Children;
+	Children children;
+	struct ObjectVisitor
+	{
+		Children& children;
+		
+		ObjectVisitor(Children& _children) : children(_children) {}
+		
+		bool Visit(unisim::kernel::Object *child)
+		{
+			children.push_back(child);
+			return false;
+		}
+	} object_visitor(children);
+	
+	object->ScanChildren(object_visitor);
 	
 	unisim::kernel::ServiceImport<unisim::service::interfaces::HttpServer> *import = 0;
 	std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::HttpServer> *>::iterator it = http_server_import_map.find(object);
@@ -799,7 +786,7 @@ void HttpServer::Crawl(std::ostream& os, unisim::kernel::Object *object, unsigne
 	
 	std::pair<BrowserActions::const_iterator, BrowserActions::const_iterator> browser_actions_range = browser_actions.equal_range(object->GetName());
 	
-	if(import || (browser_actions_range.first != browser_actions_range.second) || !leaf_objects.empty())
+	if(import || (browser_actions_range.first != browser_actions_range.second) || !children.empty())
 	{
 		for(unsigned int i = 0; i < indent_level; i++) os << '\t';
 		os << "<li";
@@ -837,22 +824,22 @@ void HttpServer::Crawl(std::ostream& os, unisim::kernel::Object *object, unsigne
 		os << ">" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetObjectName());
 		os << "</span>" << std::endl;;
 		
-		if(!leaf_objects.empty())
+		if(!children.empty())
 		{
 			for(unsigned int i = 0; i < indent_level; i++) os << '\t';
 			os << "<ul class=\"tree\">" << std::endl;
 			indent_level++;
 			
-			std::list<unisim::kernel::Object *>::const_iterator it;
-			std::list<unisim::kernel::Object *>::const_iterator next_it;
+			Children::const_iterator it;
+			Children::const_iterator next_it;
 			
-			for(it = leaf_objects.begin(); it != leaf_objects.end(); it = next_it)
+			for(it = children.begin(); it != children.end(); it = next_it)
 			{
 				unisim::kernel::Object *child = *it;
 				next_it = it;
 				next_it++;
 				
-				Crawl(os, child, indent_level, next_it == leaf_objects.end());
+				Crawl(os, child, indent_level, next_it == children.end());
 			}
 			
 			indent_level--;
@@ -918,9 +905,22 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 	os << ">" << unisim::util::hypapp::HTML_Encoder::Encode(sim_program_name);
 	os << "</span>" << std::endl;
 
-	std::list<unisim::kernel::Object *> root_objects;
+	typedef std::vector<unisim::kernel::Object *> RootObjects;
+	RootObjects root_objects;
+	struct ObjectVisitor
+	{
+		RootObjects& root_objects;
+		
+		ObjectVisitor(RootObjects& _root_objects) : root_objects(_root_objects) {}
+		
+		bool Visit(unisim::kernel::Object *object)
+		{
+			if(!object->GetParent()) root_objects.push_back(object);
+			return false;
+		}
+	} object_visitor(root_objects);
 	
-	GetSimulator()->GetRootObjects(root_objects);
+	GetSimulator()->ScanObjects(object_visitor);
 	
 	if(!root_objects.empty())
 	{
@@ -928,8 +928,8 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 		os << "<ul class=\"tree\">" << std::endl;
 		indent_level++;
 		
-		std::list<unisim::kernel::Object *>::const_iterator it;
-		std::list<unisim::kernel::Object *>::const_iterator next_it;
+		RootObjects::const_iterator it;
+		RootObjects::const_iterator next_it;
 		
 		for(it = root_objects.begin(); it != root_objects.end(); it = next_it)
 		{
@@ -1068,17 +1068,28 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 			
 			if(object || is_kernel)
 			{
-				std::list<unisim::kernel::VariableBase *> var_lst;
-				if(object)
+				typedef std::vector<unisim::kernel::VariableBase *> Variables;
+				Variables variables;
+				struct VariableVisitor
 				{
-					object->GetVariables(var_lst, var_type);
-				}
-				else
-				{
-					GetSimulator()->GetRootVariables(var_lst, var_type);
-				}
+					unisim::kernel::Object *object;
+					Variables& variables;
+					
+					VariableVisitor(unisim::kernel::Object *_object, Variables& _variables) : object(_object), variables(_variables) {}
+					
+					bool Visit(unisim::kernel::VariableBase *variable)
+					{
+						if(object || !variable->GetOwner()) variables.push_back(variable);
+						return false;
+					}
+				} variable_visitor(object, variables);
 				
-				if(!var_lst.empty())
+				if(object)
+					object->ScanVariables(variable_visitor);
+				else
+					GetSimulator()->ScanVariables(variable_visitor);
+				
+				if(!variables.empty())
 				{
 					response << "\t\t<table class=\"var-table\">" << std::endl;
 					response << "\t\t\t<thead>" << std::endl;
@@ -1090,8 +1101,8 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 					response << "\t\t\t\t</tr>" << std::endl;
 					response << "\t\t\t</thead>" << std::endl;
 					response << "\t\t\t<tbody>" << std::endl;
-					std::list<unisim::kernel::VariableBase *>::const_iterator var_iter;
-					for(var_iter = var_lst.begin(); var_iter != var_lst.end(); var_iter++)
+					Variables::const_iterator var_iter;
+					for(var_iter = variables.begin(); var_iter != variables.end(); var_iter++)
 					{
 						unisim::kernel::VariableBase *var = *var_iter;
 						
@@ -1114,11 +1125,22 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 						if(var->HasEnumeratedValues())
 						{
 							response << "\t\t\t\t\t\t\t<select onchange=\"this.form.submit()\"" << (var->IsMutable() ? " title=\"Choose a value\"" : "") << " class=\"var-value-select" << (var->IsMutable() ? "" : " disabled") << "\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "\"" << (var->IsMutable() ? "" : " readonly") << ">" << std::endl;
-							std::vector<std::string> values;
-							var->GetEnumeratedValues(values);
+							typedef std::vector<std::string> Values;
+							Values values;
+							struct EnumValueVisitor
+							{
+								Values& values;
+								EnumValueVisitor(Values& _values) : values(_values) {}
+								
+								bool Visit(const std::string& value)
+								{
+									values.push_back(value);
+									return false;
+								}
+							} enum_value_visitor(values);
+							var->ScanEnumeratedValues(enum_value_visitor);
 							
-							std::vector<std::string>::const_iterator it;
-							for(it = values.begin(); it != values.end(); it++)
+							for(Values::const_iterator it = values.begin(); it != values.end(); it++)
 							{
 								const std::string& value = (*it);
 								response << "\t\t\t\t\t\t\t\t<option value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\""<< ((current_value == value) ? " selected": "") << (var->IsMutable() ? "" : " disabled") << ">" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "</option>" << std::endl;
