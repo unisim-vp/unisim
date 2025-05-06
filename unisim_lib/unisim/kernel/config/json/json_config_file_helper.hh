@@ -79,7 +79,8 @@ private:
 	unisim::kernel::Simulator *simulator;
 	
 	void SaveVariables(std::ostream& os, unisim::kernel::Object *object, unisim::kernel::VariableBase::Type type, Indent& indent);
-	void SaveVariable(std::ostream& os, unisim::kernel::VariableBase& variable);
+	void SaveVariableValue(std::ostream& os, unisim::kernel::VariableBase& variable, unisim::kernel::VariableBase::Type type, Indent& indent);
+	void SaveVariable(std::ostream& os, unisim::kernel::VariableBase& variable, unisim::kernel::VariableBase::Type type, Indent& indent);
 	void Assign(const std::string& section, const std::string& key, const std::string& value);
 };
 

@@ -45,6 +45,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <cstddef>
 #include <stdint.h>
 #include <pthread.h>
 
@@ -67,6 +68,7 @@ template <class TYPE> class VariableArray;
 
 class Object;
 class VariableBase;
+class VariableArrayBase;
 class Simulator;
 template <class SERVICE_IF> class Client;
 template <class SERVICE_IF> class Service;
@@ -148,6 +150,9 @@ public:
 	void SetDescription(const char *description);
 	void SetFormat(Format fmt);
 	bool IsVoid() const;
+	bool IsArray() const;
+	const VariableArrayBase& AsArray() const;
+	VariableArrayBase& AsArray();
 
 	virtual operator bool () const;
 	operator signed char () const;
@@ -178,9 +183,9 @@ public:
 	virtual VariableBase& operator = (double value);
 	virtual VariableBase& operator = (const char * value);
 
-	virtual VariableBase& operator [] (uint64_t index);
-	virtual const VariableBase& operator [] (uint64_t index) const;
-	virtual uint64_t GetLength() const;
+	virtual VariableBase& operator [] (std::size_t index);
+	virtual const VariableBase& operator [] (std::size_t index) const;
+	virtual std::size_t GetLength() const;
 	virtual unsigned int GetBitSize() const;
 	
 	virtual VariableBase& operator = (const VariableBase& variable);
@@ -232,6 +237,53 @@ T VariableBase::ScanEnumeratedValues(VISITOR& visitor) const
 	{
 		T ret = visitor.Visit(*it);
 		if(ret) return ret;
+	}
+	return T();
+}
+
+//=============================================================================
+//=                             VariableArrayBase                             =
+//=============================================================================
+
+class VariableArrayBase : public VariableBase
+{
+public:
+	typedef VariableBase::Type Type;
+	VariableArrayBase(const char *name, Object *owner, const char *description = NULL);
+	virtual ~VariableArrayBase();
+
+	virtual VariableBase& operator [] (std::size_t index);
+	virtual const VariableBase& operator [] (std::size_t index) const;
+	void SetFormat(Format fmt);
+	virtual std::size_t GetLength() const;
+	virtual VariableBase& operator = (const VariableBase& variable);
+	virtual void SetMutable(bool is_mutable);
+	virtual void SetVisible(bool is_visible);
+	virtual void SetSerializable(bool is_serializable);
+	virtual void SetModified(bool is_modified);
+
+	// struct VISITOR { T Visit(std::size_t, VariableBase *); };
+	template <typename VISITOR, typename T = bool> T ScanVariables(VISITOR& visitor, VariableBase::Type type = VariableBase::VAR_VOID) const;
+
+protected:
+	void Add(VariableBase *variable);
+
+private:
+	typedef std::vector<VariableBase *> Variables;
+	Variables variables;
+};
+
+template <typename VISITOR, typename T>
+T VariableArrayBase::ScanVariables(VISITOR& visitor, VariableBase::Type type) const
+{
+	for(Variables::const_iterator variable_iter = variables.begin(); variable_iter != variables.end(); ++variable_iter)
+	{
+		VariableBase *variable = (*variable_iter);
+		if(variable->IsVisible() && (type == VariableBase::VAR_VOID || variable->GetType() == type))
+		{
+			T ret = visitor.Visit(variable_iter - variables.begin(), variable);
+			if(ret) return ret;
+		}
 	}
 	return T();
 }

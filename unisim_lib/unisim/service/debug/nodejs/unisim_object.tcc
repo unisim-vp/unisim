@@ -223,9 +223,9 @@ v8::Local<v8::Object> UnisimObjectWrapper<CONFIG>::MakeObject()
 					}
 					case unisim::kernel::VariableBase::VAR_ARRAY:
 					{
-						uint64_t length = unisim_variable->GetLength();
+						std::size_t length = unisim_variable->GetLength();
 						v8::Local<v8::Array> unisim_variable_array = v8::Array::New(nodejs.GetIsolate(), length);
-						for(uint64_t idx = 0; idx < length; ++idx)
+						for(std::size_t idx = 0; idx < length; ++idx)
 						{
 							UnisimVariableWrapper<CONFIG> *unisim_variable_wrapper = UnisimVariableWrapper<CONFIG>::Wrap(nodejs, &(*unisim_variable)[idx]);
 							unisim_variable_array->Set(nodejs.GetContext(), idx, unisim_variable_wrapper->MakeObject().template As<v8::Value>()).ToChecked();

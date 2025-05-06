@@ -10,6 +10,7 @@ m4/real_path
 m4/windows
 std/algorithm
 std/cassert
+std/cstddef
 std/fstream
 std/iomanip
 std/iostream

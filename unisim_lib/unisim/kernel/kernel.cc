@@ -609,6 +609,11 @@ bool VariableBase::IsVoid() const
 	return this == Simulator::Instance()->void_variable;
 }
 
+bool VariableBase::IsArray() const
+{
+	return type == VAR_ARRAY;
+}
+
 bool VariableBase::IsMutable() const
 {
 	return is_mutable;
@@ -705,7 +710,7 @@ VariableBase& VariableBase::operator = (float value) { *this = (double) value; r
 VariableBase& VariableBase::operator = (double value) { NotifyListeners(); return *this; }
 VariableBase& VariableBase::operator = (const char *value) { NotifyListeners(); return *this; }
 
-VariableBase& VariableBase::operator [] (uint64_t index)
+VariableBase& VariableBase::operator [] (std::size_t index)
 {
 	if(index >= 0)
 	{
@@ -715,7 +720,7 @@ VariableBase& VariableBase::operator [] (uint64_t index)
 	return *this;
 }
 
-const VariableBase& VariableBase::operator [] (uint64_t index) const
+const VariableBase& VariableBase::operator [] (std::size_t index) const
 {
 	if(index >= 0)
 	{
@@ -725,7 +730,7 @@ const VariableBase& VariableBase::operator [] (uint64_t index) const
 	return *this;
 }
 
-uint64_t VariableBase::GetLength() const
+std::size_t VariableBase::GetLength() const
 {
 	return 0;
 }
@@ -741,6 +746,20 @@ VariableBase& VariableBase::operator = (const VariableBase& variable)
 std::string VariableBase::GetSymbolicValue() const
 {
 	return IsVisible() ? name : (std::string) *this;
+}
+
+const VariableArrayBase& VariableBase::AsArray() const
+{
+	const VariableArrayBase *var_array = dynamic_cast<const VariableArrayBase *>(this);
+	assert(var_array != 0);
+	return *var_array;
+}
+
+VariableArrayBase& VariableBase::AsArray()
+{
+	VariableArrayBase *var_array = dynamic_cast<VariableArrayBase *>(this);
+	assert(var_array != 0);
+	return *var_array;
 }
 
 void VariableBase::GenerateLatexDocumentation(std::ostream& os) const
@@ -833,7 +852,104 @@ VariableBase& VariableBase::GetVoidVariable()
 {
 	return *Simulator::Instance()->void_variable;
 }
-        
+
+//=============================================================================
+//=                             VariableArrayBase                             =
+//=============================================================================
+
+VariableArrayBase::VariableArrayBase(const char *_name, Object *_owner, const char *_description)
+	: VariableBase(_name, _owner, VariableBase::VAR_ARRAY, _description)
+	, variables()
+{
+}
+
+VariableArrayBase::~VariableArrayBase()
+{
+	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		delete *variable_iter;
+	}
+}
+
+void VariableArrayBase::Add(VariableBase *variable)
+{
+	variables.push_back(variable);
+}
+
+VariableBase& VariableArrayBase::operator [] (std::size_t index)
+{
+	if(index >= variables.size())
+	{
+		std::cerr << "Subscript out of range" << std::endl;
+		return GetVoidVariable();
+	}
+	return (*variables[index]);
+}
+
+const VariableBase& VariableArrayBase::operator [] (std::size_t index) const
+{
+	if(index >= variables.size())
+	{
+		std::cerr << "Subscript out of range" << std::endl;
+		return GetVoidVariable();
+	}
+	return (*variables[index]);
+}
+
+std::size_t VariableArrayBase::GetLength() const
+{
+	return (variables.size());
+}
+
+VariableBase& VariableArrayBase::operator = (const VariableBase& variable)
+{
+	for(std::size_t index = 0, length = variable.GetLength(); (index < length) && (index < variables.size()); ++index)
+	{
+		*variables[index] = variable[index];
+	}
+	return (*this);
+}
+
+void VariableArrayBase::SetFormat(Format fmt)
+{
+	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); ++variable_iter)
+	{
+		(*variable_iter)->SetFormat(fmt);
+	}
+}
+
+void VariableArrayBase::SetMutable(bool _is_mutable)
+{
+	VariableBase::SetMutable(_is_mutable);
+	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		(*variable_iter)->SetMutable(_is_mutable);
+	}
+}
+
+void VariableArrayBase::SetVisible(bool _is_visible)
+{
+	VariableBase::SetVisible(_is_visible);
+	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		(*variable_iter)->SetVisible(_is_visible);
+	}
+}
+
+void VariableArrayBase::SetSerializable(bool _is_serializable)
+{
+	VariableBase::SetSerializable(_is_serializable);
+	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		(*variable_iter)->SetSerializable(_is_serializable);
+	}
+}
+
+void VariableArrayBase::SetModified(bool _is_modified)
+{
+	// Arrays can't be modified, only their elements
+}
+
 //=============================================================================
 //=                                 Object                                    =
 //=============================================================================
@@ -1321,7 +1437,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		config_file_formats += config_file_helper->GetName();
 	}
 
-	command_line_options.push_back(CommandLineOption('s', "set", "set value of parameter 'param' to 'value'", "param=value"));
+	command_line_options.push_back(CommandLineOption('s', "set", "set value of parameter 'param' to 'value' (value '[' means start of array or vector, subsequent arguments before ending ']' are element values)", "param=value"));
 	if(config_file_helpers.size())
 	{
 		command_line_options.push_back(CommandLineOption('c', "config", "configures the simulator with the given configuration file", "file"));
@@ -1465,6 +1581,20 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					break;
 				
 				case 1:
+					{
+						const char *p;
+						for(p = *arg; *p != 0 && *p != '='; p++);
+						if(*p == '=')
+						{
+							const char *variable_value = ++p;
+							if(*variable_value == '[')
+							{
+								// skipping array/vector opening bracket
+								state = 8;
+								break;
+							}
+						}
+					}
 					// skipping set variable
 					state = 0;
 					break;
@@ -1493,6 +1623,16 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 				case 7:
 					// skipping generate doc section
 					state = 0;
+					break;
+				case 8:
+					{
+						// skipping array/vector element or ending bracket
+						const char *variable_value = *arg;
+						if(strcmp(variable_value, "]") == 0)
+						{
+							state = 0;
+						}
+					}
 					break;
 				default:
 					std::cerr << "Internal error while parsing command line arguments" << std::endl;
@@ -1556,6 +1696,8 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	{
 		// parse command line arguments (second pass)
 		int state = 0;
+		std::string array_name;
+		std::size_t array_index = 0;
 		for(char **arg = argv + 1; arg < arg_end; arg++)
 		{
 			switch(state)
@@ -1642,7 +1784,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					{
 						std::string variable_name;
 						
-						char *p;
+						const char *p;
 						for(p = *arg; *p != 0 && *p != '='; p++)
 						{
 							variable_name += *p;
@@ -1650,6 +1792,14 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 						if(*p == '=')
 						{
 							const char *variable_value = ++p;
+							if(*variable_value == '[')
+							{
+								// array/vector opening bracket
+								array_name = variable_name;
+								array_index = 0;
+								state = 8;
+								break;
+							}
 							
 							SetVariable(variable_name.c_str(), variable_value);
 						}
@@ -1689,6 +1839,22 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 				case 7:
 					generate_doc_section = *arg;
 					state = 0;
+					break;
+				case 8:
+					{
+						const char *variable_value = *arg;
+						if(strcmp(variable_value, "]") == 0)
+						{
+							// array/vector ending bracket
+							state = 0;
+							break;
+						}
+						if(strncmp(variable_value, "\\]", 2) == 0) ++variable_value; // escaping ] at beginning
+						std::ostringstream sstr;
+						sstr << array_name << "[" << array_index << "]";
+						SetVariable(sstr.str().c_str(), variable_value);
+						++array_index;
+					}
 					break;
 				default:
 					std::cerr << "Internal error while parsing command line arguments" << std::endl;

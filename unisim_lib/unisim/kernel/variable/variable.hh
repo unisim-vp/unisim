@@ -73,12 +73,12 @@ template <class CONTAINER, class KEY, class TYPE>
 class IndirectVariableStorage : public VariableStorage<TYPE>
 {
 public:
-	IndirectVariableStorage(CONTAINER& _container, KEY _index) : container(_container), index(_index) {}
+	IndirectVariableStorage(CONTAINER& _container, KEY _key) : container(_container), key(_key) {}
 	
-	virtual TYPE& Get() { return container[index]; }
+	virtual TYPE& Get() { return container[key]; }
 private:
 	CONTAINER& container;
-	KEY index;
+	KEY key;
 };
 
 template <class TYPE>
@@ -179,6 +179,10 @@ public:
 	using Variable<TYPE>::operator=;
 };
 
+//=============================================================================
+//=                            Formula<TYPE>                                  =
+//=============================================================================
+
 class FormulaOperator
 {
 public:
@@ -265,138 +269,30 @@ public:
 //=============================================================================
 
 template <class TYPE>
-class VariableArray : public VariableBase
+class VariableArray : public VariableArrayBase
 {
 public:
 	typedef VariableBase::Type Type;
-	VariableArray(const char *name, Object *owner, TYPE *variables, uint64_t dim, Type type, const char *description = NULL);
-	virtual ~VariableArray();
-
-	virtual VariableBase& operator [] (uint64_t index);
-	virtual const VariableBase& operator [] (uint64_t index) const;
-	void SetFormat(Format fmt);
-	virtual uint64_t GetLength() const;
-	virtual VariableBase& operator = (const VariableBase& variable);
-	virtual void SetMutable(bool is_mutable);
-	virtual void SetVisible(bool is_visible);
-	virtual void SetSerializable(bool is_serializable);
-	virtual void SetModified(bool is_modified);
-
-private:
-	typedef std::vector<VariableBase *> Variables;
-	Variables variables;
+	VariableArray(const char *name, Object *owner, TYPE *variables, std::size_t dim, Type type, const char *description = NULL);
 };
 
 template <class TYPE>
-VariableArray<TYPE>::VariableArray(const char *_name, Object *_owner, TYPE *_variables, uint64_t dim, VariableBase::Type type, const char *_description) :
-	VariableBase(_name, _owner, VariableBase::VAR_ARRAY, _description),
-	variables()
+VariableArray<TYPE>::VariableArray(const char *_name, Object *_owner, TYPE *_variables, std::size_t dim, VariableBase::Type type, const char *_description)
+	: VariableArrayBase(_name, _owner, _description)
 {
-	for(uint64_t i = 0; i < dim; ++i)
+	for(std::size_t i = 0; i < dim; ++i)
 	{
 		std::ostringstream sstr;
 		sstr << i;
-		variables.push_back(new Variable<TYPE>(sstr.str().c_str(), *this, new DirectVariableStorage<TYPE>(*(_variables + i)), type, _description));
+		this->Add(new Variable<TYPE>(sstr.str().c_str(), *this, new DirectVariableStorage<TYPE>(*(_variables + i)), type, _description));
 	}
-}
-
-template <class TYPE>
-VariableArray<TYPE>::~VariableArray()
-{
-	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		delete *variable_iter;
-	}
-}
-
-template <class TYPE>
-VariableBase& VariableArray<TYPE>::operator [] (uint64_t index)
-{
-	if(index >= variables.size())
-	{
-		std::cerr << "Subscript out of range" << std::endl;
-		return GetVoidVariable();
-	}
-	return (*variables[index]);
-}
-
-template <class TYPE>
-const VariableBase& VariableArray<TYPE>::operator [] (uint64_t index) const
-{
-	if(index >= variables.size())
-	{
-		std::cerr << "Subscript out of range" << std::endl;
-		return GetVoidVariable();
-	}
-	return (*variables[index]);
-}
-
-template <class TYPE>
-uint64_t VariableArray<TYPE>::GetLength() const
-{
-	return (variables.size());
-}
-
-template <class TYPE>
-VariableBase& VariableArray<TYPE>::operator = (const VariableBase& variable)
-{
-	for(uint64_t index = 0, length = variable.GetLength(); (index < length) && (index < variables.size()); ++index)
-	{
-		*variables[index] = variable[index];
-	}
-	return (*this);
-}
-
-template <class TYPE>
-void VariableArray<TYPE>::SetFormat(Format fmt)
-{
-	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); ++variable_iter)
-	{
-		(*variable_iter)->SetFormat(fmt);
-	}
-}
-
-template <class TYPE>
-void VariableArray<TYPE>::SetMutable(bool _is_mutable)
-{
-	VariableBase::SetMutable(_is_mutable);
-	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		(*variable_iter)->SetMutable(_is_mutable);
-	}
-}
-
-template <class TYPE>
-void VariableArray<TYPE>::SetVisible(bool _is_visible)
-{
-	VariableBase::SetVisible(_is_visible);
-	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		(*variable_iter)->SetVisible(_is_visible);
-	}
-}
-
-template <class TYPE>
-void VariableArray<TYPE>::SetSerializable(bool _is_serializable)
-{
-	VariableBase::SetSerializable(_is_serializable);
-	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		(*variable_iter)->SetSerializable(_is_serializable);
-	}
-}
-
-template <class TYPE>
-void VariableArray<TYPE>::SetModified(bool _is_modified)
-{
-	// Arrays can't be modified, only their elements
 }
 
 template <class TYPE>
 class ParameterArray : public VariableArray<TYPE>
 {
 public:
-	ParameterArray(const char *name, Object *owner, TYPE *parameters, uint64_t dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_PARAMETER, description) {}
+	ParameterArray(const char *name, Object *owner, TYPE *parameters, std::size_t dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_PARAMETER, description) {}
 	using VariableArray<TYPE>::operator =;
 };
 
@@ -404,7 +300,7 @@ template <class TYPE>
 class StatisticArray : public VariableArray<TYPE>
 {
 public:
-	StatisticArray(const char *name, Object *owner, TYPE *parameters, uint64_t dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_STATISTIC, description) {}
+	StatisticArray(const char *name, Object *owner, TYPE *parameters, std::size_t dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_STATISTIC, description) {}
 	using VariableArray<TYPE>::operator =;
 };
 
@@ -412,7 +308,7 @@ template <class TYPE>
 class RegisterArray : public VariableArray<TYPE>
 {
 public:
-	RegisterArray(const char *name, Object *owner, TYPE *parameters, uint64_t dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_REGISTER, description) {}
+	RegisterArray(const char *name, Object *owner, TYPE *parameters, std::size_t dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_REGISTER, description) {}
 	using VariableArray<TYPE>::operator =;
 };
 
@@ -420,7 +316,7 @@ template <class TYPE>
 class SignalArray : public VariableArray<TYPE>
 {
 public:
-	SignalArray(const char *name, Object *owner, TYPE *parameters, uint64_t dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_SIGNAL, description) {}
+	SignalArray(const char *name, Object *owner, TYPE *parameters, std::size_t dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_SIGNAL, description) {}
 	using VariableArray<TYPE>::operator =;
 };
 
@@ -429,140 +325,33 @@ public:
 //=============================================================================
 
 template <class TYPE>
-class VariableVector : public VariableBase
+class VariableVector : public VariableArrayBase
 {
 public:
 	typedef VariableBase::Type Type;
-	VariableVector(const char *name, Object *owner, std::vector<TYPE>& variables, Type type, const char *description = NULL);
-	virtual ~VariableVector();
-
-	virtual VariableBase& operator [] (uint64_t index);
-	virtual const VariableBase& operator [] (uint64_t index) const;
-	void SetFormat(Format fmt);
-	virtual uint64_t GetLength() const;
-	virtual VariableBase& operator = (const VariableBase& variable);
-	virtual void SetMutable(bool is_mutable);
-	virtual void SetVisible(bool is_visible);
-	virtual void SetSerializable(bool is_serializable);
-	virtual void SetModified(bool is_modified);
-
-private:
-	typedef std::vector<VariableBase *> Variables;
-	Variables variables;
+	typedef std::vector<TYPE> Storage;
+	VariableVector(const char *name, Object *owner, Storage& variables, Type type, const char *description = NULL);
 };
 
 template <class TYPE>
-VariableVector<TYPE>::VariableVector(const char *_name, Object *_owner, std::vector<TYPE>& _variables, VariableBase::Type type, const char *_description) :
-	VariableBase(_name, _owner, VariableBase::VAR_ARRAY, _description),
-	variables()
+VariableVector<TYPE>::VariableVector(const char *_name, Object *_owner, Storage& _variables, VariableBase::Type type, const char *_description)
+	: VariableArrayBase(_name, _owner, _description)
 {
-	for(uint64_t i = 0, dim = _variables.size(); ; ++i)
+	for(std::size_t i = 0, dim = _variables.size(); ; ++i)
 	{
 		std::ostringstream sstr;
 		sstr << i;
 		
 		if(i >= dim) _variables.resize(i + 1);
-		Variable<TYPE> *variable = new Variable<TYPE>(sstr.str().c_str(), *this, new IndirectVariableStorage<std::vector<TYPE>, uint64_t, TYPE>(_variables, i), type, _description);
+		Variable<TYPE> *variable = new Variable<TYPE>(sstr.str().c_str(), *this, new IndirectVariableStorage<Storage, std::size_t, TYPE>(_variables, i), type, _description);
 		if((i >= dim) && !variable->IsInitialized())
 		{
 			_variables.pop_back();
 			delete variable;
 			break;
 		}
-		variables.push_back(variable);
-	};
-}
-
-template <class TYPE>
-VariableVector<TYPE>::~VariableVector()
-{
-	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		delete *variable_iter;
+		this->Add(variable);
 	}
-}
-
-template <class TYPE>
-VariableBase& VariableVector<TYPE>::operator [] (uint64_t index)
-{
-	if(index >= variables.size())
-	{
-		std::cerr << "Subscript out of range" << std::endl;
-		return GetVoidVariable();
-	}
-	return (*variables[index]);
-}
-
-template <class TYPE>
-const VariableBase& VariableVector<TYPE>::operator [] (uint64_t index) const
-{
-	if(index >= variables.size())
-	{
-		std::cerr << "Subscript out of range" << std::endl;
-		return GetVoidVariable();
-	}
-	return (*variables[index]);
-}
-
-template <class TYPE>
-uint64_t VariableVector<TYPE>::GetLength() const
-{
-	return (variables.size());
-}
-
-template <class TYPE>
-VariableBase& VariableVector<TYPE>::operator = (const VariableBase& variable)
-{
-	for(uint64_t index = 0, length = variable.GetLength(); (index < length) && (index < variables.size()); ++index)
-	{
-		*variables[index] = variable[index];
-	}
-	return (*this);
-}
-
-template <class TYPE>
-void VariableVector<TYPE>::SetFormat(Format fmt)
-{
-	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		(*variable_iter)->SetFormat(fmt);
-	}
-}
-
-template <class TYPE>
-void VariableVector<TYPE>::SetMutable(bool _is_mutable)
-{
-	VariableBase::SetMutable(_is_mutable);
-	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		(*variable_iter)->SetMutable(_is_mutable);
-	}
-}
-
-template <class TYPE>
-void VariableVector<TYPE>::SetVisible(bool _is_visible)
-{
-	VariableBase::SetVisible(_is_visible);
-	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		(*variable_iter)->SetVisible(_is_visible);
-	}
-}
-
-template <class TYPE>
-void VariableVector<TYPE>::SetSerializable(bool _is_serializable)
-{
-	VariableBase::SetSerializable(_is_serializable);
-	for(typename Variables::iterator variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		(*variable_iter)->SetSerializable(_is_serializable);
-	}
-}
-
-template <class TYPE>
-void VariableVector<TYPE>::SetModified(bool _is_modified)
-{
-	// Vectors can't be modified, only their elements
 }
 
 template <class TYPE>
