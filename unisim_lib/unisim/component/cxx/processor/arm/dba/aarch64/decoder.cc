@@ -322,17 +322,17 @@ struct Processor
 
       void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu, U64 value) const override
       {
-        std::cerr << "error : undefined system register write in:\n" << std::hex << cpu.current_instruction_address << std::dec << ":\t";
-        DisasmWrite(op0, op1, crn, crm, op2, rt, std::cerr);
-        std::cerr << "\n";
+        // std::cerr << "error : undefined system register write in:\n" << std::hex << cpu.current_instruction_address << std::dec << ":\t";
+        // DisasmWrite(op0, op1, crn, crm, op2, rt, std::cerr);
+        // std::cerr << "\n";
         throw Processor::CantDoThat();
       }
 
       U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu) const override
       {
-        std::cerr << "error : undefined system register read in:\n" << std::hex << cpu.current_instruction_address << std::dec << ":\t";
-        DisasmRead(op0, op1, crn, crm, op2, rt, std::cerr);
-        std::cerr << "\n";
+        // std::cerr << "error : undefined system register read in:\n" << std::hex << cpu.current_instruction_address << std::dec << ":\t";
+        // DisasmRead(op0, op1, crn, crm, op2, rt, std::cerr);
+        // std::cerr << "\n";
         throw Processor::CantDoThat();
         return U64();
       }
@@ -373,21 +373,21 @@ struct Processor
       }
       virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu, U64 value) const override
       {
-        fields(op0, op1, crn, crm, op2, std::cerr << std::hex << cpu.current_instruction_address << ": unimplemented, cannot write " << std::dec);
-        std::cerr << std::endl;
+        // fields(op0, op1, crn, crm, op2, std::cerr << std::hex << cpu.current_instruction_address << ": unimplemented, cannot write " << std::dec);
+        // std::cerr << std::endl;
         throw CantDoThat();
       }
       virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu) const override
       {
-        fields(op0, op1, crn, crm, op2, std::cerr << std::hex << cpu.current_instruction_address << ": unimplemented, cannot read " << std::dec);
-        std::cerr << std::endl;
+        // fields(op0, op1, crn, crm, op2, std::cerr << std::hex << cpu.current_instruction_address << ": unimplemented, cannot read " << std::dec);
+        // std::cerr << std::endl;
         throw CantDoThat();
         return U64();
       }
     } err;
 
-    err.fields(op0, op1, crn, crm, op2, std::cerr << "Unknown system register: ");
-    std::cerr << std::endl;
+    // err.fields(op0, op1, crn, crm, op2, std::cerr << "Unknown system register: ");
+    // std::cerr << std::endl;
     return &err;
   }
 
