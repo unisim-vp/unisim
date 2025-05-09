@@ -101,7 +101,7 @@ class Dbg
 		this.inferior(0);
 		this.breakpoints = [];
 		this.watchpoints = [];
-		this.search_path = searchPath;
+		this.search_paths = JSON.stringify(searchPaths);
 		this.source_cache = new Map();
 		this.x_fmt = 'x';
 		this.x_size = 'w';
@@ -454,7 +454,19 @@ class Dbg
 			sim_elem = simulator;
 		}
 		if(key === undefined) key = 'sim';
-		if((sim_elem instanceof UnisimObject) || (sim_elem instanceof Array))
+		if(sim_elem instanceof UnisimObject)
+		{
+			settings[key] = {}
+			for(let prop_name of [ 'children', 'variables' ])
+			{
+				let sim_elem_prop = sim_elem[prop_name];
+				for(let k in sim_elem_prop)
+				{
+					if(sim_elem_prop[k] !== undefined) this.add_simulator_variables_as_settings(settings[key], sim_elem_prop[k], k);
+				}
+			}
+		}
+		else if(sim_elem instanceof Array)
 		{
 			settings[key] = {}
 			for(let k in sim_elem)
@@ -936,12 +948,11 @@ class Dbg
 	{
 		if(dirname)
 		{
-			if(searchPath) searchPath += ';';
-			searchPath += dirname;
+			searchPaths.push(dirname);
 		}
 		else
 		{
-			searchPath = '';
+			while(searchPaths.length > 0) searchPaths.pop();
 		}
 	}
 	
@@ -1069,7 +1080,7 @@ class Dbg
 		}
 		else if((path === 'directories') || (path === 'dir'))
 		{
-			this.log('Source directories searched: ' + searchPath);
+			this.log('Source directories searched: \n' + searchPaths.join('\n'));
 		}
 		else
 		{
@@ -1261,10 +1272,11 @@ class Dbg
 	{
 		return new Promise((resolve, reject) =>
 		{
-			if(this.search_path != searchPath)
+			const search_paths = JSON.stringify(searchPaths);
+			if(this.search_paths != search_paths)
 			{
 				this.source_cache.clear();
-				this.search_path = searchPath;
+				this.search_paths = search_paths;
 			}
 			
 			let src = this.source_cache.get(source_path);
@@ -2556,8 +2568,8 @@ class Dbg
 			{
 				const stack_frame_info = stack_frame_infos[i];
 				output += '#' + stack_frame_info.id;
-				if(i != 0) output += ' ' + this.toHexAddress(stack_frame_info.pc);
-				const display_addr = (i === 0) ? stack_frame_info.pc : (BigInt(stack_frame_info.pc) - 1n);
+				if(i != 0) output += ' ' + this.toHexAddress(BigInt(stack_frame_info.pc));
+				const display_addr = (i === 0) ? BigInt(stack_frame_info.pc) : (BigInt(stack_frame_info.pc) - 1n);
 				if(i != 0) output += ' in';
 				output += ' ' + this.toFunctionName(display_addr);
 				const stmt = findStatement(display_addr, { scope: 'nearest-lower-or-equal-stmt-within-function' });

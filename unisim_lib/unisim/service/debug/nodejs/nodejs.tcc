@@ -123,6 +123,7 @@ NodeJS<CONFIG>::NodeJS(const char *_name, unisim::kernel::Object *_parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugProcessors<ADDRESS, TIME_TYPE> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Registers>(_name, _parent)
 	, debug_yielding_export("debug-yielding-export", this)
 	, debug_yielding_request_import("debug-yielding-request-import", this)
 	, debug_event_trigger_import("debug-event-trigger-import", this)
@@ -131,6 +132,7 @@ NodeJS<CONFIG>::NodeJS(const char *_name, unisim::kernel::Object *_parent)
 	, debug_info_loading_import("debug-info-loading-import", this)
 	, subprogram_lookup_import("subprogram-lookup-import", this)
 	, debug_processors_import("processors-import", this)
+	, registers_import()
 	, logger(*this)
 	, interactive(true)
 	, builtin_repl(false)
@@ -145,6 +147,7 @@ NodeJS<CONFIG>::NodeJS(const char *_name, unisim::kernel::Object *_parent)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
 	, param_program_counter_name("program-counter-name", this, program_counter_name, "name of program counter")
 	, param_filename("filename", this, this->filename, "Filename of Javascript script (.js) to run")
+	, registers_import_map()
 	, std_output_stream(&std::cout)
 	, std_error_stream(&std::cerr)
 	, prompt(std::string(_name) + "> ")
@@ -170,11 +173,22 @@ NodeJS<CONFIG>::NodeJS(const char *_name, unisim::kernel::Object *_parent)
 	this->SetDebugInfoStream(logger.DebugInfoStream());
 	this->SetDebugWarningStream(logger.DebugWarningStream());
 	this->SetDebugErrorStream(logger.DebugErrorStream());
+
+	for(unsigned i = 0; i < MAX_IMPORTS; i++)
+	{
+		std::stringstream registers_import_name_sstr;
+		registers_import_name_sstr << "registers-import[" << i << "]";
+		registers_import[i] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>(registers_import_name_sstr.str().c_str(), this);
+	}
 }
 
 template <typename CONFIG>
 NodeJS<CONFIG>::~NodeJS()
 {
+	for(unsigned i = 0; i < MAX_IMPORTS; i++)
+	{
+		delete registers_import[i];
+	}
 }
 
 template <typename CONFIG>
@@ -380,14 +394,29 @@ bool NodeJS<CONFIG>::LocateFile(const std::string& filename, std::string& match_
 {
 	v8::HandleScope handle_scope(this->GetIsolate());
 	v8::Local<v8::Object> global_object = this->GetContext()->Global();
-	v8::Local<v8::String> prop_search_path = global_object->Get(
+	v8::Local<v8::Array> prop_search_paths = global_object->Get(
 		this->GetContext(),
-		v8::String::NewFromUtf8Literal(this->GetIsolate(), "searchPath")
-	).ToLocalChecked().template As<v8::String>();
-	unisim::util::locate::LocateFileOptions options;
-	if(!ToString(this->GetIsolate(), prop_search_path, options.search_path)) return false;
-	options.shared_directory = unisim::kernel::Object::GetSimulator()->GetSharedDataDirectory();
-	options.lazy_match = lazy_match;
+		v8::String::NewFromUtf8Literal(this->GetIsolate(), "searchPaths")
+	).ToLocalChecked().template As<v8::Array>();
+	std::vector<std::string> search_paths;
+	uint32_t length = prop_search_paths->Length();
+	for(uint32_t i = 0; i < length; ++i)
+	{
+		std::string search_path;
+		v8::Local<v8::Value> search_path_string;
+		if(prop_search_paths->Get(this->GetContext(), i).ToLocal(&search_path_string))
+		{
+			if(ToString(this->GetIsolate(), search_path_string.template As<v8::String>(), search_path))
+			{
+				search_paths.push_back(search_path);
+			}
+		}
+	}
+	unisim::util::locate::LocateFileOptions options(
+		search_paths,
+		unisim::kernel::Object::GetSimulator()->GetSharedDataDirectory(),
+		lazy_match
+	);
 	return unisim::util::locate::LocateFile(filename, match_file_path, options);
 }
 
@@ -524,6 +553,19 @@ bool NodeJS<CONFIG>::EndSetup()
 	{
 		logger << DebugError << "One or more imports are unbound" << EndDebugError;
 		return false;
+	}
+	
+	for(unsigned i = 0; i < MAX_IMPORTS; i++)
+	{
+		if(*registers_import[i])
+		{
+			unisim::kernel::Object *object = registers_import[i]->GetService();
+			
+			if(object)
+			{
+				registers_import_map[object] = registers_import[i];
+			}
+		}
 	}
 	
 	builtin_repl = interactive && filename.empty();
@@ -814,9 +856,9 @@ bool NodeJS<CONFIG>::Initialize()
 	// Create searchPath
 	global_object->DefineOwnProperty(
 		GetContext(),
-		v8::String::NewFromUtf8Literal(GetIsolate(), "searchPath"),
-		v8::String::NewFromUtf8Literal(GetIsolate(), ""),
-		v8::PropertyAttribute(v8::DontDelete)
+		v8::String::NewFromUtf8Literal(GetIsolate(), "searchPaths"),
+		v8::Array::New(GetIsolate()),
+		v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
 	).ToChecked();
 	
 	// Create processor array (read-only, don't delete)
@@ -1641,6 +1683,13 @@ void NodeJS<CONFIG>::ResolveContinue(v8::Local<v8::Value> value)
 		}
 	}
 	ClearContinueExecutionResolvers();
+}
+
+template <typename CONFIG>
+unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *NodeJS<CONFIG>::GetRegistersInterface(unisim::kernel::Object *object) const
+{
+	typename RegistersImportMap::const_iterator it = registers_import_map.find(object);
+	return (it != registers_import_map.end())	? (*it).second : 0;
 }
 
 /////////////////////////////// ObjectWrapper<> ////////////////////////////////

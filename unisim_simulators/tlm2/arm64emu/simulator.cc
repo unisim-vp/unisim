@@ -217,6 +217,10 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
         nodejs->debug_info_loading_import     >> *debugger->debug_info_loading_export[idx];
         nodejs->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[idx];
         nodejs->debug_processors_import       >> *debugger->debug_processors_export[idx];
+        {
+          unsigned idx = 0;
+          *nodejs->registers_import[idx++] >> cpu.registers_export;
+        }
       }
 #endif
   }

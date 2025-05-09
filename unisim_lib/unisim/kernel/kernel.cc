@@ -2692,8 +2692,6 @@ bool Simulator::ResolveBinPath(const std::string& executable_path, std::string& 
 	return false;
 }
 
-//#define DEBUG_SEARCH_SHARED_DATA_FILE
-
 bool Simulator::ResolveSharePath(const std::string& bin_dir, std::string& out_share_dir) const
 {
 	return ResolvePath(bin_dir, std::string(BIN_TO_SHARED_DATA_PATH), out_share_dir);
@@ -2711,42 +2709,10 @@ const std::string& Simulator::GetSharedDataDirectory() const
 
 std::string Simulator::SearchSharedDataFile(const char *filename) const
 {
-	std::string s(filename);
-	if(!s.empty())
-	{
-#ifdef DEBUG_SEARCH_SHARED_DATA_FILE
-		std::cerr << "SearchSharedDataFile: Trying \"" << s << "\"";
-#endif
-		if(access(s.c_str(), F_OK) == 0)
-		{
-#ifdef DEBUG_SEARCH_SHARED_DATA_FILE
-			std::cerr << "...found" << std::endl;
-#endif
-			return s;
-		}
-#ifdef DEBUG_SEARCH_SHARED_DATA_FILE
-		std::cerr << "...not found" << std::endl;
-#endif
-
-		std::stringstream sstr;
-		sstr << shared_data_dir << "/" << filename;
-		s = sstr.str();
-#ifdef DEBUG_SEARCH_SHARED_DATA_FILE
-		std::cerr << "SearchSharedDataFile: Trying \"" << s << "\"";
-#endif
-		if(access(s.c_str(), F_OK) == 0)
-		{
-#ifdef DEBUG_SEARCH_SHARED_DATA_FILE
-			std::cerr << "...found" << std::endl;
-#endif
-			return s;
-		}
-		
-#ifdef DEBUG_SEARCH_SHARED_DATA_FILE
-		std::cerr << "...not found" << std::endl;
-#endif
-	}
-	return std::string(filename);
+	return unisim::util::locate::LocateFile(
+		filename,
+		unisim::util::locate::LocateFileOptions(shared_data_dir)
+	);
 }
 
 std::vector<std::string> const&

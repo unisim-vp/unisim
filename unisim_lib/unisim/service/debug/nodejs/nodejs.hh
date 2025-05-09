@@ -113,11 +113,13 @@ struct NodeJS
 	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>
 	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<typename CONFIG::ADDRESS> >
 	, unisim::kernel::Client<unisim::service::interfaces::DebugProcessors<typename CONFIG::ADDRESS, typename CONFIG::TIME_TYPE> >
+	, unisim::kernel::Client<unisim::service::interfaces::Registers>
 {
 	typedef unisim::util::nodejs::NodeJS Super;
 	typedef typename CONFIG::ADDRESS ADDRESS;
 	typedef typename CONFIG::TIME_TYPE TIME_TYPE;
-	
+	static const unsigned int MAX_IMPORTS = 256;
+
 	// exports
 	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding>                        debug_yielding_export;
 	
@@ -129,6 +131,7 @@ struct NodeJS
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugInfoLoading>                     debug_info_loading_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >           subprogram_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugProcessors<ADDRESS, TIME_TYPE> > debug_processors_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>                           *registers_import[MAX_IMPORTS];
 	
 	NodeJS(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~NodeJS();
@@ -221,6 +224,9 @@ private:
 	unisim::kernel::variable::Parameter<std::string> param_program_counter_name;
 	unisim::kernel::variable::Parameter<std::string> param_filename;
 	
+	typedef std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *> RegistersImportMap;
+	RegistersImportMap registers_import_map;
+	
 	std::ostream *std_output_stream;
 	std::ostream *std_error_stream;
 	std::string prompt;
@@ -274,6 +280,8 @@ private:
 	void Continue();
 	void ClearContinueExecutionResolvers();
 	void ResolveContinue(v8::Local<v8::Value> value);
+	
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *GetRegistersInterface(unisim::kernel::Object *object) const;
 };
 
 /////////////////////////////// ObjectWrapper<> ////////////////////////////////

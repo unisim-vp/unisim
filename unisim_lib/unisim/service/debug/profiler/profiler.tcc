@@ -48,6 +48,7 @@
 #include <unisim/util/debug/profile.tcc>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/host_time/time.hh>
+#include <unisim/util/locate/locate.hh>
 #include <fstream>
 #include <iostream>
 
@@ -1522,9 +1523,9 @@ void SourceCodeProfile<ADDRESS, T>::Update()
 }
 
 template <typename ADDRESS, typename T>
-AnnotatedSourceCodeFileSetBase *SourceCodeProfile<ADDRESS, T>::CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path) const
+AnnotatedSourceCodeFileSetBase *SourceCodeProfile<ADDRESS, T>::CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const std::vector<std::string>& search_paths) const
 {
-	return new AnnotatedSourceCodeFileSet<ADDRESS, T>(this, func_name_loc_conv, filename_index, search_path, warn_log);
+	return new AnnotatedSourceCodeFileSet<ADDRESS, T>(this, func_name_loc_conv, filename_index, search_paths, warn_log);
 }
 
 template <typename ADDRESS, typename T>
@@ -1549,11 +1550,11 @@ const T& SourceCodeProfile<ADDRESS, T>::GetValue(const char *filename, unsigned 
 ///////////////////////// AnnotatedSourceCodeFile<> ///////////////////////////
 
 template <typename ADDRESS, typename T>
-AnnotatedSourceCodeFile<ADDRESS, T>::AnnotatedSourceCodeFile(const char *_filename, const SourceCodeProfile<ADDRESS, T> *_source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *_func_name_loc_conv, FilenameIndex *_filename_index, const char *_search_path, std::ostream& _warn_log)
+AnnotatedSourceCodeFile<ADDRESS, T>::AnnotatedSourceCodeFile(const char *_filename, const SourceCodeProfile<ADDRESS, T> *_source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *_func_name_loc_conv, FilenameIndex *_filename_index, const std::vector<std::string>& _search_paths, std::ostream& _warn_log)
 	: warn_log(_warn_log)
 	, filename(_filename)
 	, real_filename()
-	, search_path(_search_path)
+	, search_paths(_search_paths)
 	, source_code_profile(_source_code_profile)
 	, func_name_loc_conv(_func_name_loc_conv)
 	, filename_index(_filename_index)
@@ -1801,90 +1802,11 @@ void AnnotatedSourceCodeFile<ADDRESS, T>::Clear()
 template <typename ADDRESS, typename T>
 bool AnnotatedSourceCodeFile<ADDRESS, T>::LocateFile(const char *filename, std::string& match_file_path)
 {
-	const std::string& shared_data_dir = unisim::kernel::Simulator::Instance()->GetSharedDataDirectory();
-	
-	if(access(filename, R_OK) == 0)
-	{
-		match_file_path = filename;
-		return true;
-	}
-	
-	std::string s;
-	const char *p;
-
-	std::vector<std::string> search_paths;
-
-	s.clear();
-	p = search_path.c_str();
-	do
-	{
-		if(*p == 0 || *p == ';')
-		{
-			search_paths.push_back(s);
-			search_paths.push_back(shared_data_dir + '/' + s);
-			s.clear();
-		}
-		else
-		{
-			s += *p;
-		}
-	} while(*(p++));
-	
-	std::vector<std::string> hierarchical_path;
-	
-	s.clear();
-	p = filename;
-	do
-	{
-		if(*p == 0 || *p == '/' || *p == '\\')
-		{
-			hierarchical_path.push_back(s);
-			s.clear();
-		}
-		else
-		{
-			s += *p;
-		}
-	} while(*(p++));
-	
-	bool match = false;
-	
-	int hierarchical_path_depth = hierarchical_path.size();
-	
-	if(hierarchical_path_depth > 0)
-	{
-		int num_search_paths = search_paths.size();
-		int k;
-		
-		for(k = 0; k < num_search_paths; k++)
-		{
-			const std::string& search_path = search_paths[k];
-			int i;
-			for(i = 0; (!match) && (i < hierarchical_path_depth); i++)
-			{
-				std::string try_file_path = search_path;
-				int j;
-				for(j = i; j < hierarchical_path_depth; j++)
-				{
-					if(!try_file_path.empty()) try_file_path += '/';
-					try_file_path += hierarchical_path[j];
-				}
-				//std::cerr << "try_file_path=\"" << try_file_path << "\":";
-				if(access(try_file_path.c_str(), R_OK) == 0)
-				{
-					//std::cerr << "found" << std::endl;
-					match = true;
-					match_file_path = try_file_path;
-				}
-				else
-				{
-					//std::cerr << "not found" << std::endl;
-				}
-			}
-		}
-	}
-	
-	return match;
+	unisim::util::locate::LocateFileOptions options(
+		search_paths,
+		unisim::kernel::Simulator::Instance()->GetSharedDataDirectory()
+	);
+	return unisim::util::locate::LocateFile(filename, match_file_path, options);
 }
 
 template <typename ADDRESS, typename T>
@@ -1914,12 +1836,12 @@ void AnnotatedSourceCodeFile<ADDRESS, T>::AnnotatedSourceCodeFilePrinter::Print(
 
 
 template <typename ADDRESS, typename T>
-AnnotatedSourceCodeFileSet<ADDRESS, T>::AnnotatedSourceCodeFileSet(const SourceCodeProfile<ADDRESS, T> *_source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *_func_name_loc_conv, FilenameIndex *_filename_index, const char *_search_path, std::ostream& _warn_log)
+AnnotatedSourceCodeFileSet<ADDRESS, T>::AnnotatedSourceCodeFileSet(const SourceCodeProfile<ADDRESS, T> *_source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *_func_name_loc_conv, FilenameIndex *_filename_index, const std::vector<std::string>& _search_paths, std::ostream& _warn_log)
 	: warn_log(_warn_log)
 	, source_code_profile(_source_code_profile)
 	, func_name_loc_conv(_func_name_loc_conv)
 	, filename_index(_filename_index)
-	, search_path(_search_path)
+	, search_paths(_search_paths)
 	, annotated_source_code_files()
 {
 	Init();
@@ -1973,7 +1895,7 @@ void AnnotatedSourceCodeFileSet<ADDRESS, T>::Init()
 		
 		filename_index->IndexFilename(source_filename);
 
-		annotated_source_code_files[source_filename] = new AnnotatedSourceCodeFile<ADDRESS, T>(source_filename.c_str(), source_code_profile, func_name_loc_conv, filename_index, search_path.c_str(), warn_log);
+		annotated_source_code_files[source_filename] = new AnnotatedSourceCodeFile<ADDRESS, T>(source_filename.c_str(), source_code_profile, func_name_loc_conv, filename_index, search_paths, warn_log);
 	}
 }
 
@@ -2026,8 +1948,8 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, data_object_lookup_import("data-object-lookup-import", this)
 	, subprogram_lookup_import("subprogram-lookup-import", this)
 	, logger(*this)
-	, search_path()
-	, filename()
+	, search_paths()
+	, filenames()
 	, sampled_variables()
 	, output_directory()
 	, csv_delimiter(",")
@@ -2038,9 +1960,9 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, enable_csv_report(false)
 	, verbose(false)
 	, http_refresh_period(1.0)
-	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
-	, param_filename("filename", this, filename, "List of (binary) files (preferably ELF) to profile (separated by ',')")
-	, param_sampled_variables("sampled-variables", this, sampled_variables, "Variables to sample (separated by spaces)")
+	, param_search_paths("search-paths", this, search_paths, "Search paths for source")
+	, param_filenames("filenames", this, filenames, "List of (binary) files (preferably ELF) to profile")
+	, param_sampled_variables("sampled-variables", this, sampled_variables, "Variables to sample")
 	, param_output_directory("output-directory", this, output_directory, "Output directory where to generate profiling report")
 	, param_csv_delimiter("csv-delimiter", this, csv_delimiter, "CSV delimiter")
 	, param_csv_hyperlink("csv-hyperlink", this, csv_hyperlink, "CSV hyperlink macro (e.g. HYPERLINK or LIEN_HYPERTEXTE)")
@@ -2155,11 +2077,9 @@ bool Profiler<ADDRESS>::EndSetup()
 	
 	func_name_loc_conv = new FunctionNameLocationConversion<ADDRESS>(stmt_lookup_import, symbol_table_lookup_import, logger.DebugWarningStream());
 	
-	std::stringstream sstr(sampled_variables);
-	std::string var_name;
-
-	while(sstr >> var_name)
+	for(typename SampledVariableNames::const_iterator it = sampled_variables.begin(); it != sampled_variables.end(); ++it)
 	{
+		const std::string& var_name = *it;
 		unisim::kernel::VariableBase *var = unisim::kernel::Object::GetSimulator()->FindVariable(var_name.c_str());
 		
 		if(var->IsVoid())
@@ -2475,11 +2395,9 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 template <typename ADDRESS>
 void Profiler<ADDRESS>::ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner)
 {
-	std::stringstream sstr(sampled_variables);
-	std::string var_name;
-
-	while(sstr >> var_name)
+	for(typename SampledVariableNames::const_iterator it = sampled_variables.begin(); it != sampled_variables.end(); ++it)
 	{
+		const std::string& var_name = *it;
 		scanner.Append(unisim::service::interfaces::BrowserOpenTabAction(
 			/* name        */ std::string(this->GetName()) + "-" + var_name,
 			/* object name */ this->GetName(),
@@ -2565,20 +2483,15 @@ void Profiler<ADDRESS>::LoadDebugInfo()
 	debug_info_loading_import->ScanExecutableBinaryFiles(exec_bin_file_disabler);
 	
 	// Selectively load/reenable debug information from binaries
-	if(filename.empty())
+	if(filenames.empty())
 	{
 		logger << DebugWarning << "No debugging information loaded" << EndDebugWarning;
 	}
 	else
 	{
-		std::size_t pos = 0;
-		std::size_t delim_pos = std::string::npos;
-		
-		do
+		for(typename Filenames::const_iterator it = filenames.begin(); it != filenames.end(); ++it)
 		{
-			delim_pos = filename.find_first_of(",", pos);
-			
-			std::string _filename = (delim_pos != std::string::npos) ? filename.substr(pos, delim_pos - pos) : filename.substr(pos);
+			const std::string& filename = *it;
 			
 			struct ExecutableBinaryFileEnabler : unisim::service::interfaces::ExecutableBinaryFileScanner
 			{
@@ -2596,7 +2509,7 @@ void Profiler<ADDRESS>::LoadDebugInfo()
 			};
 			
 			ExecutableBinaryFileEnabler exec_bin_file_enabler;
-			exec_bin_file_enabler.real_filename = unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(_filename.c_str());
+			exec_bin_file_enabler.real_filename = unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(filename.c_str());
 			exec_bin_file_enabler.found = false;
 			debug_info_loading_import->ScanExecutableBinaryFiles(exec_bin_file_enabler);
 			if(exec_bin_file_enabler.found)
@@ -2614,9 +2527,7 @@ void Profiler<ADDRESS>::LoadDebugInfo()
 					logger << DebugInfo << "No debugging information loaded from \"" << exec_bin_file_enabler.real_filename << "\"" << EndDebugInfo;
 				}
 			}
-			pos = (delim_pos != std::string::npos) ? delim_pos + 1 : std::string::npos;
 		}
-		while(pos != std::string::npos);
 	}
 }
 
@@ -2687,7 +2598,7 @@ void Profiler<ADDRESS>::Update()
 		
 		FilenameIndex *filename_index = filename_indexes[i];
 		
-		AnnotatedSourceCodeFileSetBase *annotated_source_code_file_set = source_code_profile->CreateAnnotatedSourceCodeFileSet(func_name_loc_conv, filename_index, search_path.c_str());
+		AnnotatedSourceCodeFileSetBase *annotated_source_code_file_set = source_code_profile->CreateAnnotatedSourceCodeFileSet(func_name_loc_conv, filename_index, search_paths);
 		annotated_source_code_file_sets.push_back(annotated_source_code_file_set);
 	}
 }

@@ -426,11 +426,9 @@ bool Instrumenter::SetupInstrumentation()
 			
 			trace_file = sc_core::sc_create_vcd_trace_file(vcd_trace_filename_wo_ext.c_str());
 
-			std::string signal_name;
-			std::stringstream sstr(trace_signals);
-
-			while(sstr >> signal_name)
+			for(TracedSignalNames::const_iterator it = trace_signals.begin(); it != trace_signals.end(); ++it)
 			{
+				const std::string& signal_name = *it;
 				TraceSignalPattern(signal_name);
 			}
 		}

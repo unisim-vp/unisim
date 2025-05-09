@@ -614,6 +614,34 @@ Simulator::Simulator(int argc, char **argv)
 		nodejs->debug_info_loading_import               >> *debugger->debug_info_loading_export[front_end_num];
 		nodejs->subprogram_lookup_import                >> *debugger->subprogram_lookup_export[front_end_num];
 		nodejs->debug_processors_import                 >> *debugger->debug_processors_export[front_end_num];
+		{
+			unsigned int i = 0;
+			*nodejs->registers_import[i++] >> cpu->registers_export;
+			*nodejs->registers_import[i++] >> mmc->registers_export;
+			*nodejs->registers_import[i++] >> s12xint->registers_export;
+			*nodejs->registers_import[i++] >> crg->registers_export;
+			*nodejs->registers_import[i++] >> atd1->registers_export;
+			*nodejs->registers_import[i++] >> atd0->registers_export;
+			*nodejs->registers_import[i++] >> pwm->registers_export;
+			*nodejs->registers_import[i++] >> ect->registers_export;
+			*nodejs->registers_import[i++] >> pit->registers_export;
+			*nodejs->registers_import[i++] >> xgate->registers_export;
+			*nodejs->registers_import[i++] >> global_eeprom->registers_export;
+			*nodejs->registers_import[i++] >> sci0->registers_export;
+			*nodejs->registers_import[i++] >> sci1->registers_export;
+			*nodejs->registers_import[i++] >> sci2->registers_export;
+			*nodejs->registers_import[i++] >> sci3->registers_export;
+			*nodejs->registers_import[i++] >> sci4->registers_export;
+			*nodejs->registers_import[i++] >> sci5->registers_export;
+			*nodejs->registers_import[i++] >> can0->registers_export;
+			*nodejs->registers_import[i++] >> can1->registers_export;
+			*nodejs->registers_import[i++] >> can2->registers_export;
+			*nodejs->registers_import[i++] >> can3->registers_export;
+			*nodejs->registers_import[i++] >> can4->registers_export;
+			*nodejs->registers_import[i++] >> spi0->registers_export;
+			*nodejs->registers_import[i++] >> spi1->registers_export;
+			*nodejs->registers_import[i++] >> spi2->registers_export;
+		}
 		++front_end_num;
 	}
 #endif

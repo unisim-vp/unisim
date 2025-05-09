@@ -648,8 +648,9 @@ private:
 	
 	std::string vcd_trace_filename;
 	unisim::kernel::variable::Parameter<std::string> param_vcd_trace_filename;
-	std::string trace_signals;
-	unisim::kernel::variable::Parameter<std::string> param_trace_signals;
+	typedef std::vector<std::string> TracedSignalNames;
+	TracedSignalNames trace_signals;
+	unisim::kernel::variable::ParameterVector<std::string> param_trace_signals;
 	bool enable_trace_signals;
 	unisim::kernel::variable::Parameter<bool> param_enable_trace_signals;
 	sc_core::sc_trace_file *trace_file;

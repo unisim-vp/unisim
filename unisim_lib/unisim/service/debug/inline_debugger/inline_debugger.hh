@@ -110,8 +110,8 @@ public:
 protected:
 	virtual void Interrupt() = 0;
 	
-	std::string search_path;
-	unisim::kernel::variable::Parameter<std::string> param_search_path;
+	std::vector<std::string> search_paths;
+	unisim::kernel::variable::ParameterVector<std::string> param_search_paths;
 	bool is_started;
 };
 

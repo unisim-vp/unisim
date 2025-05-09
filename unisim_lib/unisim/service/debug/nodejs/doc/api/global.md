@@ -16,6 +16,10 @@ Whether simulator is running in interactive mode (see Run-time parameter `intera
 
 Whether running in simulator builtin REPL.
 
+## `(read-only) searchPaths: Array of string'
+
+The list of directory paths to look for files (see also `locateFile`).
+
 ## `quit()`
 
 Quit and stop simulation.
@@ -117,3 +121,25 @@ Find a sub-program by address `address` or by name `name`.
   * when searching by name, limit the search to executable binary file `file`
 * `compilationUnit`:
   * when searching by name, limit the search to compilation unit `compilationUnit`
+
+## `locateFile(file: string, [options: Object]) => string`
+
+Locate a file.
+
+It uses `searchPaths` in addition to the current working directory and simulator shared data directory.
+if a search path is relative, then it is concatenated with the current working directory (`cwd`) and simulator shared data directory (`shared_directory`) before trying to match.
+
+if there are search paths:
+
+* it tries `cwd/search_path/file`,
+* then `shared_directory/search_path/file`.
+
+otherwise:
+
+* it tries `cwd/file`,
+* then `shared_directory/file`.
+
+`options` properties:
+
+* `lazyMatch`: boolean
+	* when set to `true`, it increases the chance to locate a file at the expense of precision, trying to match from longest file suffixes to the shortest; It is useful when dealing with compilation unit paths in debugging information, where paths are for the build machine not the host machine.

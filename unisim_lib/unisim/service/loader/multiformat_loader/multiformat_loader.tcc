@@ -587,8 +587,7 @@ unsigned int MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::
 		tok_value += c;
 		if((pos + n) >= s.length()) break;
 		c = s[pos + n];
-		if((c == '=') || (c == ',')
-		) break;
+		if((c == '=') || (c == ',')) break;
 		n++;
 	}
 	while(1);

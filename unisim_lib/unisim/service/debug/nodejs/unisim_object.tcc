@@ -143,139 +143,161 @@ v8::Local<v8::Object> UnisimObjectWrapper<CONFIG>::MakeObject()
 	if(unisim_object_object.IsEmpty())
 	{
 		unisim_object_object = Super::template MakePersistentObject<This>();
-	
+		
+		v8::Local<v8::Object> prop_children  = v8::Object::New(this->GetIsolate());
+		v8::Local<v8::Object> prop_registers = v8::Object::New(this->GetIsolate());
+		v8::Local<v8::Object> prop_variables = v8::Object::New(this->GetIsolate());
+		
 		struct ChildVisitor
 		{
 			NodeJS<CONFIG>& nodejs;
-			v8::Local<v8::Object>& unisim_object_object;
+			unisim::kernel::Object *unisim_object;
+			v8::Local<v8::Object>& prop_children;
 			
-			ChildVisitor(NodeJS<CONFIG>& _nodejs, v8::Local<v8::Object>& _unisim_object_object) : nodejs(_nodejs), unisim_object_object(_unisim_object_object) {}
-			
-			bool Visit(unisim::kernel::Object *unisim_child)
+			ChildVisitor(NodeJS<CONFIG>& _nodejs, unisim::kernel::Object *_unisim_object, v8::Local<v8::Object>& _prop_children)
+				: nodejs(_nodejs), unisim_object(_unisim_object), prop_children(_prop_children)
 			{
-				UnisimObjectWrapper<CONFIG> *unisim_child_wrapper = UnisimObjectWrapper<CONFIG>::Wrap(nodejs, unisim_child);
-				unisim_object_object->DefineOwnProperty(
-					nodejs.GetIsolate()->GetCurrentContext(),
-					v8::String::NewFromUtf8(nodejs.GetIsolate(), unisim_child->GetObjectName(), v8::NewStringType::kInternalized).ToLocalChecked(),
-					unisim_child_wrapper->MakeObject(),
-					v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
-				).ToChecked();
-				return false;
 			}
-		};
-		
-		struct RootObjectVisitor
-		{
-			NodeJS<CONFIG>& nodejs;
-			v8::Local<v8::Object>& unisim_object_object;
-			ChildVisitor& child_visitor;
 			
-			RootObjectVisitor(NodeJS<CONFIG>& _nodejs, v8::Local<v8::Object>& _unisim_object_object, ChildVisitor& _child_visitor)
-				: nodejs(_nodejs), unisim_object_object(_unisim_object_object), child_visitor(_child_visitor) {}
-			
-			bool Visit(unisim::kernel::Object *unisim_object)
+			bool Visit(unisim::kernel::Object *unisim_child_object)
 			{
-				if(!unisim_object->GetParent())
+				if(unisim_object || !unisim_child_object->GetParent())
 				{
-					child_visitor.Visit(unisim_object);
+					UnisimObjectWrapper<CONFIG> *unisim_child_object_wrapper = UnisimObjectWrapper<CONFIG>::Wrap(nodejs, unisim_child_object);
+					prop_children->DefineOwnProperty(
+						nodejs.GetIsolate()->GetCurrentContext(),
+						v8::String::NewFromUtf8(nodejs.GetIsolate(), unisim_child_object->GetObjectName(), v8::NewStringType::kInternalized).ToLocalChecked(),
+						unisim_child_object_wrapper->MakeObject(),
+						v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+					).ToChecked();
 				}
 				return false;
 			}
 		};
 		
-		ChildVisitor child_visitor(this->nodejs, unisim_object_object);
+		ChildVisitor child_visitor(this->nodejs, this->unisim_object, prop_children);
 		
 		if(this->unisim_object)
-		{
 			this->unisim_object->ScanChildren(child_visitor);
-		}
 		else
-		{
-			RootObjectVisitor root_object_visitor(this->nodejs, unisim_object_object, child_visitor);
-			unisim::kernel::Simulator::Instance()->ScanObjects(root_object_visitor);
-		}
+			unisim::kernel::Simulator::Instance()->ScanObjects(child_visitor);
 		
 		struct VariableVisitor
 		{
 			NodeJS<CONFIG>& nodejs;
-			v8::Local<v8::Object>& unisim_object_object;
+			unisim::kernel::Object *unisim_object;
+			v8::Local<v8::Object>& prop_variables;
 			
-			VariableVisitor(NodeJS<CONFIG>& _nodejs, v8::Local<v8::Object>& _unisim_object_object) : nodejs(_nodejs), unisim_object_object(_unisim_object_object) {}
+			VariableVisitor(NodeJS<CONFIG>& _nodejs, unisim::kernel::Object *_unisim_object, v8::Local<v8::Object>& _prop_variables)
+				: nodejs(_nodejs), unisim_object(_unisim_object), prop_variables(_prop_variables)
+			{
+			}
 			
 			bool Visit(unisim::kernel::VariableBase *unisim_variable)
 			{
-				switch(unisim_variable->GetType())
+				if(unisim_object || !unisim_variable->GetOwner())
 				{
-					case unisim::kernel::VariableBase::VAR_PARAMETER:
-					case unisim::kernel::VariableBase::VAR_STATISTIC:
+					switch(unisim_variable->GetType())
 					{
-						if(!unisim_variable->GetContainer())
+						case unisim::kernel::VariableBase::VAR_PARAMETER:
+						case unisim::kernel::VariableBase::VAR_STATISTIC:
 						{
-							UnisimVariableWrapper<CONFIG> *unisim_variable_wrapper = UnisimVariableWrapper<CONFIG>::Wrap(nodejs, unisim_variable);
-							unisim_object_object->DefineOwnProperty(
+							if(!unisim_variable->GetContainer())
+							{
+								UnisimVariableWrapper<CONFIG> *unisim_variable_wrapper = UnisimVariableWrapper<CONFIG>::Wrap(nodejs, unisim_variable);
+								prop_variables->DefineOwnProperty(
+									nodejs.GetIsolate()->GetCurrentContext(),
+									v8::String::NewFromUtf8(nodejs.GetIsolate(), unisim_variable->GetVarName(), v8::NewStringType::kInternalized).ToLocalChecked(),
+									unisim_variable_wrapper->MakeObject(),
+									v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+								).ToChecked();
+							}
+							break;
+						}
+						case unisim::kernel::VariableBase::VAR_ARRAY:
+						{
+							std::size_t length = unisim_variable->GetLength();
+							v8::Local<v8::Array> unisim_variable_array = v8::Array::New(nodejs.GetIsolate(), length);
+							for(std::size_t idx = 0; idx < length; ++idx)
+							{
+								UnisimVariableWrapper<CONFIG> *unisim_variable_wrapper = UnisimVariableWrapper<CONFIG>::Wrap(nodejs, &(*unisim_variable)[idx]);
+								unisim_variable_array->Set(nodejs.GetContext(), idx, unisim_variable_wrapper->MakeObject().template As<v8::Value>()).ToChecked();
+							}
+							
+							prop_variables->DefineOwnProperty(
 								nodejs.GetIsolate()->GetCurrentContext(),
 								v8::String::NewFromUtf8(nodejs.GetIsolate(), unisim_variable->GetVarName(), v8::NewStringType::kInternalized).ToLocalChecked(),
-								unisim_variable_wrapper->MakeObject(),
+								unisim_variable_array,
 								v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
 							).ToChecked();
+							break;
 						}
-						break;
+						default:
+							break;
 					}
-					case unisim::kernel::VariableBase::VAR_ARRAY:
-					{
-						std::size_t length = unisim_variable->GetLength();
-						v8::Local<v8::Array> unisim_variable_array = v8::Array::New(nodejs.GetIsolate(), length);
-						for(std::size_t idx = 0; idx < length; ++idx)
-						{
-							UnisimVariableWrapper<CONFIG> *unisim_variable_wrapper = UnisimVariableWrapper<CONFIG>::Wrap(nodejs, &(*unisim_variable)[idx]);
-							unisim_variable_array->Set(nodejs.GetContext(), idx, unisim_variable_wrapper->MakeObject().template As<v8::Value>()).ToChecked();
-						}
-						
-						unisim_object_object->DefineOwnProperty(
-							nodejs.GetIsolate()->GetCurrentContext(),
-							v8::String::NewFromUtf8(nodejs.GetIsolate(), unisim_variable->GetVarName(), v8::NewStringType::kInternalized).ToLocalChecked(),
-							unisim_variable_array,
-							v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
-						).ToChecked();
-						break;
-					}
-					default:
-						break;
 				}
 				return false;
 			}
 		};
 		
-		struct RootVariableVisitor
-		{
-			NodeJS<CONFIG>& nodejs;
-			v8::Local<v8::Object>& unisim_object_object;
-			VariableVisitor& variable_visitor;
-			
-			RootVariableVisitor(NodeJS<CONFIG>& _nodejs, v8::Local<v8::Object>& _unisim_object_object, VariableVisitor& _variable_visitor)
-				: nodejs(_nodejs), unisim_object_object(_unisim_object_object), variable_visitor(_variable_visitor) {}
-			
-			bool Visit(unisim::kernel::VariableBase *unisim_variable)
-			{
-				if(!unisim_variable->GetOwner())
-				{
-					variable_visitor.Visit(unisim_variable);
-				}
-				return false;
-			}
-		};
-		
-		VariableVisitor variable_visitor(this->nodejs, unisim_object_object);
+		VariableVisitor variable_visitor(this->nodejs, this->unisim_object, prop_variables);
 		
 		if(this->unisim_object)
-		{
 			this->unisim_object->ScanVariables(variable_visitor);
-		}
 		else
+			unisim::kernel::Simulator::Instance()->ScanVariables(variable_visitor);
+		
+		struct RegisterScanner : unisim::service::interfaces::RegisterScanner
 		{
-			RootVariableVisitor root_variable_visitor(this->nodejs, unisim_object_object, variable_visitor);
-			unisim::kernel::Simulator::Instance()->ScanVariables(root_variable_visitor);
+			NodeJS<CONFIG>& nodejs;
+			unisim::kernel::Object *unisim_object;
+			v8::Local<v8::Object>& prop_registers;
+			
+			RegisterScanner(NodeJS<CONFIG>& _nodejs, v8::Local<v8::Object>& _prop_registers) : nodejs(_nodejs), prop_registers(_prop_registers) {}
+			
+			virtual void Append(unisim::service::interfaces::Register* reg)
+			{
+				RegisterWrapper<CONFIG> *register_wrapper = RegisterWrapper<CONFIG>::Wrap(nodejs, reg);
+				// add "registers.<regname>" property
+				prop_registers->DefineOwnProperty(
+					nodejs.GetIsolate()->GetCurrentContext(),
+					v8::String::NewFromUtf8(nodejs.GetIsolate(), reg->GetName(), v8::NewStringType::kInternalized).ToLocalChecked(),
+					register_wrapper->MakeObject(),
+					v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+				).ToChecked();
+			}
+		} register_scanner(this->nodejs, prop_registers);
+		
+		unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *registers_import = this->nodejs.GetRegistersInterface(unisim_object);
+		
+		if(registers_import)
+		{
+			(*registers_import)->ScanRegisters(register_scanner);
 		}
+		
+		// add "children" read-only property
+		unisim_object_object->DefineOwnProperty(
+			this->GetIsolate()->GetCurrentContext(),
+			v8::String::NewFromUtf8Literal(this->GetIsolate(), "children", v8::NewStringType::kInternalized),
+			prop_children,
+			v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+		).ToChecked();
+		
+		// add "registers" read-only property
+		unisim_object_object->DefineOwnProperty(
+			this->GetIsolate()->GetCurrentContext(),
+			v8::String::NewFromUtf8Literal(this->GetIsolate(), "registers", v8::NewStringType::kInternalized),
+			prop_registers,
+			v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+		).ToChecked();
+		
+		// add "variables" read-only property
+		unisim_object_object->DefineOwnProperty(
+			this->GetIsolate()->GetCurrentContext(),
+			v8::String::NewFromUtf8Literal(this->GetIsolate(), "variables", v8::NewStringType::kInternalized),
+			prop_variables,
+			v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete)
+		).ToChecked();
 	}
 	
 	return handle_scope.Escape(unisim_object_object);

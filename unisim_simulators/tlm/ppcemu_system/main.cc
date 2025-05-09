@@ -764,6 +764,10 @@ Simulator::Simulator(int argc, char **argv)
 			nodejs->debug_info_loading_import               >> *debugger->debug_info_loading_export[front_end_num];
 			nodejs->subprogram_lookup_import                >> *debugger->subprogram_lookup_export[front_end_num];
 			nodejs->debug_processors_import                 >> *debugger->debug_processors_export[front_end_num];
+			{
+				unsigned int i = 0;
+				*nodejs->registers_import[i++] >> cpu->registers_export;
+			}
 			++front_end_num;
 		}
 #endif

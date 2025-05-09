@@ -53,16 +53,37 @@ std::string Dirname(const std::string& path);
 
 std::string Basename(const std::string& path);
 
+bool IsAbsolutePath(const std::string& path);
+
 // Resolve path to an absolute path
 bool ResolvePath(const std::string& unresolved_path, std::string& resolved_path);
 
 struct LocateFileOptions
 {
-	std::string search_path;      // semi-colon separated list of directory path to look for the file
-	std::string shared_directory; // when non-empty the shared directory path is also prepended to each path in the search path to extend the search path
-	bool lazy_match;              // to increase the chance to locate a source file when dealing with incomplete pathes in debug information
+	const std::vector<std::string>& search_paths; // list of directory path to look for the file
+	const std::string& shared_directory;          // when non-empty the shared directory path is also prepended to each path in the search path to extend the search path
+	bool lazy_match;                              // to increase the chance to locate a source file when dealing with incomplete paths in debug information
 	
-	LocateFileOptions() : search_path(), shared_directory(), lazy_match(false) {}
+	// constructors with unordered optional arguments
+	LocateFileOptions() : search_paths(null_search_paths), shared_directory(null_shared_directory), lazy_match(false) {}
+	LocateFileOptions(const std::vector<std::string>& _search_paths) : search_paths(_search_paths), shared_directory(null_shared_directory), lazy_match(false) {}
+	LocateFileOptions(const std::string& _shared_directory) : search_paths(null_search_paths), shared_directory(_shared_directory), lazy_match(false) {}
+	LocateFileOptions(bool _lazy_match) : search_paths(null_search_paths), shared_directory(null_shared_directory), lazy_match(_lazy_match) {}
+	LocateFileOptions(const std::vector<std::string>& _search_paths, const std::string& _shared_directory) : search_paths(_search_paths), shared_directory(_shared_directory), lazy_match(false) {}
+	LocateFileOptions(const std::vector<std::string>& _search_paths, bool _lazy_match) : search_paths(_search_paths), shared_directory(null_shared_directory), lazy_match(_lazy_match) {}
+	LocateFileOptions(const std::string& _shared_directory, const std::vector<std::string>& _search_paths) : search_paths(_search_paths), shared_directory(_shared_directory), lazy_match(false) {}
+	LocateFileOptions(const std::string& _shared_directory, bool _lazy_match) : search_paths(null_search_paths), shared_directory(_shared_directory), lazy_match(_lazy_match) {}
+	LocateFileOptions(bool _lazy_match, const std::vector<std::string>& _search_paths) : search_paths(_search_paths), shared_directory(null_shared_directory), lazy_match(_lazy_match) {}
+	LocateFileOptions(bool _lazy_match, const std::string& _shared_directory) : search_paths(null_search_paths), shared_directory(_shared_directory), lazy_match(_lazy_match) {}
+	LocateFileOptions(const std::vector<std::string>& _search_paths, const std::string& _shared_directory, bool _lazy_match) : search_paths(_search_paths), shared_directory(_shared_directory), lazy_match(_lazy_match) {}
+	LocateFileOptions(const std::vector<std::string>& _search_paths, bool _lazy_match, const std::string& _shared_directory) : search_paths(_search_paths), shared_directory(_shared_directory), lazy_match(_lazy_match) {}
+	LocateFileOptions(const std::string& _shared_directory, const std::vector<std::string>& _search_paths, bool _lazy_match) : search_paths(_search_paths), shared_directory(_shared_directory), lazy_match(_lazy_match) {}
+	LocateFileOptions(const std::string& _shared_directory, bool _lazy_match, const std::vector<std::string>& _search_paths) : search_paths(_search_paths), shared_directory(_shared_directory), lazy_match(_lazy_match) {}
+	LocateFileOptions(bool _lazy_match, const std::vector<std::string>& _search_paths, const std::string& _shared_directory) : search_paths(_search_paths), shared_directory(_shared_directory), lazy_match(_lazy_match) {}
+	LocateFileOptions(bool _lazy_match, const std::string& _shared_directory, const std::vector<std::string>& _search_paths) : search_paths(_search_paths), shared_directory(_shared_directory), lazy_match(_lazy_match) {}
+private:
+	static std::vector<std::string> null_search_paths;
+	static std::string null_shared_directory;
 };
 
 // Try to locate a file and if found output an absolute path and return true, otherwise return false

@@ -49,8 +49,8 @@ namespace inline_debugger {
 
 InlineDebuggerBase::InlineDebuggerBase(const char *_name, unisim::kernel::Object *_parent)
 	: unisim::kernel::Object(_name, _parent)
-	, search_path()
-	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
+	, search_paths()
+	, param_search_paths("search-paths", this, search_paths, "Search paths for source")
 	, is_started(false)
 {
 }
@@ -70,18 +70,20 @@ bool InlineDebuggerBase::SigInt()
 
 bool InlineDebuggerBase::LocateFile(const std::string& filename, std::string& match_file_path)
 {
-	unisim::util::locate::LocateFileOptions options;
-	options.search_path = search_path;
-	options.shared_directory = unisim::kernel::Object::GetSimulator()->GetSharedDataDirectory();
+	unisim::util::locate::LocateFileOptions options(
+		search_paths,
+		unisim::kernel::Object::GetSimulator()->GetSharedDataDirectory()
+	);
 	return unisim::util::locate::LocateFile(filename, match_file_path, options);
 }
 
 bool InlineDebuggerBase::LocateSourceFile(const std::string& filename, std::string& match_file_path)
 {
-	unisim::util::locate::LocateFileOptions options;
-	options.search_path = search_path;
-	options.shared_directory = unisim::kernel::Object::GetSimulator()->GetSharedDataDirectory();
-	options.lazy_match = true;
+	unisim::util::locate::LocateFileOptions options(
+		search_paths,
+		unisim::kernel::Object::GetSimulator()->GetSharedDataDirectory(),
+		/* lazy_match */ true
+	);
 	return unisim::util::locate::LocateFile(filename, match_file_path, options);
 }
 

@@ -482,7 +482,7 @@ public:
 	virtual ~SourceCodeProfileBase() {}
 	virtual const char *GetSampledVariableName() const = 0;
 	virtual void Update() = 0;
-	virtual AnnotatedSourceCodeFileSetBase *CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path) const = 0;
+	virtual AnnotatedSourceCodeFileSetBase *CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const std::vector<std::string>& search_paths) const = 0;
 };
 
 ///////////////////////// FunctionInstructionProfileBase /////////////////////////////////
@@ -639,7 +639,7 @@ public:
 	virtual const char *GetSampledVariableName() const { return addr_profile->GetSampledVariableName(); }
 	virtual void Print(std::ostream& os, Visitor& visitor) const;
 	virtual void Update();
-	virtual AnnotatedSourceCodeFileSetBase *CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path) const;
+	virtual AnnotatedSourceCodeFileSetBase *CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const std::vector<std::string>& search_paths) const;
 	
 	const std::set<std::string>& GetSourceFilenameSet() const { return source_filename_set; }
 	const T& GetValue(const char *filename, unsigned int lineno) const;
@@ -676,7 +676,7 @@ template <typename ADDRESS, typename T>
 class AnnotatedSourceCodeFile : public AnnotatedSourceCodeFileBase
 {
 public:
-	AnnotatedSourceCodeFile(const char *_filename, const SourceCodeProfile<ADDRESS, T> *_source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path, std::ostream& warn_log);
+	AnnotatedSourceCodeFile(const char *_filename, const SourceCodeProfile<ADDRESS, T> *_source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const std::vector<std::string>& search_paths, std::ostream& warn_log);
 	virtual ~AnnotatedSourceCodeFile();
 	
 	virtual const char *GetSampledVariableName() const { return source_code_profile->GetSampledVariableName(); }
@@ -698,7 +698,7 @@ private:
 	std::ostream& warn_log;
 	std::string filename;
 	std::string real_filename;
-	std::string search_path;
+	const std::vector<std::string>& search_paths;
 	const SourceCodeProfile<ADDRESS, T> *source_code_profile;
 	const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv;
 	FilenameIndex *filename_index;
@@ -728,7 +728,7 @@ template <typename ADDRESS, typename T>
 class AnnotatedSourceCodeFileSet : public AnnotatedSourceCodeFileSetBase
 {
 public:
-	AnnotatedSourceCodeFileSet(const SourceCodeProfile<ADDRESS, T> *source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path, std::ostream& warn_log);
+	AnnotatedSourceCodeFileSet(const SourceCodeProfile<ADDRESS, T> *source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const std::vector<std::string>& search_paths, std::ostream& warn_log);
 	virtual ~AnnotatedSourceCodeFileSet();
 	
 	virtual const char *GetSampledVariableName() { return source_code_profile->GetSampledVariableName(); }
@@ -738,7 +738,7 @@ private:
 	const SourceCodeProfile<ADDRESS, T> *source_code_profile;
 	const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv;
 	FilenameIndex *filename_index;
-	std::string search_path;
+	const std::vector<std::string>& search_paths;
 	std::map<std::string, const AnnotatedSourceCodeFile<ADDRESS, T> *> annotated_source_code_files;
 	
 	void Clear();
@@ -820,9 +820,11 @@ private:
 	template <typename T> bool TryProfile(unisim::kernel::VariableBase *var);
 	
 	unisim::kernel::logger::Logger logger;
-	std::string search_path;
-	std::string filename;
-	std::string sampled_variables;
+	std::vector<std::string> search_paths;
+	typedef std::vector<std::string> Filenames;
+	Filenames filenames;
+	typedef std::vector<std::string> SampledVariableNames;
+	SampledVariableNames sampled_variables;
 	std::string output_directory;
 	std::string csv_delimiter;
 	std::string csv_hyperlink;
@@ -832,9 +834,9 @@ private:
 	bool enable_csv_report;
 	bool verbose;
 	double http_refresh_period;
-	unisim::kernel::variable::Parameter<std::string> param_search_path;
-	unisim::kernel::variable::Parameter<std::string> param_filename;
-	unisim::kernel::variable::Parameter<std::string> param_sampled_variables;
+	unisim::kernel::variable::ParameterVector<std::string> param_search_paths;
+	unisim::kernel::variable::ParameterVector<std::string> param_filenames;
+	unisim::kernel::variable::ParameterVector<std::string> param_sampled_variables;
 	unisim::kernel::variable::Parameter<std::string> param_output_directory;
 	unisim::kernel::variable::Parameter<std::string> param_csv_delimiter;
 	unisim::kernel::variable::Parameter<std::string> param_csv_hyperlink;

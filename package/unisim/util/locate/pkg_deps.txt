@@ -2,5 +2,6 @@ libc/unistd
 m4/real_path
 m4/windows
 m4/windows_io
+std/iostream
 std/string
 std/vector
