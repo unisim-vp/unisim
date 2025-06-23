@@ -1523,6 +1523,94 @@ Operation<ARCH>* newVBinary( InputCode<ARCH> const& ic, OpBase<ARCH> const& opba
 }
 };
 
+template <class ARCH, class OPERATION, class VR, class VOP>
+struct VHBinaryVVW : public Op3V<ARCH,VR>
+{
+  typedef VOP valtype;
+  enum { opsz = atpinfo<ARCH,VOP>::bitsize };
+
+  VHBinaryVVW( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, unsigned vn, unsigned gn ) : Op3V<ARCH,VR>(opbase, std::move(rm), vn, gn) {}
+
+  using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
+
+  void disasm( std::ostream& sink ) const { sink << vprefix() << "ph" << OPERATION::n() << DisasmSize(opsz,'i'); disasmVVW(sink << ' '); }
+
+  void execute( ARCH& arch ) const
+  {
+    valtype tmp[VR::size()/opsz];
+    for (unsigned idx = 0, end = VR::size()/opsz/2; idx < end; ++idx) {
+      tmp[idx] = OPERATION::eval( arch.vmm_read( VR(), vn, 2*idx, valtype() ), arch.vmm_read( VR(), vn, 2*idx+1, valtype() ) );
+      tmp[end+idx] = OPERATION::eval( arch.vmm_read( VR(), rm, 2*idx, valtype() ), arch.vmm_read( VR(), rm, 2*idx+1, valtype() ) ); 
+    }
+    for (unsigned idx = 0, end = VR::size()/opsz; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, tmp[idx] );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,VHBINARY> {
+  typedef typename ARCH::s16_t s16_t;
+  typedef typename ARCH::s32_t s32_t;
+
+  const s32_t lbound = s32_t( -32768 );
+  const s32_t hbound = s32_t( 32768 );
+
+  static s16_t saturate16 ( s32_t x )
+  {
+    const s32_t lbound = s32_t( -32768 );
+    const s32_t hbound = s32_t( 32767 );
+    return ConditionalMove( hbound < x, s16_t( hbound ), ConditionalMove( x < lbound, s16_t( lbound ), s16_t( x ) ) );
+  }
+
+  struct VADDSW { static char const* n() { return "adds"; } static s16_t eval ( s16_t const& src1, s16_t const& src2 ) { return saturate16(s32_t(src1) + s32_t(src2)); } };
+  struct VSUBSW { static char const* n() { return "subs"; } static s16_t eval ( s16_t const& src1, s16_t const& src2 ) { return saturate16(s32_t(src1) - s32_t(src2)); } };
+
+Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  /* PHADDW/PHADDD -- Packed Horizontal Add */
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x01" ) & RM() ))
+
+    return newVHBinary<VADD, typename ARCH::u16_t>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x02" ) & RM() ))
+
+    return newVHBinary<VADD, typename ARCH::u32_t>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  /* PHADDSW -- Packed Horizontal Add and Saturate */
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x03" ) & RM() ))
+
+    return newVHBinary<VADDSW, typename ARCH::s16_t>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  /* PHSUBW/PHSUBD -- Packed Horizontal Subtract */
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x05" ) & RM() ))
+
+    return newVHBinary<VSUB, typename ARCH::u16_t>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x06" ) & RM() ))
+
+    return newVHBinary<VSUB, typename ARCH::u32_t>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  /* PHSUBSW -- Packed Horizontal Subtract and Saturate */
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x07" ) & RM() ))
+
+    return newVHBinary<VSUBSW, typename ARCH::s16_t>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  return 0;
+}
+template <class OPERATION, class VOP>
+Operation<ARCH>* newVHBinary( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, unsigned gn )
+{
+  if (not ic.vex())               return new VHBinaryVVW<ARCH,OPERATION,SSE,VOP>( opbase, std::move(rm), gn, gn );
+  unsigned vn = ic.vreg();
+  // Vex FP Scalar versions always work with XMM
+  if (ic.vlen() == 128 or ic.rep) return new VHBinaryVVW<ARCH,OPERATION,XMM,VOP>( opbase, std::move(rm), vn, gn );
+  if (ic.vlen() == 256)           return new VHBinaryVVW<ARCH,OPERATION,YMM,VOP>( opbase, std::move(rm), vn, gn );
+  return 0;
+}
+};
+
 template <class ARCH, class VR, unsigned SOPSZ, unsigned DOPSZ>
 struct VFPCvtp : public Operation<ARCH>
 {
@@ -2586,63 +2674,11 @@ Operation<ARCH>* newPCmp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase,
 //
 // // pextrq_eb_vdq_ib.disasm = { _sink << "pextrq " << DisasmI( imm ) << ',' << DisasmV( SSE(), gn ) << ',' << DisasmEq( rm ); };
 //
-// /* PHADDW/PHADDD -- Packed Horizontal Add */
-// op phaddw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x01[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// phaddw_pq_qq.disasm = { _sink << "phaddw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
-//
-// op phaddd_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x02[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// phaddd_pq_qq.disasm = { _sink << "phaddd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
-//
-// op phaddw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x01[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// phaddw_vdq_wdq.disasm = { _sink << "phaddw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-//
-// op phaddd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x02[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// phaddd_vdq_wdq.disasm = { _sink << "phaddd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-//
-// /* PHADDSW -- Packed Horizontal Add and Saturate */
-// op phaddsw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x03[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// phaddsw_pq_qq.disasm = { _sink << "phaddsw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
-//
-// op phaddsw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x03[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// phaddsw_vdq_wdq.disasm = { _sink << "phaddsw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-//
 // /* PHMINPOSUW -- Packed Horizontal Word Minimum */
 // op phminposuw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x41[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 //
 // phminposuw_vdq_wdq.disasm = { _sink << "phminposuw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 //
-//
-// /* PHSUBW/PHSUBD -- Packed Horizontal Subtract */
-// op phsubw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x05[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// phsubw_pq_qq.disasm = { _sink << "phsubw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
-//
-// op phsubd_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x06[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// phsubd_pq_qq.disasm = { _sink << "phsubd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
-//
-// op phsubw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x05[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// phsubw_vdq_wdq.disasm = { _sink << "phsubw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-//
-// op phsubd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x06[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// phsubd_vdq_wdq.disasm = { _sink << "phsubd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-//
-// /* PHSUBSW -- Packed Horizontal Subtract and Saturate */
-// op phsubsw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x07[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// phsubsw_pq_qq.disasm = { _sink << "phsubsw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
-//
-// op phsubsw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x07[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-//
-// phsubsw_vdq_wdq.disasm = { _sink << "phsubsw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 //
 
 template <class ARCH, class VR>
