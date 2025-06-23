@@ -746,7 +746,7 @@ template <class ARCH, class VR, class GOP>
 struct FBroadcast : public Operation<ARCH>
 {
   FBroadcast( OpBase<ARCH> const& opbase, RMOp<ARCH>&& _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( std::move(_rm) ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "vbroadcast" << SizeID<GOP::SIZE>::fid() << SizeID<GOP::SIZE>::fid() << ' ';
+  void disasm( std::ostream& sink ) const { sink << "vbroadcasts" << SizeID<GOP::SIZE>::fid() << ' ';
     if (rm.isreg())
       sink << DisasmW( XMM(), rm );
     else
@@ -755,10 +755,26 @@ struct FBroadcast : public Operation<ARCH>
   }
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<ARCH,GOP::SIZE>::u src_type;
+    typedef typename TypeFor<ARCH,GOP::SIZE>::f src_type;
     src_type value = arch.vmm_read( XMM(), rm, 0, src_type());
     for (unsigned idx = 0, end = VR::size() / GOP::SIZE; idx < end; ++idx)
       arch.vmm_write( VR(), gn, idx, value );
+  }
+};
+
+template <class ARCH, class VR>
+struct Movsldup : public Operation<ARCH>
+{
+  Movsldup( OpBase<ARCH> const& opbase, RMOp<ARCH>&& _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( std::move(_rm) ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << (VR::vex() ? "v" : "") << "movsldup" << ' ' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn ); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename ARCH::f32_t f32_t;
+    for (unsigned idx = 0, end = VR::size()/32/2; idx < end; ++idx) {
+      f32_t value = arch.vmm_read( XMM(), rm, 2*idx, f32_t());
+      arch.vmm_write( VR(), gn, 2*idx, value );
+      arch.vmm_write( VR(), gn, 2*idx+1, value );
+    }
   }
 };
 
@@ -790,7 +806,15 @@ template <class ARCH> struct DC<ARCH,BROADCAST> { Operation<ARCH>* get( InputCod
 
   if (auto _ = match( ic, vex( "\x66\x0f\x38\x18" ) & RM() ))
 
+    return newFBroadcast<GOd>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x19" ) & RM() ))
+
     return newFBroadcast<GOq>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\xf3\x0f\x12" ) & RM() ))
+
+    return newMovsldup( ic, _.opbase(), _.rmop(), _.greg() );
 
   return 0;
 }
@@ -808,6 +832,14 @@ Operation<ARCH>* newFBroadcast( InputCode<ARCH> const& ic, OpBase<ARCH> const& o
   if (not ic.vex() || ic.vreg() || ic.w()) return 0;
   if (ic.vlen() == 128) return new FBroadcast<ARCH,XMM,GOP>( opbase, std::move(rm), gn );
   if (ic.vlen() == 256) return new FBroadcast<ARCH,YMM,GOP>( opbase, std::move(rm), gn );
+  return 0;
+}
+Operation<ARCH>* newMovsldup( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t gn )
+{
+  if (not ic.vex()) return new Movsldup<ARCH,XMM>( opbase, std::move(rm), gn );
+  if (ic.vreg()) return 0;
+  if (ic.vlen() == 128) return new Movsldup<ARCH,XMM>( opbase, std::move(rm), gn );
+  if (ic.vlen() == 256) return new Movsldup<ARCH,YMM>( opbase, std::move(rm), gn );
   return 0;
 }
 };
@@ -1266,6 +1298,13 @@ struct VMULH   { static char const* n() { return "mulh"; } template<typename val
     enum { opsz = atpinfo<ARCH,valtype>::bitsize };
     return valtype((dvaltype(src1) * dvaltype(src2)) >> opsz);
   } };
+template<class ARCH>
+struct VMULHRSW   { static char const* n() { return "mulhrs"; }
+  typedef typename ARCH::s16_t s16_t;
+  typedef typename ARCH::s32_t s32_t;
+  static s16_t eval ( s16_t const& src1, s16_t const& src2 ) {
+    return s16_t((((s32_t(src1) * s32_t(src2)) >> s32_t(14)) + s32_t(1)) >> s32_t(1));
+  } };
 struct VSLL    { static char const* n() { return "sll"; } template<typename valtype> static valtype eval ( valtype const& src1, valtype const& src2 ) { return src1 << src2; } };
 struct VSRL    { static char const* n() { return "srl"; } template<typename valtype> static valtype eval ( valtype const& src1, valtype const& src2 ) { return src1 >> src2; } };
 template<class ARCH>
@@ -1416,6 +1455,10 @@ template <class ARCH> struct DC<ARCH,VBINARY> { Operation<ARCH>* get( InputCode<
   if (auto _ = match( ic, vex( "\x66\x0f\xe5" ) & RM() ))
     /* PMULHW */
     return newVBinary<VMULH<ARCH>,typename ARCH::s16_t, VIPacked>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x0b" ) & RM() ))
+    /* PMULHRSW */
+    return newVBinary<VMULHRSW<ARCH>,typename ARCH::s16_t, VIPacked>( ic, _.opbase(), _.rmop(), _.greg() );
 
   if (auto _ = match( ic, vex( "\x66\x0f\x38\x45" ) & RM() )) {
     if (ic.w())
