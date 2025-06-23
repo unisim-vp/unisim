@@ -577,6 +577,24 @@ namespace binsec {
 
           return bitsize;
         }
+      case ValueType::FLOAT:
+        switch (tp.bitsize) {
+          case 32:
+            if (node->GetFloat(0.0F) == 0.0F) {
+              sink << "0x00000000";
+              return 32;
+            }
+            break;
+          case 64:
+            if (node->GetFloat(0.0) == 0.0) {
+              sink << "0x0000000000000000";
+              return 64;
+            }
+            break;
+          default:
+            break;
+        }
+        break;
       }
     throw std::logic_error("can't encode type");
     return 0;
