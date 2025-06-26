@@ -42,6 +42,7 @@
 
 #include <unisim/component/cxx/processor/arm/dba/arm64/arm64.tcc>
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <cstdlib>
 #include <set>
