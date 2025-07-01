@@ -1581,10 +1581,12 @@ struct VHBinaryVVW : public Op3V<ARCH,VR>
   void execute( ARCH& arch ) const
   {
     valtype tmp[VR::size()/opsz];
-    for (unsigned idx = 0, end = VR::size()/opsz/2; idx < end; ++idx) {
-      tmp[idx] = OPERATION::eval( arch.vmm_read( VR(), vn, 2*idx, valtype() ), arch.vmm_read( VR(), vn, 2*idx+1, valtype() ) );
-      tmp[end+idx] = OPERATION::eval( arch.vmm_read( VR(), rm, 2*idx, valtype() ), arch.vmm_read( VR(), rm, 2*idx+1, valtype() ) ); 
-    }
+    for (unsigned row = 0, rows = VR::size()/128; row < rows; row += 1)
+      for (unsigned idx = 0, end = 128/opsz/2; idx < end; ++idx) {
+        unsigned pos = 2*end*row;
+        tmp[pos+idx] = OPERATION::eval( arch.vmm_read( VR(), vn, pos+2*idx, valtype() ), arch.vmm_read( VR(), vn, pos+2*idx+1, valtype() ) );
+        tmp[pos+end+idx] = OPERATION::eval( arch.vmm_read( VR(), rm, pos+2*idx, valtype() ), arch.vmm_read( VR(), rm, pos+2*idx+1, valtype() ) ); 
+      }
     for (unsigned idx = 0, end = VR::size()/opsz; idx < end; ++idx)
       arch.vmm_write( VR(), gn, idx, tmp[idx] );
   }
