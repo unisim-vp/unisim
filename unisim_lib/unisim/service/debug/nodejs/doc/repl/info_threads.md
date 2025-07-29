@@ -1,3 +1,5 @@
-# `info threads` command
+# List threads
 
-List threads.
+	Usage: info threads
+
+List all threads.

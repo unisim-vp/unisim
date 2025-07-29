@@ -1,3 +1,5 @@
-# `info breakpoints` command
+# List breakpoints
 
-List breakpoints.
+	Usage: info breakpoints
+
+List breakpoints for all threads.

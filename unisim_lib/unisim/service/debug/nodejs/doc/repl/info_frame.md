@@ -1,3 +1,4 @@
-# `info frame` command
+# Show selected frame informations
 
-Show selected frame informations.
+	Usage: info frame
+

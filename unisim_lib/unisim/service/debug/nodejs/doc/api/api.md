@@ -1,5 +1,7 @@
 # Javascript API
 
+This is the documentation of Javascript API for software instrumentation that Node.js service provides.
+
 * [Global definitions](global.md)
   * [(read-only) processors: Array of Processor](global.md)
   * [(read-only) simulator: UnisimObject](global.md)

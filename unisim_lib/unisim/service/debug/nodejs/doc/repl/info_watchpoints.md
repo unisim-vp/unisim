@@ -1,3 +1,3 @@
-# `info watchpoints` command
+# List watchpoints
 
-List watchpoints.
+	Usage: info watchpoints

@@ -1,3 +1,3 @@
-# Add a directory the source code search path
+# Add a directory to the search path
 
-	Usage: directory DIR[;DIR2;DIR3;...]
+	Usage: directory DIR
