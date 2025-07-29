@@ -442,7 +442,7 @@ main(int argc, char *argv[])
       }
 
     // Loading image
-    if (not load_snapshot(arch, "uvp.shot") and not load_linux(arch, "Image", "device_tree.dtb", "initrd.img"))
+    if (not load_snapshot(arch, "uvp.shot") and not load_linux(arch, "Image", "device_tree.dtb", (access("initrd.imd", F_OK) == 0) ? "initrd.img" : 0))
       return 1;
 
     signal(SIGUSR1, signal_handler);

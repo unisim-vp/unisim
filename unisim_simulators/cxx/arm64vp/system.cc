@@ -1818,9 +1818,18 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0111,0b011): // ID_AA64MMFR3_EL1 (RO)
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "ID_AA64MMFR3_EL1"; }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "AArch64 Memory Model Feature Register 3"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
+          {
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
+
+            /* RES0, Reserved for future expansion of the information
+             * about the implemented memory model and memory
+             * management support in AArch64. */
+            return U64(0);
+          }
         } x; return &x;
       } break;
 
