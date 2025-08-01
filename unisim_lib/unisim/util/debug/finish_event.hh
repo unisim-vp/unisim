@@ -43,18 +43,16 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <typename ADDRESS>
-class FinishEvent : public CustomEvent<ADDRESS, FinishEvent<ADDRESS> >
+class FinishEvent : public CustomEvent<FinishEvent>
 {
 protected:
 	FinishEvent(unsigned int _prc_num)
-		: CustomEvent<ADDRESS, FinishEvent<ADDRESS> >(_prc_num)
+		: CustomEvent<FinishEvent>(_prc_num)
 	{
 	}
 };
 
-template <typename ADDRESS>
-inline std::ostream& operator << (std::ostream& os, const FinishEvent<ADDRESS>& fe)
+inline std::ostream& operator << (std::ostream& os, const FinishEvent& fe)
 {
 	os << "Finish event for processor #" << fe.GetProcessorNumber();
 	

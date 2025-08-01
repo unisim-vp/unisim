@@ -119,7 +119,7 @@ template <class ADDRESS>
 class InlineDebugger
 	: public InlineDebuggerBase
 	, public unisim::kernel::Service<unisim::service::interfaces::DebugYielding>
-	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener>
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugSelecting>
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
@@ -134,11 +134,11 @@ class InlineDebugger
 	, public unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::Stubbing<ADDRESS> >
-	, public unisim::kernel::Client<unisim::service::interfaces::Hooking<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Hooking>
 {
 public:
 	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
-	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener>           debug_event_listener_export;
 	
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugSelecting>               debug_selecting_import;
@@ -154,7 +154,7 @@ public:
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >   data_object_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >   subprogram_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Stubbing<ADDRESS> >           stubbing_import;
-	unisim::kernel::ServiceImport<unisim::service::interfaces::Hooking<ADDRESS> >            hooking_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Hooking>                      hooking_import;
 	
 	InlineDebugger(const char *name, Object *parent = 0);
 	virtual ~InlineDebugger();
@@ -162,8 +162,8 @@ public:
 	// unisim::service::interfaces::DebugYielding
 	virtual void DebugYield();
 	
-	// unisim::service::interfaces::DebugEventListener<ADDRESS>
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
+	// unisim::service::interfaces::DebugEventListener
+	virtual void OnDebugEvent(const unisim::util::debug::Event *event);
 
 	virtual bool EndSetup();
 	virtual void EndOfSimulation();
@@ -208,11 +208,11 @@ private:
 	std::list<unisim::util::debug::DataObjectRef<ADDRESS> > tracked_data_objects;
 	
 	unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event;
-	unisim::util::debug::NextInsnEvent<ADDRESS> *next_insn_event;
-	unisim::util::debug::TrapEvent<ADDRESS> *trap_event;
+	unisim::util::debug::NextInsnEvent *next_insn_event;
+	unisim::util::debug::TrapEvent *trap_event;
 	unisim::util::debug::FetchStmtEvent<ADDRESS> *fetch_stmt_event;
-	unisim::util::debug::NextStmtEvent<ADDRESS> *next_stmt_event;
-	unisim::util::debug::FinishEvent<ADDRESS> *finish_event;
+	unisim::util::debug::NextStmtEvent *next_stmt_event;
+	unisim::util::debug::FinishEvent *finish_event;
 	
 	class VisitedInstructionPage
 	{

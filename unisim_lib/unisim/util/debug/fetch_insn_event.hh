@@ -49,14 +49,14 @@ template <class ADDRESS>
 std::ostream& operator << (std::ostream& os, const FetchInsnEvent<ADDRESS>& fie);
 
 template <class ADDRESS>
-class FetchInsnEvent : public CustomEvent<ADDRESS, FetchInsnEvent<ADDRESS> >
+class FetchInsnEvent : public CustomEvent<FetchInsnEvent<ADDRESS> >
 {
 public:
 	ADDRESS GetAddress() const { return addr; }
 	
 protected:
 	FetchInsnEvent(unsigned int _prc_num)
-		: CustomEvent<ADDRESS, FetchInsnEvent<ADDRESS> >(_prc_num)
+		: CustomEvent<FetchInsnEvent<ADDRESS> >(_prc_num)
 		, addr(0)
 	{
 	}

@@ -9,6 +9,7 @@ unisim/service/debug/nodejs/nodejs.tcc
 unisim/service/debug/nodejs/pointer.tcc
 unisim/service/debug/nodejs/processor.tcc
 unisim/service/debug/nodejs/register.tcc
+unisim/service/debug/nodejs/register_value_changed_event.tcc
 unisim/service/debug/nodejs/source_code_location.tcc
 unisim/service/debug/nodejs/stack_frame_info.tcc
 unisim/service/debug/nodejs/statement.tcc

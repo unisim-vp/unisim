@@ -253,7 +253,7 @@ template <class ADDRESS>
 class GDBServer
 	: public GDBServerBase
 	, public unisim::kernel::Service<unisim::service::interfaces::DebugYielding>
-	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener>
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugSelecting>
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
@@ -268,7 +268,7 @@ public:
 	
 	// Exports to debugger
 	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
-	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener>           debug_event_listener_export;
 
 	// Imports from debugger
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
@@ -285,8 +285,8 @@ public:
 	// unisim::service::interfaces::DebugYielding
 	virtual void DebugYield();
 
-	// unisim::service::interfaces::DebugEventListener<ADDRESS>
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
+	// unisim::service::interfaces::DebugEventListener
+	virtual void OnDebugEvent(const unisim::util::debug::Event *event);
 	
 	virtual bool EndSetup();
 	virtual void OnDisconnect();
@@ -400,7 +400,7 @@ private:
 	
 	std::vector<unisim::util::debug::FetchInsnEvent<ADDRESS> *> fetch_insn_events;
 	
-	std::vector<const unisim::util::debug::Event<ADDRESS> *> stop_events;
+	std::vector<const unisim::util::debug::Event *> stop_events;
 	
 	unsigned int memory_atom_size;
 	std::string monitor_internals;

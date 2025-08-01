@@ -49,7 +49,7 @@ namespace debug {
 ////////////////////////// SubProgramBreakpoint<> /////////////////////////////
 
 template <typename ADDRESS>
-class SubProgramBreakpoint : public CustomEvent<ADDRESS, SubProgramBreakpoint<ADDRESS> >
+class SubProgramBreakpoint : public CustomEvent<SubProgramBreakpoint<ADDRESS> >
 {
 public:
 	int GetId() const { return id; }
@@ -80,7 +80,7 @@ inline std::ostream& operator << (std::ostream& os, const SubProgramBreakpoint<A
 
 template <typename ADDRESS>
 SubProgramBreakpoint<ADDRESS>::SubProgramBreakpoint(unsigned int _prc_num, const SubProgram<ADDRESS> *_subprogram, int _id)
-	: CustomEvent<ADDRESS, SubProgramBreakpoint<ADDRESS> >(_prc_num)
+	: CustomEvent<SubProgramBreakpoint<ADDRESS> >(_prc_num)
 	, subprogram(_subprogram)
 	, id(_id)
 {

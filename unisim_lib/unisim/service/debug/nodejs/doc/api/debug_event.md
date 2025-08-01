@@ -1,6 +1,7 @@
 # Class DebugEvent
 
 This class provides support for debug event (see also `continueExecution()`).
+These events are useful when Node.js service of simulator is configured for interactive (blocking) mode, a mode especially designed for a debugger REPL.
 
 It is the superclass of Breakpoint, SourceCodeBreakpoint, SubProgramBreakpoint, and Watchpoint.
 

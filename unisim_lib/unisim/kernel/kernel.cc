@@ -444,6 +444,7 @@ VariableBase(const char *_name, Object *_owner, Type _type, const char *_descrip
 	, is_visible(true)
 	, is_serializable(true)
 	, is_modified(false)
+	, is_initialized(false)
 	, listener_set()
 {
 	if(_owner)

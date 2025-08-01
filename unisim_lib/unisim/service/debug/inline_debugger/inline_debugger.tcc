@@ -73,7 +73,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	: Object(_name, _parent, "this service implements a built-in debugger in the terminal console")
 	, InlineDebuggerBase(_name, _parent)
 	, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
-	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugSelecting>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
@@ -88,7 +88,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Stubbing<ADDRESS> >(_name, _parent)
-	, unisim::kernel::Client<unisim::service::interfaces::Hooking<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Hooking>(_name, _parent)
 	, debug_yielding_export("debug-yielding-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
 	, debug_yielding_request_import("debug-yielding-request-import", this)
@@ -475,9 +475,9 @@ bool InlineDebugger<ADDRESS>::UnlistenFinish()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event *event)
 {
-	typename unisim::util::debug::Event<ADDRESS>::Type event_type = event->GetType();
+	typename unisim::util::debug::Event::Type event_type = event->GetType();
 	
 	if(likely(event_type == unisim::util::debug::FetchInsnEvent<ADDRESS>::TYPE))
 	{
@@ -486,9 +486,8 @@ void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDR
 		cia = fetch_insn_event->GetAddress();
 		trap = true;
 	}
-	if(likely(event_type == unisim::util::debug::NextInsnEvent<ADDRESS>::TYPE))
+	if(likely(event_type == unisim::util::debug::NextInsnEvent::TYPE))
 	{
-// 		const unisim::util::debug::NextInsnEvent<ADDRESS> *next_insn_event = static_cast<const unisim::util::debug::NextInsnEvent<ADDRESS> *>(event);
 		trap = true;
 	}
 	else if(likely(event_type == unisim::util::debug::CommitInsnEvent<ADDRESS>::TYPE))
@@ -506,33 +505,28 @@ void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDR
 		(*std_output_stream) << "-> Reached " << (*watchpoint) << std::endl;
 		trap = true;
 	}
-	else if(likely(event_type == unisim::util::debug::TrapEvent<ADDRESS>::TYPE))
+	else if(likely(event_type == unisim::util::debug::TrapEvent::TYPE))
 	{
-		const unisim::util::debug::TrapEvent<ADDRESS> *trap_event = static_cast<const unisim::util::debug::TrapEvent<ADDRESS> *>(event);
+		const unisim::util::debug::TrapEvent *trap_event = static_cast<const unisim::util::debug::TrapEvent *>(event);
 		(*std_output_stream) << "-> Received " << (*trap_event) << std::endl;
 		trap = true;
 	}
 	if(likely(event_type == unisim::util::debug::FetchStmtEvent<ADDRESS>::TYPE))
 	{
-// 		const unisim::util::debug::FetchStmtEvent<ADDRESS> *fetch_stmt_event = static_cast<const unisim::util::debug::FetchStmtEvent<ADDRESS> *>(event);
-		
-// 		cia = fetch_stmt_event->GetStatement()->GetAddress();
 		trap = true;
 	}
-	if(likely(event_type == unisim::util::debug::NextStmtEvent<ADDRESS>::TYPE))
+	if(likely(event_type == unisim::util::debug::NextStmtEvent::TYPE))
 	{
-// 		const unisim::util::debug::NextStmtEvent<ADDRESS> *next_stmt_event = static_cast<const unisim::util::debug::NextStmtEvent<ADDRESS> *>(event);
 		trap = true;
 	}
-	if(likely(event_type == unisim::util::debug::FinishEvent<ADDRESS>::TYPE))
+	if(likely(event_type == unisim::util::debug::FinishEvent::TYPE))
 	{
-// 		const unisim::util::debug::FinishEvent<ADDRESS> *finish_event = static_cast<const unisim::util::debug::FinishEvent<ADDRESS> *>(event);
 		(*std_output_stream) << "-> Finished" << std::endl;
 		trap = true;
 	}
-	else if(likely(event_type == unisim::util::debug::SourceCodeBreakpoint<ADDRESS>::TYPE))
+	else if(likely(event_type == unisim::util::debug::SourceCodeBreakpoint::TYPE))
 	{
-		const unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = static_cast<const unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
+		const unisim::util::debug::SourceCodeBreakpoint *source_code_breakpoint = static_cast<const unisim::util::debug::SourceCodeBreakpoint *>(event);
 		(*std_output_stream) << "-> Reached " << (*source_code_breakpoint) << std::endl;
 		trap = true;
 	}
@@ -1681,7 +1675,7 @@ void InlineDebugger<ADDRESS>::SetBreakpoint(const unisim::util::debug::SourceCod
 {
 	if(debug_event_trigger_import)
 	{
-		unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = debug_event_trigger_import->CreateSourceCodeBreakpoint(source_code_location);
+		unisim::util::debug::SourceCodeBreakpoint *source_code_breakpoint = debug_event_trigger_import->CreateSourceCodeBreakpoint(source_code_location);
 		if(debug_event_trigger_import->Listen(source_code_breakpoint))
 		{
 			return;
@@ -1736,7 +1730,7 @@ void InlineDebugger<ADDRESS>::DeleteBreakpointAt(ADDRESS addr)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteBreakpointWatchpoint(unsigned int id)
 {
-	struct EventRemover : unisim::service::interfaces::DebugEventScanner<ADDRESS>
+	struct EventRemover : unisim::service::interfaces::DebugEventScanner
 	{
 		EventRemover(InlineDebugger<ADDRESS>& _inline_debugger, int _id)
 			: inline_debugger(_inline_debugger)
@@ -1745,7 +1739,7 @@ void InlineDebugger<ADDRESS>::DeleteBreakpointWatchpoint(unsigned int id)
 		{
 		}
 		
-		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
+		virtual void Append(unisim::util::debug::Event *event)
 		{
 			int event_id = -1;
 			if(event->GetType() == unisim::util::debug::Breakpoint<ADDRESS>::TYPE)
@@ -1753,9 +1747,9 @@ void InlineDebugger<ADDRESS>::DeleteBreakpointWatchpoint(unsigned int id)
 				unisim::util::debug::Breakpoint<ADDRESS> *brkp = static_cast<unisim::util::debug::Breakpoint<ADDRESS> *>(event);
 				event_id = brkp->GetId();
 			}
-			else if(event->GetType() == unisim::util::debug::SourceCodeBreakpoint<ADDRESS>::TYPE)
+			else if(event->GetType() == unisim::util::debug::SourceCodeBreakpoint::TYPE)
 			{
-				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = static_cast<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
+				unisim::util::debug::SourceCodeBreakpoint *src_code_brkp = static_cast<unisim::util::debug::SourceCodeBreakpoint *>(event);
 				event_id = src_code_brkp->GetId();
 			}
 			else if(event->GetType() == unisim::util::debug::Watchpoint<ADDRESS>::TYPE)
@@ -1783,7 +1777,7 @@ void InlineDebugger<ADDRESS>::DeleteBreakpointWatchpoint(unsigned int id)
 	private:
 		InlineDebugger<ADDRESS>& inline_debugger;
 		int id;
-		unisim::util::debug::Event<ADDRESS> *event_to_unlisten;
+		unisim::util::debug::Event *event_to_unlisten;
 	};
 	
 	EventRemover event_remover(*this, id);
@@ -1794,14 +1788,14 @@ void InlineDebugger<ADDRESS>::DeleteBreakpointWatchpoint(unsigned int id)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpBreakpoints()
 {
-	struct DebugEventScanner : unisim::service::interfaces::DebugEventScanner<ADDRESS>
+	struct DebugEventScanner : unisim::service::interfaces::DebugEventScanner
 	{
 		DebugEventScanner(InlineDebugger<ADDRESS>& _inline_debugger)
 			: inline_debugger(_inline_debugger)
 		{
 		}
 		
-		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
+		virtual void Append(unisim::util::debug::Event *event)
 		{
 			if(event->GetType() == unisim::util::debug::Breakpoint<ADDRESS>::TYPE)
 			{
@@ -1854,9 +1848,9 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 					(*inline_debugger.std_output_stream) << std::endl;
 				}
 			}
-			else if(event->GetType() == unisim::util::debug::SourceCodeBreakpoint<ADDRESS>::TYPE)
+			else if(event->GetType() == unisim::util::debug::SourceCodeBreakpoint::TYPE)
 			{
-				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = (unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *) event;
+				unisim::util::debug::SourceCodeBreakpoint *src_code_brkp = (unisim::util::debug::SourceCodeBreakpoint *) event;
 				
 				unsigned int id = src_code_brkp->GetId();
 				const unisim::util::debug::SourceCodeLocation& src_code_loc = src_code_brkp->GetSourceCodeLocation();
@@ -1906,14 +1900,14 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpWatchpoints()
 {
-	struct DebugEventScanner : unisim::service::interfaces::DebugEventScanner<ADDRESS>
+	struct DebugEventScanner : unisim::service::interfaces::DebugEventScanner
 	{
 		DebugEventScanner(InlineDebugger<ADDRESS>& _inline_debugger)
 			: inline_debugger(_inline_debugger)
 		{
 		}
 		
-		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
+		virtual void Append(unisim::util::debug::Event *event)
 		{
 			if(event->GetType() == unisim::util::debug::Watchpoint<ADDRESS>::TYPE)
 			{

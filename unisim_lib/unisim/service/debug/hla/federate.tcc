@@ -63,7 +63,7 @@ Federate<CONFIG>::Federate(const char *_name, unisim::kernel::Object *_parent)
 	: unisim::kernel::Object(_name, _parent, "this service implements an HLA Federate")
 	, unisim::util::hla::Federate<typename CONFIG::TIME_TRAIT>()
 	, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
-	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugSelecting>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
@@ -78,7 +78,7 @@ Federate<CONFIG>::Federate(const char *_name, unisim::kernel::Object *_parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Stubbing<ADDRESS> >(_name, _parent)
-	, unisim::kernel::Client<unisim::service::interfaces::Hooking<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Hooking>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugTiming<sc_core::sc_time> >(_name, _parent)
 	, debug_yielding_export("debug-yielding-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
@@ -176,9 +176,9 @@ void Federate<CONFIG>::DebugYield()
 {
 }
 
-// unisim::service::interfaces::DebugEventListener<ADDRESS>
+// unisim::service::interfaces::DebugEventListener
 template <typename CONFIG>
-void Federate<CONFIG>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+void Federate<CONFIG>::OnDebugEvent(const unisim::util::debug::Event *event)
 {
 }
 
@@ -788,7 +788,7 @@ void FederateHookStub<CONFIG>::DoInstrument(InstrumentBase::Direction direction)
 
 template <typename CONFIG>
 FederateHook<CONFIG>::FederateHook(Federate<CONFIG>& _federate, const std::string& _name, const std::string& _file, const unisim::util::debug::SourceCodeLocation& _source_code_location, const unisim::util::json::JSON_Value *_json_return_value)
-	: unisim::util::debug::SourceCodeHook<ADDRESS>(_source_code_location, _file)
+	: unisim::util::debug::SourceCodeHook(_source_code_location, _file)
 	, FederateHookStub<CONFIG>(_federate, _name, _json_return_value)
 {
 }

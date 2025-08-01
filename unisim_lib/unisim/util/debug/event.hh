@@ -44,7 +44,7 @@ namespace unisim {
 namespace service {
 namespace interfaces {
 
-template <class ADDRESS> class DebugEventListener;
+class DebugEventListener;
 
 } // end of namespace interfaces
 } // end of namespace service
@@ -54,7 +54,6 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <typename ADDRESS>
 class Event
 {
 public:
@@ -63,8 +62,8 @@ public:
 	virtual ~Event() {}
 	Type GetType() const { return type; }
 	unsigned int GetProcessorNumber() const { return prc_num; }
-	void AddEventListener(unisim::service::interfaces::DebugEventListener<ADDRESS> *listener) { event_listeners.insert(listener); }
-	void RemoveEventListener(unisim::service::interfaces::DebugEventListener<ADDRESS> *listener) { event_listeners.erase(listener); }
+	void AddEventListener(unisim::service::interfaces::DebugEventListener *listener) { event_listeners.insert(listener); }
+	void RemoveEventListener(unisim::service::interfaces::DebugEventListener *listener) { event_listeners.erase(listener); }
 	bool HasEventListeners() const { return !event_listeners.empty(); }
 	inline void Trigger() const;
 	void Catch() const { ref_count++; }
@@ -75,7 +74,7 @@ protected:
 private:
 	Type type;
 	int prc_num;
-	typedef std::set<unisim::service::interfaces::DebugEventListener<ADDRESS> *> EventListeners;
+	typedef std::set<unisim::service::interfaces::DebugEventListener *> EventListeners;
 	EventListeners event_listeners;
 	mutable unsigned int ref_count;
 	
@@ -83,36 +82,35 @@ protected:
 	static Type AllocateCustomEventType() { static Type next_event_type = 0; return next_event_type++; }
 };
 
-template <typename ADDRESS>
-inline void Event<ADDRESS>::Trigger() const
+inline void Event::Trigger() const
 {
 	typename EventListeners::size_type i = 0, n = event_listeners.size();
-	unisim::service::interfaces::DebugEventListener<ADDRESS> *_event_listeners[n];
+	unisim::service::interfaces::DebugEventListener *_event_listeners[n];
 	for(typename EventListeners::const_iterator it = event_listeners.begin(); it != event_listeners.end(); ++i, ++it)
 	{
 		_event_listeners[i] = *it;
 	}
 	for(i = 0; i < n; ++i)
 	{
-		unisim::service::interfaces::DebugEventListener<ADDRESS> *event_listener = _event_listeners[i];
+		unisim::service::interfaces::DebugEventListener *event_listener = _event_listeners[i];
 		event_listener->OnDebugEvent(this);
 	}
 }
 
-template <typename ADDRESS, typename T>
-class CustomEvent : public Event<ADDRESS>
+template <typename T>
+class CustomEvent : public Event
 {
 public:
-	static const typename Event<ADDRESS>::Type TYPE;
+	static const typename Event::Type TYPE;
 	
-	static bool IsInstanceOf(const Event<ADDRESS> *event) { return event->GetType() == TYPE; }
+	static bool IsInstanceOf(const Event *event) { return event->GetType() == TYPE; }
 
 protected:
-	CustomEvent(unsigned int _prc_num) : Event<ADDRESS>(TYPE, _prc_num) {}
+	CustomEvent(unsigned int _prc_num) : Event(TYPE, _prc_num) {}
 };
 
-template <typename ADDRESS, typename T>
-const typename Event<ADDRESS>::Type CustomEvent<ADDRESS, T>::TYPE = Event<ADDRESS>::AllocateCustomEventType();
+template <typename T>
+const typename Event::Type CustomEvent<T>::TYPE = Event::AllocateCustomEventType();
 
 } // end of namespace debug
 } // end of namespace util

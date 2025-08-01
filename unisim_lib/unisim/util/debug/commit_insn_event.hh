@@ -49,7 +49,7 @@ template <class ADDRESS>
 std::ostream& operator << (std::ostream& os, const CommitInsnEvent<ADDRESS>& cie);
 
 template <class ADDRESS>
-class CommitInsnEvent : public CustomEvent<ADDRESS, CommitInsnEvent<ADDRESS> >
+class CommitInsnEvent : public CustomEvent<CommitInsnEvent<ADDRESS> >
 {
 public:
 	inline ADDRESS GetAddress() const { return addr; }
@@ -57,7 +57,7 @@ public:
 	
 protected:
 	CommitInsnEvent(unsigned int _prc_num)
-		: CustomEvent<ADDRESS, CommitInsnEvent<ADDRESS> >(_prc_num)
+		: CustomEvent<CommitInsnEvent<ADDRESS> >(_prc_num)
 		, addr(0)
 		, length(0)
 	{

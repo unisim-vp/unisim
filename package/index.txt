@@ -1922,6 +1922,7 @@ unisim/service/debug/nodejs/doc/repl/disassemble.md
 unisim/service/debug/nodejs/doc/repl/enable.md
 unisim/service/debug/nodejs/doc/repl/finish.md
 unisim/service/debug/nodejs/doc/repl/frame.md
+unisim/service/debug/nodejs/doc/repl/index.md
 unisim/service/debug/nodejs/doc/repl/inferior.md
 unisim/service/debug/nodejs/doc/repl/info.md
 unisim/service/debug/nodejs/doc/repl/info_all_registers.md
@@ -1963,6 +1964,8 @@ unisim/service/debug/nodejs/processor.hh
 unisim/service/debug/nodejs/processor.tcc
 unisim/service/debug/nodejs/register.hh
 unisim/service/debug/nodejs/register.tcc
+unisim/service/debug/nodejs/register_value_changed_event.hh
+unisim/service/debug/nodejs/register_value_changed_event.tcc
 unisim/service/debug/nodejs/source_code_location.hh
 unisim/service/debug/nodejs/source_code_location.tcc
 unisim/service/debug/nodejs/stack_frame_info.hh
@@ -2091,6 +2094,7 @@ unisim/service/interfaces/memory.hh
 unisim/service/interfaces/memory_access_reporting.hh
 unisim/service/interfaces/memory_direct_access.hh
 unisim/service/interfaces/memory_injection.hh
+unisim/service/interfaces/memory_tainting.hh
 unisim/service/interfaces/monitor_if.hh
 unisim/service/interfaces/mouse.hh
 unisim/service/interfaces/os.hh
@@ -2440,6 +2444,7 @@ unisim/util/debug/profile.hh
 unisim/util/debug/profile.tcc
 unisim/util/debug/profile_32.cc
 unisim/util/debug/profile_64.cc
+unisim/util/debug/register_value_changed_event.hh
 unisim/util/debug/simple_field_registry.cc
 unisim/util/debug/simple_field_registry.hh
 unisim/util/debug/simple_register.hh

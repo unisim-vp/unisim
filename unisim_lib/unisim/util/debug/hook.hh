@@ -44,13 +44,12 @@ namespace debug {
 
 ////////////////////////////// declarations ///////////////////////////////////
 
-template <typename ADDRESS>
 class Hook
 {
 public:
 	typedef unsigned int Type;
 	
-	Hook(Type _type) : type(_type), id(next_id++), ref_count(0) {}
+	Hook(Type _type) : type(_type), id(AllocateHookId()), ref_count(0) {}
 	virtual ~Hook() {}
 
 	Type GetType() const { return type; }
@@ -65,38 +64,34 @@ public:
 private:
 	Type type;
 	unsigned int id;
-	static unsigned int next_id;
 	mutable unsigned int ref_count;
 protected:
+	static unsigned int AllocateHookId() { static unsigned int next_id = 0; return next_id++; }
 	static Type AllocateCustomHookType() { static Type next_hook_type = 0; return next_hook_type++; }
 };
 
-template <typename ADDRESS>
-std::ostream& operator << (std::ostream& stream, const Hook<ADDRESS>& hook)
+inline std::ostream& operator << (std::ostream& stream, const Hook& hook)
 {
 	hook.Print(stream);
 	return stream;
 }
 
-template <typename ADDRESS>
-unsigned int Hook<ADDRESS>::next_id;
-
-template <typename ADDRESS, typename T>
-class CustomHook : public Hook<ADDRESS>
+template <typename T>
+class CustomHook : public Hook
 {
 public:
-	static const typename Hook<ADDRESS>::Type TYPE;
+	static const typename Hook::Type TYPE;
 	
-	static bool IsInstanceOf(const Hook<ADDRESS> *hook) { return hook->GetType() == TYPE; }
+	static bool IsInstanceOf(const Hook *hook) { return hook->GetType() == TYPE; }
 	
-	CustomHook() : Hook<ADDRESS>(TYPE) {}
+	CustomHook() : Hook(TYPE) {}
 };
 
-template <typename ADDRESS, typename T>
-const typename Hook<ADDRESS>::Type CustomHook<ADDRESS, T>::TYPE = Hook<ADDRESS>::AllocateCustomHookType();
+template <typename T>
+const typename Hook::Type CustomHook<T>::TYPE = Hook::AllocateCustomHookType();
 
 template <typename ADDRESS>
-class AddressHook : public CustomHook<ADDRESS, AddressHook<ADDRESS> >
+class AddressHook : public CustomHook<AddressHook<ADDRESS> >
 {
 public:
 	AddressHook(ADDRESS _addr) : addr(_addr) {}
@@ -108,8 +103,7 @@ private:
 	ADDRESS addr;
 };
 
-template <typename ADDRESS>
-class SourceCodeHook : public CustomHook<ADDRESS, SourceCodeHook<ADDRESS> >
+class SourceCodeHook : public CustomHook<SourceCodeHook>
 {
 public:
 	SourceCodeHook(const unisim::util::debug::SourceCodeLocation& _source_code_location) : source_code_location(_source_code_location), filename() {}
@@ -127,7 +121,7 @@ private:
 };
 
 template <typename ADDRESS>
-class SubProgramHook : public CustomHook<ADDRESS, SubProgramHook<ADDRESS> >
+class SubProgramHook : public CustomHook<SubProgramHook<ADDRESS> >
 {
 public:
 	SubProgramHook(const SubProgram<ADDRESS> *_subprogram) : subprogram(_subprogram) { subprogram->Catch(); }

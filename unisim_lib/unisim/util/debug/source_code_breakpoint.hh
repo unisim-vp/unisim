@@ -47,10 +47,9 @@ namespace debug {
 
 ////////////////////////////// declarations ///////////////////////////////////
 
-////////////////////////// SourceCodeBreakpoint<> /////////////////////////////
+/////////////////////////// SourceCodeBreakpoint //////////////////////////////
 
-template <typename ADDRESS>
-class SourceCodeBreakpoint : public CustomEvent<ADDRESS, SourceCodeBreakpoint<ADDRESS> >
+class SourceCodeBreakpoint : public CustomEvent<SourceCodeBreakpoint>
 {
 public:
 	int GetId() const { return id; }
@@ -69,24 +68,21 @@ private:
 	int id;
 };
 
-template <typename ADDRESS>
-inline std::ostream& operator << (std::ostream& os, const SourceCodeBreakpoint<ADDRESS>& src_code_brkp);
+inline std::ostream& operator << (std::ostream& os, const SourceCodeBreakpoint& src_code_brkp);
 
 /////////////////////////////// definitions ///////////////////////////////////
 
 ////////////////////////// SourceCodeBreakpoint<> /////////////////////////////
 
-template <typename ADDRESS>
-inline std::ostream& operator << (std::ostream& os, const SourceCodeBreakpoint<ADDRESS>& src_code_brkp)
+inline std::ostream& operator << (std::ostream& os, const SourceCodeBreakpoint& src_code_brkp)
 {
 	os << "source code breakpoint #" << src_code_brkp.GetId() << " at " << src_code_brkp.GetSourceCodeLocation() << " in " << src_code_brkp.GetFilename() << " for processor #" << src_code_brkp.GetProcessorNumber();
 	
 	return os;
 }
 
-template <typename ADDRESS>
-SourceCodeBreakpoint<ADDRESS>::SourceCodeBreakpoint(unsigned int _prc_num, const SourceCodeLocation& _source_code_location, const std::string& _filename, int _id)
-	: CustomEvent<ADDRESS, SourceCodeBreakpoint<ADDRESS> >(_prc_num)
+inline SourceCodeBreakpoint::SourceCodeBreakpoint(unsigned int _prc_num, const SourceCodeLocation& _source_code_location, const std::string& _filename, int _id)
+	: CustomEvent<SourceCodeBreakpoint>(_prc_num)
 	, source_code_location(_source_code_location)
 	, filename(_filename)
 	, id(_id)

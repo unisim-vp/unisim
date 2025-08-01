@@ -114,6 +114,7 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::Object *parent)
 	, finish_event_set()
 	, trap_event_set()
 	, fetch_stmt_event_set()
+	, reg_val_changed_event_set()
 	, source_code_breakpoint_registry()
 	, subprogram_breakpoint_registry()
 	, stub_registry()
@@ -235,7 +236,7 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::Object *parent)
 		
 		std::stringstream hooking_export_name_sstr;
 		hooking_export_name_sstr << "hooking-export[" << front_end_num << "]";
-		hooking_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::Hooking<ADDRESS> >(hooking_export_name_sstr.str().c_str(), this);
+		hooking_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::Hooking>(hooking_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream debug_timing_export_name_sstr;
 		debug_timing_export_name_sstr << "debug-timing-export[" << front_end_num << "]";
@@ -247,7 +248,7 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::Object *parent)
 		
 		std::stringstream debug_event_listener_import_name_sstr;
 		debug_event_listener_import_name_sstr << "debug-event-listener-import[" << front_end_num << "]";
-		debug_event_listener_import[front_end_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> >(debug_event_listener_import_name_sstr.str().c_str(), this);
+		debug_event_listener_import[front_end_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener>(debug_event_listener_import_name_sstr.str().c_str(), this);
 		
 		std::stringstream debug_yielding_import_name_sstr;
 		debug_yielding_import_name_sstr << "debug-yielding-import[" << front_end_num << "]";
@@ -600,7 +601,7 @@ template <typename CONFIG>
 void Debugger<CONFIG>::UpdateReportingRequirements(unsigned int prc_num)
 {
 	requires_fetch_instruction_reporting[prc_num] = breakpoint_registry.HasBreakpoints(prc_num) || !fetch_insn_event_set[prc_num].empty() || !fetch_stmt_event_set[prc_num].empty();
-	requires_commit_instruction_reporting[prc_num] = !commit_insn_event_set[prc_num].empty();
+	requires_commit_instruction_reporting[prc_num] = !commit_insn_event_set[prc_num].empty() || !reg_val_changed_event_set[prc_num].empty();
 	requires_memory_access_reporting[prc_num] = watchpoint_registry.HasWatchpoints(prc_num);
 
 	prc_gate[prc_num]->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_MEM_ACCESS, requires_memory_access_reporting[prc_num]);
@@ -721,6 +722,32 @@ void Debugger<CONFIG>::ReportCommitInstruction(unsigned int prc_num, ADDRESS add
 			unsigned int front_end_num = commit_insn_event->GetFrontEndNumber();
 			commit_insn_event->Trigger();
 			commit_insn_event->Release();
+			ScheduleFrontEnd(front_end_num);
+		}
+	}
+	
+	if(unlikely(!reg_val_changed_event_set[prc_num].empty()))
+	{
+		// beware of reentrancy
+		typename RegisterValueChangedEventSet::size_type i, m = 0, n = commit_insn_event_set[prc_num].size();
+		RegisterValueChangedEvent *reg_val_changed_events[n];
+		for(typename RegisterValueChangedEventSet::iterator it = reg_val_changed_event_set[prc_num].begin(); it != reg_val_changed_event_set[prc_num].end(); ++it)
+		{
+			RegisterValueChangedEvent *reg_val_changed_event = *it;
+			reg_val_changed_event->Latch();
+			if(reg_val_changed_event->RegisterValueChanged())
+			{
+				reg_val_changed_event->Toggle();
+				reg_val_changed_event->Catch();
+				reg_val_changed_events[m++] = reg_val_changed_event;
+			}
+		}
+		for(i = 0; i < m; ++i)
+		{
+			RegisterValueChangedEvent *reg_val_changed_event = reg_val_changed_events[i];
+			unsigned int front_end_num = reg_val_changed_event->GetFrontEndNumber();
+			reg_val_changed_event->Trigger();
+			reg_val_changed_event->Release();
 			ScheduleFrontEnd(front_end_num);
 		}
 	}
@@ -922,61 +949,61 @@ unisim::util::debug::CommitInsnEvent<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 }
 
 template <typename CONFIG>
-unisim::util::debug::NextInsnEvent<typename CONFIG::ADDRESS> *Debugger<CONFIG>::CreateNextInsnEvent(unsigned int front_end_num, bool internal)
+unisim::util::debug::NextInsnEvent *Debugger<CONFIG>::CreateNextInsnEvent(unsigned int front_end_num, bool internal)
 {
 	return new NextInsnEvent(*this, front_end_num, sel_cpu[front_end_num], internal);
 }
 
 template <typename CONFIG>
-unisim::util::debug::NextInsnEvent<typename CONFIG::ADDRESS> *Debugger<CONFIG>::CreateNextInsnEvent(unsigned int front_end_num, unsigned int prc_num, bool internal)
+unisim::util::debug::NextInsnEvent *Debugger<CONFIG>::CreateNextInsnEvent(unsigned int front_end_num, unsigned int prc_num, bool internal)
 {
 	return new NextInsnEvent(*this, front_end_num, prc_num, internal);
 }
 
 template <typename CONFIG>
-unisim::util::debug::NextStmtEvent<typename CONFIG::ADDRESS> *Debugger<CONFIG>::CreateNextStmtEvent(unsigned int front_end_num, bool internal)
+unisim::util::debug::NextStmtEvent *Debugger<CONFIG>::CreateNextStmtEvent(unsigned int front_end_num, bool internal)
 {
 	return new NextStmtEvent(*this, front_end_num, sel_cpu[front_end_num], internal);
 }
 
 template <typename CONFIG>
-unisim::util::debug::NextStmtEvent<typename CONFIG::ADDRESS> *Debugger<CONFIG>::CreateNextStmtEvent(unsigned int front_end_num, unsigned int prc_num, bool internal)
+unisim::util::debug::NextStmtEvent *Debugger<CONFIG>::CreateNextStmtEvent(unsigned int front_end_num, unsigned int prc_num, bool internal)
 {
 	return new NextStmtEvent(*this, front_end_num, prc_num, internal);
 }
 
 template <typename CONFIG>
-unisim::util::debug::FinishEvent<typename CONFIG::ADDRESS> *Debugger<CONFIG>::CreateFinishEvent(unsigned int front_end_num, bool internal)
+unisim::util::debug::FinishEvent *Debugger<CONFIG>::CreateFinishEvent(unsigned int front_end_num, bool internal)
 {
 	return new FinishEvent(*this, front_end_num, sel_cpu[front_end_num], internal);
 }
 
 template <typename CONFIG>
-unisim::util::debug::FinishEvent<typename CONFIG::ADDRESS> *Debugger<CONFIG>::CreateFinishEvent(unsigned int front_end_num, unsigned int prc_num, bool internal)
+unisim::util::debug::FinishEvent *Debugger<CONFIG>::CreateFinishEvent(unsigned int front_end_num, unsigned int prc_num, bool internal)
 {
 	return new FinishEvent(*this, front_end_num, prc_num, internal);
 }
 
 template <typename CONFIG>
-unisim::util::debug::TrapEvent<typename CONFIG::ADDRESS> *Debugger<CONFIG>::CreateTrapEvent(unsigned int front_end_num, bool internal)
+unisim::util::debug::TrapEvent *Debugger<CONFIG>::CreateTrapEvent(unsigned int front_end_num, bool internal)
 {
 	return new TrapEvent(*this, front_end_num, sel_cpu[front_end_num], internal);
 }
 
 template <typename CONFIG>
-unisim::util::debug::TrapEvent<typename CONFIG::ADDRESS> *Debugger<CONFIG>::CreateTrapEvent(unsigned int front_end_num, unsigned int prc_num, bool internal)
+unisim::util::debug::TrapEvent *Debugger<CONFIG>::CreateTrapEvent(unsigned int front_end_num, unsigned int prc_num, bool internal)
 {
 	return new TrapEvent(*this, front_end_num, prc_num, internal);
 }
 
 template <typename CONFIG>
-unisim::util::debug::SourceCodeBreakpoint<typename CONFIG::ADDRESS> *Debugger<CONFIG>::CreateSourceCodeBreakpoint(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename, bool internal)
+unisim::util::debug::SourceCodeBreakpoint *Debugger<CONFIG>::CreateSourceCodeBreakpoint(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename, bool internal)
 {
 	return new SourceCodeBreakpoint(*this, front_end_num, sel_cpu[front_end_num], source_code_location, filename, internal ? -1 : AllocateId(front_end_num));
 }
 
 template <typename CONFIG>
-unisim::util::debug::SourceCodeBreakpoint<typename CONFIG::ADDRESS> *Debugger<CONFIG>::CreateSourceCodeBreakpoint(unsigned int front_end_num, unsigned int prc_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename, bool internal)
+unisim::util::debug::SourceCodeBreakpoint *Debugger<CONFIG>::CreateSourceCodeBreakpoint(unsigned int front_end_num, unsigned int prc_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename, bool internal)
 {
 	return new SourceCodeBreakpoint(*this, front_end_num, prc_num, source_code_location, filename, internal ? -1 : AllocateId(front_end_num));
 }
@@ -993,11 +1020,25 @@ unisim::util::debug::SubProgramBreakpoint<typename CONFIG::ADDRESS> *Debugger<CO
 	return new SubProgramBreakpoint(*this, front_end_num, prc_num, subprogram, internal ? -1 : AllocateId(front_end_num));
 }
 
+template <typename CONFIG>
+unisim::util::debug::RegisterValueChangedEvent *Debugger<CONFIG>::CreateRegisterValueChangedEvent(unsigned int front_end_num, const char *reg_name, bool internal)
+{
+	unisim::service::interfaces::Register *reg = sel_prc_gate[front_end_num]->GetRegister(reg_name);
+	return reg ? new RegisterValueChangedEvent(*this, front_end_num, sel_cpu[front_end_num], reg, internal) : 0;
+}
+
+template <typename CONFIG>
+unisim::util::debug::RegisterValueChangedEvent *Debugger<CONFIG>::CreateRegisterValueChangedEvent(unsigned int front_end_num, unsigned int prc_num, const char *reg_name, bool internal)
+{
+	unisim::service::interfaces::Register *reg = prc_gate[prc_num]->GetRegister(reg_name);
+	return reg ? new RegisterValueChangedEvent(*this, front_end_num, prc_num, reg, internal) : 0;
+}
+
 // unisim::service::interfaces::DebugEventTrigger<ADDRESS> (tagged)
 
 template <typename CONFIG>
 template <typename EVENT_SET, typename EVENT>
-bool Debugger<CONFIG>::AddEvent(unsigned int front_end_num, EVENT_SET (&event_set)[], unisim::util::debug::Event<ADDRESS> *_event)
+bool Debugger<CONFIG>::AddEvent(unsigned int front_end_num, EVENT_SET (&event_set)[], unisim::util::debug::Event *_event)
 {
 	EVENT *event = dynamic_cast<EVENT *>(_event);
 	if(!event || (event->GetFrontEndNumber() != front_end_num)) return false;
@@ -1012,7 +1053,7 @@ bool Debugger<CONFIG>::AddEvent(unsigned int front_end_num, EVENT_SET (&event_se
 
 template <typename CONFIG>
 template <typename EVENT_SET, typename EVENT>
-bool Debugger<CONFIG>::RemoveEvent(unsigned int front_end_num, EVENT_SET (&event_set)[], unisim::util::debug::Event<ADDRESS> *_event)
+bool Debugger<CONFIG>::RemoveEvent(unsigned int front_end_num, EVENT_SET (&event_set)[], unisim::util::debug::Event *_event)
 {
 	EVENT *event = dynamic_cast<EVENT *>(_event);
 	if(!event || (event->GetFrontEndNumber() != front_end_num)) return false;
@@ -1027,7 +1068,7 @@ bool Debugger<CONFIG>::RemoveEvent(unsigned int front_end_num, EVENT_SET (&event
 }
 
 template <typename CONFIG>
-bool Debugger<CONFIG>::Listen(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event)
+bool Debugger<CONFIG>::Listen(unsigned int front_end_num, unisim::util::debug::Event *event)
 {
 //	std::cerr << "Listen(" << front_end_num << ", " << event << ")" << std::endl;
 	
@@ -1095,6 +1136,10 @@ bool Debugger<CONFIG>::Listen(unsigned int front_end_num, unisim::util::debug::E
 			return false;
 		}
 	}
+	else if(RegisterValueChangedEvent::IsInstanceOf(event))
+	{
+		if(!this->template AddEvent<RegisterValueChangedEventSet, RegisterValueChangedEvent>(front_end_num, reg_val_changed_event_set, event)) return false;
+	}
 	else
 	{
 		return false;
@@ -1111,7 +1156,7 @@ bool Debugger<CONFIG>::Listen(unsigned int front_end_num, unisim::util::debug::E
 }
 
 template <typename CONFIG>
-bool Debugger<CONFIG>::Unlisten(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event)
+bool Debugger<CONFIG>::Unlisten(unsigned int front_end_num, unisim::util::debug::Event *event)
 {
 	if(Breakpoint::IsInstanceOf(event))
 	{
@@ -1169,6 +1214,10 @@ bool Debugger<CONFIG>::Unlisten(unsigned int front_end_num, unisim::util::debug:
 		if(!subprogram_brkp->Remove()) return false;
 		subprogram_breakpoint_registry[front_end_num].erase(it);
 	}
+	else if(RegisterValueChangedEvent::IsInstanceOf(event))
+	{
+		if(!this->template RemoveEvent<RegisterValueChangedEventSet, RegisterValueChangedEvent>(front_end_num, reg_val_changed_event_set, event)) return false;
+	}
 	else
 	{
 		// ignore
@@ -1181,7 +1230,7 @@ bool Debugger<CONFIG>::Unlisten(unsigned int front_end_num, unisim::util::debug:
 }
 
 template <typename CONFIG>
-bool Debugger<CONFIG>::IsEventListened(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event) const
+bool Debugger<CONFIG>::IsEventListened(unsigned int front_end_num, unisim::util::debug::Event *event) const
 {
 	unsigned int prc_num = event->GetProcessorNumber();
 	
@@ -1240,6 +1289,11 @@ bool Debugger<CONFIG>::IsEventListened(unsigned int front_end_num, unisim::util:
 		SubProgramBreakpoint *subprogram_brkp = dynamic_cast<SubProgramBreakpoint *>(event);
 		return subprogram_brkp && (subprogram_breakpoint_registry[front_end_num].find(subprogram_brkp) != subprogram_breakpoint_registry[front_end_num].end());
 	}
+	else if(RegisterValueChangedEvent::IsInstanceOf(event))
+	{
+		RegisterValueChangedEvent *reg_val_changed_event = dynamic_cast<RegisterValueChangedEvent *>(event);
+		return reg_val_changed_event && (reg_val_changed_event_set[prc_num].find(reg_val_changed_event) != reg_val_changed_event_set[prc_num].end());
+	}
 	return false;
 }
 
@@ -1247,7 +1301,7 @@ template <typename CONFIG>
 template <typename EVENT_SET, typename EVENT, typename SCANNER>
 void Debugger<CONFIG>::ScanEvents(unsigned int front_end_num, const EVENT_SET (&event_set)[], SCANNER& scanner) const
 {
-	typedef std::vector<unisim::util::debug::Event<ADDRESS> *> ListenedEvents;
+	typedef std::vector<unisim::util::debug::Event *> ListenedEvents;
 	ListenedEvents listened_events;
 	
 	for(unsigned int prc_num = 0; prc_num < NUM_PROCESSORS; ++prc_num)
@@ -1265,23 +1319,24 @@ void Debugger<CONFIG>::ScanEvents(unsigned int front_end_num, const EVENT_SET (&
 	
 	for(typename ListenedEvents::iterator it = listened_events.begin(); it != listened_events.end(); ++it)
 	{
-		unisim::util::debug::Event<ADDRESS> *event = *it;
+		unisim::util::debug::Event *event = *it;
 		scanner.Append(*it);
 		event->Release();
 	}
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::ScanListenedEvents(unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const
+void Debugger<CONFIG>::ScanListenedEvents(unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner& scanner) const
 {
 	// beware of reentrancy
-	this->template ScanEvents<FetchInsnEventSet, FetchInsnEvent, unisim::service::interfaces::DebugEventScanner<ADDRESS> >(front_end_num, fetch_insn_event_set, scanner);
-	this->template ScanEvents<CommitInsnEventSet, CommitInsnEvent, unisim::service::interfaces::DebugEventScanner<ADDRESS> >(front_end_num, commit_insn_event_set, scanner);
-	this->template ScanEvents<NextInsnEventSet, NextInsnEvent, unisim::service::interfaces::DebugEventScanner<ADDRESS> >(front_end_num, next_insn_event_set, scanner);
-	this->template ScanEvents<FetchStmtEventSet, FetchStmtEvent, unisim::service::interfaces::DebugEventScanner<ADDRESS> >(front_end_num, fetch_stmt_event_set, scanner);
-	this->template ScanEvents<NextStmtEventSet, NextStmtEvent, unisim::service::interfaces::DebugEventScanner<ADDRESS> >(front_end_num, next_stmt_event_set, scanner);
-	this->template ScanEvents<FinishEventSet, FinishEvent, unisim::service::interfaces::DebugEventScanner<ADDRESS> >(front_end_num, finish_event_set, scanner);
-	this->template ScanEvents<TrapEventSet, TrapEvent, unisim::service::interfaces::DebugEventScanner<ADDRESS> >(front_end_num, trap_event_set, scanner);
+	this->template ScanEvents<FetchInsnEventSet, FetchInsnEvent, unisim::service::interfaces::DebugEventScanner >(front_end_num, fetch_insn_event_set, scanner);
+	this->template ScanEvents<CommitInsnEventSet, CommitInsnEvent, unisim::service::interfaces::DebugEventScanner >(front_end_num, commit_insn_event_set, scanner);
+	this->template ScanEvents<NextInsnEventSet, NextInsnEvent, unisim::service::interfaces::DebugEventScanner >(front_end_num, next_insn_event_set, scanner);
+	this->template ScanEvents<FetchStmtEventSet, FetchStmtEvent, unisim::service::interfaces::DebugEventScanner >(front_end_num, fetch_stmt_event_set, scanner);
+	this->template ScanEvents<NextStmtEventSet, NextStmtEvent, unisim::service::interfaces::DebugEventScanner >(front_end_num, next_stmt_event_set, scanner);
+	this->template ScanEvents<FinishEventSet, FinishEvent, unisim::service::interfaces::DebugEventScanner >(front_end_num, finish_event_set, scanner);
+	this->template ScanEvents<TrapEventSet, TrapEvent, unisim::service::interfaces::DebugEventScanner >(front_end_num, trap_event_set, scanner);
+	this->template ScanEvents<RegisterValueChangedEventSet, RegisterValueChangedEvent, unisim::service::interfaces::DebugEventScanner >(front_end_num, reg_val_changed_event_set, scanner);
 
 	struct Filter
 	{
@@ -1304,7 +1359,7 @@ void Debugger<CONFIG>::ScanListenedEvents(unsigned int front_end_num, unisim::se
 			}
 		}
 		
-		void Append(unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp)
+		void Append(unisim::util::debug::SourceCodeBreakpoint *src_code_brkp)
 		{
 			if(src_code_brkp->GetId() >= 0)
 			{
@@ -1346,11 +1401,11 @@ void Debugger<CONFIG>::ScanListenedEvents(unsigned int front_end_num, unisim::se
 			}
 		}
 		
-		void Scan(unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner)
+		void Scan(unisim::service::interfaces::DebugEventScanner& scanner)
 		{
 			for(typename ReorderBuffer::iterator it = reorder_buffer.begin(); it != reorder_buffer.end(); ++it)
 			{
-				unisim::util::debug::Event<ADDRESS> *event = *it;
+				unisim::util::debug::Event *event = *it;
 				if(event)
 				{
 					scanner.Append(event);
@@ -1361,7 +1416,7 @@ void Debugger<CONFIG>::ScanListenedEvents(unsigned int front_end_num, unisim::se
 		}
 		
 	private:
-		typedef std::vector<unisim::util::debug::Event<ADDRESS> *> ReorderBuffer;
+		typedef std::vector<unisim::util::debug::Event *> ReorderBuffer;
 		ReorderBuffer reorder_buffer;
 	};
 	
@@ -1375,7 +1430,7 @@ void Debugger<CONFIG>::ScanListenedEvents(unsigned int front_end_num, unisim::se
 	{
 		for(typename SourceCodeBreakpointRegistry::const_iterator it = source_code_breakpoint_registry[front_end_num].begin(); it != source_code_breakpoint_registry[front_end_num].end(); ++it)
 		{
-			unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = *it;
+			unisim::util::debug::SourceCodeBreakpoint *src_code_brkp = *it;
 			filter.Append(src_code_brkp);
 		}
 		
@@ -1392,7 +1447,7 @@ void Debugger<CONFIG>::ScanListenedEvents(unsigned int front_end_num, unisim::se
 template <typename CONFIG>
 void Debugger<CONFIG>::ClearEvents(unsigned int front_end_num)
 {
-	struct DebugEventScanner : unisim::service::interfaces::DebugEventScanner<ADDRESS>
+	struct DebugEventScanner : unisim::service::interfaces::DebugEventScanner
 	{
 		DebugEventScanner(Debugger<CONFIG>& _dbg, unsigned int _front_end_num)
 			: dbg(_dbg)
@@ -1400,7 +1455,7 @@ void Debugger<CONFIG>::ClearEvents(unsigned int front_end_num)
 		{
 		}
 		
-		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
+		virtual void Append(unisim::util::debug::Event *event)
 		{
 			dbg.Unlisten(front_end_num, event);
 		}
@@ -2189,40 +2244,40 @@ bool Debugger<CONFIG>::RemoveStub(unsigned int front_end_num, unsigned int prc_n
 
 // unisim::service::interfaces::Hooking<ADDRESS> (tagged)
 template <typename CONFIG>
-void Debugger<CONFIG>::ScanHooks(unsigned int front_end_num, unisim::service::interfaces::HookScanner<ADDRESS>& scanner) const
+void Debugger<CONFIG>::ScanHooks(unsigned int front_end_num, unisim::service::interfaces::HookScanner& scanner) const
 {
 	ScanHooks(front_end_num, sel_cpu[front_end_num], scanner);
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::ScanHooks(unsigned int front_end_num, unsigned int prc_num, unisim::service::interfaces::HookScanner<ADDRESS>& scanner) const
+void Debugger<CONFIG>::ScanHooks(unsigned int front_end_num, unsigned int prc_num, unisim::service::interfaces::HookScanner& scanner) const
 {
 	if(!hook_registry[front_end_num][prc_num].empty())
 	{
 		// beware of reentrancy
 		typename HookRegistry::size_type i = 0, n = hook_registry[front_end_num][prc_num].size();
-		unisim::util::debug::Hook<ADDRESS> *hooks[n];
+		unisim::util::debug::Hook *hooks[n];
 		for(typename HookRegistry::const_iterator it = hook_registry[front_end_num][prc_num].begin(); it != hook_registry[front_end_num][prc_num].end(); ++i, ++it)
 		{
-			unisim::util::debug::Hook<ADDRESS> *hook = (*it).first;
+			unisim::util::debug::Hook *hook = (*it).first;
 			hooks[i] = hook;
 		}
 		for(i = 0; i < n; ++i)
 		{
-			unisim::util::debug::Hook<ADDRESS> *hook = hooks[i];
+			unisim::util::debug::Hook *hook = hooks[i];
 			if(hook_registry[front_end_num][prc_num].find(hook) != hook_registry[front_end_num][prc_num].end()) scanner.Append(hook);
 		}
 	}
 }
 
 template <typename CONFIG>
-bool Debugger<CONFIG>::SetHook(unsigned int front_end_num, unisim::util::debug::Hook<ADDRESS> *hook)
+bool Debugger<CONFIG>::SetHook(unsigned int front_end_num, unisim::util::debug::Hook *hook)
 {
 	return SetHook(front_end_num, sel_cpu[front_end_num], hook);
 }
 
 template <typename CONFIG>
-bool Debugger<CONFIG>::SetHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook<ADDRESS> *hook)
+bool Debugger<CONFIG>::SetHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook *hook)
 {
 	HookHandler *hook_handler = new HookHandler(*this, front_end_num, prc_num, hook);
 	std::pair<typename HookRegistry::iterator, bool> r = hook_registry[front_end_num][prc_num].insert(typename HookRegistry::value_type(hook, hook_handler));
@@ -2243,13 +2298,13 @@ bool Debugger<CONFIG>::SetHook(unsigned int front_end_num, unsigned int prc_num,
 }
 
 template <typename CONFIG>
-bool Debugger<CONFIG>::RemoveHook(unsigned int front_end_num, unisim::util::debug::Hook<ADDRESS> *hook)
+bool Debugger<CONFIG>::RemoveHook(unsigned int front_end_num, unisim::util::debug::Hook *hook)
 {
 	return RemoveHook(front_end_num, sel_cpu[front_end_num], hook);
 }
 
 template <typename CONFIG>
-bool Debugger<CONFIG>::RemoveHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook<ADDRESS> *hook)
+bool Debugger<CONFIG>::RemoveHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook *hook)
 {
 	typename HookRegistry::iterator it = hook_registry[front_end_num][prc_num].find(hook);
 	if(it == hook_registry[front_end_num][prc_num].end()) return false;
@@ -2441,7 +2496,7 @@ void Debugger<CONFIG>::CallStub(unsigned int front_end_num, unsigned int prc_num
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::CallHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook<ADDRESS> *hook)
+void Debugger<CONFIG>::CallHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook *hook)
 {
 	unsigned int save_prc_num = GetSelectedProcessor(front_end_num);
 	SelectProcessor(front_end_num, prc_num);

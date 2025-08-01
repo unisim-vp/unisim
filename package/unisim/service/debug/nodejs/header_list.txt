@@ -11,6 +11,7 @@ unisim/service/debug/nodejs/nodejs.hh
 unisim/service/debug/nodejs/pointer.hh
 unisim/service/debug/nodejs/processor.hh
 unisim/service/debug/nodejs/register.hh
+unisim/service/debug/nodejs/register_value_changed_event.hh
 unisim/service/debug/nodejs/source_code_location.hh
 unisim/service/debug/nodejs/stack_frame_info.hh
 unisim/service/debug/nodejs/statement.hh

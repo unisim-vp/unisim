@@ -57,6 +57,7 @@ template <typename CONFIG> struct BreakpointWrapper;
 template <typename CONFIG> struct SourceCodeBreakpointWrapper;
 template <typename CONFIG> struct SubProgramBreakpointWrapper;
 template <typename CONFIG> struct WatchpointWrapper;
+template <typename CONFIG> struct RegisterValueChangedEvent;
 template <typename CONFIG> struct DataObjectWrapper;
 template <typename CONFIG> struct HookWrapper;
 template <typename CONFIG> struct AddressHookWrapper;

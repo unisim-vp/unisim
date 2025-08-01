@@ -58,7 +58,7 @@ struct DebugProcessor
 	, StackFrame<ADDRESS>
 	, DataObjectLookup<ADDRESS>
 	, Stubbing<ADDRESS>
-	, Hooking<ADDRESS>
+	, Hooking
 	, DebugEventFactory<ADDRESS>
 {
 	virtual unsigned int GetProcessorNumber() const = 0;

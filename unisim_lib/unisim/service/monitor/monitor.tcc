@@ -19,7 +19,7 @@ template <class ADDRESS>
 Monitor<ADDRESS>::Monitor(const char *name, Object *parent, const char *description)
 	: Object(name, parent)
 	, Service<Monitor_if<ADDRESS> >(name, parent)
-	, Service<DebugEventListener<ADDRESS> >(name, parent)
+	, Service<DebugEventListener>(name, parent)
 	, Client<DebugEventTrigger<ADDRESS> >(name, parent)
 	, Client<SymbolTableLookup<ADDRESS> >(name, parent)
 	, Client<Memory<ADDRESS> >(name, parent)
@@ -150,7 +150,7 @@ void Monitor<ADDRESS>::getProperties(std::vector<std::string>& vect) {
 }
 
 template <class ADDRESS>
-void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* event)
+void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event* event)
 {
 	if(event->GetType() == Watchpoint<ADDRESS>::TYPE)
 	{

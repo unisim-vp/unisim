@@ -116,7 +116,7 @@ bool SourceCodeBreakpoint<ADDRESS>::Update(bool set)
 }
 
 template <typename ADDRESS>
-void SourceCodeBreakpoint<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+void SourceCodeBreakpoint<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event *event)
 {
 	(*callback)(handle);
 }
@@ -194,7 +194,7 @@ bool DataObjectWatchpoint<ADDRESS>::Update(bool set)
 }
 
 template <typename ADDRESS>
-void DataObjectWatchpoint<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+void DataObjectWatchpoint<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event *event)
 {
 	(*callback)(handle);
 }
@@ -260,7 +260,7 @@ template <typename ADDRESS>
 Monitor<ADDRESS>::Monitor(const char *name, unisim::kernel::Object *parent)
 	: unisim::kernel::Object(name, parent)
 	, MonitorBase()
-	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener>(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Registers>(name, parent)
@@ -477,7 +477,7 @@ int Monitor<ADDRESS>::StopMe(int exit_status)
 }
 
 template <typename ADDRESS>
-void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event *event)
 {
 	struct Bad {};
 	throw Bad();

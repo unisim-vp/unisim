@@ -50,14 +50,14 @@ template <class ADDRESS>
 std::ostream& operator << (std::ostream& os, const FetchStmtEvent<ADDRESS>& fse);
 
 template <class ADDRESS>
-class FetchStmtEvent : public CustomEvent<ADDRESS, FetchStmtEvent<ADDRESS> >
+class FetchStmtEvent : public CustomEvent<FetchStmtEvent<ADDRESS> >
 {
 public:
 	inline const Statement<ADDRESS> *GetStatement() const { return stmt; }
 	
 protected:
 	FetchStmtEvent(unsigned int _prc_num)
-		: CustomEvent<ADDRESS, FetchStmtEvent<ADDRESS> >(_prc_num)
+		: CustomEvent<FetchStmtEvent<ADDRESS> >(_prc_num)
 		, stmt(0)
 	{
 	}

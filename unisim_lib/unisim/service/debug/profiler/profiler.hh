@@ -750,7 +750,7 @@ private:
 template <typename ADDRESS>
 class Profiler
 	: public unisim::kernel::Service<unisim::service::interfaces::DebugYielding>
-	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener>
 	, public unisim::kernel::Service<unisim::service::interfaces::HttpServer>
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
@@ -768,7 +768,7 @@ class Profiler
 public:
 	// Exports to debugger
 	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
-	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener>           debug_event_listener_export;
 	
 	// Exports to HTTP server
 	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer>                   http_server_export;
@@ -793,8 +793,8 @@ public:
 	// unisim::service::interfaces::DebugYielding
 	virtual void DebugYield();
 	
-	// unisim::service::interfaces::DebugEventListener<ADDRESS>
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
+	// unisim::service::interfaces::DebugEventListener
+	virtual void OnDebugEvent(const unisim::util::debug::Event *event);
 	
 	// unisim::service::interfaces::HttpServer
 	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);

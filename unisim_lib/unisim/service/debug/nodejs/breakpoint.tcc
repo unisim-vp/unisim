@@ -385,7 +385,7 @@ void SourceCodeBreakpointWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8:
 	}
 	
 	ProcessorWrapper<CONFIG> *processor_wrapper = 0;
-	unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = 0;
+	unisim::util::debug::SourceCodeBreakpoint *source_code_breakpoint = 0;
 	v8::Local<v8::Value> arg0 = args[0]; // processor
 	if(!arg0->IsUndefined())
 	{
@@ -421,7 +421,7 @@ void SourceCodeBreakpointWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8:
 }
 
 template <typename CONFIG>
-SourceCodeBreakpointWrapper<CONFIG>::SourceCodeBreakpointWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG> *_processor_wrapper, unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *_source_code_breakpoint, std::size_t size)
+SourceCodeBreakpointWrapper<CONFIG>::SourceCodeBreakpointWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG> *_processor_wrapper, unisim::util::debug::SourceCodeBreakpoint *_source_code_breakpoint, std::size_t size)
 	: Super(_nodejs, _processor_wrapper, _source_code_breakpoint, size ? size : sizeof(*this))
 	, source_code_breakpoint(_source_code_breakpoint)
 {
@@ -433,7 +433,7 @@ SourceCodeBreakpointWrapper<CONFIG>::~SourceCodeBreakpointWrapper()
 }
 
 template <typename CONFIG>
-unisim::util::debug::SourceCodeBreakpoint<typename CONFIG::ADDRESS> *SourceCodeBreakpointWrapper<CONFIG>::GetSourceCodeBreakpoint() const
+unisim::util::debug::SourceCodeBreakpoint *SourceCodeBreakpointWrapper<CONFIG>::GetSourceCodeBreakpoint() const
 {
 	return source_code_breakpoint;
 }

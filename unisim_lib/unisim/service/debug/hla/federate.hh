@@ -110,7 +110,7 @@ template <typename CONFIG>
 struct Federate
 	: unisim::util::hla::Federate<typename CONFIG::TIME_TRAIT>
 	, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>
-	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<typename CONFIG::ADDRESS> >
+	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener>
 	, unisim::kernel::Client<unisim::service::interfaces::DebugSelecting>
 	, unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>
 	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<typename CONFIG::ADDRESS> >
@@ -125,14 +125,14 @@ struct Federate
 	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<typename CONFIG::ADDRESS> >
 	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<typename CONFIG::ADDRESS> >
 	, unisim::kernel::Client<unisim::service::interfaces::Stubbing<typename CONFIG::ADDRESS> >
-	, unisim::kernel::Client<unisim::service::interfaces::Hooking<typename CONFIG::ADDRESS> >
+	, unisim::kernel::Client<unisim::service::interfaces::Hooking>
 	, unisim::kernel::Client<unisim::service::interfaces::DebugTiming<typename CONFIG::TIME_TRAIT::TIME_TYPE> >
 {
 	typedef unisim::util::hla::Federate<typename CONFIG::TIME_TRAIT> Super;
 	typedef typename CONFIG::ADDRESS ADDRESS;
 	
 	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding>                  debug_yielding_export;
-	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> >   debug_event_listener_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener>             debug_event_listener_export;
 	
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>           debug_yielding_request_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugSelecting>                 debug_selecting_import;
@@ -142,13 +142,13 @@ struct Federate
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>                      registers_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >    symbol_table_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::StatementLookup<ADDRESS> >      stmt_lookup_import;
-	unisim::kernel::ServiceImport<unisim::service::interfaces::StackFrame<ADDRESS> >            stack_frame_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::StackFrame<ADDRESS> >           stack_frame_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Profiling<ADDRESS> >            profiling_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugInfoLoading>               debug_info_loading_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >     data_object_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >     subprogram_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Stubbing<ADDRESS> >             stubbing_import;
-	unisim::kernel::ServiceImport<unisim::service::interfaces::Hooking<ADDRESS> >              hooking_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Hooking>                        hooking_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugTiming<typename CONFIG::TIME_TRAIT::TIME_TYPE> > debug_timing_import;
 	
 	Federate(const char *name, unisim::kernel::Object *parent = 0);
@@ -157,8 +157,8 @@ struct Federate
 	// unisim::service::interfaces::DebugYielding
 	virtual void DebugYield();
 	
-	// unisim::service::interfaces::DebugEventListener<ADDRESS>
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
+	// unisim::service::interfaces::DebugEventListener
+	virtual void OnDebugEvent(const unisim::util::debug::Event *event);
 
 	// unisim::kernel::Object
 	virtual bool BeginSetup();
@@ -282,7 +282,7 @@ protected:
 
 template <typename CONFIG>
 struct FederateHook
-	: public unisim::util::debug::SourceCodeHook<typename CONFIG::ADDRESS>
+	: public unisim::util::debug::SourceCodeHook
 	, public FederateHookStub<CONFIG>
 {
 	typedef typename CONFIG::ADDRESS ADDRESS;

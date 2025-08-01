@@ -43,18 +43,16 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <typename ADDRESS>
-class NextStmtEvent : public CustomEvent<ADDRESS, NextStmtEvent<ADDRESS> >
+class NextStmtEvent : public CustomEvent<NextStmtEvent>
 {
 protected:
 	NextStmtEvent(unsigned int _prc_num)
-		: CustomEvent<ADDRESS, NextStmtEvent<ADDRESS> >(_prc_num)
+		: CustomEvent<NextStmtEvent>(_prc_num)
 	{
 	}
 };
 
-template <typename ADDRESS>
-inline std::ostream& operator << (std::ostream& os, const NextStmtEvent<ADDRESS>& fe)
+inline std::ostream& operator << (std::ostream& os, const NextStmtEvent& fe)
 {
 	os << "Next statement event for processor #" << fe.GetProcessorNumber();
 	

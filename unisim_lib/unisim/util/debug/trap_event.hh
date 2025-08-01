@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_DEBUG_TRAP_EVENT_HH__
 #define __UNISIM_UTIL_DEBUG_TRAP_EVENT_HH__
 
+#include <unisim/kernel/kernel.hh>
 #include <unisim/util/debug/event.hh>
 #include <inttypes.h>
 #include <ostream>
@@ -43,13 +44,11 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <class ADDRESS> class TrapEvent;
+class TrapEvent;
 
-template <class ADDRESS>
-std::ostream& operator << (std::ostream& os, const TrapEvent<ADDRESS>& te);
+std::ostream& operator << (std::ostream& os, const TrapEvent& te);
 
-template <class ADDRESS>
-class TrapEvent : public CustomEvent<ADDRESS, TrapEvent<ADDRESS> >
+class TrapEvent : public CustomEvent<TrapEvent>
 {
 public:
 	inline const unisim::kernel::Object *GetTrapObject() const { return obj; }
@@ -57,7 +56,7 @@ public:
 	
 protected:
 	TrapEvent(unsigned int _prc_num)
-		: CustomEvent<ADDRESS, TrapEvent<ADDRESS> >(_prc_num)
+		: CustomEvent<TrapEvent>(_prc_num)
 		, obj(0)
 		, msg()
 	{
@@ -72,8 +71,7 @@ protected:
 	std::string msg;
 };
 
-template <class ADDRESS>
-inline std::ostream& operator << (std::ostream& os, const TrapEvent<ADDRESS>& te)
+inline std::ostream& operator << (std::ostream& os, const TrapEvent& te)
 {
 	os << "trap";
 	if(te.GetTrapObject()) os << " from " << te.GetTrapObject()->GetName();

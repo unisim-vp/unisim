@@ -55,6 +55,7 @@
 #include <unisim/service/debug/nodejs/debug_event.tcc>
 #include <unisim/service/debug/nodejs/breakpoint.tcc>
 #include <unisim/service/debug/nodejs/watchpoint.tcc>
+#include <unisim/service/debug/nodejs/register_value_changed_event.tcc>
 #include <unisim/service/debug/nodejs/data_object.tcc>
 #include <unisim/service/debug/nodejs/pointer.tcc>
 #include <unisim/service/debug/nodejs/hook.tcc>
@@ -594,7 +595,7 @@ bool NodeJS<CONFIG>::SigInt()
 	
 	Interrupt();
 	
-	return true; // handled
+	return interactive; // report that it's handled only when in interactive (blocking) mode because the user takes back control
 }
 
 template <typename CONFIG>
@@ -674,6 +675,9 @@ v8::Local<v8::ObjectTemplate> NodeJS<CONFIG>::CreateGlobalObjectTemplate()
 
 	v8::Local<v8::FunctionTemplate> watchpoint_function_template = WatchpointWrapper<CONFIG>::CreateFunctionTemplate(*this);
 	this->template RegisterCtorFunctionTemplate<WatchpointWrapper<CONFIG> >(watchpoint_function_template);
+	
+	v8::Local<v8::FunctionTemplate> register_value_changed_event_function_template = RegisterValueChangedEventWrapper<CONFIG>::CreateFunctionTemplate(*this);
+	this->template RegisterCtorFunctionTemplate<RegisterValueChangedEventWrapper<CONFIG> >(register_value_changed_event_function_template);
 	
 	v8::Local<v8::FunctionTemplate> data_object_function_template = DataObjectWrapper<CONFIG>::CreateFunctionTemplate(*this);
 	this->template RegisterCtorFunctionTemplate<DataObjectWrapper<CONFIG> >(data_object_function_template);
@@ -784,52 +788,53 @@ v8::Local<v8::ObjectTemplate> NodeJS<CONFIG>::CreateGlobalObjectTemplate()
 	this->template RegisterCtorFunctionTemplate<UnisimVariableWrapper<CONFIG> >(unisim_variable_function_template);
 	
 	// Add constructor functions for builtin objects
-	global_object_template->Set(isolate, SourceCodeLocationWrapper<CONFIG>  ::CLASS_NAME, source_code_location_function_template  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, DebugEventWrapper<CONFIG>          ::CLASS_NAME, debug_event_function_template           , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, BreakpointWrapper<CONFIG>          ::CLASS_NAME, breakpoint_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, SourceCodeBreakpointWrapper<CONFIG>::CLASS_NAME, source_code_breakpoint_function_template, v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, SubProgramBreakpointWrapper<CONFIG>::CLASS_NAME, subprogram_breakpoint_function_template , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, WatchpointWrapper<CONFIG>          ::CLASS_NAME, watchpoint_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, DataObjectWrapper<CONFIG>          ::CLASS_NAME, data_object_function_template           , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, PointerWrapper<CONFIG>             ::CLASS_NAME, pointer_function_template               , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, HookWrapper<CONFIG>                ::CLASS_NAME, hook_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, AddressHookWrapper<CONFIG>         ::CLASS_NAME, address_hook_function_template          , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, SourceCodeHookWrapper<CONFIG>      ::CLASS_NAME, source_code_hook_function_template      , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, SubProgramHookWrapper<CONFIG>      ::CLASS_NAME, subprogram_hook_function_template       , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, StubWrapper<CONFIG>                ::CLASS_NAME, stub_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, ProcessorWrapper<CONFIG>           ::CLASS_NAME, processor_function_template             , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, RegisterWrapper<CONFIG>            ::CLASS_NAME, register_function_template              , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, FieldWrapper<CONFIG>               ::CLASS_NAME, field_function_template                 , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, ExecutableBinaryFileWrapper<CONFIG>::CLASS_NAME, executable_binary_file_function_template, v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, StackFrameInfoWrapper<CONFIG>      ::CLASS_NAME, stack_frame_info_function_template      , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, DebugSymbolWrapper<CONFIG>         ::CLASS_NAME, debug_symbol_function_template          , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, StatementWrapper<CONFIG>           ::CLASS_NAME, statement_function_template             , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, SubProgramWrapper<CONFIG>          ::CLASS_NAME, subprogram_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, TypeWrapper<CONFIG>                ::CLASS_NAME, type_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, NamedTypeWrapper<CONFIG>           ::CLASS_NAME, named_type_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, BaseTypeWrapper<CONFIG>            ::CLASS_NAME, base_type_function_template             , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, IntegerTypeWrapper<CONFIG>         ::CLASS_NAME, integer_type_function_template          , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, CharTypeWrapper<CONFIG>            ::CLASS_NAME, char_type_function_template             , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, FloatingPointTypeWrapper<CONFIG>   ::CLASS_NAME, floating_point_type_function_template   , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, BooleanTypeWrapper<CONFIG>         ::CLASS_NAME, boolean_type_function_template          , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, MemberWrapper<CONFIG>              ::CLASS_NAME, member_function_template                , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, CompositeTypeWrapper<CONFIG>       ::CLASS_NAME, composite_type_function_template        , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, StructureTypeWrapper<CONFIG>       ::CLASS_NAME, structure_type_function_template        , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, UnionTypeWrapper<CONFIG>           ::CLASS_NAME, union_type_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, ClassTypeWrapper<CONFIG>           ::CLASS_NAME, class_type_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, InterfaceTypeWrapper<CONFIG>       ::CLASS_NAME, interface_type_function_template        , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, ArrayTypeWrapper<CONFIG>           ::CLASS_NAME, array_type_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, PointerTypeWrapper<CONFIG>         ::CLASS_NAME, pointer_type_function_template          , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, TypedefWrapper<CONFIG>             ::CLASS_NAME, typedef_function_template               , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, FormalParameterWrapper<CONFIG>     ::CLASS_NAME, formal_parameter_function_template      , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, FunctionTypeWrapper<CONFIG>        ::CLASS_NAME, function_type_function_template         , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, ConstTypeWrapper<CONFIG>           ::CLASS_NAME, const_type_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, EnumeratorWrapper<CONFIG>          ::CLASS_NAME, enumerator_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, EnumTypeWrapper<CONFIG>            ::CLASS_NAME, enum_type_function_template             , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, UnspecifiedTypeWrapper<CONFIG>     ::CLASS_NAME, unspecified_type_function_template      , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, VolatileTypeWrapper<CONFIG>        ::CLASS_NAME, volatile_type_function_template         , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, UnisimObjectWrapper<CONFIG>        ::CLASS_NAME, unisim_object_function_template         , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
-	global_object_template->Set(isolate, UnisimVariableWrapper<CONFIG>      ::CLASS_NAME, unisim_variable_function_template       , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, SourceCodeLocationWrapper<CONFIG>       ::CLASS_NAME, source_code_location_function_template        , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, DebugEventWrapper<CONFIG>               ::CLASS_NAME, debug_event_function_template                 , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, BreakpointWrapper<CONFIG>               ::CLASS_NAME, breakpoint_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, SourceCodeBreakpointWrapper<CONFIG>     ::CLASS_NAME, source_code_breakpoint_function_template      , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, SubProgramBreakpointWrapper<CONFIG>     ::CLASS_NAME, subprogram_breakpoint_function_template       , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, WatchpointWrapper<CONFIG>               ::CLASS_NAME, watchpoint_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, RegisterValueChangedEventWrapper<CONFIG>::CLASS_NAME, register_value_changed_event_function_template, v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, DataObjectWrapper<CONFIG>               ::CLASS_NAME, data_object_function_template                 , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, PointerWrapper<CONFIG>                  ::CLASS_NAME, pointer_function_template                     , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, HookWrapper<CONFIG>                     ::CLASS_NAME, hook_function_template                        , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, AddressHookWrapper<CONFIG>              ::CLASS_NAME, address_hook_function_template                , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, SourceCodeHookWrapper<CONFIG>           ::CLASS_NAME, source_code_hook_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, SubProgramHookWrapper<CONFIG>           ::CLASS_NAME, subprogram_hook_function_template             , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, StubWrapper<CONFIG>                     ::CLASS_NAME, stub_function_template                        , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, ProcessorWrapper<CONFIG>                ::CLASS_NAME, processor_function_template                   , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, RegisterWrapper<CONFIG>                 ::CLASS_NAME, register_function_template                    , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, FieldWrapper<CONFIG>                    ::CLASS_NAME, field_function_template                       , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, ExecutableBinaryFileWrapper<CONFIG>     ::CLASS_NAME, executable_binary_file_function_template      , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, StackFrameInfoWrapper<CONFIG>           ::CLASS_NAME, stack_frame_info_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, DebugSymbolWrapper<CONFIG>              ::CLASS_NAME, debug_symbol_function_template                , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, StatementWrapper<CONFIG>                ::CLASS_NAME, statement_function_template                   , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, SubProgramWrapper<CONFIG>               ::CLASS_NAME, subprogram_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, TypeWrapper<CONFIG>                     ::CLASS_NAME, type_function_template                        , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, NamedTypeWrapper<CONFIG>                ::CLASS_NAME, named_type_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, BaseTypeWrapper<CONFIG>                 ::CLASS_NAME, base_type_function_template                   , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, IntegerTypeWrapper<CONFIG>              ::CLASS_NAME, integer_type_function_template                , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, CharTypeWrapper<CONFIG>                 ::CLASS_NAME, char_type_function_template                   , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, FloatingPointTypeWrapper<CONFIG>        ::CLASS_NAME, floating_point_type_function_template         , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, BooleanTypeWrapper<CONFIG>              ::CLASS_NAME, boolean_type_function_template                , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, MemberWrapper<CONFIG>                   ::CLASS_NAME, member_function_template                      , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, CompositeTypeWrapper<CONFIG>            ::CLASS_NAME, composite_type_function_template              , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, StructureTypeWrapper<CONFIG>            ::CLASS_NAME, structure_type_function_template              , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, UnionTypeWrapper<CONFIG>                ::CLASS_NAME, union_type_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, ClassTypeWrapper<CONFIG>                ::CLASS_NAME, class_type_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, InterfaceTypeWrapper<CONFIG>            ::CLASS_NAME, interface_type_function_template              , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, ArrayTypeWrapper<CONFIG>                ::CLASS_NAME, array_type_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, PointerTypeWrapper<CONFIG>              ::CLASS_NAME, pointer_type_function_template                , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, TypedefWrapper<CONFIG>                  ::CLASS_NAME, typedef_function_template                     , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, FormalParameterWrapper<CONFIG>          ::CLASS_NAME, formal_parameter_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, FunctionTypeWrapper<CONFIG>             ::CLASS_NAME, function_type_function_template               , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, ConstTypeWrapper<CONFIG>                ::CLASS_NAME, const_type_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, EnumeratorWrapper<CONFIG>               ::CLASS_NAME, enumerator_function_template                  , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, EnumTypeWrapper<CONFIG>                 ::CLASS_NAME, enum_type_function_template                   , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, UnspecifiedTypeWrapper<CONFIG>          ::CLASS_NAME, unspecified_type_function_template            , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, VolatileTypeWrapper<CONFIG>             ::CLASS_NAME, volatile_type_function_template               , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, UnisimObjectWrapper<CONFIG>             ::CLASS_NAME, unisim_object_function_template               , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
+	global_object_template->Set(isolate, UnisimVariableWrapper<CONFIG>           ::CLASS_NAME, unisim_variable_function_template             , v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));
 
 	// Add some builtin functions
 	global_object_template->Set(isolate, "continueExecution"       , CreateFunctionTemplate<NodeJS<CONFIG>, &NodeJS<CONFIG>::ContinueExecution       >(), v8::PropertyAttribute(v8::ReadOnly | v8::DontDelete));

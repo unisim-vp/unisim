@@ -116,7 +116,7 @@ void HookWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbac
 }
 
 template <typename CONFIG>
-HookWrapper<CONFIG>::HookWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG> *_processor_wrapper, unisim::util::debug::Hook<ADDRESS> *_hook, std::size_t size)
+HookWrapper<CONFIG>::HookWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG> *_processor_wrapper, unisim::util::debug::Hook *_hook, std::size_t size)
 	: Super(_nodejs, /* ptr */ 0, size ? size : sizeof(*this))
 	, processor_wrapper(_processor_wrapper)
 	, hook(_hook)
@@ -137,7 +137,7 @@ HookWrapper<CONFIG>::~HookWrapper()
 }
 
 template <typename CONFIG>
-unisim::util::debug::Hook<typename CONFIG::ADDRESS> *HookWrapper<CONFIG>::GetHook() const
+unisim::util::debug::Hook *HookWrapper<CONFIG>::GetHook() const
 {
 	return hook;
 }
@@ -721,7 +721,7 @@ void AddressHook<CONFIG>::Bind(AddressHookWrapper<CONFIG> *_hook_wrapper)
 
 template <typename CONFIG>
 SourceCodeHook<CONFIG>::SourceCodeHook(const unisim::util::debug::SourceCodeLocation& _source_code_location, const std::string& _filename)
-	: unisim::util::debug::SourceCodeHook<ADDRESS>(_source_code_location, _filename)
+	: unisim::util::debug::SourceCodeHook(_source_code_location, _filename)
 	, hook_wrapper(0)
 {
 }

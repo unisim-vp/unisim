@@ -107,7 +107,7 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, unisim::kernel::Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<StatementLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<Registers>(_name, _parent)
-	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
+	, Service<DebugEventListener>(_name, _parent)
 	, unisim::kernel::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
 
 	, unisim::kernel::Client<Monitor_if<ADDRESS> > (_name, _parent)
@@ -353,7 +353,7 @@ void PIMServer<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-void PIMServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* event)
+void PIMServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event* event)
 {
 	if(event->GetType() == Watchpoint<ADDRESS>::TYPE)
 	{

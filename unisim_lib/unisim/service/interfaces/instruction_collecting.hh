@@ -61,12 +61,13 @@ struct InstructionInfoBase
 		INDIRECT = 1  // indirect
 	};
 	
-	unsigned       type;   // one of { STANDARD, JUMP, BRANCH, CALL, RETURN }
+	unsigned       type:4; // one of { STANDARD, JUMP, BRANCH, CALL, RETURN }
+	unsigned       mode:1; // one of { DIRECT, INDIRECT }
 	unsigned       size;   // size in bytes
-	unsigned       mode;   // one of { DIRECT, INDIRECT }
+	uint64_t       flags;  // free space for additional information
 	const uint8_t *opcode; // opcode
 	
-	InstructionInfoBase() : type(STANDARD), size(0), mode(DIRECT), opcode(0) {}
+	InstructionInfoBase() : type(STANDARD), mode(DIRECT), size(0), opcode(0) {}
 };
 
 template <typename ADDRESS>

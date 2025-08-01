@@ -1918,7 +1918,7 @@ template <typename ADDRESS>
 Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	: Object(_name, _parent, "this service implements an instruction profiler")
 	, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
-	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener>(_name, _parent)
 	, unisim::kernel::Service<unisim::service::interfaces::HttpServer>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
@@ -2158,11 +2158,11 @@ void Profiler<ADDRESS>::DebugYield()
 	}
 }
 
-// unisim::service::interfaces::DebugEventListener<ADDRESS>
+// unisim::service::interfaces::DebugEventListener
 template <typename ADDRESS>
-void Profiler<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+void Profiler<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event *event)
 {
-	typename unisim::util::debug::Event<ADDRESS>::Type event_type = event->GetType();
+	typename unisim::util::debug::Event::Type event_type = event->GetType();
 	
 	if(likely(event_type == unisim::util::debug::CommitInsnEvent<ADDRESS>::TYPE))
 	{

@@ -47,6 +47,7 @@
 #include <unisim/util/debug/next_insn_event.hh>
 #include <unisim/util/debug/fetch_stmt_event.hh>
 #include <unisim/util/debug/next_stmt_event.hh>
+#include <unisim/util/debug/register_value_changed_event.hh>
 #include <unisim/util/debug/source_code_breakpoint.hh>
 #include <unisim/util/debug/subprogram_breakpoint.hh>
 #include <unisim/util/debug/stub.hh>
@@ -81,6 +82,7 @@
 #include <set>
 #include <map>
 #include <stdexcept>
+#include <cstring>
 
 #include <pthread.h>
 
@@ -141,7 +143,7 @@ public:
 	unisim::kernel::ServiceExport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >           *data_object_lookup_export[MAX_FRONT_ENDS];  // depends on selected CPU number
 	unisim::kernel::ServiceExport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >           *subprogram_lookup_export[MAX_FRONT_ENDS];   // depends on selected CPU number
 	unisim::kernel::ServiceExport<unisim::service::interfaces::Stubbing<ADDRESS> >                   *stubbing_export[MAX_FRONT_ENDS];            // depends on selected CPU number
-	unisim::kernel::ServiceExport<unisim::service::interfaces::Hooking<ADDRESS> >                    *hooking_export[MAX_FRONT_ENDS];             // depends on selected CPU number
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Hooking>                              *hooking_export[MAX_FRONT_ENDS];             // depends on selected CPU number
 	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugTiming<TIME_TYPE> >              *debug_timing_export[MAX_FRONT_ENDS];        // depends on selected CPU number
 	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugProcessors<ADDRESS, TIME_TYPE> > *debug_processors_export[MAX_FRONT_ENDS];
 
@@ -156,7 +158,7 @@ public:
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugTiming<TIME_TYPE> >      *debug_timing_import[NUM_PROCESSORS];
 
 	// Imports from Front-ends
-	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> > *debug_event_listener_import[MAX_FRONT_ENDS];
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener>           *debug_event_listener_import[MAX_FRONT_ENDS];
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding>                *debug_yielding_import[MAX_FRONT_ENDS];
 
 	Debugger(const char *name, unisim::kernel::Object *parent = 0);
@@ -218,29 +220,31 @@ private:
 	unisim::util::debug::FetchStmtEvent<ADDRESS> *CreateFetchStmtEvent(unsigned int front_end_num, unsigned int prc_num, bool internal);
 	unisim::util::debug::CommitInsnEvent<ADDRESS> *CreateCommitInsnEvent(unsigned int front_end_num, bool internal);
 	unisim::util::debug::CommitInsnEvent<ADDRESS> *CreateCommitInsnEvent(unsigned int front_end_num, unsigned int prc_num, bool internal);
-	unisim::util::debug::NextInsnEvent<ADDRESS> *CreateNextInsnEvent(unsigned int front_end_num, bool internal);
-	unisim::util::debug::NextInsnEvent<ADDRESS> *CreateNextInsnEvent(unsigned int front_end_num, unsigned int prc_num, bool internal);
-	unisim::util::debug::NextStmtEvent<ADDRESS> *CreateNextStmtEvent(unsigned int front_end_num, bool internal);
-	unisim::util::debug::NextStmtEvent<ADDRESS> *CreateNextStmtEvent(unsigned int front_end_num, unsigned int prc_num, bool internal);
-	unisim::util::debug::FinishEvent<ADDRESS> *CreateFinishEvent(unsigned int front_end_num, bool internal);
-	unisim::util::debug::FinishEvent<ADDRESS> *CreateFinishEvent(unsigned int front_end_num, unsigned int prc_num, bool internal);
-	unisim::util::debug::TrapEvent<ADDRESS> *CreateTrapEvent(unsigned int front_end_num, bool internal);
-	unisim::util::debug::TrapEvent<ADDRESS> *CreateTrapEvent(unsigned int front_end_num, unsigned int prc_num, bool internal);
-	unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *CreateSourceCodeBreakpoint(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename, bool internal);
-	unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *CreateSourceCodeBreakpoint(unsigned int front_end_num, unsigned int prc_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename, bool internal);
+	unisim::util::debug::NextInsnEvent *CreateNextInsnEvent(unsigned int front_end_num, bool internal);
+	unisim::util::debug::NextInsnEvent *CreateNextInsnEvent(unsigned int front_end_num, unsigned int prc_num, bool internal);
+	unisim::util::debug::NextStmtEvent *CreateNextStmtEvent(unsigned int front_end_num, bool internal);
+	unisim::util::debug::NextStmtEvent *CreateNextStmtEvent(unsigned int front_end_num, unsigned int prc_num, bool internal);
+	unisim::util::debug::FinishEvent *CreateFinishEvent(unsigned int front_end_num, bool internal);
+	unisim::util::debug::FinishEvent *CreateFinishEvent(unsigned int front_end_num, unsigned int prc_num, bool internal);
+	unisim::util::debug::TrapEvent *CreateTrapEvent(unsigned int front_end_num, bool internal);
+	unisim::util::debug::TrapEvent *CreateTrapEvent(unsigned int front_end_num, unsigned int prc_num, bool internal);
+	unisim::util::debug::SourceCodeBreakpoint *CreateSourceCodeBreakpoint(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename, bool internal);
+	unisim::util::debug::SourceCodeBreakpoint *CreateSourceCodeBreakpoint(unsigned int front_end_num, unsigned int prc_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename, bool internal);
 	unisim::util::debug::SubProgramBreakpoint<ADDRESS> *CreateSubProgramBreakpoint(unsigned int front_end_num, const unisim::util::debug::SubProgram<ADDRESS> *subprogram, bool internal);
 	unisim::util::debug::SubProgramBreakpoint<ADDRESS> *CreateSubProgramBreakpoint(unsigned int front_end_num, unsigned int prc_num, const unisim::util::debug::SubProgram<ADDRESS> *subprogram, bool internal);
+	unisim::util::debug::RegisterValueChangedEvent *CreateRegisterValueChangedEvent(unsigned int front_end_num, const char *reg_name, bool internal);
+	unisim::util::debug::RegisterValueChangedEvent *CreateRegisterValueChangedEvent(unsigned int front_end_num, unsigned int prc_num, const char *reg_name, bool internal);
 	
 	// unisim::service::interfaces::DebugEventTrigger<ADDRESS> (tagged)
 	
 	// "named" events
-	bool Listen(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event);
-	template <typename EVENT_SET, typename EVENT> bool AddEvent(unsigned int front_end_num, EVENT_SET (&event_set)[], unisim::util::debug::Event<ADDRESS> *event);
-	template <typename EVENT_SET, typename EVENT> bool RemoveEvent(unsigned int front_end_num, EVENT_SET (&event_set)[], unisim::util::debug::Event<ADDRESS> *event);
-	bool Unlisten(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event);
-	bool IsEventListened(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event) const;
+	bool Listen(unsigned int front_end_num, unisim::util::debug::Event *event);
+	template <typename EVENT_SET, typename EVENT> bool AddEvent(unsigned int front_end_num, EVENT_SET (&event_set)[], unisim::util::debug::Event *event);
+	template <typename EVENT_SET, typename EVENT> bool RemoveEvent(unsigned int front_end_num, EVENT_SET (&event_set)[], unisim::util::debug::Event *event);
+	bool Unlisten(unsigned int front_end_num, unisim::util::debug::Event *event);
+	bool IsEventListened(unsigned int front_end_num, unisim::util::debug::Event *event) const;
 	template <typename EVENT_SET, typename EVENT, typename SCANNER> void ScanEvents(unsigned int front_end_num, const EVENT_SET (&event_set)[], SCANNER& scanner) const;
-	void ScanListenedEvents(unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const;
+	void ScanListenedEvents(unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner& scanner) const;
 	void ClearEvents(unsigned int front_end_num);
 	
 	// idem potent interface: anonymous events
@@ -332,12 +336,12 @@ private:
 	bool RemoveStub(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Stub<ADDRESS> *stub);
 	
 	// unisim::service::interfaces::Hooking<ADDRESS> (tagged)
-	void ScanHooks(unsigned int front_end_num, unisim::service::interfaces::HookScanner<ADDRESS>& scanner) const;
-	void ScanHooks(unsigned int front_end_num, unsigned int prc_num, unisim::service::interfaces::HookScanner<ADDRESS>& scanner) const;
-	bool SetHook(unsigned int front_end_num, unisim::util::debug::Hook<ADDRESS> *hook);
-	bool SetHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook<ADDRESS> *hook);
-	bool RemoveHook(unsigned int front_end_num, unisim::util::debug::Hook<ADDRESS> *hook);
-	bool RemoveHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook<ADDRESS> *hook);
+	void ScanHooks(unsigned int front_end_num, unisim::service::interfaces::HookScanner& scanner) const;
+	void ScanHooks(unsigned int front_end_num, unsigned int prc_num, unisim::service::interfaces::HookScanner& scanner) const;
+	bool SetHook(unsigned int front_end_num, unisim::util::debug::Hook *hook);
+	bool SetHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook *hook);
+	bool RemoveHook(unsigned int front_end_num, unisim::util::debug::Hook *hook);
+	bool RemoveHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook *hook);
 
 	// unisim::service::interfaces::DebugTiming<TIME_TYPE> (tagged)
 	const TIME_TYPE& DebugGetTime(unsigned int front_end_num) const;
@@ -378,10 +382,10 @@ private:
 		virtual bool SetStub(unisim::util::debug::Stub<ADDRESS> *stub) { bool l = dbg.Lock(front_end_num); bool ret = dbg.SetStub(front_end_num, prc_num, stub); if(l) { dbg.Unlock(front_end_num); } return ret; }
 		virtual bool RemoveStub(unisim::util::debug::Stub<ADDRESS> *stub) { bool l = dbg.Lock(front_end_num); bool ret = dbg.RemoveStub(front_end_num, prc_num, stub); if(l) { dbg.Unlock(front_end_num); } return ret; }
 		
-		// unisim::service::interfaces::Hooking<ADDRESS>
-		virtual void ScanHooks(unisim::service::interfaces::HookScanner<ADDRESS>& scanner) const { bool l = dbg.Lock(front_end_num); dbg.ScanHooks(front_end_num, prc_num, scanner); if(l) { dbg.Unlock(front_end_num); } } 
-		virtual bool SetHook(unisim::util::debug::Hook<ADDRESS> *hook) { bool l = dbg.Lock(front_end_num); bool ret = dbg.SetHook(front_end_num, prc_num, hook); if(l) { dbg.Unlock(front_end_num); } return ret; }
-		virtual bool RemoveHook(unisim::util::debug::Hook<ADDRESS> *hook) { bool l = dbg.Lock(front_end_num); bool ret = dbg.RemoveHook(front_end_num, prc_num, hook); if(l) { dbg.Unlock(front_end_num); } return ret; }
+		// unisim::service::interfaces::Hooking
+		virtual void ScanHooks(unisim::service::interfaces::HookScanner& scanner) const { bool l = dbg.Lock(front_end_num); dbg.ScanHooks(front_end_num, prc_num, scanner); if(l) { dbg.Unlock(front_end_num); } }
+		virtual bool SetHook(unisim::util::debug::Hook *hook) { bool l = dbg.Lock(front_end_num); bool ret = dbg.SetHook(front_end_num, prc_num, hook); if(l) { dbg.Unlock(front_end_num); } return ret; }
+		virtual bool RemoveHook(unisim::util::debug::Hook *hook) { bool l = dbg.Lock(front_end_num); bool ret = dbg.RemoveHook(front_end_num, prc_num, hook); if(l) { dbg.Unlock(front_end_num); } return ret; }
 		
 		// unisim::service::interfaces::DebugEventFactory<ADDRESS>
 		virtual unisim::util::debug::Breakpoint<ADDRESS> *CreateBreakpoint(ADDRESS addr) { bool l = dbg.Lock(front_end_num); unisim::util::debug::Breakpoint<ADDRESS> *ret = dbg.CreateBreakpoint(front_end_num, prc_num, addr, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
@@ -389,12 +393,13 @@ private:
 		virtual unisim::util::debug::FetchInsnEvent<ADDRESS> *CreateFetchInsnEvent() { bool l = dbg.Lock(front_end_num); unisim::util::debug::FetchInsnEvent<ADDRESS> *ret = dbg.CreateFetchInsnEvent(front_end_num, prc_num, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
 		virtual unisim::util::debug::FetchStmtEvent<ADDRESS> *CreateFetchStmtEvent() { bool l = dbg.Lock(front_end_num); unisim::util::debug::FetchStmtEvent<ADDRESS> *ret = dbg.CreateFetchStmtEvent(front_end_num, prc_num, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
 		virtual unisim::util::debug::CommitInsnEvent<ADDRESS> *CreateCommitInsnEvent() { bool l = dbg.Lock(front_end_num); unisim::util::debug::CommitInsnEvent<ADDRESS> *ret = dbg.CreateCommitInsnEvent(front_end_num, prc_num, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
-		virtual unisim::util::debug::NextInsnEvent<ADDRESS> *CreateNextInsnEvent() { bool l = dbg.Lock(front_end_num); unisim::util::debug::NextInsnEvent<ADDRESS> *ret = dbg.CreateNextInsnEvent(front_end_num, prc_num, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
-		virtual unisim::util::debug::NextStmtEvent<ADDRESS> *CreateNextStmtEvent() { bool l = dbg.Lock(front_end_num); unisim::util::debug::NextStmtEvent<ADDRESS> *ret = dbg.CreateNextStmtEvent(front_end_num, prc_num, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
-		virtual unisim::util::debug::FinishEvent<ADDRESS> *CreateFinishEvent() { bool l = dbg.Lock(front_end_num); unisim::util::debug::FinishEvent<ADDRESS> *ret = dbg.CreateFinishEvent(front_end_num, prc_num, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
-		virtual unisim::util::debug::TrapEvent<ADDRESS> *CreateTrapEvent() { bool l = dbg.Lock(front_end_num); unisim::util::debug::TrapEvent<ADDRESS> *ret = dbg.CreateTrapEvent(front_end_num, prc_num, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
-		virtual unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *CreateSourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) { bool l = dbg.Lock(front_end_num); unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *ret = dbg.CreateSourceCodeBreakpoint(front_end_num, prc_num, source_code_location, filename, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
+		virtual unisim::util::debug::NextInsnEvent *CreateNextInsnEvent() { bool l = dbg.Lock(front_end_num); unisim::util::debug::NextInsnEvent *ret = dbg.CreateNextInsnEvent(front_end_num, prc_num, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
+		virtual unisim::util::debug::NextStmtEvent *CreateNextStmtEvent() { bool l = dbg.Lock(front_end_num); unisim::util::debug::NextStmtEvent *ret = dbg.CreateNextStmtEvent(front_end_num, prc_num, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
+		virtual unisim::util::debug::FinishEvent *CreateFinishEvent() { bool l = dbg.Lock(front_end_num); unisim::util::debug::FinishEvent *ret = dbg.CreateFinishEvent(front_end_num, prc_num, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
+		virtual unisim::util::debug::TrapEvent *CreateTrapEvent() { bool l = dbg.Lock(front_end_num); unisim::util::debug::TrapEvent *ret = dbg.CreateTrapEvent(front_end_num, prc_num, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
+		virtual unisim::util::debug::SourceCodeBreakpoint *CreateSourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) { bool l = dbg.Lock(front_end_num); unisim::util::debug::SourceCodeBreakpoint *ret = dbg.CreateSourceCodeBreakpoint(front_end_num, prc_num, source_code_location, filename, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
 		virtual unisim::util::debug::SubProgramBreakpoint<ADDRESS> *CreateSubProgramBreakpoint(const unisim::util::debug::SubProgram<ADDRESS> *subprogram) { bool l = dbg.Lock(front_end_num); unisim::util::debug::SubProgramBreakpoint<ADDRESS> *ret = dbg.CreateSubProgramBreakpoint(front_end_num, prc_num, subprogram, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
+		virtual unisim::util::debug::RegisterValueChangedEvent *CreateRegisterValueChangedEvent(const char *reg_name) { bool l = dbg.Lock(front_end_num); unisim::util::debug::RegisterValueChangedEvent *ret = dbg.CreateRegisterValueChangedEvent(front_end_num, prc_num, reg_name, false); if(l) { dbg.Unlock(front_end_num); } return ret; }
 		
 		// unisim::service::interfaces::Registers
 		virtual unisim::service::interfaces::Register *GetRegister(const char *name) { bool l = dbg.Lock(front_end_num); unisim::service::interfaces::Register *ret = dbg.GetRegister(front_end_num, prc_num, name); if(l) { dbg.Unlock(front_end_num); } return ret; }
@@ -541,11 +546,11 @@ private:
 		, unisim::kernel::Service<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
 		, unisim::kernel::Service<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
 		, unisim::kernel::Service<unisim::service::interfaces::Stubbing<ADDRESS> >
-		, unisim::kernel::Service<unisim::service::interfaces::Hooking<ADDRESS> >
+		, unisim::kernel::Service<unisim::service::interfaces::Hooking>
 		, unisim::kernel::Service<unisim::service::interfaces::DebugTiming<TIME_TYPE> >
 		, unisim::kernel::Service<unisim::service::interfaces::DebugProcessors<ADDRESS, TIME_TYPE> >
 		, unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
-		, unisim::kernel::Client<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+		, unisim::kernel::Client<unisim::service::interfaces::DebugEventListener>
 	{
 		// Exports to Front-end
 		unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYieldingRequest> debug_yielding_request_export;
@@ -561,12 +566,12 @@ private:
 		unisim::kernel::ServiceExport<unisim::service::interfaces::DataObjectLookup<ADDRESS> > data_object_lookup_export; // depends on selected CPU number
 		unisim::kernel::ServiceExport<unisim::service::interfaces::SubProgramLookup<ADDRESS> > subprogram_lookup_export; // depends on selected CPU number
 		unisim::kernel::ServiceExport<unisim::service::interfaces::Stubbing<ADDRESS> > stubbing_export;                  // depends on selected CPU number
-		unisim::kernel::ServiceExport<unisim::service::interfaces::Hooking<ADDRESS> > hooking_export;                    // depends on selected CPU number
+		unisim::kernel::ServiceExport<unisim::service::interfaces::Hooking> hooking_export;                    // depends on selected CPU number
 		unisim::kernel::ServiceExport<unisim::service::interfaces::DebugTiming<TIME_TYPE> > debug_timing_export;         // depends on selected CPU number
 		unisim::kernel::ServiceExport<unisim::service::interfaces::DebugProcessors<ADDRESS, TIME_TYPE> > debug_processors_export;
 		
 		// Imports from Front-end
-		unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_import;
+		unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener> debug_event_listener_import;
 		unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding> debug_yielding_import;
 
 		FrontEndGate(const char *name, unsigned int _id, Debugger<CONFIG> *parent)
@@ -584,11 +589,11 @@ private:
 			, unisim::kernel::Service<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(name, parent)
 			, unisim::kernel::Service<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(name, parent)
 			, unisim::kernel::Service<unisim::service::interfaces::Stubbing<ADDRESS> >(name, parent)
-			, unisim::kernel::Service<unisim::service::interfaces::Hooking<ADDRESS> >(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::Hooking>(name, parent)
 			, unisim::kernel::Service<unisim::service::interfaces::DebugTiming<TIME_TYPE> >(name, parent)
 			, unisim::kernel::Service<unisim::service::interfaces::DebugProcessors<ADDRESS, TIME_TYPE> >(name, parent)
 			, unisim::kernel::Client<unisim::service::interfaces::DebugYielding>(name, parent)
-			, unisim::kernel::Client<unisim::service::interfaces::DebugEventListener<ADDRESS> >(name, parent)
+			, unisim::kernel::Client<unisim::service::interfaces::DebugEventListener>(name, parent)
 			, debug_yielding_request_export("debug-yielding-request-export", this)
 			, debug_selecting_export("debug-selecting-export", this)
 			, debug_event_trigger_export("debug-event-trigger-export", this)
@@ -689,18 +694,19 @@ private:
 		virtual unisim::util::debug::FetchInsnEvent<ADDRESS> *CreateFetchInsnEvent() { bool l = dbg.Lock(id); unisim::util::debug::FetchInsnEvent<ADDRESS> *ret = dbg.CreateFetchInsnEvent(id, false); if(l) { dbg.Unlock(id); } return ret; }
 		virtual unisim::util::debug::FetchStmtEvent<ADDRESS> *CreateFetchStmtEvent() { bool l = dbg.Lock(id); unisim::util::debug::FetchStmtEvent<ADDRESS> *ret = dbg.CreateFetchStmtEvent(id, false); if(l) { dbg.Unlock(id); } return ret; }
 		virtual unisim::util::debug::CommitInsnEvent<ADDRESS> *CreateCommitInsnEvent() { bool l = dbg.Lock(id); unisim::util::debug::CommitInsnEvent<ADDRESS> *ret = dbg.CreateCommitInsnEvent(id, false); if(l) { dbg.Unlock(id); } return ret; }
-		virtual unisim::util::debug::NextInsnEvent<ADDRESS> *CreateNextInsnEvent() { bool l = dbg.Lock(id); unisim::util::debug::NextInsnEvent<ADDRESS> *ret = dbg.CreateNextInsnEvent(id, false); if(l) { dbg.Unlock(id); } return ret; }
-		virtual unisim::util::debug::NextStmtEvent<ADDRESS> *CreateNextStmtEvent() { bool l = dbg.Lock(id); unisim::util::debug::NextStmtEvent<ADDRESS> *ret = dbg.CreateNextStmtEvent(id, false); if(l) { dbg.Unlock(id); } return ret; }
-		virtual unisim::util::debug::FinishEvent<ADDRESS> *CreateFinishEvent() { bool l = dbg.Lock(id); unisim::util::debug::FinishEvent<ADDRESS> *ret = dbg.CreateFinishEvent(id, false); if(l) { dbg.Unlock(id); } return ret; }
-		virtual unisim::util::debug::TrapEvent<ADDRESS> *CreateTrapEvent() { bool l = dbg.Lock(id); unisim::util::debug::TrapEvent<ADDRESS> *ret = dbg.CreateTrapEvent(id, false); if(l) { dbg.Unlock(id); } return ret; }
-		virtual unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *CreateSourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) { bool l = dbg.Lock(id); unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *ret = dbg.CreateSourceCodeBreakpoint(id, source_code_location, filename, false); if(l) { dbg.Unlock(id); } return ret; }
+		virtual unisim::util::debug::NextInsnEvent *CreateNextInsnEvent() { bool l = dbg.Lock(id); unisim::util::debug::NextInsnEvent *ret = dbg.CreateNextInsnEvent(id, false); if(l) { dbg.Unlock(id); } return ret; }
+		virtual unisim::util::debug::NextStmtEvent *CreateNextStmtEvent() { bool l = dbg.Lock(id); unisim::util::debug::NextStmtEvent *ret = dbg.CreateNextStmtEvent(id, false); if(l) { dbg.Unlock(id); } return ret; }
+		virtual unisim::util::debug::FinishEvent *CreateFinishEvent() { bool l = dbg.Lock(id); unisim::util::debug::FinishEvent *ret = dbg.CreateFinishEvent(id, false); if(l) { dbg.Unlock(id); } return ret; }
+		virtual unisim::util::debug::TrapEvent *CreateTrapEvent() { bool l = dbg.Lock(id); unisim::util::debug::TrapEvent *ret = dbg.CreateTrapEvent(id, false); if(l) { dbg.Unlock(id); } return ret; }
+		virtual unisim::util::debug::SourceCodeBreakpoint *CreateSourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) { bool l = dbg.Lock(id); unisim::util::debug::SourceCodeBreakpoint *ret = dbg.CreateSourceCodeBreakpoint(id, source_code_location, filename, false); if(l) { dbg.Unlock(id); } return ret; }
 		virtual unisim::util::debug::SubProgramBreakpoint<ADDRESS> *CreateSubProgramBreakpoint(const unisim::util::debug::SubProgram<ADDRESS> *subprogram) { bool l = dbg.Lock(id); unisim::util::debug::SubProgramBreakpoint<ADDRESS> *ret = dbg.CreateSubProgramBreakpoint(id, subprogram, false); if(l) { dbg.Unlock(id); } return ret; }
+		virtual unisim::util::debug::RegisterValueChangedEvent *CreateRegisterValueChangedEvent(const char *reg_name) { bool l = dbg.Lock(id); unisim::util::debug::RegisterValueChangedEvent *ret = dbg.CreateRegisterValueChangedEvent(id, reg_name, false); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// unisim::service::interfaces::DebugEventTrigger<ADDRESS>
-		virtual bool Listen(unisim::util::debug::Event<ADDRESS> *event) { bool l = dbg.Lock(id); bool ret = dbg.Listen(id, event); if(l) { dbg.Unlock(id); } return ret; }
-		virtual bool Unlisten(unisim::util::debug::Event<ADDRESS> *event) { bool l = dbg.Lock(id); bool ret = dbg.Unlisten(id, event); if(l) { dbg.Unlock(id); } return ret; }
-		virtual bool IsEventListened(unisim::util::debug::Event<ADDRESS> *event) const { bool l = dbg.Lock(id); bool ret = dbg.IsEventListened(id, event); if(l) { dbg.Unlock(id); } return ret; }
-		virtual void ScanListenedEvents(unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const { bool l = dbg.Lock(id); dbg.ScanListenedEvents(id, scanner); if(l) { dbg.Unlock(id); } }
+		virtual bool Listen(unisim::util::debug::Event *event) { bool l = dbg.Lock(id); bool ret = dbg.Listen(id, event); if(l) { dbg.Unlock(id); } return ret; }
+		virtual bool Unlisten(unisim::util::debug::Event *event) { bool l = dbg.Lock(id); bool ret = dbg.Unlisten(id, event); if(l) { dbg.Unlock(id); } return ret; }
+		virtual bool IsEventListened(unisim::util::debug::Event *event) const { bool l = dbg.Lock(id); bool ret = dbg.IsEventListened(id, event); if(l) { dbg.Unlock(id); } return ret; }
+		virtual void ScanListenedEvents(unisim::service::interfaces::DebugEventScanner& scanner) const { bool l = dbg.Lock(id); dbg.ScanListenedEvents(id, scanner); if(l) { dbg.Unlock(id); } }
 		virtual void ClearEvents() { bool l = dbg.Lock(id); dbg.ClearEvents(id); if(l) { dbg.Unlock(id); } }
 		virtual bool SetBreakpoint(ADDRESS addr) { bool l = dbg.Lock(id); bool ret = dbg.SetBreakpoint(id, addr); if(l) { dbg.Unlock(id); } return ret; }
 		virtual bool RemoveBreakpoint(ADDRESS addr) { bool l = dbg.Lock(id); bool ret = dbg.RemoveBreakpoint(id, addr); if(l) { dbg.Unlock(id); } return ret; }
@@ -764,10 +770,10 @@ private:
 		virtual bool SetStub(unisim::util::debug::Stub<ADDRESS> *stub) { bool l = dbg.Lock(id); bool ret = dbg.SetStub(id, stub); if(l) { dbg.Unlock(id); } return ret; }
 		virtual bool RemoveStub(unisim::util::debug::Stub<ADDRESS> *stub) { bool l = dbg.Lock(id); bool ret = dbg.RemoveStub(id, stub); if(l) { dbg.Unlock(id); } return ret; }
 		
-		// unisim::service::interfaces::Hooking<ADDRESS>
-		virtual void ScanHooks(unisim::service::interfaces::HookScanner<ADDRESS>& scanner) const { bool l = dbg.Lock(id); dbg.ScanHooks(id, scanner); if(l) { dbg.Unlock(id); } } 
-		virtual bool SetHook(unisim::util::debug::Hook<ADDRESS> *hook) { bool l = dbg.Lock(id); bool ret = dbg.SetHook(id, hook); if(l) { dbg.Unlock(id); } return ret; }
-		virtual bool RemoveHook(unisim::util::debug::Hook<ADDRESS> *hook) { bool l = dbg.Lock(id); bool ret = dbg.RemoveHook(id, hook); if(l) { dbg.Unlock(id); } return ret; }
+		// unisim::service::interfaces::Hooking
+		virtual void ScanHooks(unisim::service::interfaces::HookScanner& scanner) const { bool l = dbg.Lock(id); dbg.ScanHooks(id, scanner); if(l) { dbg.Unlock(id); } } 
+		virtual bool SetHook(unisim::util::debug::Hook *hook) { bool l = dbg.Lock(id); bool ret = dbg.SetHook(id, hook); if(l) { dbg.Unlock(id); } return ret; }
+		virtual bool RemoveHook(unisim::util::debug::Hook *hook) { bool l = dbg.Lock(id); bool ret = dbg.RemoveHook(id, hook); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// unisim::service::interfaces::DebugTiming<TIME_TYPE>
 		virtual const TIME_TYPE& DebugGetTime() const { bool l = dbg.Lock(id); const TIME_TYPE& ret = dbg.DebugGetTime(id); if(l) { dbg.Unlock(id); } return ret; }
@@ -786,7 +792,7 @@ private:
 		unsigned int id;
 	};
 	
-	struct MultiEventListener : unisim::service::interfaces::DebugEventListener<ADDRESS>
+	struct MultiEventListener : unisim::service::interfaces::DebugEventListener
 	{
 		MultiEventListener()
 			: source_events()
@@ -803,7 +809,7 @@ private:
 			return !source_events.empty();
 		}
 		
-		void Attach(unisim::util::debug::Event<ADDRESS> *source_event)
+		void Attach(unisim::util::debug::Event *source_event)
 		{
 			std::pair<typename SourceEvents::iterator, bool> r = source_events.insert(source_event);
 			if(r.second)
@@ -813,7 +819,7 @@ private:
 			}
 		}
 		
-		void Detach(unisim::util::debug::Event<ADDRESS> *source_event)
+		void Detach(unisim::util::debug::Event *source_event)
 		{
 			if(source_events.erase(source_event))
 			{
@@ -826,31 +832,31 @@ private:
 		{
 			for(typename SourceEvents::iterator it = source_events.begin(); it != source_events.end(); ++it)
 			{
-				unisim::util::debug::Event<ADDRESS> *source_event = *it;
+				unisim::util::debug::Event *source_event = *it;
 				source_event->RemoveEventListener(this);
 				source_event->Release();
 			}
 			source_events.clear();
 		}
 		
-		/* struct Visitor { void Visit(unisim::util::debug::Event<ADDRESS> *) {} }; */
+		/* struct Visitor { void Visit(unisim::util::debug::Event *) {} }; */
 		template <class VISITOR> void Scan(VISITOR& visitor)
 		{
 			for(typename SourceEvents::iterator it = source_events.begin(); it != source_events.end(); ++it)
 			{
-				unisim::util::debug::Event<ADDRESS> *source_event = *it;
+				unisim::util::debug::Event *source_event = *it;
 				visitor.Visit(source_event);
 			}
 		}
 		
 	private:
-		typedef std::set<unisim::util::debug::Event<ADDRESS> *> SourceEvents;
+		typedef std::set<unisim::util::debug::Event *> SourceEvents;
 		SourceEvents source_events;
 	};
 	
 	struct EventCombinator : MultiEventListener
 	{
-		EventCombinator(const unisim::util::debug::Event<ADDRESS> *_target_event)
+		EventCombinator(const unisim::util::debug::Event *_target_event)
 			: MultiEventListener()
 			, target_event(_target_event)
 		{
@@ -862,13 +868,13 @@ private:
 			target_event->Release();
 		}
 		
-		virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *source_event)
+		virtual void OnDebugEvent(const unisim::util::debug::Event *source_event)
 		{
 			target_event->Trigger();
 		}
 		
 	private:
-		const unisim::util::debug::Event<ADDRESS> *target_event;
+		const unisim::util::debug::Event *target_event;
 	};
 	
 	template <typename T, bool dummy = true>
@@ -910,7 +916,7 @@ private:
 	struct EventRemover
 	{
 		EventRemover(Debugger<CONFIG>& _dbg) : dbg(_dbg), status(true) {}
-		void Visit(unisim::util::debug::Event<ADDRESS> *event)
+		void Visit(unisim::util::debug::Event *event)
 		{
 			if(Breakpoint::IsInstanceOf(event))
 			{
@@ -1015,9 +1021,9 @@ private:
 	};
 	
 	// Note: the "nexti" support is crappy at the moment because it relies exclusively on DWARF in the end (for the stack frame information) while it should be aware of "call" instructions from underlying processor architectures.
-	struct NextInsnEvent : Event<unisim::util::debug::NextInsnEvent<ADDRESS> >
+	struct NextInsnEvent : Event<unisim::util::debug::NextInsnEvent>
 	{
-		typedef Event<unisim::util::debug::NextInsnEvent<ADDRESS> > Super;
+		typedef Event<unisim::util::debug::NextInsnEvent> Super;
 		
 		NextInsnEvent(
 			Debugger<CONFIG>& _dbg,
@@ -1060,14 +1066,14 @@ private:
 		}
 		
 	private:
-		struct EventListener : unisim::service::interfaces::DebugEventListener<ADDRESS>
+		struct EventListener : unisim::service::interfaces::DebugEventListener
 		{
 			EventListener(NextInsnEvent& _next_insn_event)
 				: next_insn_event(_next_insn_event)
 			{
 			}
 			
-			virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+			virtual void OnDebugEvent(const unisim::util::debug::Event *event)
 			{
 				next_insn_event.OnDebugEvent(event);
 			}
@@ -1111,7 +1117,7 @@ private:
 			return !finish_event || this->GetDebugger().Unlisten(this->GetFrontEndNumber(), finish_event);
 		}
 		
-		void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+		void OnDebugEvent(const unisim::util::debug::Event *event)
 		{
 			switch(state)
 			{
@@ -1165,7 +1171,7 @@ private:
 		unsigned int stack_frame_infos_depth;
 		unisim::service::interfaces::StackFrameInfo<ADDRESS> stack_frame_infos[2];
 		unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event;
-		unisim::util::debug::FinishEvent<ADDRESS> *finish_event;
+		unisim::util::debug::FinishEvent *finish_event;
 		EventListener event_listener;
 	};
 	
@@ -1246,9 +1252,9 @@ private:
 		using Super::SetLength;
 	};
 	
-	struct FinishEvent : Event<unisim::util::debug::FinishEvent<ADDRESS> >
+	struct FinishEvent : Event<unisim::util::debug::FinishEvent>
 	{
-		typedef Event<unisim::util::debug::FinishEvent<ADDRESS> > Super;
+		typedef Event<unisim::util::debug::FinishEvent> Super;
 		
 		FinishEvent(
 			Debugger<CONFIG>& _dbg,
@@ -1299,14 +1305,14 @@ private:
 		}
 		
 	private:
-		struct EventListener : unisim::service::interfaces::DebugEventListener<ADDRESS>
+		struct EventListener : unisim::service::interfaces::DebugEventListener
 		{
 			EventListener(FinishEvent& _finish_event)
 				: finish_event(_finish_event)
 			{
 			}
 			
-			virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+			virtual void OnDebugEvent(const unisim::util::debug::Event *event)
 			{
 				finish_event.OnDebugEvent(event);
 			}
@@ -1314,7 +1320,7 @@ private:
 			FinishEvent& finish_event;
 		};
 		
-		void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+		void OnDebugEvent(const unisim::util::debug::Event *event)
 		{
 			if(event == ret_brkp)
 			{
@@ -1344,9 +1350,9 @@ private:
 		EventListener ret_brkp_listener;
 	};
 	
-	struct NextStmtEvent : Event<unisim::util::debug::NextStmtEvent<ADDRESS> >
+	struct NextStmtEvent : Event<unisim::util::debug::NextStmtEvent>
 	{
-		typedef Event<unisim::util::debug::NextStmtEvent<ADDRESS> > Super;
+		typedef Event<unisim::util::debug::NextStmtEvent> Super;
 		
 		NextStmtEvent(
 			Debugger<CONFIG>& _dbg,
@@ -1389,14 +1395,14 @@ private:
 		}
 		
 	private:
-		struct EventListener : unisim::service::interfaces::DebugEventListener<ADDRESS>
+		struct EventListener : unisim::service::interfaces::DebugEventListener
 		{
 			EventListener(NextStmtEvent& _next_stmt_event)
 				: next_stmt_event(_next_stmt_event)
 			{
 			}
 			
-			virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+			virtual void OnDebugEvent(const unisim::util::debug::Event *event)
 			{
 				next_stmt_event.OnDebugEvent(event);
 			}
@@ -1440,7 +1446,7 @@ private:
 			return !finish_event || this->GetDebugger().Unlisten(this->GetFrontEndNumber(), finish_event);
 		}
 		
-		void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+		void OnDebugEvent(const unisim::util::debug::Event *event)
 		{
 			switch(state)
 			{
@@ -1523,21 +1529,21 @@ private:
 		unsigned int stack_frame_infos_depth;
 		unisim::service::interfaces::StackFrameInfo<ADDRESS> stack_frame_infos[2];
 		unisim::util::debug::FetchStmtEvent<ADDRESS> *fetch_stmt_event;
-		unisim::util::debug::FinishEvent<ADDRESS> *finish_event;
+		unisim::util::debug::FinishEvent *finish_event;
 		EventListener event_listener;
 	};
 	
-	struct TrapEvent : Event<unisim::util::debug::TrapEvent<ADDRESS> >
+	struct TrapEvent : Event<unisim::util::debug::TrapEvent>
 	{
-		typedef Event<unisim::util::debug::TrapEvent<ADDRESS> > Super;
+		typedef Event<unisim::util::debug::TrapEvent> Super;
 		TrapEvent(Debugger<CONFIG>& _dbg, unsigned int _front_end_num, unsigned int _prc_num, bool _internal) : Super(_dbg, _front_end_num, _prc_num, _internal) {}
 		using Super::SetTrapObject;
 		using Super::SetTrapMessage;
 	};
 	
-	struct SourceCodeBreakpoint : unisim::util::debug::SourceCodeBreakpoint<ADDRESS>
+	struct SourceCodeBreakpoint : unisim::util::debug::SourceCodeBreakpoint
 	{
-		typedef unisim::util::debug::SourceCodeBreakpoint<ADDRESS> Super;
+		typedef unisim::util::debug::SourceCodeBreakpoint Super;
 		
 		SourceCodeBreakpoint(
 			Debugger<CONFIG>& _dbg,
@@ -1675,6 +1681,37 @@ private:
 		EventCombinator event_combinator;
 	};
 	
+	struct RegisterValueChangedEvent : unisim::util::debug::RegisterValueChangedEvent
+	{
+		typedef unisim::util::debug::RegisterValueChangedEvent Super;
+		RegisterValueChangedEvent(Debugger<CONFIG>& _dbg, unsigned int _front_end_num, unsigned int _prc_num, unisim::service::interfaces::Register *_reg, bool _internal = false)
+			: Super(_prc_num, _reg), dbg(_dbg), front_end_num(_front_end_num), internal(_internal), reg_size(_reg->GetSize()), toggle(false), value()
+		{
+			for(unsigned i = 0; i < 2; ++i) value[i] = new uint8_t[reg_size];
+		}
+		
+		virtual ~RegisterValueChangedEvent()
+		{
+			for(unsigned i = 0; i < 2; ++i) delete[] value[i];
+		}
+		
+		Debugger<CONFIG>& GetDebugger() const { return dbg; }
+		unsigned int GetFrontEndNumber() const { return front_end_num; }
+		bool IsInternal() const { return internal; }
+		bool Set() { Latch(); Toggle(); return true; }
+		bool Remove() { return true; }
+		void Latch() { GetRegister()->GetValue(value[toggle]); }
+		void Toggle() { toggle = !toggle; }
+		bool RegisterValueChanged() const { return ::memcmp(value[toggle], value[!toggle], reg_size); }
+	private:
+		Debugger<CONFIG>& dbg;
+		unsigned int front_end_num;
+		bool internal;
+		unsigned reg_size;
+		bool toggle;
+		uint8_t *value[2];
+	};
+	
 	struct StubHandler : MultiEventListener
 	{
 		StubHandler(Debugger<CONFIG>& _dbg, unsigned int _front_end_num, unsigned int _prc_num, unisim::util::debug::Stub<ADDRESS> *_stub)
@@ -1717,7 +1754,7 @@ private:
 			return event_remover.status;
 		}
 		
-		virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *source_event)
+		virtual void OnDebugEvent(const unisim::util::debug::Event *source_event)
 		{
 			dbg.CallStub(front_end_num, prc_num, stub);
 		}
@@ -1735,7 +1772,7 @@ private:
 	
 	struct HookHandler : MultiEventListener
 	{
-		HookHandler(Debugger<CONFIG>& _dbg, unsigned int _front_end_num, unsigned int _prc_num, unisim::util::debug::Hook<ADDRESS> *_hook)
+		HookHandler(Debugger<CONFIG>& _dbg, unsigned int _front_end_num, unsigned int _prc_num, unisim::util::debug::Hook *_hook)
 			: MultiEventListener()
 			, dbg(_dbg)
 			, front_end_num(_front_end_num)
@@ -1752,9 +1789,9 @@ private:
 		
 		bool Set()
 		{
-			if(unisim::util::debug::SourceCodeHook<ADDRESS>::IsInstanceOf(hook))
+			if(unisim::util::debug::SourceCodeHook::IsInstanceOf(hook))
 			{
-				unisim::util::debug::SourceCodeHook<ADDRESS> *src_code_hook = static_cast<unisim::util::debug::SourceCodeHook<ADDRESS> *>(hook);
+				unisim::util::debug::SourceCodeHook *src_code_hook = static_cast<unisim::util::debug::SourceCodeHook *>(hook);
 				
 				struct StatementScanner : unisim::service::interfaces::StatementScanner<ADDRESS>
 				{
@@ -1845,12 +1882,12 @@ private:
 			return event_remover.status;
 		}
 		
-		virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *source_event)
+		virtual void OnDebugEvent(const unisim::util::debug::Event *source_event)
 		{
 			dbg.CallHook(front_end_num, prc_num, hook);
 		}
 		
-		unisim::util::debug::Hook<ADDRESS> *GetHook() const { return hook; }
+		unisim::util::debug::Hook *GetHook() const { return hook; }
 		
 		unsigned int GetProcessorNumber() const { return prc_num; }
 		
@@ -1858,7 +1895,7 @@ private:
 		Debugger<CONFIG>& dbg;
 		unsigned int front_end_num;
 		unsigned int prc_num;
-		unisim::util::debug::Hook<ADDRESS> *hook;
+		unisim::util::debug::Hook *hook;
 	};
 
 	Processor *processors[MAX_FRONT_ENDS][NUM_PROCESSORS];
@@ -1927,13 +1964,15 @@ private:
 	TrapEventSet trap_event_set[NUM_PROCESSORS];
 	typedef std::set<FetchStmtEvent *> FetchStmtEventSet;
 	FetchStmtEventSet fetch_stmt_event_set[NUM_PROCESSORS];
-	typedef std::set<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *> SourceCodeBreakpointRegistry;
+	typedef std::set<RegisterValueChangedEvent *> RegisterValueChangedEventSet;
+	RegisterValueChangedEventSet reg_val_changed_event_set[NUM_PROCESSORS];
+	typedef std::set<unisim::util::debug::SourceCodeBreakpoint *> SourceCodeBreakpointRegistry;
 	SourceCodeBreakpointRegistry source_code_breakpoint_registry[MAX_FRONT_ENDS];
 	typedef std::set<unisim::util::debug::SubProgramBreakpoint<ADDRESS> *> SubProgramBreakpointRegistry;
 	SubProgramBreakpointRegistry subprogram_breakpoint_registry[MAX_FRONT_ENDS];
 	typedef std::map<unisim::util::debug::Stub<ADDRESS> *, StubHandler *> StubRegistry;
 	StubRegistry stub_registry[MAX_FRONT_ENDS][NUM_PROCESSORS];
-	typedef std::map<unisim::util::debug::Hook<ADDRESS> *, HookHandler *> HookRegistry;
+	typedef std::map<unisim::util::debug::Hook *, HookHandler *> HookRegistry;
 	HookRegistry hook_registry[MAX_FRONT_ENDS][NUM_PROCESSORS];
 	
 	mutable int next_id[MAX_FRONT_ENDS];
@@ -2006,7 +2045,7 @@ private:
 	
 	
 	void CallStub(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Stub<ADDRESS> *stub);
-	void CallHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook<ADDRESS> *hook);
+	void CallHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook *hook);
 	
 	template <typename VISITOR, typename T = bool>
 	T ScanEnabledLoaders(unsigned int front_end_num, VISITOR& visitor) const;

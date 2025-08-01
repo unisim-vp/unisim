@@ -82,33 +82,33 @@ protected:
 };
 
 template <typename ADDRESS>
-class SourceCodeBreakpoint : unisim::service::interfaces::DebugEventListener<ADDRESS>
+class SourceCodeBreakpoint : unisim::service::interfaces::DebugEventListener
 {
 public:
 	SourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location, typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *debug_event_trigger_if, int handle, void (*callback)(int));
 	virtual ~SourceCodeBreakpoint();
 	int GetHandle() const;
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
+	virtual void OnDebugEvent(const unisim::util::debug::Event *event);
 	bool Set();
 	bool Unset();
 private:
 	bool Update(bool set);
 	
 	typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *debug_event_trigger_if;
-	unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint;
+	unisim::util::debug::SourceCodeBreakpoint *source_code_breakpoint;
 	bool source_code_breakpoint_set;
 	int handle;
 	void (*callback)(int);
 };
 
 template <typename ADDRESS>
-class DataObjectWatchpoint : unisim::service::interfaces::DebugEventListener<ADDRESS>
+class DataObjectWatchpoint : unisim::service::interfaces::DebugEventListener
 {
 public:
 	DataObjectWatchpoint(const char *data_location, typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *debug_event_trigger_if, typename unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if, int handle, void (*callback)(int));
 	virtual ~DataObjectWatchpoint();
 	int GetHandle() const;
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
+	virtual void OnDebugEvent(const unisim::util::debug::Event *event);
 	bool Set();
 	bool Unset();
 private:
@@ -139,7 +139,7 @@ private:
 template <typename ADDRESS>
 class Monitor
 	: public MonitorBase
-	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener>
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::Registers>
@@ -154,7 +154,7 @@ public:
 	Monitor(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~Monitor();
 	
-	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener> debug_event_listener_export;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> > debug_event_trigger_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> > memory_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> registers_import;
@@ -182,7 +182,7 @@ private:
 	std::vector<DataObject<ADDRESS> *> tracked_data_objects;
 	
 	// DebugEventListener
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
+	virtual void OnDebugEvent(const unisim::util::debug::Event *event);
 	
 };
 

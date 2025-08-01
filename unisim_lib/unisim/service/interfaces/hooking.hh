@@ -42,18 +42,16 @@ namespace unisim {
 namespace service {
 namespace interfaces {
 
-template <typename ADDRESS>
 struct HookScanner : public ServiceInterface
 {
-	virtual void Append(unisim::util::debug::Hook<ADDRESS> *hook) = 0;
+	virtual void Append(unisim::util::debug::Hook *hook) = 0;
 };
 
-template <typename ADDRESS>
 struct Hooking : ServiceInterface
 {
-	virtual void ScanHooks(HookScanner<ADDRESS>& scanner) const = 0;
-	virtual bool SetHook(unisim::util::debug::Hook<ADDRESS> *hook) = 0;
-	virtual bool RemoveHook(unisim::util::debug::Hook<ADDRESS> *hook) = 0;
+	virtual void ScanHooks(HookScanner& scanner) const = 0;
+	virtual bool SetHook(unisim::util::debug::Hook *hook) = 0;
+	virtual bool RemoveHook(unisim::util::debug::Hook *hook) = 0;
 };
 
 } // end of namespace interfaces

@@ -8,6 +8,7 @@ unisim/service/debug/nodejs/doc/repl/disassemble.md
 unisim/service/debug/nodejs/doc/repl/enable.md
 unisim/service/debug/nodejs/doc/repl/finish.md
 unisim/service/debug/nodejs/doc/repl/frame.md
+unisim/service/debug/nodejs/doc/repl/index.md
 unisim/service/debug/nodejs/doc/repl/inferior.md
 unisim/service/debug/nodejs/doc/repl/info_all_registers.md
 unisim/service/debug/nodejs/doc/repl/info_breakpoints.md

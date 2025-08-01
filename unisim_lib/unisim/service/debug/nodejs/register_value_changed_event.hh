@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023,
+ *  Copyright (c) 2025,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,51 +32,42 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_SERVICE_DEBUG_NODEJS_DEBUG_EVENT_HH__
-#define __UNISIM_SERVICE_DEBUG_NODEJS_DEBUG_EVENT_HH__
+#ifndef __UNISIM_SERVICE_DEBUG_NODEJS_REGISTER_VALUE_CHANGED_EVENT_HH__
+#define __UNISIM_SERVICE_DEBUG_NODEJS_REGISTER_VALUE_CHANGED_EVENT_HH__
 
 #include <unisim/service/debug/nodejs/fwd.hh>
 #include <unisim/util/nodejs/nodejs.hh>
+#include <unisim/util/debug/register_value_changed_event.hh>
 
 namespace unisim {
 namespace service {
 namespace debug {
 namespace nodejs {
 
-/////////////////////////////// DebugEventWrapper<> ////////////////////////////////
+//////////////////////////////// RegisterValueChangedEventWrapper<> /////////////////////////////////
 
 template <typename CONFIG>
-struct DebugEventWrapper : ObjectWrapper<CONFIG>
+struct RegisterValueChangedEventWrapper : ObjectWrapper<CONFIG>
 {
 	typedef ObjectWrapper<CONFIG> Super;
-	typedef unisim::util::nodejs::ObjectWrapper Base;
-	typedef DebugEventWrapper<CONFIG> This;
+	typedef RegisterValueChangedEventWrapper<CONFIG> This;
 	static const char *CLASS_NAME;
 	static const uint32_t CLASS_ID;
-	static bool IsA(uint32_t class_id)
-	{
-		return (class_id == CLASS_ID) ||
-		       BreakpointWrapper<CONFIG>::IsA(class_id) ||
-		       SubProgramBreakpointWrapper<CONFIG>::IsA(class_id) ||
-		       SourceCodeBreakpointWrapper<CONFIG>::IsA(class_id) ||
-		       WatchpointWrapper<CONFIG>::IsA(class_id);
-	}
+	static bool IsA(uint32_t class_id) { return class_id == CLASS_ID; }
 	static v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(NodeJS<CONFIG>& nodejs);
 	static void Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args);
-	DebugEventWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG> *processor_wrapper, unisim::util::debug::Event *event, std::size_t size = 0);
-	virtual ~DebugEventWrapper();
-	unisim::util::debug::Event *GetEvent() const;
-	void GetProcessor(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
-	void GetEnable(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
-	void SetEnable(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info);
+	RegisterValueChangedEventWrapper(NodeJS<CONFIG>& nodejs, unisim::util::debug::RegisterValueChangedEvent *reg_val_changed_event, std::size_t size = 0);
+	virtual ~RegisterValueChangedEventWrapper();
+	unisim::util::debug::RegisterValueChangedEvent *GetRegisterValueChangedEvent() const;
+	void GetRegisterName(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
+	void On(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void RemoveListener(const v8::FunctionCallbackInfo<v8::Value>& args);
+	void ToString(const v8::FunctionCallbackInfo<v8::Value>& args);
 	static bool IsInstance(v8::Local<v8::Value> value) { return Super::template IsInstanceOf<This>(value); }
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
-protected:
-	void SetListenerArgument(v8::Local<v8::Value> arg);
 private:
-	ProcessorWrapper<CONFIG> *processor_wrapper;
-	unisim::util::debug::Event *event;
+	unisim::util::debug::RegisterValueChangedEvent *reg_val_changed_event;
 	EventBridge<CONFIG> event_bridge;
 };
 
@@ -85,4 +76,4 @@ private:
 } // end of namespace service
 } // end of namespace unisim
 
-#endif // __UNISIM_SERVICE_DEBUG_NODEJS_DEBUG_EVENT_HH__
+#endif // __UNISIM_SERVICE_DEBUG_NODEJS_REGISTER_VALUE_CHANGED_EVENT_HH__

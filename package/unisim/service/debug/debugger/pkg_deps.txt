@@ -1,5 +1,6 @@
 m4/pthread
 std/cassert
+std/cstring
 std/fstream
 std/map
 std/set

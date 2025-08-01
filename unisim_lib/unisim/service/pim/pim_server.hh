@@ -127,7 +127,7 @@ class PIMServer
 	, public Client<SymbolTableLookup<ADDRESS> >
 	, public Client<StatementLookup<ADDRESS> >
 	, public Client<Registers>
-	, public Service<DebugEventListener<ADDRESS> >
+	, public Service<DebugEventListener>
 	, public Client<DebugEventTrigger<ADDRESS> >
 	, public Client<Monitor_if<ADDRESS> >
 	, public VariableBaseListener
@@ -138,7 +138,7 @@ public:
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
 	ServiceExport<TrapReporting> trap_reporting_export;
 
-	ServiceExport<DebugEventListener<ADDRESS> > debug_event_listener_export;
+	ServiceExport<DebugEventListener> debug_event_listener_export;
 	ServiceImport<DebugEventTrigger<ADDRESS> > debug_event_trigger_import;
 
 	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
@@ -162,14 +162,14 @@ public:
 							const char *c_str);
 
 	// DebugEventListener
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* event);
+	virtual void OnDebugEvent(const unisim::util::debug::Event* event);
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
 	bool SetupMemReport();
 	virtual bool Setup(DebugYielding*) { return SetupMemReport(); }
 	virtual bool Setup(TrapReporting*) { return SetupMemReport(); }
-	virtual bool Setup(DebugEventListener<ADDRESS>*) { return SetupMemReport(); }
+	virtual bool Setup(DebugEventListener*) { return SetupMemReport(); }
 	virtual bool EndSetup();
 
 	virtual void Stop(int exit_status);

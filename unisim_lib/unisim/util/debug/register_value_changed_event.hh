@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023,
+ *  Copyright (c) 2025,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,29 +32,41 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_UTIL_NEXT_INSN_EVENT_HH__
-#define __UNISIM_UTIL_NEXT_INSN_EVENT_HH__
+#ifndef __UNISIM_UTIL_DEBUG_REGISTER_VALUE_CHANGED_EVENT_HH__
+#define __UNISIM_UTIL_DEBUG_REGISTER_VALUE_CHANGED_EVENT_HH__
 
 #include <unisim/util/debug/event.hh>
-#include <inttypes.h>
+#include <unisim/service/interfaces/register.hh>
 #include <ostream>
 
 namespace unisim {
 namespace util {
 namespace debug {
 
-class NextInsnEvent : public CustomEvent<NextInsnEvent>
+class RegisterValueChangedEvent;
+
+std::ostream& operator << (std::ostream& os, const RegisterValueChangedEvent& rvce);
+
+class RegisterValueChangedEvent : public CustomEvent<RegisterValueChangedEvent>
 {
+public:
+	inline unisim::service::interfaces::Register *GetRegister() const { return reg; }
+	
 protected:
-	NextInsnEvent(unsigned int _prc_num)
-		: CustomEvent<NextInsnEvent>(_prc_num)
+	RegisterValueChangedEvent(unsigned int _prc_num, unisim::service::interfaces::Register *_reg)
+		: CustomEvent<RegisterValueChangedEvent>(_prc_num)
+		, reg(_reg)
 	{
 	}
+
+	
+private:
+	unisim::service::interfaces::Register *reg;
 };
 
-inline std::ostream& operator << (std::ostream& os, const NextInsnEvent& fe)
+inline std::ostream& operator << (std::ostream& os, const RegisterValueChangedEvent& rvce)
 {
-	os << "Next instruction event for processor #" << fe.GetProcessorNumber();
+	os << "Register \"" << rvce.GetRegister()->GetName() << "\" value changed event for processor #" << rvce.GetProcessorNumber();
 	
 	return os;
 }

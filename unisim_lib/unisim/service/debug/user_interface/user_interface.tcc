@@ -55,7 +55,7 @@ UserInterface<ADDRESS>::UserInterface(const char *_name, unisim::kernel::Object 
 	: unisim::kernel::Object(_name, _parent, "this service implements a debugger user interface over HTTP")
 	, unisim::kernel::Service<unisim::service::interfaces::HttpServer>(_name, _parent)
 	, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
-	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugSelecting>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
@@ -593,11 +593,11 @@ void UserInterface<ADDRESS>::DebugYield()
 	}
 }
 
-// unisim::service::interfaces::DebugEventListener<ADDRESS>
+// unisim::service::interfaces::DebugEventListener
 template <typename ADDRESS>
-void UserInterface<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+void UserInterface<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event *event)
 {
-	typename unisim::util::debug::Event<ADDRESS>::Type event_type = event->GetType();
+	typename unisim::util::debug::Event::Type event_type = event->GetType();
 	
 	unsigned int prc_num = event->GetProcessorNumber();
 	
@@ -645,11 +645,11 @@ void UserInterface<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRE
 		prc_trap[prc_num] = true;
 		intr = true;
 	}
-	else if(likely(event_type == unisim::util::debug::TrapEvent<ADDRESS>::TYPE))
+	else if(likely(event_type == unisim::util::debug::TrapEvent::TYPE))
 	{
 		if(unlikely(verbose))
 		{
-			const unisim::util::debug::TrapEvent<ADDRESS> *trap_event = static_cast<const unisim::util::debug::TrapEvent<ADDRESS> *>(event);
+			const unisim::util::debug::TrapEvent *trap_event = static_cast<const unisim::util::debug::TrapEvent *>(event);
 			logger << DebugInfo << "/\\/\\/\\ " << *trap_event << EndDebugInfo;
 		}
 		event->Catch();
@@ -725,7 +725,7 @@ void UserInterface<ADDRESS>::ClearStopEvents()
 	unsigned int i;
 	for(i = 0; i < num_stop_events; i++)
 	{
-		const unisim::util::debug::Event<ADDRESS> *event = stop_events[i];
+		const unisim::util::debug::Event *event = stop_events[i];
 		event->Release();
 	}
 	

@@ -73,7 +73,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 		"that runs within the simulator.")
 	, GDBServerBase(_name, _parent)
 	, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
-	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugSelecting>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
@@ -1767,9 +1767,9 @@ bool GDBServer<ADDRESS>::ParseThreadId(const std::string& s, std::size_t& pos, l
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
+void GDBServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event *event)
 {
-	typename unisim::util::debug::Event<ADDRESS>::Type event_type = event->GetType();
+	typename unisim::util::debug::Event::Type event_type = event->GetType();
 	
 	unsigned int prc_num = event->GetProcessorNumber();
 	
@@ -1817,11 +1817,11 @@ void GDBServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> 
 		prc_trap[prc_num] = true;
 		trap = true;
 	}
-	else if(likely(event_type == unisim::util::debug::TrapEvent<ADDRESS>::TYPE))
+	else if(likely(event_type == unisim::util::debug::TrapEvent::TYPE))
 	{
 		if(unlikely(verbose))
 		{
-			const unisim::util::debug::TrapEvent<ADDRESS> *trap_event = static_cast<const unisim::util::debug::TrapEvent<ADDRESS> *>(event);
+			const unisim::util::debug::TrapEvent *trap_event = static_cast<const unisim::util::debug::TrapEvent *>(event);
 			logger << DebugInfo << "/\\/\\/\\ " << *trap_event << EndDebugInfo;
 		}
 		event->Catch();
@@ -2604,9 +2604,9 @@ bool GDBServer<ADDRESS>::ReportSignal(unsigned int signum)
 	unsigned int i;
 	for(i = 0; i < num_stop_events; i++)
 	{
-		const unisim::util::debug::Event<ADDRESS> *event = stop_events[i];
+		const unisim::util::debug::Event *event = stop_events[i];
 		
-		typename unisim::util::debug::Event<ADDRESS>::Type event_type = event->GetType();
+		typename unisim::util::debug::Event::Type event_type = event->GetType();
 		
 		if((unsigned int) event->GetProcessorNumber() == prc_num)
 		{
@@ -2669,7 +2669,7 @@ void GDBServer<ADDRESS>::ClearStopEvents()
 	unsigned int i;
 	for(i = 0; i < num_stop_events; i++)
 	{
-		const unisim::util::debug::Event<ADDRESS> *event = stop_events[i];
+		const unisim::util::debug::Event *event = stop_events[i];
 		event->Release();
 	}
 	

@@ -97,7 +97,7 @@ void DebugEventWrapper<CONFIG>::Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionC
 }
 
 template <typename CONFIG>
-DebugEventWrapper<CONFIG>::DebugEventWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG> *_processor_wrapper, unisim::util::debug::Event<ADDRESS> *_event, std::size_t size)
+DebugEventWrapper<CONFIG>::DebugEventWrapper(NodeJS<CONFIG>& _nodejs, ProcessorWrapper<CONFIG> *_processor_wrapper, unisim::util::debug::Event *_event, std::size_t size)
 	: Super(_nodejs, /* ptr */ 0, size ? size : sizeof(*this))
 	, processor_wrapper(_processor_wrapper)
 	, event(_event)
@@ -117,7 +117,7 @@ void DebugEventWrapper<CONFIG>::SetListenerArgument(v8::Local<v8::Value> arg)
 }
 
 template <typename CONFIG>
-unisim::util::debug::Event<typename CONFIG::ADDRESS> *DebugEventWrapper<CONFIG>::GetEvent() const
+unisim::util::debug::Event *DebugEventWrapper<CONFIG>::GetEvent() const
 {
 	return event;
 }

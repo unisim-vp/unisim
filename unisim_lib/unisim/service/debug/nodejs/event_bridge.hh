@@ -52,11 +52,11 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <typename CONFIG>
-struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CONFIG::ADDRESS>
+struct EventBridge : unisim::service::interfaces::DebugEventListener
 {
 	typedef typename CONFIG::ADDRESS ADDRESS;
 	
-	EventBridge(NodeJS<CONFIG>& _nodejs, unisim::util::debug::Event<ADDRESS> *_event)
+	EventBridge(NodeJS<CONFIG>& _nodejs, unisim::util::debug::Event *_event)
 		: nodejs(_nodejs)
 		, event(_event)
 		, listener_arg()
@@ -65,6 +65,9 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 		, functions()
 		, resolvers()
 	{
+		v8::HandleScope handle_scope(this->GetIsolate());
+		SetListenerArgument(v8::Undefined(this->GetIsolate()));
+		
 		if(event)
 		{
 			event->AddEventListener(this);
@@ -130,6 +133,8 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 		return true;
 	}
 	
+	bool HasListeners() const { return !functions.empty(); }
+	
 	v8::Local<v8::Promise> NewPromise(bool& status)
 	{
 		v8::EscapableHandleScope handle_scope(this->GetIsolate());
@@ -150,12 +155,12 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 		return handle_scope.Escape(resolver->GetPromise());
 	}
 	
-	void RemoveListener(v8::Local<v8::Function> func)
+	bool RemoveListener(v8::Local<v8::Function> func)
 	{
 		if(!Update(trap || !resolvers.empty()))
 		{
 			this->Throw(SetRemoveError());
-			return;
+			return false;
 		}
 		
 		Functions::iterator it = functions.begin();
@@ -172,6 +177,8 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 				++it;
 			}
 		}
+		
+		return true;
 	}
 	
 	v8::Local<v8::Value> SetRemoveError()
@@ -211,7 +218,7 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 		return has_listeners ? Listen() : Unlisten();
 	}
 	
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *_event)
+	virtual void OnDebugEvent(const unisim::util::debug::Event *_event)
 	{
 		if(event != _event) return;
 		
@@ -291,7 +298,7 @@ struct EventBridge : unisim::service::interfaces::DebugEventListener<typename CO
 	}
 	
 	NodeJS<CONFIG>& nodejs;
-	unisim::util::debug::Event<ADDRESS> *event;
+	unisim::util::debug::Event *event;
 	v8::Global<v8::Value> listener_arg;
 	bool listening_event;
 	bool trap;

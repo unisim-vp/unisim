@@ -48,7 +48,7 @@ namespace debug {
 template <typename ADDRESS> class Watchpoint;
 
 template <typename ADDRESS>
-class Watchpoint : public CustomEvent<ADDRESS, Watchpoint<ADDRESS> >
+class Watchpoint : public CustomEvent<Watchpoint<ADDRESS> >
 {
 public:
 	inline int GetId() const { return id; }
@@ -81,7 +81,7 @@ public:
 	
 protected:
 	Watchpoint(unsigned int _prc_num, unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mt, ADDRESS _addr, uint32_t _size, bool _overlook, int _id = -1)
-		: CustomEvent<ADDRESS, Watchpoint<ADDRESS> >(_prc_num)
+		: CustomEvent<Watchpoint<ADDRESS> >(_prc_num)
 		, mat(_mat)
 		, mt(_mt)
 		, addr(_addr)

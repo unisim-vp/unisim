@@ -111,9 +111,9 @@ struct SourceCodeBreakpointWrapper : DebugEventWrapper<CONFIG>
 	static bool IsA(uint32_t class_id) { return class_id == CLASS_ID; }
 	static v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(NodeJS<CONFIG>& nodejs);
 	static void Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args);
-	SourceCodeBreakpointWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG> *processor_wrapper, unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint, std::size_t size = 0);
+	SourceCodeBreakpointWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG> *processor_wrapper, unisim::util::debug::SourceCodeBreakpoint *source_code_breakpoint, std::size_t size = 0);
 	virtual ~SourceCodeBreakpointWrapper();
-	unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *GetSourceCodeBreakpoint() const;
+	unisim::util::debug::SourceCodeBreakpoint *GetSourceCodeBreakpoint() const;
 	void GetId(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
 	void GetFile(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
 	void GetLoc(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
@@ -122,7 +122,7 @@ struct SourceCodeBreakpointWrapper : DebugEventWrapper<CONFIG>
 	static This *GetInstance(v8::Local<v8::Value> value) { return Super::template GetInstanceOf<This>(value); }
 	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
 private:
-	unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint;
+	unisim::util::debug::SourceCodeBreakpoint *source_code_breakpoint;
 };
 
 } // end of namespace nodejs

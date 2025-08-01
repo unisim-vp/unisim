@@ -46,18 +46,19 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <typename ADDRESS> class Event;
+class Event;
 template <typename ADDRESS> class Breakpoint;
 template <typename ADDRESS> class Watchpoint;
 template <typename ADDRESS> class FetchInsnEvent;
 template <typename ADDRESS> class FetchStmtEvent;
 template <typename ADDRESS> class CommitInsnEvent;
-template <typename ADDRESS> class TrapEvent;
-template <typename ADDRESS> class NextInsnEvent;
-template <typename ADDRESS> class NextStmtEvent;
-template <typename ADDRESS> class FinishEvent;
-template <typename ADDRESS> class SourceCodeBreakpoint;
+class TrapEvent;
+class NextInsnEvent;
+class NextStmtEvent;
+class FinishEvent;
+class SourceCodeBreakpoint;
 template <typename ADDRESS> class SubProgramBreakpoint;
+class RegisterValueChangedEvent;
 
 } // end of namespace debug
 } // end of namespace util
@@ -67,23 +68,22 @@ namespace unisim {
 namespace service {
 namespace interfaces {
 
-template <class ADDRESS>
 class DebugEventScanner : public ServiceInterface
 {
 public:
-	virtual void Append(unisim::util::debug::Event<ADDRESS> *event) = 0;
+	virtual void Append(unisim::util::debug::Event *event) = 0;
 };
 
 namespace detail
 {
-template <class ADDRESS, class CONTAINER> class DebugEventScannerInserter;
-template <class ADDRESS, class CONTAINER> class DebugEventScannerFrontInserter;
-template <class ADDRESS, class CONTAINER> class DebugEventScannerBackInserter;
+template <class CONTAINER> class DebugEventScannerInserter;
+template <class CONTAINER> class DebugEventScannerFrontInserter;
+template <class CONTAINER> class DebugEventScannerBackInserter;
 } // end of namespace detail
 
-template <class ADDRESS, class CONTAINER> detail::DebugEventScannerInserter<ADDRESS, CONTAINER> DebugEventScannerInserter(CONTAINER& container, typename CONTAINER::iterator iter);
-template <class ADDRESS, class CONTAINER> detail::DebugEventScannerFrontInserter<ADDRESS, CONTAINER> DebugEventScannerFrontInserter(CONTAINER& container, typename CONTAINER::iterator iter);
-template <class ADDRESS, class CONTAINER> detail::DebugEventScannerBackInserter<ADDRESS, CONTAINER> DebugEventScannerBackInserter(CONTAINER& container, typename CONTAINER::iterator iter);
+template <class CONTAINER> detail::DebugEventScannerInserter<CONTAINER> DebugEventScannerInserter(CONTAINER& container, typename CONTAINER::iterator iter);
+template <class CONTAINER> detail::DebugEventScannerFrontInserter<CONTAINER> DebugEventScannerFrontInserter(CONTAINER& container, typename CONTAINER::iterator iter);
+template <class CONTAINER> detail::DebugEventScannerBackInserter<CONTAINER> DebugEventScannerBackInserter(CONTAINER& container, typename CONTAINER::iterator iter);
 
 template <class ADDRESS>
 class DebugEventFactory : public ServiceInterface
@@ -94,12 +94,13 @@ public:
 	virtual unisim::util::debug::FetchInsnEvent<ADDRESS> *CreateFetchInsnEvent() = 0;
 	virtual unisim::util::debug::FetchStmtEvent<ADDRESS> *CreateFetchStmtEvent() = 0;
 	virtual unisim::util::debug::CommitInsnEvent<ADDRESS> *CreateCommitInsnEvent() = 0;
-	virtual unisim::util::debug::NextInsnEvent<ADDRESS> *CreateNextInsnEvent() = 0;
-	virtual unisim::util::debug::NextStmtEvent<ADDRESS> *CreateNextStmtEvent() = 0;
-	virtual unisim::util::debug::FinishEvent<ADDRESS> *CreateFinishEvent() = 0;
-	virtual unisim::util::debug::TrapEvent<ADDRESS> *CreateTrapEvent() = 0;
-	virtual unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *CreateSourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename = std::string()) = 0;
+	virtual unisim::util::debug::NextInsnEvent *CreateNextInsnEvent() = 0;
+	virtual unisim::util::debug::NextStmtEvent *CreateNextStmtEvent() = 0;
+	virtual unisim::util::debug::FinishEvent *CreateFinishEvent() = 0;
+	virtual unisim::util::debug::TrapEvent *CreateTrapEvent() = 0;
+	virtual unisim::util::debug::SourceCodeBreakpoint *CreateSourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename = std::string()) = 0;
 	virtual unisim::util::debug::SubProgramBreakpoint<ADDRESS> *CreateSubProgramBreakpoint(const unisim::util::debug::SubProgram<ADDRESS> *subprogram) = 0;
+	virtual unisim::util::debug::RegisterValueChangedEvent *CreateRegisterValueChangedEvent(const char *reg_name) = 0;
 };
 
 template <class ADDRESS>
@@ -107,10 +108,10 @@ class DebugEventTrigger : public DebugEventFactory<ADDRESS>
 {
 public:
 	// "named" events
-	virtual bool Listen(unisim::util::debug::Event<ADDRESS> *event) = 0;
-	virtual bool Unlisten(unisim::util::debug::Event<ADDRESS> *event) = 0;
-	virtual bool IsEventListened(unisim::util::debug::Event<ADDRESS> *event) const = 0;
-	virtual void ScanListenedEvents(DebugEventScanner<ADDRESS>& scanner) const = 0;
+	virtual bool Listen(unisim::util::debug::Event *event) = 0;
+	virtual bool Unlisten(unisim::util::debug::Event *event) = 0;
+	virtual bool IsEventListened(unisim::util::debug::Event *event) const = 0;
+	virtual void ScanListenedEvents(DebugEventScanner& scanner) const = 0;
 	virtual void ClearEvents() = 0;
 	
 	// idem potent interface: anonymous events
@@ -122,44 +123,43 @@ public:
 	virtual bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size) = 0;
 };
 
-template <class ADDRESS>
 class DebugEventListener : public ServiceInterface
 {
 public:
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event) = 0;
+	virtual void OnDebugEvent(const unisim::util::debug::Event *event) = 0;
 };
 
 namespace detail
 {
 
-template <class ADDRESS, class CONTAINER>
-class DebugEventScannerInserter : DebugEventScanner<ADDRESS>
+template <class CONTAINER>
+class DebugEventScannerInserter : DebugEventScanner
 {
 public:
 	DebugEventScannerInserter(CONTAINER& _container, typename CONTAINER::iterator _iter) : container(_container), iter(_iter) {}
-	virtual void Append(unisim::util::debug::Event<ADDRESS> *event) { container.insert(event); }
+	virtual void Append(unisim::util::debug::Event *event) { container.insert(event); }
 private:
 	CONTAINER& container;
 	typename CONTAINER::iterator iter;
 };
 
-template <class ADDRESS, class CONTAINER>
-class DebugEventScannerFrontInserter : DebugEventScanner<ADDRESS>
+template <class CONTAINER>
+class DebugEventScannerFrontInserter : DebugEventScanner
 {
 public:
 	DebugEventScannerFrontInserter(CONTAINER& _container, typename CONTAINER::iterator _iter) : container(_container), iter(_iter) {}
-	virtual void Append(unisim::util::debug::Event<ADDRESS> *event) { container.push_front(event); }
+	virtual void Append(unisim::util::debug::Event *event) { container.push_front(event); }
 private:
 	CONTAINER& container;
 	typename CONTAINER::iterator iter;
 };
 
-template <class ADDRESS, class CONTAINER>
-class DebugEventScannerBackInserter : DebugEventScanner<ADDRESS>
+template <class CONTAINER>
+class DebugEventScannerBackInserter : DebugEventScanner
 {
 public:
 	DebugEventScannerBackInserter(CONTAINER& _container, typename CONTAINER::iterator _iter) : container(_container), iter(_iter) {}
-	virtual void Append(unisim::util::debug::Event<ADDRESS> *event) { container.push_back(event); }
+	virtual void Append(unisim::util::debug::Event *event) { container.push_back(event); }
 private:
 	CONTAINER& container;
 	typename CONTAINER::iterator iter;
@@ -167,22 +167,22 @@ private:
 
 } // end of namespace detail
 
-template <class ADDRESS, class CONTAINER>
-detail::DebugEventScannerInserter<ADDRESS, CONTAINER> DebugEventScannerInserter(CONTAINER& container, typename CONTAINER::iterator iter)
+template <class CONTAINER>
+detail::DebugEventScannerInserter<CONTAINER> DebugEventScannerInserter(CONTAINER& container, typename CONTAINER::iterator iter)
 {
-	return detail::DebugEventScannerInserter<ADDRESS, CONTAINER>(container, iter);
+	return detail::DebugEventScannerInserter<CONTAINER>(container, iter);
 }
 
-template <class ADDRESS, class CONTAINER>
-detail::DebugEventScannerFrontInserter<ADDRESS, CONTAINER> DebugEventScannerFrontInserter(CONTAINER& container, typename CONTAINER::iterator iter)
+template <class CONTAINER>
+detail::DebugEventScannerFrontInserter<CONTAINER> DebugEventScannerFrontInserter(CONTAINER& container, typename CONTAINER::iterator iter)
 {
-	return detail::DebugEventScannerFrontInserter<ADDRESS, CONTAINER>(container, iter);
+	return detail::DebugEventScannerFrontInserter<CONTAINER>(container, iter);
 }
 
-template <class ADDRESS, class CONTAINER>
-detail::DebugEventScannerBackInserter<ADDRESS, CONTAINER> DebugEventScannerBackInserter(CONTAINER& container, typename CONTAINER::iterator iter)
+template <class CONTAINER>
+detail::DebugEventScannerBackInserter<CONTAINER> DebugEventScannerBackInserter(CONTAINER& container, typename CONTAINER::iterator iter)
 {
-	return detail::DebugEventScannerBackInserter<ADDRESS, CONTAINER>(container, iter);
+	return detail::DebugEventScannerBackInserter<CONTAINER>(container, iter);
 }
 
 } // end of namespace interfaces

@@ -57,6 +57,7 @@
 #include <unisim/service/debug/nodejs/debug_event.hh>
 #include <unisim/service/debug/nodejs/breakpoint.hh>
 #include <unisim/service/debug/nodejs/watchpoint.hh>
+#include <unisim/service/debug/nodejs/register_value_changed_event.hh>
 #include <unisim/service/debug/nodejs/data_object.hh>
 #include <unisim/service/debug/nodejs/pointer.hh>
 #include <unisim/service/debug/nodejs/hook.hh>
@@ -162,6 +163,7 @@ private:
 	friend struct SourceCodeBreakpointWrapper<CONFIG>;
 	friend struct SubProgramBreakpointWrapper<CONFIG>;
 	friend struct WatchpointWrapper<CONFIG>;
+	friend struct RegisterValueChangedEventWrapper<CONFIG>;
 	friend struct DataObjectWrapper<CONFIG>;
 	friend struct PointerWrapper<CONFIG>;
 	friend struct HookWrapper<CONFIG>;

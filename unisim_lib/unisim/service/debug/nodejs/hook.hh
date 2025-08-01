@@ -66,9 +66,9 @@ struct HookWrapper : ObjectWrapper<CONFIG>
 	}
 	static v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(NodeJS<CONFIG>& nodejs);
 	static void Ctor(NodeJS<CONFIG>& nodejs, const v8::FunctionCallbackInfo<v8::Value>& args);
-	HookWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG> *processor_wrapper, unisim::util::debug::Hook<ADDRESS> *hook, std::size_t size = 0);
+	HookWrapper(NodeJS<CONFIG>& nodejs, ProcessorWrapper<CONFIG> *processor_wrapper, unisim::util::debug::Hook *hook, std::size_t size = 0);
 	virtual ~HookWrapper();
-	unisim::util::debug::Hook<ADDRESS> *GetHook() const;
+	unisim::util::debug::Hook *GetHook() const;
 	void Trigger();
 	void GetProcessor(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
 	void On(const v8::FunctionCallbackInfo<v8::Value>& args);
@@ -78,7 +78,7 @@ struct HookWrapper : ObjectWrapper<CONFIG>
 	v8::Local<v8::Object> MakeObject() { return Super::template MakeObject<This>(); }
 private:
 	ProcessorWrapper<CONFIG> *processor_wrapper;
-	unisim::util::debug::Hook<ADDRESS> *hook;
+	unisim::util::debug::Hook *hook;
 	typedef std::list<v8::Global<v8::Function> > Functions;
 	Functions functions;
 	typedef std::vector<v8::Global<v8::Promise::Resolver> > Resolvers;
@@ -178,7 +178,7 @@ private:
 /////////////////////////////// SourceCodeHook<> ///////////////////////////////
 
 template <typename CONFIG>
-struct SourceCodeHook : unisim::util::debug::SourceCodeHook<typename CONFIG::ADDRESS>
+struct SourceCodeHook : unisim::util::debug::SourceCodeHook
 {
 	typedef typename CONFIG::ADDRESS ADDRESS;
 	SourceCodeHook(const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename);
