@@ -592,7 +592,7 @@ public:
               core.path->add_sink( newRegWrite( NeonReg(reg), value ) );
             else
               {
-                value = unisim::util::symbolic::binsec::BitFilter::mksimple( value, 64, 0, size*8, size*8, false );
+                value = unisim::util::symbolic::binsec::BitFilter::mksimple( value, 64, 0, size*8, size*8, false, false );
                 core.path->add_sink( newPartialRegWrite( NeonReg(reg), 8*pos, 8*size, value ) );
               }
           }
@@ -631,12 +631,12 @@ public:
         unsigned src = pos;
         do { src = src & (src-1); } while (not neonregs[reg][src].node);
         unsigned shift = 8*(pos - src);
-        return unisim::util::symbolic::binsec::BitFilter::mksimple( neonregs[reg][src], 64, shift, 8*size, 64, false );
+        return unisim::util::symbolic::binsec::BitFilter::mksimple( neonregs[reg][src], 64, shift, 8*size, 64, false, false );
       }
     else if (not neonregs[reg][(pos|size)&(NEONSIZE-1)].node)
       {
         // requested read is in lower bits of a larger value
-        return unisim::util::symbolic::binsec::BitFilter::mksimple( neonregs[reg][pos], 64, 0, 8*size, 64, false );
+        return unisim::util::symbolic::binsec::BitFilter::mksimple( neonregs[reg][pos], 64, 0, 8*size, 64, false, false );
       }
     else if ((size > 1) and (neonregs[reg][pos|(size >> 1)].node))
       {
@@ -719,7 +719,7 @@ public:
 
     auto uvalue = ucast( value );
     unsigned usz = tsizeof( uvalue );
-    eneonwrite( reg, usz, usz*idx, BitFilter::mksimple( uvalue.expr, usz*8, 0, usz*8, 64, false ) );
+    eneonwrite( reg, usz, usz*idx, BitFilter::mksimple( uvalue.expr, usz*8, 0, usz*8, 64, false, false ) );
   }
 
   template <class ELEMT>
@@ -744,7 +744,7 @@ public:
 
   void BranchExchange( U32 const& target, branch_type_t branch_type )
   {
-    cpsr.nthumb = unisim::util::symbolic::binsec::BitFilter::mksimple( target.expr, 32, 0, 1, 1, false );
+    cpsr.nthumb = unisim::util::symbolic::binsec::BitFilter::mksimple( target.expr, 32, 0, 1, 1, false, false );
     Branch( target, branch_type );
   }
 

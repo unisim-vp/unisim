@@ -253,17 +253,17 @@ namespace ut
         if (auto n = node->AsOpNode())
           {
             Offset lval( GetValue( n->GetSub(0).node ) );
+            auto ltp = n->GetSub(0)->GetType();
             Offset rval( n->SubCount() > 1 ? GetValue( n->GetSub(1).node ) : Offset( 0 ) );
             using unisim::util::symbolic::Op;
             switch (n->op.code)
               {
               case Op::Add: return Offset( lval + rval );
               case Op::Sub: return Offset( lval - rval );
-              case Op::Lsl: return Offset( lval << rval );
-              case Op::Lsr: return Offset( lval >> rval );
+              case Op::Shl: return Offset( lval << rval );
+              case Op::Shr: return ltp.encoding == ltp.SIGNED ? Offset( int64_t(lval) >> rval ) : Offset( lval >> rval );
               case Op::Or:  return Offset( lval | rval );
               case Op::And: return Offset( lval & rval );
-              case Op::Asr: return Offset( int64_t(lval) >> rval );
               case Op::Neg: return Offset( -lval );
               case Op::Not: return Offset( ~lval );
               default: break;

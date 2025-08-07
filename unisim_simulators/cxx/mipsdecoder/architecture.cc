@@ -171,6 +171,8 @@ namespace Mips
             Interpreter::INode::ComputeForward(expr->GetSub(1), *arg);
 
             auto valtype = node->GetType();
+            auto argtype = node->GetSub(1)->GetType();
+
             switch (node->op.code)
               {
               case Op::Xor:
@@ -191,9 +193,13 @@ namespace Mips
                 else
                   res.applyMultiBitOr(*arg);
                 return;
-              case Op::Lsl: res.applyMultiBitLeftShift(*arg); return;
-              case Op::Asr: res.applyMultiBitArithmeticRightShift(*arg); return;
-              case Op::Lsr: res.applyMultiBitLogicalRightShift(*arg); return;
+              case Op::Shl: res.applyMultiBitLeftShift(*arg); return;
+              case Op::Shr:
+                if (argtype.encoding == valtype.SIGNED)
+                  res.applyMultiBitArithmeticRightShift(*arg);
+                else
+                  res.applyMultiBitLogicalRightShift(*arg);
+                return;
               case Op::Add:
                 if ((valtype.encoding == valtype.UNSIGNED or valtype.encoding == valtype.SIGNED))
                   res.applyMultiBitPlusSigned(*arg);
@@ -207,53 +213,53 @@ namespace Mips
                   res.applyMultiFloatMinus(*arg);
                 return;
               case Op::Teq:
-                if ((valtype.encoding == valtype.UNSIGNED or valtype.encoding == valtype.SIGNED)) {
-                  if (valtype.bitsize == 1)
-                    res.applyBitCompareEqual(*arg);
-                  else
-                    res.applyMultiBitCompareEqual(*arg);
-                }
+                if (argtype.bitsize == 1)
+                  res.applyBitCompareEqual(*arg);
+                else if (argtype.encoding == valtype.FLOAT)
+                  res.applyMultiFloatCompareEqual(*arg);
                 else
-                   res.applyMultiFloatCompareEqual(*arg);
+                  res.applyMultiBitCompareEqual(*arg);
                 return;
               case Op::Tne:
-                if ((valtype.encoding == valtype.UNSIGNED or valtype.encoding == valtype.SIGNED)) {
-                  if (valtype.bitsize == 1)
-                    res.applyBitCompareDifferent(*arg);
-                  else
-                    res.applyMultiBitCompareDifferent(*arg);
-                }
+                if (argtype.bitsize == 1)
+                  res.applyBitCompareDifferent(*arg);
+                else if (valtype.encoding == valtype.FLOAT)
+                  res.applyMultiFloatCompareDifferent(*arg);
                 else
-                   res.applyMultiFloatCompareDifferent(*arg);
+                  res.applyMultiBitCompareDifferent(*arg);
                 return;
               case Op::Tge:
-                if ((valtype.encoding == valtype.UNSIGNED or valtype.encoding == valtype.SIGNED))
-                   res.applyMultiBitCompareGreaterOrEqualSigned(*arg);
+                if (argtype.encoding == valtype.FLOAT)
+                  res.applyMultiFloatCompareGreaterOrEqual(*arg);
+                else if (argtype.encoding == valtype.SIGNED)
+                  res.applyMultiBitCompareGreaterOrEqualSigned(*arg);
                 else
-                   res.applyMultiFloatCompareGreaterOrEqual(*arg);
+                  res.applyMultiBitCompareGreaterOrEqualUnsigned(*arg);
                 return;
               case Op::Tgt:
-                if ((valtype.encoding == valtype.UNSIGNED or valtype.encoding == valtype.SIGNED))
-                   res.applyMultiBitCompareGreaterSigned(*arg);
+                if (argtype.encoding == valtype.FLOAT)
+                  res.applyMultiFloatCompareGreater(*arg);
+                else if (argtype.encoding == valtype.SIGNED)
+                  res.applyMultiBitCompareGreaterSigned(*arg);
                 else
-                   res.applyMultiFloatCompareGreater(*arg);
+                  res.applyMultiBitCompareGreaterUnsigned(*arg);
                 return;
               case Op::Tle:
-                if ((valtype.encoding == valtype.UNSIGNED or valtype.encoding == valtype.SIGNED))
-                   res.applyMultiBitCompareLessOrEqualSigned(*arg);
+                if (argtype.encoding == valtype.FLOAT)
+                  res.applyMultiFloatCompareLessOrEqual(*arg);
+                else  if (argtype.encoding == valtype.SIGNED)
+                  res.applyMultiBitCompareLessOrEqualSigned(*arg);
                 else
-                   res.applyMultiFloatCompareLessOrEqual(*arg);
+                   res.applyMultiBitCompareLessOrEqualUnsigned(*arg);
                 return;
               case Op::Tlt:
-                if ((valtype.encoding == valtype.UNSIGNED or valtype.encoding == valtype.SIGNED))
-                   res.applyMultiBitCompareLessSigned(*arg);
+                if (argtype.encoding == valtype.FLOAT)
+                  res.applyMultiFloatCompareLess(*arg);
+                else if (argtype.encoding == valtype.SIGNED)
+                  res.applyMultiBitCompareLessSigned(*arg);
                 else
-                   res.applyMultiFloatCompareLess(*arg);
+                  res.applyMultiBitCompareLessUnsigned(*arg);
                 return;
-              case Op::Tgeu: res.applyMultiBitCompareGreaterOrEqualUnsigned(*arg); return;
-              case Op::Tgtu: res.applyMultiBitCompareGreaterUnsigned(*arg); return;
-              case Op::Tleu: res.applyMultiBitCompareLessOrEqualUnsigned(*arg); return;
-              case Op::Tltu: res.applyMultiBitCompareLessUnsigned(*arg); return;
 
               default: break;
               }

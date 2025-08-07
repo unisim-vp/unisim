@@ -315,8 +315,6 @@ namespace ccode {
               case Op::Mul:     cbinop( srcmgr, ep.ccode, lhs, rhs, " * " ); break;
               case Op::Div:     cbinop( srcmgr, ep.ccode, lhs, rhs, " / " ); break;
               case Op::Mod:     cbinop( srcmgr, ep.ccode, lhs, rhs, " % " ); break;
-              case Op::Divu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " / " ); break;
-              case Op::Modu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " % " ); break;
 
               case Op::Xor:     cbinop( srcmgr, ep.ccode, lhs, rhs, " xor " ); break;
               case Op::Or:      cbinop( srcmgr, ep.ccode, lhs, rhs, (lhs->GetType().bitsize == 1) ? " or " : " | " ); break;
@@ -326,20 +324,15 @@ namespace ccode {
               case Op::Tne:     cbinop( srcmgr, ep.ccode, lhs, rhs, " != " ); break;
 
               case Op::Tle:     cbinop( srcmgr, ep.ccode, lhs, rhs, " <= " ); break;
-              case Op::Tleu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " <= " ); break;
 
               case Op::Tge:     cbinop( srcmgr, ep.ccode, lhs, rhs, " >= " ); break;
-              case Op::Tgeu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " >= " ); break;
 
               case Op::Tlt:     cbinop( srcmgr, ep.ccode, lhs, rhs, " < " ); break;
-              case Op::Tltu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " < " ); break;
 
               case Op::Tgt:     cbinop( srcmgr, ep.ccode, lhs, rhs, " > " ); break;
-              case Op::Tgtu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " > " ); break;
 
-              case Op::Lsl:     cbinop( srcmgr, ep.ccode, lhs, rhs, " << " ); break;
-              case Op::Asr:     cbinop( srcmgr, ep.ccode, lhs, rhs, " >> " ); break;
-              case Op::Lsr:     cbinop( srcmgr, ep.ccode, lhs, rhs, " >> " ); break;
+              case Op::Shl:     cbinop( srcmgr, ep.ccode, lhs, rhs, " << " ); break;
+              case Op::Shr:     cbinop( srcmgr, ep.ccode, lhs, rhs, " >> " ); break;
               case Op::Ror:     srcmgr << "Rotate( " << ep.ccode(lhs) << ", " << ep.ccode(rhs) << " )"; break;
               }
           } break;
