@@ -394,8 +394,12 @@ namespace symbolic {
       /* First compare actual types */
       const std::type_info* til = &typeid(*node);
       const std::type_info* tir = &typeid(*rhs.node);
+#if 0
       if (til < tir) return -1;
       if (til > tir) return +1;
+#else
+      if (til != tir) return strcmp(til->name(), tir->name());
+#endif
 
       /* Same types, call derived comparator */
       if (int delta = node->cmp( *rhs.node ))
