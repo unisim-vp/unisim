@@ -145,7 +145,7 @@ namespace symbolic {
 
     Op() : code(end) {}
     Op( Code _code ) : code(_code) {}
-    Op( char const* _code ) : code(end) { init( _code ); }
+    //    Op( char const* _code ) : code(end) { init( _code ); }
   };
 
   // TODO: Use c++-20 concepts and requirements ASAP.
