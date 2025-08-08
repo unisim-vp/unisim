@@ -181,13 +181,13 @@ namespace sav {
           {
             if      (onb->op.code == onb->op.Add)
               {
-                process( front->GetSub(0), make_operation( "Sub", back, front->GetSub(1) ) );
-                process( front->GetSub(1), make_operation( "Sub", back, front->GetSub(0) ) );
+                process( front->GetSub(0), make_operation( onb->op.Sub, back, front->GetSub(1) ) );
+                process( front->GetSub(1), make_operation( onb->op.Sub, back, front->GetSub(0) ) );
               }
             else if (onb->op.code == onb->op.Sub)
               {
-                process( front->GetSub(0), make_operation( "Add", back, front->GetSub(1) ) );
-                process( front->GetSub(1), make_operation( "Sub", front->GetSub(0), back ) );
+                process( front->GetSub(0), make_operation( onb->op.Add, back, front->GetSub(1) ) );
+                process( front->GetSub(1), make_operation( onb->op.Sub, front->GetSub(0), back ) );
               }
             else
               check( front );

@@ -172,6 +172,7 @@ namespace review
     using unisim::util::symbolic::ExprNode;
     using unisim::util::symbolic::make_const;
     using unisim::util::symbolic::shift_type;
+    using unisim::util::symbolic::Op;
 
     uint64_t const value_mask = uint64_t(-1) >> (64-8*size);
 
@@ -182,8 +183,8 @@ namespace review
         do { src = src & (src-1); } while (not regvalues[reg][src].node);
         unsigned shift = 8*(pos - src);
         return
-          make_operation( "And",
-                          make_operation( "Lsr", regvalues[reg][src], make_const<shift_type>( shift ) ),
+          make_operation( Op::And,
+                          make_operation( Op::Shr, regvalues[reg][src], make_const<shift_type>( shift ) ),
                           make_const( value_mask )
                           );
       }
@@ -191,7 +192,7 @@ namespace review
       {
         // requested read is in lower bits of a larger value
         return
-          make_operation( "And", regvalues[reg][pos], make_const( value_mask ) );
+          make_operation( Op::And, regvalues[reg][pos], make_const( value_mask ) );
       }
     else if ((size > 1) and (regvalues[reg][pos|(size >> 1)].node))
       {
@@ -201,7 +202,7 @@ namespace review
           {
             if (not regvalues[reg][pos+idx].node)
               continue;
-            concat = make_operation( "Or", make_operation( "Lsl", regvalues[reg][idx], make_const<shift_type>( 8*idx ) ), concat );
+            concat = make_operation( Op::Or, make_operation( Op::Shl, regvalues[reg][idx], make_const<shift_type>( 8*idx ) ), concat );
           }
         return concat;
       }

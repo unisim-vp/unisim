@@ -92,7 +92,7 @@ namespace ccode {
 
     if (not nexts[true])
       {
-        cond = make_operation("not", cond);
+        cond = make_operation(Op::Not, cond);
         std::swap( nexts[false], nexts[true] );
       }
   }

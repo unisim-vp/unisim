@@ -609,21 +609,8 @@ public:
   {
     using unisim::util::symbolic::ExprNode;
     using unisim::util::symbolic::make_const;
-
-    // struct
-    // {
-    //   Expr ui( unsigned sz, Expr const& src ) const
-    //   {
-    //     switch (sz) {
-    //     default: throw 0;
-    //     case 1: return new unisim::util::symbolic::CastNode<uint8_t,uint64_t>( src );
-    //     case 2: return new unisim::util::symbolic::CastNode<uint16_t,uint64_t>( src );
-    //     case 4: return new unisim::util::symbolic::CastNode<uint32_t,uint64_t>( src );
-    //     case 8: return new unisim::util::symbolic::CastNode<uint64_t,uint64_t>( src );
-    //     }
-    //     return 0;
-    //   }
-    // } cast;
+    using unisim::util::symbolic::Op;
+    using unisim::util::symbolic::binsec::BitFilter;
 
     if (not neonregs[reg][pos].node)
       {
@@ -631,12 +618,12 @@ public:
         unsigned src = pos;
         do { src = src & (src-1); } while (not neonregs[reg][src].node);
         unsigned shift = 8*(pos - src);
-        return unisim::util::symbolic::binsec::BitFilter::mksimple( neonregs[reg][src], 64, shift, 8*size, 64, false, false );
+        return BitFilter::mksimple( neonregs[reg][src], 64, shift, 8*size, 64, false, false );
       }
     else if (not neonregs[reg][(pos|size)&(NEONSIZE-1)].node)
       {
         // requested read is in lower bits of a larger value
-        return unisim::util::symbolic::binsec::BitFilter::mksimple( neonregs[reg][pos], 64, 0, 8*size, 64, false, false );
+        return BitFilter::mksimple( neonregs[reg][pos], 64, 0, 8*size, 64, false, false );
       }
     else if ((size > 1) and (neonregs[reg][pos|(size >> 1)].node))
       {
@@ -646,7 +633,7 @@ public:
           {
             if (not neonregs[reg][pos+idx].node)
               continue;
-            concat = make_operation( "Or", make_operation( "Lsl", neonregs[reg][idx], make_const( uint8_t(8*idx) ) ), concat );
+            concat = make_operation( Op::Or, make_operation( Op::Shl, neonregs[reg][idx], make_const( uint8_t(8*idx) ) ), concat );
           }
         return concat;
       }
