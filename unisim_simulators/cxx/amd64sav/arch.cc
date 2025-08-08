@@ -183,7 +183,7 @@ namespace review
         unsigned shift = 8*(pos - src);
         return
           make_operation( "And",
-                          make_operation( "Lsr", regvalues[reg][src], make_const<shift_type>( shift ) ),
+                          make_operation( "Shr", regvalues[reg][src], make_const<shift_type>( shift ) ),
                           make_const( value_mask )
                           );
       }
@@ -201,7 +201,7 @@ namespace review
           {
             if (not regvalues[reg][pos+idx].node)
               continue;
-            concat = make_operation( "Or", make_operation( "Lsl", regvalues[reg][idx], make_const<shift_type>( 8*idx ) ), concat );
+            concat = make_operation( "Or", make_operation( "Shl", regvalues[reg][idx], make_const<shift_type>( 8*idx ) ), concat );
           }
         return concat;
       }

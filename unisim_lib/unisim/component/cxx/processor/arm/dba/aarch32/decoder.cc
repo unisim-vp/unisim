@@ -646,7 +646,7 @@ public:
           {
             if (not neonregs[reg][pos+idx].node)
               continue;
-            concat = make_operation( "Or", make_operation( "Lsl", neonregs[reg][idx], make_const( uint8_t(8*idx) ) ), concat );
+            concat = make_operation( "Or", make_operation( "Shl", neonregs[reg][idx], make_const( uint8_t(8*idx) ) ), concat );
           }
         return concat;
       }

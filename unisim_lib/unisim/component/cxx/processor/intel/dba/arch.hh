@@ -865,7 +865,7 @@ Processor<MODE>::eregread( unsigned reg, unsigned size, unsigned pos ) const
         {
           if (not regvalues[reg][pos+idx].node)
             continue;
-          concat = make_operation( "Or", make_operation( "Lsl", regvalues[reg][idx], make_const( uint8_t(8*idx) ) ), concat );
+          concat = make_operation( "Or", make_operation( "Shl", regvalues[reg][idx], make_const( uint8_t(8*idx) ) ), concat );
         }
       return concat;
     }
