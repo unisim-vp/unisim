@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
@@ -428,7 +429,7 @@ bool GDBServer<ADDRESS>::StartProcessCmdThrd()
 
 		thrd_process_cmd_alive = false;
 
-		// Create a communication thread 
+		// Create a communication thread
 		if(unlikely(debug))
 		{
 			logger << DebugInfo << "Simulation thread: creating thread that process GDB commands" << EndDebugInfo;
@@ -3004,7 +3005,7 @@ bool GDBServer<ADDRESS>::HandleVCont(const std::string& query, std::size_t& pos)
 			else
 			{
 				pos--;
-			} 
+			}
 		}
 
 		switch(mode)

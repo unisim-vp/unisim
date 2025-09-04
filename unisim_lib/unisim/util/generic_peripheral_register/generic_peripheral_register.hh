@@ -29,9 +29,9 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 #ifndef __UNISIM_UTIL_GENERIC_PERIPHERAL_REGISTER_GENERIC_PERIPHERAL_REGISTER_HH__
 #define __UNISIM_UTIL_GENERIC_PERIPHERAL_REGISTER_GENERIC_PERIPHERAL_REGISTER_HH__
 
@@ -68,7 +68,7 @@ class GenericPeripheralRegister
 {
 public:
 	GenericPeripheralRegister<TYPE>(
-			GenericPeripheralRegisterInterface<TYPE> *_peripheral, 
+			GenericPeripheralRegisterInterface<TYPE> *_peripheral,
 			uint64_t _addr)
 		: peripheral(_peripheral)
 		, addr(_addr)
@@ -99,7 +99,7 @@ private:
 typedef GenericPeripheralRegister<uint8_t>
 	GenericPeripheralByteRegister;
 
-typedef GenericPeripheralRegister<uint16_t> 
+typedef GenericPeripheralRegister<uint16_t>
 	GenericPeripheralHalfWordRegister;
 
 typedef	GenericPeripheralRegister<uint32_t>

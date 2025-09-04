@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2013-2023,
+ *  Copyright (c) 2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_PSR_HH__
@@ -57,18 +57,18 @@ namespace arm {
       unisim::util::arithmetic::BitField<10,2>().Set( m_value, (mask >> 2) & 3 );
       unisim::util::arithmetic::BitField<25,2>().Set( m_value, (mask >> 0) & 3 );
     }
-    
+
     uint32_t ITGetState() const
     {
       return (unisim::util::arithmetic::BitField<10,6>().Get( m_value ) << 2) | unisim::util::arithmetic::BitField<25,2>().Get( m_value );
     }
-  
+
     bool InITBlock() const
     { return unisim::util::arithmetic::BitField<10,2>().Get( m_value ) or unisim::util::arithmetic::BitField<25,2>().Get( m_value ); }
-  
+
     uint32_t ITGetCondition() const
     { return this->InITBlock() ? unisim::util::arithmetic::BitField<12,4>().Get( m_value ) : 14; }
-  
+
     void ITAdvance()
     {
       uint32_t state = (unisim::util::arithmetic::BitField<10,6>().Get( m_value ) << 2) | unisim::util::arithmetic::BitField<25,2>().Get( m_value );
@@ -79,7 +79,7 @@ namespace arm {
 
     void Print(std::ostream& sink) const;
     friend std::ostream& operator << (std::ostream& sink , PSR const& psr) { psr.Print(sink); return sink; }
-    
+
     uint32_t m_value;
   };
 

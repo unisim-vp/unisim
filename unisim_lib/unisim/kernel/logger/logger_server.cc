@@ -29,7 +29,9 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Yves Lhuillier (yves.lhuillier@cea.fr) 
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #include <unisim/kernel/logger/logger_server.hh>

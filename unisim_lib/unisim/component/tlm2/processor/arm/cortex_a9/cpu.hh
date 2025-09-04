@@ -3,10 +3,10 @@
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
+ *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, 
+ *   - Redistributions of source code must retain the above copyright notice,
  *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
@@ -14,7 +14,7 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific 
+ *     endorse or promote products derived from this software without specific
  *     prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -25,13 +25,14 @@
  *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
  *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_A9_CPU_HH__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_A9_CPU_HH__
 
@@ -71,7 +72,7 @@ struct CPU
   tlm::tlm_initiator_socket<32> master_socket;
 	
   void WaitForInterrupt();
-    
+
 private:
   // virtual method implementation to handle backward path of
   //   transactions sent through the master_port
@@ -88,23 +89,23 @@ private:
  private:
   void SetExternalEvent();
   bool GetExternalEvent();
-  
+
   bool        check_external_event;
   sc_core::sc_event external_event;
-  
+
   /**************************************************************************
    * Interrupt ports and their handles                                START *
    **************************************************************************/
 
 public:
-  
+
   // Slave port for the nIRQm signal
   sc_core::sc_in<bool> nIRQm;
   // Slave port for the nFIQm signal
   sc_core::sc_in<bool> nFIQm;
   // Slave port for the nRESETm signal
   sc_core::sc_in<bool> nRESETm;
-  
+
 private:
   /** nIRQm port handler */
   void IRQHandler();
@@ -133,21 +134,21 @@ public:
   void Run();
 
   void Reset();
-  
+
   virtual void ResetMemory();
-  
+
   virtual bool PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t *buffer, uint32_t size, uint32_t attrs);
   virtual bool PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs);
   virtual bool PhysicalFetchMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs) { return PhysicalReadMemory(addr, paddr, buffer, size, attrs); }
 	
   void             TakeReset();
-  
+
   /**************************/
   /* CP15 Interface   START */
   /**************************/
-  
+
   static CP15Reg* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-  
+
   /**************************/
   /* CP15 Interface    END  */
   /**************************/
@@ -160,15 +161,15 @@ public:
 	
 private:
   /** Event used to signalize the end of a read transaction.
-   * Method PhysicalReadMemory waits for this event once the read transaction has been 
-   *   sent, and the nb_transport_bw notifies on it when the read transaction 
-   *   is finished. 
+   * Method PhysicalReadMemory waits for this event once the read transaction has been
+   *   sent, and the nb_transport_bw notifies on it when the read transaction
+   *   is finished.
    */
   sc_core::sc_event end_read_rsp_event;
-  
+
   typedef unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> PayloadFabric;
   PayloadFabric payload_fabric;
-  
+
   /** Transaction
    * A transaction_type smart pointer with release() on destruction
    */
@@ -179,9 +180,9 @@ private:
     transaction_type& operator * () { return *t; }
     transaction_type* t;
   };
-  
+
   /** A temporary variable used anywhere in the code to compute a time.
-   * A temporary variable that can be used anywhere in the code to compute a 
+   * A temporary variable that can be used anywhere in the code to compute a
    *   time.
    *   Should be initialized everytime it is used.
    */
@@ -196,10 +197,10 @@ private:
   double ipc;
   bool enable_dmi;
   sc_core::sc_time time_per_instruction;
-  
-  
+
+
   unisim::kernel::variable::Statistic<sc_core::sc_time> stat_cpu_time;
-  
+
   struct CpuCycleTimeParam : public unisim::kernel::variable::Parameter<sc_core::sc_time>
   {
     CpuCycleTimeParam(char const* name, CPU* _cpu)
@@ -232,11 +233,11 @@ private:
   /****************************/
 protected:
   bool VINITHI; unisim::kernel::variable::Parameter<bool> param_VINITHI;
-    
+
   /****************************/
   /* Configuration pins  END  */
   /****************************/
-    
+
 };
 
 } // end of namespace cortex_a9

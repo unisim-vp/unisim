@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr),
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
@@ -73,8 +73,8 @@ public:
 	virtual ~Tee();
 
 	virtual void Setup(MemoryAccessReporting<ADDRESS>*) override;
-	virtual bool ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
-			typename MemoryAccessReporting<ADDRESS>::MemoryType mt, 
+	virtual bool ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat,
+			typename MemoryAccessReporting<ADDRESS>::MemoryType mt,
 			ADDRESS addr, uint32_t size);
 	virtual void ReportCommitInstruction(ADDRESS addr, unsigned int length /* in bytes */);
 	virtual void ReportFetchInstruction(ADDRESS next_addr);

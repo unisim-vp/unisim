@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2023,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,6 +31,7 @@
  *  SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 #include <unisim/component/cxx/processor/arm/vmsav7/cpu.hh>
 #include <inttypes.h>

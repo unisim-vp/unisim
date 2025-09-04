@@ -29,9 +29,9 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 #include <stdlib.h>
 #include <inttypes.h>
 #include <string>

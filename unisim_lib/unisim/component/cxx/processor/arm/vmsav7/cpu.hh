@@ -30,6 +30,7 @@
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CPU_HH__

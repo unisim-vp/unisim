@@ -29,7 +29,9 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Yves Lhuillier (yves.lhuillier@cea.fr) 
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #ifndef __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
@@ -61,28 +63,28 @@ struct LoggerServer : unisim::kernel::Object
 	~LoggerServer();
 
 	/** Register a client logger.
-	 * 
+	 *
 	 * This method should be called by the different loggers when
 	 * being constructed.
 	 */
 	void AddClient( Logger const* client );
 	
 	/** Register a printer
-	 * 
+	 *
 	 * This method should be called by the different printers when
 	 * being constructed.
 	 */
 	void AddPrinter( Printer *printer );
 
 	/** Unregister a client logger and close server if needed
-	 *  
+	 *
 	 *  This method should be called by the different client
 	 *  loggers when being destroyed.
 	 */
 	void RemoveClient( Logger const* client );
 
 	/** Unregister a printer
-	 *  
+	 *
 	 *  This method should be called by the different printers
 	 *  when being destroyed.
 	 */
@@ -148,7 +150,7 @@ private:
 	pthread_mutex_t mutex;
 	
 	/** Server internal closing method
-	* 
+	*
 	* Invoked when no client are connected anymore
 	*/
 	void Close();

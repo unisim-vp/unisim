@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 #ifdef HAVE_CONFIG_H
@@ -780,7 +781,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM ppcemu-system");
-	simulator->SetVariable("copyright", "Copyright (C) 2007-2019, Commissariat a l'Energie Atomique (CEA)");
+	simulator->SetVariable("copyright", "Copyright (C) 2007, Commissariat a l'Energie Atomique (CEA)");
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
@@ -952,7 +953,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 
 	//  - Display run-time configuration
 	simulator->SetVariable("pci-display.initial-base-addr", 0xa0000000UL);
-	simulator->SetVariable("pci-display.bytesize", display_vfb_size); 
+	simulator->SetVariable("pci-display.bytesize", display_vfb_size);
 	simulator->SetVariable("pci-display.width", display_width);
 	simulator->SetVariable("pci-display.height", display_height);
 	simulator->SetVariable("pci-display.depth", display_depth);
@@ -1022,7 +1023,7 @@ void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asyn
 			sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
 			switch(h.proc_kind())
 			{
-				case sc_core::SC_THREAD_PROC_: 
+				case sc_core::SC_THREAD_PROC_:
 				case sc_core::SC_CTHREAD_PROC_:
 					sc_core::wait();
 					break;
@@ -1112,7 +1113,7 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 	{
 		http_server->AddJSAction(
 		unisim::service::interfaces::ToolbarOpenTabAction(
-			/* name */      profiler->GetName(), 
+			/* name */      profiler->GetName(),
 			/* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\" alt=\"Profile\">",
 			/* tips */      std::string("Profile of ") + cpu->GetName(),
 			/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,

@@ -1,34 +1,36 @@
 /*
- *  Copyright (c) 2011 Commissariat a l'Energie Atomique (CEA) All rights
- *  reserved.
+ *  Copyright (c) 2011
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are met:
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice,
- *   this list of conditions and the following disclaimer.
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *   endorse or promote products derived from this software without specific
- *   prior written permission.
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- *  ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
@@ -95,7 +97,7 @@ namespace linux_os {
     static uint32_t const ARM_HWCAP_ARM_VFPv4     = 1 << 16;
     static uint32_t const ARM_HWCAP_ARM_IDIVA     = 1 << 17;
     static uint32_t const ARM_HWCAP_ARM_IDIVT     = 1 << 18;
-    
+
     // Name imports
     typedef typename LINUX::SysCall SysCall;
     typedef typename LINUX::address_type address_type;
@@ -103,7 +105,7 @@ namespace linux_os {
     typedef typename LINUX::UTSName UTSName;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
-    
+
     // ARM linux structs
     struct arm_timespec {
       uint32_t tv_sec;  /* Seconds.      (__time_t) */
@@ -157,9 +159,9 @@ namespace linux_os {
       int32_t tz_minuteswest; /* minutes west of Greenwich (int) */
       int32_t tz_dsttime;     /* type of dst correction    (int) */
     };
-    
+
     ARMTS( std::string _name, LINUX& _lin ) : LINUX::TargetSystem( _name, _lin ) {}
-    
+
     bool GetAT_HWCAP( address_type& hwcap ) const
     {
       uint32_t arm_hwcap = 0;
@@ -203,8 +205,8 @@ namespace linux_os {
         for (int idx = sizeof(clear_registers)/sizeof(clear_registers[0]); --idx >= 0;)
           if (not lin.ClearTargetRegister(clear_registers[idx]))
             return false;
-      } 
-      
+      }
+
       /*** Program Status Register (PSR) ***/
       // NZCVQ <- 0
       // J <- 0
@@ -216,7 +218,7 @@ namespace linux_os {
       // M <- 0b10000 /* USER_MODE */
       if (not lin.SetTargetRegister("cpsr", 0x00000010))
         return false;
-      
+
       /* We need to set SCTLR and CPACR as a standard linux would have done. We
        * only affects flags that impact a Linux OS emulation (others
        * are unaffected).
@@ -229,7 +231,7 @@ namespace linux_os {
           uint32_t const I = 1<<12;
           uint32_t const C = 1<< 2;
           uint32_t const A = 1<< 1;
-          
+
           sctlr |=  I; // Instruction Cache enable
           sctlr |=  C; // Cache enable
           sctlr &= ~A; // Alignment check disable
@@ -239,7 +241,7 @@ namespace linux_os {
         if (not lin.SetTargetRegister("cpacr", 0x00f00000))
           return false;
       }
-      
+
       // Set PC to the program entry point
       if (not lin.SetTargetRegister(kARM_pc, lin.GetEntryPoint()))
         return false;
@@ -261,18 +263,18 @@ namespace linux_os {
           not lin.SetTargetRegister(kARM_r1, Target2Host(lin.GetEndianness(), par1)) or
           not lin.SetTargetRegister(kARM_r2, Target2Host(lin.GetEndianness(), par2)))
         return false;
-          
+
       return true;
     }
-    
+
     static void SetARMSystemCallStatus(LINUX& _lin, int ret, bool error) { _lin.SetTargetRegister(kARM_r0, (parameter_type) ret); }
-    
+
     void SetSystemCallStatus(int64_t ret, bool error) const { SetARMSystemCallStatus( lin, ret, error ); }
-    
+
     static parameter_type GetSystemCallParam( LINUX& _lin, int id )
     {
       parameter_type val = 0;
-          
+
       switch (id) {
       case 0: _lin.GetTargetRegister(kARM_r0, val); break;
       case 1: _lin.GetTargetRegister(kARM_r1, val); break;
@@ -283,18 +285,18 @@ namespace linux_os {
       case 6: _lin.GetTargetRegister(kARM_r6, val); break;
       default: throw std::logic_error("internal_error");
       }
-          
+
       return val;
     }
-    
+
     parameter_type GetSystemCallParam( int id ) const
     {
       try { return GetSystemCallParam( lin, id ); }
-      
+
       catch (int x) {
         lin.DebugErrorStream() << "No syscall argument #" << id << " in " << this->name << " linux" << std::endl;
       }
-      
+
       return 0;
     }
 
@@ -567,7 +569,7 @@ namespace linux_os {
         {
           id -= 0x0900000; // Offset translation
         }
-          
+
       // see either arch/arm/include/asm/unistd.h or arch/arm/include/uapi/asm/unistd.h in Linux source
       switch (id) {
       case 0: return this->GetSysCall("restart_syscall");
@@ -766,7 +768,7 @@ namespace linux_os {
       case 194: return this->GetSysCall("ftruncate64");
         // 195: stat64 (see arm specific)
       case 196: return this->GetSysCall("lstat64");
-        // 197: fstat64 (see arm specific)  
+        // 197: fstat64 (see arm specific)
       case 198: return this->GetSysCall("lchown32");
       case 199: return this->GetSysCall("getuid32");
       case 200: return this->GetSysCall("getgid32");
@@ -964,9 +966,9 @@ namespace linux_os {
               int ret;
               address_type buf_addr;
               int32_t target_errno = 0;
-                  
+
               buf_addr = GetSystemCallParam(lin, 0);
-                  
+
               struct arm_tms target_tms;
               ret = Times(&target_tms, lin.GetEndianness());
 
@@ -978,7 +980,7 @@ namespace linux_os {
                 {
                   target_errno = SysCall::HostToLinuxErrno(errno);
                 }
-                  
+
               if(unlikely(lin.GetVerbose()))
                 lin.DebugInfoStream() << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << std::endl;
 	
@@ -987,7 +989,7 @@ namespace linux_os {
           } sc;
           return &sc;
         } break;
-            
+
       case 78: /* ARM specific gettimeofday syscall */
         {
           static struct : public SysCall {
@@ -1107,7 +1109,7 @@ namespace linux_os {
               struct arm_utsname value;
               memset(&value, 0, sizeof(value));
               UTSName const& utsname = lin.GetUTSName();
-              
+
               strncpy(value.sysname,  utsname.sysname.c_str(), sizeof(value.sysname) - 1);
               strncpy(value.nodename, utsname.nodename.c_str(), sizeof(value.nodename) - 1);
               strncpy(value.release,  utsname.release.c_str(), sizeof(value.release) - 1);
@@ -1145,7 +1147,7 @@ namespace linux_os {
                   struct arm_stat64 target_stat;
                   ret = Stat64(pathname.c_str(), &target_stat, lin.GetEndianness());
                   lin.WriteMemory(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
-                      
+
                   if(unlikely(lin.GetVerbose()))
                     {
                       lin.DebugInfoStream()
@@ -1158,7 +1160,7 @@ namespace linux_os {
                   ret = -1;
                   target_errno = LINUX_ENOMEM;
                 }
-              
+
               SetARMSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
@@ -1224,7 +1226,7 @@ namespace linux_os {
         } sc;
         return &sc;
       } break;
-            
+
       case 983042: {
         static struct : public SysCall {
           char const* GetName() const { return "cacheflush"; }
@@ -1233,7 +1235,7 @@ namespace linux_os {
         } sc;
         return &sc;
       } break;
-            
+
       case 983043: {
         static struct : public SysCall {
           char const* GetName() const { return "usr26"; }
@@ -1242,7 +1244,7 @@ namespace linux_os {
         } sc;
         return &sc;
       } break;
-            
+
       case 983044: {
         static struct : public SysCall {
           char const* GetName() const { return "usr32"; }
@@ -1251,7 +1253,7 @@ namespace linux_os {
         } sc;
         return &sc;
       } break;
-            
+
       case 983045: {
         static struct : public SysCall {
           char const* GetName() const { return "set_tls"; }
@@ -1270,12 +1272,12 @@ namespace linux_os {
         } sc;
         return &sc;
       } break;
-            
+
       }
-          
+
       return 0;
     }
-    
+
     bool SetSystemBlob( unisim::util::blob::Blob<address_type>* blob ) const
     {
       typedef unisim::util::blob::Section<address_type> Section;

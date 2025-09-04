@@ -31,8 +31,9 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 #ifndef __UNISIM_UTIL_OS_LINUX_ENVIRONMENT_HH__
 #define __UNISIM_UTIL_OS_LINUX_ENVIRONMENT_HH__
 
@@ -52,7 +53,7 @@ namespace linux_os {
 //   will be extracted.
 // Returns: The variable name that appears in the environment entry. If the "="
 // character is not found returns the complete environment entry. If "=" is the
-// first character of the environment entry, returns and empty string 
+// first character of the environment entry, returns and empty string
 // (std::string("")).
 std::string GetEnvironmentVariable(std::string env_entry);
 

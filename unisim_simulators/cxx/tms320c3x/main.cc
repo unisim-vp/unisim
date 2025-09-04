@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2010,
+ *  Copyright (c) 2009,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 #ifdef HAVE_CONFIG_H
@@ -167,7 +168,7 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
-	cpu = new CPU("cpu"); 
+	cpu = new CPU("cpu");
 	memory = new MEMORY("memory");
 
 	//=========================================================================
@@ -268,7 +269,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM tms320c3x");
-	simulator->SetVariable("copyright", "Copyright (C) 2009-2013, Commissariat a l'Energie Atomique (CEA)");
+	simulator->SetVariable("copyright", "Copyright (C) 2009, Commissariat a l'Energie Atomique (CEA)");
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);

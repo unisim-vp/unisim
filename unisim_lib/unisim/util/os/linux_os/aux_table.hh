@@ -31,8 +31,9 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 #ifndef __UNISIM_UTIL_OS_LINUX_AUX_TABLE_HH__
 #define __UNISIM_UTIL_OS_LINUX_AUX_TABLE_HH__
 

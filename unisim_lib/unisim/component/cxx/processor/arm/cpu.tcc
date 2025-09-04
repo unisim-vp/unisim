@@ -1,12 +1,12 @@
 /*
- *  Copyright (c) 2007-2023,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
+ *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, 
+ *   - Redistributions of source code must retain the above copyright notice,
  *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
@@ -14,26 +14,27 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific 
+ *     endorse or promote products derived from this software without specific
  *     prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED.
  *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY
- *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
  *  SERVICES;LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
- 
+
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
 
@@ -107,7 +108,7 @@ struct BankedMode : public CORE::Mode
 /** Constructor.
  * Initializes CPU
  *
- * @param name the name that will be used by the UNISIM service 
+ * @param name the name that will be used by the UNISIM service
  *   infrastructure and will identify this object
  * @param parent the parent object of this object
  */
@@ -131,7 +132,7 @@ CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
     gpr[idx] = 0;
   this->current_insn_addr = 0;
   this->next_insn_addr = 0;
-  
+
   /* ARM modes (Banked Registers)
    * At any given running mode only 16 registers are accessible.
    * The following list indicates the mapping per running modes.
@@ -153,7 +154,7 @@ CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
   modes[0b11010] = new BankedMode<CPU,0b0110000000000000>( "hyp" ); // Hyp mode
   modes[0b11011] = new BankedMode<CPU,0b0110000000000000>( "und" ); // Undefined mode
   modes[0b11111] = new Mode( "sys" ); // System mode (No banked regs, using main regs)
-  
+
   // Initialize NEON/VFP registers
   for (unsigned idx = 0; idx < 32; ++idx)
     SetVDU( idx, U64(0) );
@@ -161,11 +162,11 @@ CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
   /*************************************/
   /* Registers Debug Accessors   START */
   /*************************************/
-  
+
   {
     unisim::service::interfaces::Register* dbg_reg = 0;
     unisim::kernel::variable::Register<uint32_t>* var_reg = 0;
-  
+
     /** Specific Banked Register Debugging Accessor */
     struct BankedRegister : public unisim::service::interfaces::Register
     {
@@ -178,7 +179,7 @@ CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
       std::string name;
       uint8_t     mode, idx;
     };
-  
+
     // initialize the registers debugging interface for the first 15 registers
     for (unsigned idx = 0; idx < 15; idx++) {
       std::string name, pretty_name, description;
@@ -213,7 +214,7 @@ CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
           registers_registry[br_name] = dbg_reg;
       }
     }
-  
+
     /** Specific Program Counter Register Debugging Accessor */
     struct ProgramCounterRegister : public unisim::service::interfaces::Register
     {
@@ -230,13 +231,13 @@ CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
     registers_registry["pc"] = registers_registry["r15"] = dbg_reg;
     var_reg = new unisim::kernel::variable::Register<uint32_t>( "pc", this, this->next_insn_addr, "Logical Register #15: pc, r15" );
     variable_register_pool.insert( var_reg );
-    
+
     // Handling the CPSR register
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "cpsr", &cpsr.m_value );
     registers_registry["cpsr"] = dbg_reg;
     var_reg = new unisim::kernel::variable::Register<uint32_t>( "cpsr", this, this->cpsr.m_value, "Current Program Status Register" );
     variable_register_pool.insert( var_reg );
-    
+
     /** SPSRs */
     struct SavedProgramStatusRegisterWithMode : public unisim::service::interfaces::Register
     {
@@ -250,10 +251,10 @@ CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
       std::string name;
       uint8_t     mode;
     };
-    
+
     for (typename ModeMap::const_iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr) {
       if (not itr->second->HasSPSR()) continue;
-      
+
       std::string name = std::string( "spsr_" ) + itr->second->suffix;
       dbg_reg = new SavedProgramStatusRegisterWithMode( *this, name, itr->first );
       registers_registry[name] = dbg_reg;
@@ -282,19 +283,19 @@ CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
       virtual int  GetSize() const { return 4; }
     };
     registers_registry["spsr"] = new SavedProgramStatusRegister( *this );
-    
+
     /* SCTLR */
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "sctlr", &SCTLR );
     registers_registry["sctlr"] = dbg_reg;
     /* CPACR */
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "cpacr", &CPACR );
     registers_registry["cpacr"] = dbg_reg;
-    
+
     // Advanced SIMD and VFP register
     struct VFPDouble : public unisim::service::interfaces::Register
     {
       VFPDouble( CPU& _cpu, std::string _name, unsigned _reg ) : cpu(_cpu), name(_name), reg(_reg) {}
-      
+
       virtual ~VFPDouble() {}
       virtual const char *GetName() const { return name.c_str(); };
       virtual void GetValue( void* buffer ) const { *((uint64_t*)buffer) = cpu.GetVDU( reg ); }
@@ -303,14 +304,14 @@ CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
 
       CPU& cpu; std::string name; unsigned reg;
     };
-    
+
     for (unsigned idx = 0; idx < 32; ++idx)
       {
         std::stringstream regname; regname << 'd' << idx;
         dbg_reg = new VFPDouble( *this, regname.str(), idx );
         registers_registry[regname.str()] = dbg_reg;
       }
-    
+
     struct VFPSingle : public unisim::service::interfaces::Register
     {
       VFPSingle( CPU& _cpu, std::string _name, unsigned _reg ) : cpu(_cpu), name(_name), reg(_reg) {}
@@ -330,14 +331,14 @@ CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
         dbg_reg = new VFPSingle( *this, regname.str(), idx );
         registers_registry[regname.str()] = dbg_reg;
       }
-    
+
     // Handling the FPSCR register
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpscr", &this->FPSCR );
     registers_registry["fpscr"] = dbg_reg;
     var_reg = new unisim::kernel::variable::Register<uint32_t>( "fpscr", this, this->FPSCR, "Current Program Status Register" );
     variable_register_pool.insert( var_reg );
   }
-    
+
   CP15ResetRegisters();
 }
 
@@ -360,7 +361,7 @@ CPU<FP_IMPL,CPU_IMPL>::~CPU()
           delete itr->second;
       }
   }
-  
+
   for (typename VariableRegisterPool::iterator itr = variable_register_pool.begin(),
          end = variable_register_pool.end(); itr != end; ++itr)
     delete *itr;
@@ -440,7 +441,7 @@ CPU<FP_IMPL,CPU_IMPL>::GetPL()
     }
   return 0;
 }
-  
+
 /** Assert privilege level
  *
  * Throws if the current privilege level according to the running mode
@@ -455,7 +456,7 @@ CPU<FP_IMPL,CPU_IMPL>::RequiresPL(unsigned rpl)
 }
 
 /** Scan available registers for the Registers interface
- * 
+ *
  *  Allows clients of the Registers interface to scan available
  * register by providing a suitable RegisterScanner interface.
  */
@@ -513,31 +514,31 @@ CPU<FP_IMPL,CPU_IMPL>::HandleAsynchronousException( uint32_t exceptions )
   // - Asynchronous Abort
   // - FIQ
   // - IRQ
-  
+
   // If we reached this point at least one exception is pending (but maybe masked).
   exceptions &= ~GetCPSR();
-  
+
   if (A.Get( exceptions ))
     {
       logger << DebugError << "Exception not handled (Asynchronous Abort)" << EndDebugError;
-      
+
       unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
-      
+
       return A.Mask( exceptions );
     }
-  
+
   if (I.Get( exceptions ) or F.Get( exceptions ))
     {
       // FIQs have higher priority
       bool isIRQ = not F.Get( exceptions );
       if (this->verbose)
         logger << DebugInfo << "Received " << (isIRQ ? "IRQ" : "FIQ") << " interrupt, handling it." << EndDebugInfo;
-      
+
       TakePhysicalFIQorIRQException( isIRQ );
-      
+
       return isIRQ ? I.Mask( exceptions ) : F.Mask( exceptions );
     }
-  
+
   return 0;
 }
 
@@ -558,12 +559,12 @@ CPU<FP_IMPL,CPU_IMPL>::TakeReset()
   // CP15.  This affects the Banked versions and values of various
   // registers accessed later in the code.  Also reset other system
   // components.
-  
+
   cpsr.Set( M, SUPERVISOR_MODE );
   //if HaveSecurityExt() then SCR.NS = '0';
 
   CP15ResetRegisters();
-  
+
   //if HaveAdvSIMDorVFP() then FPEXC.EN = '0'; SUBARCHITECTURE_DEFINED further resetting;
   //if HaveThumbEE() then TEECR.XED = '0';
   //if HaveJazelle() then JMCR.JE = '0'; SUBARCHITECTURE_DEFINED further resetting;
@@ -611,7 +612,7 @@ CPU<FP_IMPL,CPU_IMPL>::CP15ResetRegisters()
   sctlr::C.Set(       SCTLR, 0 ); // Cache enable. This is a global enable bit for data and unified caches.
   sctlr::A.Set(       SCTLR, 0 ); // Alignment check enable
   sctlr::M.Set(       SCTLR, 0 ); // MMU enable.
-  
+
   CPACR = 0x0;
 }
 
@@ -656,7 +657,7 @@ CPU<FP_IMPL,CPU_IMPL>::TakeUndefInstrException()
   cpsr.Set( M, UNDEFINED_MODE ); // CPSR.M = '11011';
   Mode& newmode = CurrentMode();
   newmode.Swap( *this ); // IN
-  
+
   // Write return information to registers, and make further CPSR changes: IRQs disabled,
   // IT state reset, instruction set and endianness set to SCTLR-configured values.
   newmode.SetSPSR( new_spsr_value );
@@ -687,7 +688,7 @@ CPU<FP_IMPL,CPU_IMPL>::TakeDataOrPrefetchAbortException( bool isdata )
   uint32_t new_lr_value = preferred_exceptn_return + (isdata ? 8 : 4);
   uint32_t new_spsr_value = GetCPSR();
   uint32_t vect_offset = isdata ? 16 : 12;
-  
+
   // preferred_exceptn_return = new_lr_value - 8;
   // // Determine whether this is an external abort to be routed to Monitor mode.
   // route_to_monitor = HaveSecurityExt() && SCR.EA == '1' && IsExternalAbort();
@@ -713,21 +714,21 @@ CPU<FP_IMPL,CPU_IMPL>::TakeDataOrPrefetchAbortException( bool isdata )
   // } else if (route_to_hyp) {
   //   EnterHypMode(new_spsr_value, preferred_exceptn_return, 20);
   //   else
-      
+
   // Handle in Abort mode. Ensure Secure state if initially in Monitor mode. This
   // affects the Banked versions of various registers accessed later in the code
   // if HaveSecurityExt() && CPSR.M == '10110' then SCR.NS = '0';
-  
+
   CurrentMode().Swap( *this ); // OUT
   cpsr.Set( M, ABORT_MODE ); // CPSR.M = '10111';
   Mode& newmode = CurrentMode();
   newmode.Swap( *this ); // IN
-  
+
   // Abort mode
   // Write return information to registers, and make further CPSR changes:
   // IRQs disabled, other interrupts disabled if appropriate,
   // IT state reset, instruction set and endianness set to SCTLR-configured values.
-  
+
   newmode.SetSPSR( new_spsr_value );
   SetGPR( 14, new_lr_value );
 
@@ -752,13 +753,13 @@ CPU<FP_IMPL,CPU_IMPL>::TakeSVCException()
   // after changing the IT[] bits to give them the correct values for
   // the following instruction, and LR is to be the next instruction
   // address.  Thus exception should preferably return to LR.
-  
+
   ITAdvance(); //< Finalize SVC instruction
-  
+
   uint32_t new_lr_value = GetNIA();
   uint32_t new_spsr_value = cpsr.Get( ALL32 );
   uint32_t vect_offset = 0x8;
-  
+
   // Check whether to take exception to Hyp mode
   // if in Hyp mode then stay in Hyp mode
   // take_to_hyp = (HaveVirtExt() && HaveSecurityExt() && SCR.NS == '1' && CPSR.M == '11010');
@@ -772,17 +773,17 @@ CPU<FP_IMPL,CPU_IMPL>::TakeSVCException()
   // elsif route_to_hyp then
   //     EnterHypMode(new_spsr_value, preferred_exceptn_return, 20);
   // else
-  
+
   // Enter Supervisor ('10011') mode, and ensure Secure state if initially in Monitor
   // ('10110') mode. This affects the Banked versions of various registers accessed later
   // in the code.
-  
+
   // if CPSR.M == '10110' then SCR.NS = '0';
   CurrentMode().Swap( *this ); // OUT
   cpsr.Set( M, SUPERVISOR_MODE ); // CPSR.M = '10011';
   Mode& newmode = CurrentMode();
   newmode.Swap( *this ); // IN
-  
+
   // Write return information to registers, and make further CPSR changes: IRQs disabled,
   // IT state reset, instruction set and endianness set to SCTLR-configured values.
   newmode.SetSPSR( new_spsr_value );
@@ -807,16 +808,16 @@ CPU<FP_IMPL,CPU_IMPL>::TakePhysicalFIQorIRQException( bool isIRQ )
   //   Determine return information.  SPSR is to be the current CPSR,
   // and LR is to be the aborted instruction address + 4.  Thus
   // exception should preferably return to LR-4.
-  
+
   uint32_t new_lr_value = GetNIA() + 4;
   uint32_t new_spsr_value = cpsr.Get( ALL32 );
-      
+
   // TODO: [IRQ|FIQ]s may be routed to monitor (if
   // HaveSecurityExt() and SCR.[IRQ|FIQ]) or to Hypervisor (if
   // (HaveVirtExt() && HaveSecurityExt() && SCR.[IRQ|FIQ] == '0'
   // && HCR.[IMO|FMO] == '1' && !IsSecure()) || CPSR.M ==
   // '11010');
-      
+
   // Handle in [IRQ|FIQ] mode. TODO: Ensure Secure state if
   // initially in Monitor mode. This affects the Banked versions
   // of various registers accessed later in the code.
@@ -863,7 +864,7 @@ CPU<FP_IMPL,CPU_IMPL>::BranchToFIQorIRQvector( bool isIRQ )
 #define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
 
 /** Get the Internal representation of the CP15 Register
- * 
+ *
  * @param crn     the "crn" field of the instruction code
  * @param opcode1 the "opcode1" field of the instruction code
  * @param crm     the "crm" field of the instruction code
@@ -891,7 +892,7 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         } x;
         return &x;
       } break;
-      
+
       /****************************
        * System control registers *
        ****************************/
@@ -917,7 +918,7 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         } x;
         return &x;
       } break;
-      
+
     case CP15ENCODE( 1, 0, 0, 2 ):
       {
         static struct : public CP15Reg
@@ -936,11 +937,11 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         } x;
         return &x;
       } break;
-      
+
       /***********************************/
       /* Context and thread ID registers */
       /***********************************/
-      
+
     case CP15ENCODE( 13, 0, 0, 1 ):
       {
         static struct : public CP15Reg
@@ -951,7 +952,7 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         } x;
         return &x;
       } break;
-      
+
     case CP15ENCODE( 13, 0, 0, 2 ):
       {
         static struct : public CP15Reg
@@ -963,7 +964,7 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         } x;
         return &x;
       } break;
-      
+
     case CP15ENCODE( 13, 0, 0, 3 ):
       {
         static struct : public CP15Reg
@@ -975,7 +976,7 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         } x;
         return &x;
       } break;
-      
+
     case CP15ENCODE( 13, 0, 0, 4 ):
       {
         static struct : public CP15Reg
@@ -986,7 +987,7 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         } x;
         return &x;
       } break;
-      
+
     }
 
   static CP15Reg err;
@@ -1000,7 +1001,7 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
  *   notifiy the processor.
  */
 template <class FP_IMPL, class CPU_IMPL>
-void 
+void
 CPU<FP_IMPL,CPU_IMPL>::UnpredictableInsnBehaviour()
 {
   logger << DebugWarning
@@ -1014,7 +1015,7 @@ CPU<FP_IMPL,CPU_IMPL>::UnpredictableInsnBehaviour()
 }
 
 
-    
+
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

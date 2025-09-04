@@ -31,8 +31,9 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 #include <string>
 #include <vector>
 #ifdef __APPLE__
